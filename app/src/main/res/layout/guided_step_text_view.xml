@@ -1,0 +1,13 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="?attr/guidedActionItemContainerStyle" >
+    <androidx.leanback.widget.GuidedActionEditText
+        android:id="@+id/guidedactions_edit_text"
+        android:inputType="text"
+        android:hint="Hostname"
+        android:fontFamily="sans-serif-condensed"
+        android:textSize="@dimen/lb_guidedactions_item_description_font_size"
+        android:layout_height="40dp"
+        android:layout_width="match_parent"/>
+</LinearLayout>

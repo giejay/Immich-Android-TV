@@ -1,0 +1,3 @@
+[submodule "mediaslider"]
+	path = mediaslider
+	url = https://github.com/giejay/MediaSliderView

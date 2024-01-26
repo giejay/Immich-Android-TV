@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2020 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment"
+    tools:ignore="UnusedNavigation">
+
+    <action
+        android:id="@+id/action_global_signInFragment"
+        app:destination="@id/authFragment" />
+
+<!--    <fragment-->
+<!--        android:id="@+id/playbackFragment"-->
+<!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
+<!--        android:label="PlaybackFragment">-->
+<!--        <argument-->
+<!--            android:name="video"-->
+<!--            app:argType="nl.giejay.android.tv.immich.shared.datamodel.Video" />-->
+<!--        <action-->
+<!--            android:id="@+id/action_playbackFragment_to_playbackErrorFragment"-->
+<!--            app:destination="@id/playbackErrorFragment" />-->
+<!--    </fragment>-->
+
+    <fragment
+        android:id="@+id/albumDetailsFragment"
+        android:name="nl.giejay.android.tv.immich.album.AlbumDetailsFragment"
+        android:label="AlbumDetailsFragment">
+        <argument
+            android:name="albumId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_details_to_album_fragment"
+            app:destination="@id/albumFragment" />
+        <action
+            android:id="@+id/action_details_to_photo_slider"
+            app:destination="@id/photoSlider" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/photoSlider"
+        android:name="nl.giejay.android.tv.immich.playback.ImmichMediaSlider"
+        android:label="PhotoSlider">
+        <argument
+            android:name="config"
+            app:argType="com.zeuskartik.mediaslider.MediaSliderConfiguration" />
+        <argument
+            android:name="albumId"
+            app:argType="string" />
+        <action
+            android:id="@+id/photo_slider_to_album_details_fragment"
+            app:destination="@id/albumDetailsFragment" />
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/authFragment"
+        android:name="nl.giejay.android.tv.immich.auth.AuthFragmentStep1"
+        android:label="Authentication">
+        <action
+            android:id="@+id/action_auth_to_homeFragment"
+            app:popUpTo="@id/authFragment"
+            app:popUpToInclusive="true"
+            app:destination="@id/homeFragment" />
+        <action
+            android:id="@+id/action_auth_to_auth_2"
+            app:destination="@id/authFragmentStep2" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/authFragmentStep2"
+        android:name="nl.giejay.android.tv.immich.auth.AuthFragmentStep2"
+        android:label="Authentication">
+        <action
+            android:id="@+id/action_auth_2_to_homeFragment"
+            app:popUpTo="@id/homeFragment" />
+    </fragment>
+
+<!--    <fragment-->
+<!--        android:id="@+id/playbackErrorFragment"-->
+<!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackErrorFragment"-->
+<!--        android:label="PlaybackErrorFragment">-->
+<!--        <argument-->
+<!--            android:name="video"-->
+<!--            app:argType="nl.giejay.android.tv.immich.shared.datamodel.Video" />-->
+<!--        <argument-->
+<!--            android:name="error"-->
+<!--            app:argType="java.lang.Exception" />-->
+<!--        <action-->
+<!--            app:popUpTo="@+id/playbackFragment"-->
+<!--            app:popUpToInclusive="true"-->
+<!--            android:id="@+id/action_playbackErrorFragment_to_playbackFragment"-->
+<!--            app:destination="@id/playbackFragment" />-->
+<!--        <action-->
+<!--            app:popUpTo="@+id/playbackFragment"-->
+<!--            app:popUpToInclusive="true"-->
+<!--            android:id="@+id/action_playbackErrorFragment_to_browseFragment"-->
+<!--            app:destination="@id/browseFragment" />-->
+<!--    </fragment>-->
+    <fragment
+        android:id="@+id/albumFragment"
+        android:name="nl.giejay.android.tv.immich.album.AlbumFragment"
+        android:label="AlbumFragment">
+    </fragment>
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="nl.giejay.android.tv.immich.home.HomeFragment"
+        android:label="HomeFragment">
+        <action
+            android:id="@+id/action_homeFragment_to_albumDetailsFragment"
+            app:destination="@id/albumDetailsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/noFirebaseFragment"
+        android:name="nl.giejay.android.tv.immich.auth.NoFirebaseFragment"
+        android:label="NoFirebaseFragment">
+        <action
+            android:id="@+id/action_noFirebaseFragment_to_browseFragment"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/noFirebaseFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+</navigation>
