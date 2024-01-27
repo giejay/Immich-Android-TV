@@ -13,8 +13,6 @@ import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 
 class SettingsFragment : RowsSupportFragment() {
     private val mRowsAdapter: ArrayObjectAdapter
-    private val SCREENSAVER_SETTINGS = "android.settings.DREAM_SETTINGS"
-    private val SETTINGS = "android.settings.SETTINGS"
 
     init {
         val selector = ListRowPresenter()
@@ -25,29 +23,6 @@ class SettingsFragment : RowsSupportFragment() {
             card.onClick()
         }
         adapter = mRowsAdapter
-    }
-
-    private fun startScreenSaverIntent() {
-        // Check if the daydream intent is available - some devices (e.g. NVidia Shield) do not support it
-        var intent = Intent(SCREENSAVER_SETTINGS);
-        if (!intentAvailable(intent)) {
-            // Try opening the daydream settings activity directly: https://gist.github.com/reines/bc798a2cb539f51877bb279125092104
-            intent = Intent(Intent.ACTION_MAIN).setClassName(
-                "com.android.tv.settings",
-                "com.android.tv.settings.device.display.daydream.DaydreamActivity"
-            );
-            if (!intentAvailable(intent)) {
-                // If all else fails, open the normal settings screen
-                intent = Intent(SETTINGS);
-            }
-        }
-        startActivity(intent);
-    }
-
-    private fun intentAvailable(intent: Intent): Boolean {
-        val manager = requireContext().packageManager;
-        val infos = manager.queryIntentActivities(intent, 0);
-        return infos.isNotEmpty();
     }
 
     override fun onAttach(activity: Activity) {
@@ -72,13 +47,26 @@ class SettingsFragment : RowsSupportFragment() {
                             )
                         },
                         SettingsCard(
+                            "View settings",
+                            null,
+                            "view_settings",
+                            "icon_view",
+                            "icon_view"
+                        ) {
+                            findNavController().navigate(
+                                HomeFragmentDirections.actionHomeFragmentToViewSettings()
+                            )
+                        },
+                        SettingsCard(
                             "Screensaver",
                             null,
                             "screensaver",
                             "screensaver",
                             "ic_settings_settings"
                         ) {
-                            startScreenSaverIntent()
+                            findNavController().navigate(
+                                HomeFragmentDirections.actionHomeFragmentToScreensaverSettings()
+                            )
                         }
                     )
                 )

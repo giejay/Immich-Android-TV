@@ -15,7 +15,6 @@ package nl.giejay.android.tv.immich.shared.fragment
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,9 +27,6 @@ import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.OnChildLaidOutListener
 import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.leanback.widget.OnItemViewSelectedListener
-import androidx.leanback.widget.Presenter
-import androidx.leanback.widget.Row
-import androidx.leanback.widget.RowPresenter
 import androidx.leanback.widget.VerticalGridPresenter
 import nl.giejay.android.tv.immich.R
 import timber.log.Timber
@@ -190,7 +186,7 @@ open class GridFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFr
 
     private fun updateAdapter() {
         if (mGridViewHolder != null) {
-            mGridPresenter?.onBindViewHolder(mGridViewHolder, mAdapter)
+            mGridPresenter?.onBindViewHolder(mGridViewHolder!!, mAdapter)
             if (mSelectedPosition != -1) {
                 mGridViewHolder?.gridView?.selectedPosition = mSelectedPosition
             }
@@ -198,6 +194,6 @@ open class GridFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFr
     }
 
     fun setEntranceTransitionState(afterTransition: Boolean) {
-        mGridPresenter?.setEntranceTransitionState(mGridViewHolder, afterTransition)
+        mGridPresenter?.setEntranceTransitionState(mGridViewHolder!!, afterTransition)
     }
 }

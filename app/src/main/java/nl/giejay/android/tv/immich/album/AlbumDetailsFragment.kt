@@ -11,6 +11,7 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import retrofit2.Response
 
@@ -27,8 +28,14 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset, AlbumDetails>() {
                 findNavController().navigate(
                     AlbumDetailsFragmentDirections.actionDetailsToPhotoSlider(
                         MediaSliderConfiguration(
-                            true, true, false, response!!.albumName,
-                            "", "", adapter.indexOf(card)
+                            PreferenceManager.sliderShowDescription(),
+                            PreferenceManager.sliderShowMediaCount(),
+                            false,
+                            response!!.albumName,
+                            "",
+                            "",
+                            adapter.indexOf(card),
+                            PreferenceManager.sliderInterval()
                         ), response!!.id
                     )
                 )

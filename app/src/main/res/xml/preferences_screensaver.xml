@@ -1,0 +1,138 @@
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:title="Screensaver">
+
+        <Preference
+            android:key="screensaver_set"
+            android:title="Set screensaver"
+            android:summary="Set the Immich TV app as your screensaver"/>
+
+        <ListPreference
+            android:key="screensaver_interval"
+            android:title="Interval"
+            android:summary="Interval of the slideshow in screensaver mode"
+            app:useSimpleSummaryProvider="true"
+            android:entries="@array/interval_titles"
+            android:entryValues="@array/interval_values"
+            android:dialogTitle="Interval"/>
+
+        <CheckBoxPreference
+            android:key="screensaver_show_description"
+            android:title="Show description"
+            android:defaultValue="true"
+            android:summary="Show description of asset in screensaver"/>
+
+        <CheckBoxPreference
+            android:key="screensaver_show_media_count"
+            android:title="Show media count"
+            android:defaultValue="true"
+            android:summary="Show the number of total items and currently selected item"/>
+
+        <CheckBoxPreference
+            android:key="screensaver_include_videos"
+            android:title="Include videos"
+            android:summary="Include videos in screensaver (WIP)"/>
+
+        <CheckBoxPreference
+            android:key="screensaver_play_sound"
+            android:title="Play sound"
+            android:summary="Play sound of videos during screensaver"/>
+
+    </PreferenceCategory>
+
+<!--    <PreferenceCategory-->
+<!--        android:title="Widgets">-->
+
+<!--        <SwitchPreferenceCompat-->
+<!--            android:key="switch"-->
+<!--            android:title="Title"-->
+<!--            android:summary="Summary"/>-->
+
+<!--        <DropDownPreference-->
+<!--            android:key="dropdown"-->
+<!--            android:title="Title"-->
+<!--            android:entries="@array/interval_titles"-->
+<!--            app:useSimpleSummaryProvider="true"-->
+<!--            android:entryValues="@array/interval_values"/>-->
+
+<!--        <SeekBarPreference-->
+<!--            android:key="seekbar"-->
+<!--            android:title="Title"-->
+<!--            android:max="10"-->
+<!--            android:defaultValue="5"/>-->
+<!--    </PreferenceCategory>-->
+
+<!--    <PreferenceCategory-->
+<!--        android:title="Dialogs">-->
+
+<!--        <EditTextPreference-->
+<!--            android:key="edittext"-->
+<!--            android:title="Title"-->
+<!--            app:useSimpleSummaryProvider="true"-->
+<!--            android:dialogTitle="string/dialog_title_edittext_preference"/>-->
+
+<!--        <ListPreference-->
+<!--            android:key="list"-->
+<!--            android:title="Title"-->
+<!--            app:useSimpleSummaryProvider="true"-->
+<!--            android:entries="@array/interval_titles"-->
+<!--            android:entryValues="@array/interval_values"-->
+<!--            android:dialogTitle="DialogTile"/>-->
+
+<!--        <MultiSelectListPreference-->
+<!--            android:key="multi_select_list"-->
+<!--            android:title="Title"-->
+<!--            android:summary="Summary"-->
+<!--            android:entries="@array/interval_titles"-->
+<!--            android:entryValues="@array/interval_values"-->
+<!--            android:dialogTitle="Dialog Title"/>-->
+<!--    </PreferenceCategory>-->
+
+<!--    <PreferenceCategory-->
+<!--        android:key="advanced"-->
+<!--        android:title="Advanced"-->
+<!--        app:initialExpandedChildrenCount="1">-->
+
+<!--        <Preference-->
+<!--            android:key="expandable"-->
+<!--            android:title="Title"-->
+<!--            android:summary="Summary"/>-->
+
+<!--        <Preference-->
+<!--            android:title="Title"-->
+<!--            android:summary="Summary">-->
+
+<!--            <intent android:action="android.intent.action.VIEW"-->
+<!--                android:data="http://www.android.com"/>-->
+
+<!--        </Preference>-->
+
+<!--        <SwitchPreferenceCompat-->
+<!--            android:key="parent"-->
+<!--            android:title="Title"-->
+<!--            android:summary="Summary"/>-->
+
+<!--        <SwitchPreferenceCompat-->
+<!--            android:key="child"-->
+<!--            android:dependency="parent"-->
+<!--            android:title="Title"-->
+<!--            android:summary="Summary"/>-->
+
+<!--        <SwitchPreferenceCompat-->
+<!--            android:key="toggle_summary"-->
+<!--            android:title="Title"-->
+<!--            android:summaryOn="Summary on "-->
+<!--            android:summaryOff="Summary off"/>-->
+
+<!--        <Preference-->
+<!--            android:key="copyable"-->
+<!--            android:title="Title"-->
+<!--            android:summary="S/summary_copyable_preference"-->
+<!--            android:selectable="false"-->
+<!--            app:enableCopying="true"/>-->
+<!--    </PreferenceCategory>-->
+
+</PreferenceScreen>

@@ -173,6 +173,9 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     }
 
     private fun loadBackground(backgroundUrl: String?, onLoadFailed: () -> Unit) {
+        if(!isAdded){
+           return
+        }
         if (backgroundUrl.isNullOrEmpty()) {
             Timber.i("Could not load background because background url is null")
             return

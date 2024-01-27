@@ -48,7 +48,7 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
 //                    }
 //
 //                })
-                .into(cardView.mainImageView)
+                .into(cardView.mainImageView!!)
         }
     }
 
@@ -57,6 +57,6 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
     }
 
     private fun setImageBackground(imageCardView: ImageCardView, colorId: Int) {
-        imageCardView.mainImageView.background = context.getDrawable(R.drawable.border)
+        imageCardView.mainImageView!!.background = context.getDrawable(R.drawable.border)
     }
 }

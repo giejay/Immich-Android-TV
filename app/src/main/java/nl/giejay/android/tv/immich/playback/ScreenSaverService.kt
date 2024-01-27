@@ -5,7 +5,6 @@ import android.widget.Toast
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import com.zeuskartik.mediaslider.MediaSliderView
-import com.zeuskartik.mediaslider.SliderItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -83,8 +82,14 @@ class ScreenSaverService : DreamService() {
         withContext(Dispatchers.Main) {
             mediaSliderView.loadMediaSliderView(
                 MediaSliderConfiguration(
-                    true, true, false, "",
-                    "#000000", null, 0
+                    PreferenceManager.screensaverShowDescription(),
+                    PreferenceManager.screensaverShowMediaCount(),
+                    false,
+                    "",
+                    "#000000",
+                    null,
+                    0,
+                    PreferenceManager.screensaverInterval()
                 ), assets.toSliderItems()
             )
             mediaSliderView.toggleSlideshow(false)

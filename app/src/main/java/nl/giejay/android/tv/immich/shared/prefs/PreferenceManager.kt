@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.shared.prefs
 import android.content.Context
 import android.content.SharedPreferences
 import android.webkit.URLUtil
+import androidx.preference.PreferenceManager
 
 object PreferenceManager {
     private lateinit var sharedPreference: SharedPreferences
@@ -10,10 +11,25 @@ object PreferenceManager {
     private val liveContext: MutableMap<String, Any> = mutableMapOf()
     private val KEY_HOST_NAME = "hostName"
     private val KEY_API_KEY = "apiKey"
-    private val propsToWatch = mapOf(KEY_HOST_NAME to "", KEY_API_KEY to "")
+    private val KEY_SCREENSAVER_INTERVAL = "screensaver_interval"
+    private val KEY_SCREENSAVER_SHOW_MEDIA_COUNT = "screensaver_show_media_count"
+    private val KEY_SCREENSAVER_SHOW_DESCRIPTION = "screensaver_show_description"
+    private val KEY_SLIDER_INTERVAL = "slider_interval"
+    private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
+    private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
+    private val propsToWatch = mapOf(
+        KEY_HOST_NAME to "",
+        KEY_API_KEY to "",
+        KEY_SCREENSAVER_INTERVAL to "3",
+        KEY_SLIDER_INTERVAL to "3",
+        KEY_SLIDER_SHOW_DESCRIPTION to true,
+        KEY_SLIDER_SHOW_MEDIA_COUNT to true,
+        KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
+        KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true
+    )
 
     fun init(context: Context) {
-        sharedPreference = context.getSharedPreferences("DEFAULT", Context.MODE_PRIVATE)
+        sharedPreference = PreferenceManager.getDefaultSharedPreferences(context)
         liveSharedPreferences = LiveSharedPreferences(sharedPreference)
         propsToWatch.forEach { (key, defaultValue) ->
             liveSharedPreferences.subscribe(key, defaultValue) { value ->
@@ -33,12 +49,36 @@ object PreferenceManager {
         return sharedPreference.getString(key, defaultValue) ?: defaultValue
     }
 
-    fun apiKey(): String{
+    fun apiKey(): String {
         return liveContext[KEY_API_KEY] as String
     }
 
-    fun hostName(): String{
+    fun hostName(): String {
         return liveContext[KEY_HOST_NAME] as String
+    }
+
+    fun screensaverInterval(): Int {
+        return liveContext[KEY_SCREENSAVER_INTERVAL]?.toString()?.toInt() ?: 3
+    }
+
+    fun screensaverShowDescription(): Boolean {
+        return liveContext[KEY_SCREENSAVER_SHOW_DESCRIPTION] as Boolean
+    }
+
+    fun screensaverShowMediaCount(): Boolean {
+        return liveContext[KEY_SCREENSAVER_SHOW_MEDIA_COUNT] as Boolean
+    }
+
+    fun sliderInterval(): Int {
+        return liveContext[KEY_SLIDER_INTERVAL]?.toString()?.toInt() ?: 3
+    }
+
+    fun sliderShowDescription(): Boolean {
+        return liveContext[KEY_SLIDER_SHOW_DESCRIPTION] as Boolean
+    }
+
+    fun sliderShowMediaCount(): Boolean {
+        return liveContext[KEY_SLIDER_SHOW_MEDIA_COUNT] as Boolean
     }
 
     fun saveApiKey(value: String) {

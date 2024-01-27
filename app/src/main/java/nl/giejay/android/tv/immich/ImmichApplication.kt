@@ -40,9 +40,9 @@ class ImmichApplication : Application() {
         appContext = this
         PreferenceManager.init(this)
 
-        if (BuildConfig.DEBUG) {
-            enableStrictMode()
-        }
+//        if (BuildConfig.DEBUG) {
+//            enableStrictMode()
+//        }
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
@@ -62,8 +62,12 @@ class ImmichApplication : Application() {
 
     private fun enableStrictMode() {
         StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork()
-                .penaltyDeath().build()
+            StrictMode.ThreadPolicy.Builder()
+                .detectDiskReads()
+                .detectDiskWrites()
+                .detectNetwork()
+                .penaltyDeath()
+                .build()
         )
     }
 

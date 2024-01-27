@@ -30,8 +30,8 @@ android {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
         targetSdkVersion 34
-        versionCode 16
-        versionName "1.12"
+        versionCode 17
+        versionName "1.13"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
@@ -71,7 +71,7 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 
     // AndroidX libraries
-    def leanback_version = "1.2.0-alpha02"
+    def leanback_version = "1.2.0-alpha04"
     def fragment_version = "1.4.1"
     def cast_tv_version = "21.0.1"
     def cast_version = "21.4.0"
@@ -82,7 +82,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
     implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
     implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
-    implementation "androidx.preference:preference-ktx:1.2.0"
+//    implementation "androidx.preference:preference-ktx:1.2.0"
+    implementation "androidx.leanback:leanback-preference:$leanback_version"
 
     implementation platform('com.google.firebase:firebase-bom:32.7.1')
     implementation 'com.google.firebase:firebase-crashlytics'

@@ -35,7 +35,7 @@ class SettingsIconPresenter(context: Context) : CardPresenter(context, R.style.I
         Glide.with(context)
             .asBitmap()
             .load(resourceId)
-            .into(cardView.mainImageView)
+            .into(cardView.mainImageView!!)
     }
 
     private fun setImageBackground(imageCardView: ImageCardView, colorId: Int) {

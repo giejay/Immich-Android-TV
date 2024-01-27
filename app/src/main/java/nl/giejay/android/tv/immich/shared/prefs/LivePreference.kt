@@ -17,9 +17,9 @@ class LivePreference<T> constructor(
 
     private var disposable: Disposable? = null
 
-    init {
-        postValue(preferences.all[key] as T ?: defaultValue)
-    }
+//    init {
+//        postValue(preferences.all[key] as T ?: defaultValue)
+//    }
 
     override fun onActive() {
         super.onActive()
