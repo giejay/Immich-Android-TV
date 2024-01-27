@@ -21,6 +21,10 @@ class AlbumFragment : VerticalCardGridFragment<Album, List<Album>>() {
         return apiClient.listAlbums()
     }
 
+    override fun getPicture(it: Album): String? {
+        return ApiUtil.getFileUrl(it.albumThumbnailAssetId)
+    }
+
     override fun mapResponseToItems(response: List<Album>): List<Album> {
         return response
     }

@@ -27,6 +27,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import retrofit2.Response
 import timber.log.Timber
 
+
 abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     protected var response: RESPONSE_TYPE? = null
     protected var assets: List<ITEM> = emptyList()
@@ -46,6 +47,7 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     abstract fun loadItems(apiClient: ApiClient): Response<RESPONSE_TYPE>
     abstract fun mapResponseToItems(response: RESPONSE_TYPE): List<ITEM>
     abstract fun createCard(a: ITEM): Card
+    abstract fun getPicture(it: ITEM): String?
     open fun setTitle(response: RESPONSE_TYPE) {
         // default no title
     }
@@ -71,15 +73,14 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
         setupAdapter()
         setupBackgroundManager()
         setOnItemViewSelectedListener { _, item, _, _ ->
-            // todo debounce
-            item?.let {
-                loadBackground((it as Card).pictureUrl) {
-                    loadBackground(it.thumbnailUrl) {
-                        Timber.tag(javaClass.name)
-                            .e("Could not load background url")
-                    }
-                }
-            }
+//            item?.let {
+//                loadBackground((it as Card).pictureUrl) {
+//                    loadBackground(it.thumbnailUrl) {
+//                        Timber.tag(javaClass.name)
+//                            .e("Could not load background url")
+//                    }
+//                }
+//            }
             val selectedIndex = adapter.indexOf(item);
             if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
                 mainScope.launch {
@@ -97,7 +98,7 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
 
     override fun onResume() {
         super.onResume()
-        if(response != null){
+        if (response != null) {
             progressBar?.visibility = View.GONE
         }
     }
@@ -133,6 +134,7 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
             val sortedItems = sortItems(assets)
             this@VerticalCardGridFragment.assets = sortedItems
             setTitle(response)
+            assets.firstOrNull()?.let { loadBackground(getPicture(it)) {} }
             assetsStillToRender.addAll(sortedItems)
             addAssetsPaginated()
         }
@@ -173,8 +175,8 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     }
 
     private fun loadBackground(backgroundUrl: String?, onLoadFailed: () -> Unit) {
-        if(!isAdded){
-           return
+        if (!isAdded) {
+            return
         }
         if (backgroundUrl.isNullOrEmpty()) {
             Timber.i("Could not load background because background url is null")
@@ -204,9 +206,17 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     }
 
     private fun addAssetsPaginated() {
-        val albumsAdded = assetsStillToRender.take(FETCH_COUNT)
-        adapter.addAll(adapter.size(), albumsAdded.map { createCard(it) })
-        assetsStillToRender.removeAll(albumsAdded)
+        val assetsPaginated = assetsStillToRender.take(FETCH_COUNT)
+        // tryout preloading
+//        assetsPaginated.forEach {
+//            Glide.with(requireContext())
+//                .asBitmap()
+//                .load(getPicture(it))
+//                .submit()
+//        }
+        val cards = assetsPaginated.map { createCard(it) }
+        adapter.addAll(adapter.size(), cards)
+        assetsStillToRender.removeAll(assetsPaginated)
     }
 
 
