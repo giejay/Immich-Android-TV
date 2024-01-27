@@ -47,7 +47,7 @@ class CastMediaLoadCommandCallback(
         mediaLoadRequestData: MediaLoadRequestData
     ): Task<MediaLoadRequestData> {
         return Tasks.call {
-            var videoToPlay = Album("", "sdf", "sdf", "", Date(), Date())
+            var videoToPlay = Album("0 Test Album", "sdf", "0771eb1e-213b-40ee-9a5e-bcc25030ed94", "b436090c-c540-4c42-a5dd-a86ec7127829", Date(), Date())
             if (videoToPlay != null) {
                 onLoaded(videoToPlay, mediaLoadRequestData)
             } else {

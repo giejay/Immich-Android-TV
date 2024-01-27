@@ -25,6 +25,10 @@
         android:id="@+id/action_global_signInFragment"
         app:destination="@id/authFragment" />
 
+    <action
+        android:id="@+id/action_slider"
+        app:destination="@id/photoSlider" />
+
 <!--    <fragment-->
 <!--        android:id="@+id/playbackFragment"-->
 <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->

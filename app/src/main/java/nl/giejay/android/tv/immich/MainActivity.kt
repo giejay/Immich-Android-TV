@@ -22,7 +22,12 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.fragment.NavHostFragment
+import com.zeuskartik.mediaslider.MediaSliderConfiguration
+import com.zeuskartik.mediaslider.SliderItem
+import nl.giejay.android.tv.immich.api.ApiUtil
 import nl.giejay.android.tv.immich.castconnect.CastHelper
+import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
@@ -48,8 +53,29 @@ class MainActivity : FragmentActivity() {
         navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
 
         castHelper = CastHelper(
-            { videoToCast ->
-//                loadPlaybackFragment(videoToCast)
+            { album ->
+                LocalStorage.mediaSliderItems = listOf(
+                    SliderItem(
+                        ApiUtil.getFileUrl("48509ffc-b1fc-49cd-b82e-bcb660ca73f0"),
+                        "image",
+                        "description"
+                    )
+                )
+                navController.graph = navGraph
+                navController.navigate(
+                    HomeFragmentDirections.actionSlider(
+                        MediaSliderConfiguration(
+                            false,
+                            false,
+                            false,
+                            album.albumName,
+                            "",
+                            "",
+                            0,
+                            PreferenceManager.sliderInterval()
+                        ), album.id
+                    )
+                )
             },
             application
         )
