@@ -6,7 +6,14 @@ import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 
+
 class ScreenSaverSettingsFragment : SettingsScreenFragment() {
+    override fun getFragment(): SettingsInnerFragment {
+        return ScreenSaverInnerSettingsFragment()
+    }
+
+}
+class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFragment() {
     private val SCREENSAVER_SETTINGS = "android.settings.DREAM_SETTINGS"
     private val SETTINGS = "android.settings.SETTINGS"
 

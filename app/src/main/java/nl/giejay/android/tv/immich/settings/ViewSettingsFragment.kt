@@ -4,7 +4,12 @@ import android.widget.Toast
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 
-class ViewSettingsFragment : SettingsScreenFragment() {
+class ViewSettingsFragment : SettingsScreenFragment(){
+    override fun getFragment(): SettingsInnerFragment {
+        return ViewInnerSettingsFragment()
+    }
+}
+class ViewInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFragment() {
 
     override fun getFragmentLayout(): Int {
         return R.xml.preferences_view

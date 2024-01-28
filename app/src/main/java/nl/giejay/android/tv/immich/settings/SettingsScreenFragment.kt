@@ -11,16 +11,11 @@ import androidx.preference.PreferenceScreen
 
 
 abstract class SettingsScreenFragment : LeanbackSettingsFragmentCompat() {
-    abstract fun getFragmentLayout(): Int
 
-    abstract fun handlePreferenceClick(preference: Preference?): Boolean
+    abstract fun getFragment(): SettingsInnerFragment
 
     override fun onPreferenceStartInitialScreen() {
-        startPreferenceFragment(SettingsInnerFragment(getFragmentLayout()) { pref ->
-            handlePreferenceClick(
-                pref
-            )
-        })
+        startPreferenceFragment(getFragment())
     }
 
     override fun onPreferenceStartFragment(
@@ -47,11 +42,7 @@ abstract class SettingsScreenFragment : LeanbackSettingsFragmentCompat() {
         caller: PreferenceFragmentCompat,
         pref: PreferenceScreen
     ): Boolean {
-        val fragment: Fragment = SettingsInnerFragment(getFragmentLayout()){ preference ->
-            handlePreferenceClick(
-                preference
-            )
-        }
+        val fragment: Fragment = getFragment()
         val args = Bundle(1)
         args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, pref.key)
         fragment.arguments = args
@@ -59,15 +50,18 @@ abstract class SettingsScreenFragment : LeanbackSettingsFragmentCompat() {
         return true
     }
 
-    class SettingsInnerFragment(private val pref: Int, private val handler: (Preference) -> Boolean) : LeanbackPreferenceFragmentCompat() {
+    abstract class SettingsInnerFragment : LeanbackPreferenceFragmentCompat() {
+        abstract fun getFragmentLayout(): Int
+
+        abstract fun handlePreferenceClick(preference: Preference?): Boolean
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             // Load the preferences from an XML resource
-            setPreferencesFromResource(pref, rootKey)
+            setPreferencesFromResource(getFragmentLayout(), rootKey)
         }
 
         override fun onPreferenceTreeClick(preference: Preference?): Boolean {
-            val handled = handler(preference!!)
-            return if(handled) true else super.onPreferenceTreeClick(preference)
+            val handled = handlePreferenceClick(preference!!)
+            return if (handled) true else super.onPreferenceTreeClick(preference)
         }
     }
 }
