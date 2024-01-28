@@ -52,13 +52,14 @@ class ScreenSaverService : DreamService() {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
                 val album = apiClient!!.listAssetsFromAlbum(albums.first()).body()
-                setInitialAssets(album!!.assets.shuffled())
+                val randomAssets = album!!.assets.shuffled()
+                setInitialAssets(randomAssets)
                 if (albums.size > 1) {
                     // load next ones
                     val nextAlbums =
                         albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it).body() }
                     val assets = nextAlbums.flatMap { it?.assets ?: emptyList() }
-                    setAllAssets((album.assets + assets).shuffled())
+                    setAllAssets((randomAssets + assets).shuffled().distinct())
                 }
             } else {
                 showErrorMessageMainScope("Set the Immich albums to show in the screensaver settings")
