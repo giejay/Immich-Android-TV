@@ -19,6 +19,7 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
         if (card.description != "") {
             cardView.contentText = card.description
         }
+        setSelected(cardView, card.selected)
     }
 
     open fun loadImage(card: ICard, cardView: ImageCardView) {
@@ -56,7 +57,11 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
         return ImageCardView(context)
     }
 
-    private fun setImageBackground(imageCardView: ImageCardView, colorId: Int) {
-        imageCardView.mainImageView!!.background = context.getDrawable(R.drawable.border)
+    private fun setSelected(imageCardView: ImageCardView, selected: Boolean) {
+        if(selected){
+            imageCardView.mainImageView!!.background = context.getDrawable(R.drawable.border)
+        } else {
+            imageCardView.mainImageView!!.background = null
+        }
     }
 }

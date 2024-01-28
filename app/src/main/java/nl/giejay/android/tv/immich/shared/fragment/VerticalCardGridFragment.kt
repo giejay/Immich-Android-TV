@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.leanback.app.BackgroundManager
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.FocusHighlight
+import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.leanback.widget.VerticalGridPresenter
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
@@ -41,7 +42,8 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
     private val selectedItems: MutableList<ITEM> = mutableListOf()
-    private var selectionMode: Boolean = false
+    protected val selectionMode: Boolean
+        get() = requireArguments().getBoolean("selectionMode", false)
 
     abstract fun sortItems(items: List<ITEM>): List<ITEM>
     abstract fun loadItems(apiClient: ApiClient): Response<RESPONSE_TYPE>
@@ -51,6 +53,8 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     open fun setTitle(response: RESPONSE_TYPE) {
         // default no title
     }
+    abstract fun onItemSelected(card: Card)
+    abstract fun onItemClicked(card: Card)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,10 +72,18 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
             return
         }
 
-        selectionMode = arguments?.getBoolean("selectionMode", false) ?: false
-
         setupAdapter()
         setupBackgroundManager()
+        onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
+            val card: Card = item as Card
+            if (selectionMode) {
+                card.selected = !card.selected
+                adapter.notifyArrayItemRangeChanged(adapter.indexOf(item), 1)
+                onItemSelected(card)
+            } else {
+                onItemClicked(card)
+            }
+        }
         setOnItemViewSelectedListener { _, item, _, _ ->
 //            item?.let {
 //                loadBackground((it as Card).pictureUrl) {

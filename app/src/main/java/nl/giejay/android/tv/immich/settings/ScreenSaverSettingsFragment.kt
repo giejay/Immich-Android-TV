@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.settings
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 
@@ -14,14 +15,22 @@ class ScreenSaverSettingsFragment : SettingsScreenFragment() {
     }
 
     override fun handlePreferenceClick(preference: Preference?): Boolean {
-        when(preference?.key){
-            "screensaver_set" ->{
+        when (preference?.key) {
+            "screensaver_set" -> {
                 startScreenSaverIntent()
                 return true
             }
+
             "screensaver_include_videos", "screensaver_play_sound" -> {
                 Toast.makeText(requireContext(), "Work in progress", Toast.LENGTH_SHORT).show()
             }
+
+            "screensaver_set_albums" ->
+                findNavController().navigate(
+                    ScreenSaverSettingsFragmentDirections.actionScreensaverSettingsToAlbumFragment(
+                        true
+                    )
+                )
 
         }
         return false

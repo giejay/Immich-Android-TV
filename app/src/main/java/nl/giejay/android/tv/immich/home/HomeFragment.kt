@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.home
 
 import android.os.Bundle
 import android.view.View
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.leanback.app.BrowseSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
@@ -71,7 +72,9 @@ class HomeFragment : BrowseSupportFragment() {
             val row = rowObj as Row
             Timber.i("Going to show page: ${row.headerItem.name}")
             if (row.headerItem.id == HEADER_ID_1) {
-                return AlbumFragment()
+                return AlbumFragment().apply{
+                    arguments = bundleOf("selectionMode" to false)
+                }
             } else if (row.headerItem.id == HEADER_ID_3) {
                 return SettingsFragment()
             }

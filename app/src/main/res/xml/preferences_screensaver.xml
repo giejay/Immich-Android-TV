@@ -19,6 +19,11 @@
             android:entryValues="@array/interval_values"
             android:dialogTitle="Interval"/>
 
+        <Preference
+            android:key="screensaver_set_albums"
+            android:title="Set albums to show in screensaver"
+            android:summary="Set albums to show in screensaver"/>
+
         <CheckBoxPreference
             android:key="screensaver_show_description"
             android:title="Show description"

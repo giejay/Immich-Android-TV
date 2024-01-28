@@ -116,6 +116,10 @@
         android:id="@+id/albumFragment"
         android:name="nl.giejay.android.tv.immich.album.AlbumFragment"
         android:label="AlbumFragment">
+
+        <argument
+            android:name="selectionMode"
+            app:argType="boolean" />
     </fragment>
 
     <fragment
@@ -137,6 +141,9 @@
         android:id="@+id/screenSaverSettings"
         android:name="nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragment"
         android:label="ScreenSaverSettings">
+        <action
+            android:id="@+id/action_screensaver_settings_to_album_fragment"
+            app:destination="@id/albumFragment" />
     </fragment>
 
     <fragment

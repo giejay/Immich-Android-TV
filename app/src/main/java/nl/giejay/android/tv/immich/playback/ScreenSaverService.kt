@@ -24,11 +24,8 @@ class ScreenSaverService : DreamService() {
     override fun onDreamingStarted() {
         Timber.i("Starting screensaver")
         if (!PreferenceManager.isLoggedId()) {
-            Toast.makeText(
-                this,
-                "Could not start screensaver for Immich because of invalid Hostname/API key",
-                Toast.LENGTH_SHORT
-            ).show()
+            showErrorMessage("Could not start screensaver for Immich because of invalid Hostname/API key")
+            finish()
             return
         }
         val apiKey = PreferenceManager.apiKey()
@@ -41,7 +38,7 @@ class ScreenSaverService : DreamService() {
         setContentView(mediaSliderView)
         isInteractive = true
         ioScope.launch {
-            loadImages()
+            loadImages(PreferenceManager.getScreenSaverAlbums())
         }
     }
 
@@ -50,48 +47,62 @@ class ScreenSaverService : DreamService() {
         super.onDreamingStopped()
     }
 
-    private suspend fun loadImages() {
+    private suspend fun loadImages(albums: Set<String>) {
         try {
-            // TODO fetch selected albums from settings
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
-            val albums = apiClient!!.listAlbums().body()!!
-                .sortedByDescending { it.endDate }
             if (albums.isNotEmpty()) {
-                val album = apiClient!!.listAssetsFromAlbum(albums.random().id).body()
-                setImages(album!!.assets.shuffled())
+                val album = apiClient!!.listAssetsFromAlbum(albums.first()).body()
+                setInitialAssets(album!!.assets.shuffled())
+                if (albums.size > 1) {
+                    // load next ones
+                    val nextAlbums =
+                        albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it).body() }
+                    val assets = nextAlbums.flatMap { it?.assets ?: emptyList() }
+                    setAllAssets((album.assets + assets).shuffled())
+                }
             } else {
-                showErrorMessage("No albums found in Immich")
+                showErrorMessageMainScope("Set the Immich albums to show in the screensaver settings")
+                finish()
             }
         } catch (e: Exception) {
             Timber.e("Could not fetch assets from Immich for Screensaver", e)
-            showErrorMessage("Could not load assets from Immich")
+            showErrorMessageMainScope("Could not load assets from Immich")
+            finish()
         }
     }
 
-    private suspend fun showErrorMessage(errorMessage: String) {
+    private suspend fun showErrorMessageMainScope(errorMessage: String) {
         withContext(Dispatchers.Main) {
-            Toast.makeText(
-                this@ScreenSaverService,
-                errorMessage,
-                Toast.LENGTH_SHORT
-            ).show()
+            showErrorMessage(errorMessage)
         }
     }
 
-    private suspend fun setImages(assets: List<Asset>) =
-        withContext(Dispatchers.Main) {
-            mediaSliderView.loadMediaSliderView(
-                MediaSliderConfiguration(
-                    PreferenceManager.screensaverShowDescription(),
-                    PreferenceManager.screensaverShowMediaCount(),
-                    false,
-                    "",
-                    "#000000",
-                    null,
-                    0,
-                    PreferenceManager.screensaverInterval()
-                ), assets.toSliderItems()
-            )
-            mediaSliderView.toggleSlideshow(false)
-        }
+    private fun showErrorMessage(errorMessage: String) {
+        Toast.makeText(
+            this@ScreenSaverService,
+            errorMessage,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private suspend fun setInitialAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
+        mediaSliderView.loadMediaSliderView(
+            MediaSliderConfiguration(
+                PreferenceManager.screensaverShowDescription(),
+                PreferenceManager.screensaverShowMediaCount(),
+                false,
+                "",
+                "#000000",
+                null,
+                0,
+                PreferenceManager.screensaverInterval()
+            ), assets.toSliderItems()
+        )
+        mediaSliderView.toggleSlideshow(false)
+    }
+
+    private suspend fun setAllAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
+        mediaSliderView.setItems(assets.toSliderItems())
+    }
+
 }

@@ -17,38 +17,6 @@ import retrofit2.Response
 
 
 class AlbumDetailsFragment : VerticalCardGridFragment<Asset, AlbumDetails>() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        onItemViewClickedListener =
-            (OnItemViewClickedListener { _, item, _, _ ->
-                val card: Card = item as Card
-                // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
-                LocalStorage.mediaSliderItems = assets.toSliderItems()
-                findNavController().navigate(
-                    AlbumDetailsFragmentDirections.actionDetailsToPhotoSlider(
-                        MediaSliderConfiguration(
-                            PreferenceManager.sliderShowDescription(),
-                            PreferenceManager.sliderShowMediaCount(),
-                            false,
-                            response!!.albumName,
-                            "",
-                            "",
-                            adapter.indexOf(card),
-                            PreferenceManager.sliderInterval()
-                        ), response!!.id
-                    )
-                )
-            })
-
-//        setOnSearchClickedListener { _ ->
-//            run {
-//                Toast.makeText(requireContext(), "Search a picture in album", Toast.LENGTH_SHORT)
-//                    .show()
-//            }
-//        }
-    }
-
     override fun sortItems(items: List<Asset>): List<Asset> {
         return items.sortedByDescending { it.fileModifiedAt }
     }
@@ -56,6 +24,29 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset, AlbumDetails>() {
     override fun loadItems(apiClient: ApiClient): Response<AlbumDetails> {
         val albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
         return apiClient.listAssetsFromAlbum(albumId)
+    }
+
+    override fun onItemSelected(card: Card) {
+        // no use case yet
+    }
+
+    override fun onItemClicked(card: Card) {
+        // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
+        LocalStorage.mediaSliderItems = assets.toSliderItems()
+        findNavController().navigate(
+            AlbumDetailsFragmentDirections.actionDetailsToPhotoSlider(
+                MediaSliderConfiguration(
+                    PreferenceManager.sliderShowDescription(),
+                    PreferenceManager.sliderShowMediaCount(),
+                    false,
+                    response!!.albumName,
+                    "",
+                    "",
+                    adapter.indexOf(card),
+                    PreferenceManager.sliderInterval()
+                ), response!!.id
+            )
+        )
     }
 
     override fun getPicture(it: Asset): String? {

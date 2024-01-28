@@ -9,14 +9,22 @@ object PreferenceManager {
     private lateinit var sharedPreference: SharedPreferences
     private lateinit var liveSharedPreferences: LiveSharedPreferences
     private val liveContext: MutableMap<String, Any> = mutableMapOf()
+
+    // host settings
     private val KEY_HOST_NAME = "hostName"
     private val KEY_API_KEY = "apiKey"
+
+    // screensaver settings
     private val KEY_SCREENSAVER_INTERVAL = "screensaver_interval"
     private val KEY_SCREENSAVER_SHOW_MEDIA_COUNT = "screensaver_show_media_count"
     private val KEY_SCREENSAVER_SHOW_DESCRIPTION = "screensaver_show_description"
+    private val KEY_SCREENSAVER_ALBUMS = "screensaver_albums"
+
+    // slider/view settings
     private val KEY_SLIDER_INTERVAL = "slider_interval"
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
+
     private val propsToWatch = mapOf(
         KEY_HOST_NAME to "",
         KEY_API_KEY to "",
@@ -25,7 +33,8 @@ object PreferenceManager {
         KEY_SLIDER_SHOW_DESCRIPTION to true,
         KEY_SLIDER_SHOW_MEDIA_COUNT to true,
         KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
-        KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true
+        KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true,
+        KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>()
     )
 
     fun init(context: Context) {
@@ -40,9 +49,12 @@ object PreferenceManager {
 
     fun saveString(key: String, value: String) {
         liveContext[key] = value
-        sharedPreference.edit()
-            .putString(key, value)
-            .apply()
+        sharedPreference.edit().putString(key, value).apply()
+    }
+
+    fun saveStringSet(key: String, value: Set<String>) {
+        liveContext[key] = value
+        sharedPreference.edit().putStringSet(key, value).apply()
     }
 
     fun getString(key: String, defaultValue: String): String {
@@ -96,5 +108,14 @@ object PreferenceManager {
     fun removeApiSettings() {
         saveString(KEY_HOST_NAME, "")
         saveString(KEY_API_KEY, "")
+    }
+
+    fun getScreenSaverAlbums(): Set<String> {
+        return liveContext[KEY_SCREENSAVER_ALBUMS] as Set<String>
+    }
+
+    fun saveScreenSaverAlbums(strings: Set<String>) {
+        saveStringSet(KEY_SCREENSAVER_ALBUMS, strings)
+        liveContext[KEY_SCREENSAVER_ALBUMS] = strings
     }
 }

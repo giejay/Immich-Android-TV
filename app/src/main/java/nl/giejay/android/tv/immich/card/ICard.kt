@@ -6,4 +6,5 @@ interface ICard {
     val id: String
     val thumbnailUrl: String?
     val pictureUrl: String?
+    val selected: Boolean
 }
