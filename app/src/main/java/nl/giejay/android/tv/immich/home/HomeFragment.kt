@@ -10,6 +10,8 @@ import androidx.leanback.widget.HeaderItem
 import androidx.leanback.widget.ListRowPresenter
 import androidx.leanback.widget.PageRow
 import androidx.leanback.widget.Row
+import androidx.navigation.fragment.findNavController
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
 import timber.log.Timber
@@ -24,6 +26,8 @@ class HomeFragment : BrowseSupportFragment() {
 
         setupUi()
         loadData()
+
+        findNavController().popBackStack(R.id.homeFragment, false)
 
         mainFragmentRegistry.registerFragment(
             PageRow::class.java,

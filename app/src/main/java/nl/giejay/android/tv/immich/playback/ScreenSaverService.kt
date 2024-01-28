@@ -19,7 +19,7 @@ import timber.log.Timber
 class ScreenSaverService : DreamService() {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private var apiClient: ApiClient? = null
-    private lateinit var mediaSliderView: MediaSliderView
+    private var mediaSliderView: MediaSliderView? = null
 
     override fun onDreamingStarted() {
         Timber.i("Starting screensaver")
@@ -31,7 +31,7 @@ class ScreenSaverService : DreamService() {
         val apiKey = PreferenceManager.apiKey()
         apiClient = ApiClient.getClient(PreferenceManager.hostName(), apiKey)
         mediaSliderView = MediaSliderView(this)
-        mediaSliderView.setDefaultExoFactory(
+        mediaSliderView!!.setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
                 .setDefaultRequestProperties(mapOf("x-api-key" to apiKey))
         )
@@ -43,7 +43,7 @@ class ScreenSaverService : DreamService() {
     }
 
     override fun onDreamingStopped() {
-        mediaSliderView.onDestroy()
+        mediaSliderView?.onDestroy()
         super.onDreamingStopped()
     }
 
@@ -86,7 +86,7 @@ class ScreenSaverService : DreamService() {
     }
 
     private suspend fun setInitialAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
-        mediaSliderView.loadMediaSliderView(
+        mediaSliderView!!.loadMediaSliderView(
             MediaSliderConfiguration(
                 PreferenceManager.screensaverShowDescription(),
                 PreferenceManager.screensaverShowMediaCount(),
@@ -98,11 +98,11 @@ class ScreenSaverService : DreamService() {
                 PreferenceManager.screensaverInterval()
             ), assets.toSliderItems()
         )
-        mediaSliderView.toggleSlideshow(false)
+        mediaSliderView!!.toggleSlideshow(false)
     }
 
     private suspend fun setAllAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
-        mediaSliderView.setItems(assets.toSliderItems())
+        mediaSliderView!!.setItems(assets.toSliderItems())
     }
 
 }

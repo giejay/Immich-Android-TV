@@ -74,8 +74,6 @@
         android:label="Authentication">
         <action
             android:id="@+id/action_auth_to_homeFragment"
-            app:popUpTo="@id/authFragment"
-            app:popUpToInclusive="true"
             app:destination="@id/homeFragment" />
         <action
             android:id="@+id/action_auth_to_auth_2"
@@ -88,7 +86,7 @@
         android:label="Authentication">
         <action
             android:id="@+id/action_auth_2_to_homeFragment"
-            app:popUpTo="@id/homeFragment" />
+            app:destination="@id/homeFragment"/>
     </fragment>
 
 <!--    <fragment-->
