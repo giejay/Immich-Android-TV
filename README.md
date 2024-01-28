@@ -21,10 +21,10 @@ This Android TV app will allow you to view those uploaded photos and videos. Cur
 - Playing the slideshow with a configured interval
 - Setting the app as the screensaver
 
-# Joining the Open Test
+## Joining the Open Test
 You can join the open test here: https://play.google.com/apps/testing/nl.giejay.android.tv.immich
 
-# Todo
+## Todo
 
 - Add a tab with all photos
 - Improved error handling
