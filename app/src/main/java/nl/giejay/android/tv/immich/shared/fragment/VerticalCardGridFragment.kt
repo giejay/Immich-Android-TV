@@ -11,6 +11,7 @@ import androidx.leanback.widget.FocusHighlight
 import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.leanback.widget.VerticalGridPresenter
 import androidx.navigation.fragment.findNavController
+import arrow.core.Either
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
@@ -25,13 +26,12 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.card.CardPresenterSelector
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import retrofit2.Response
 import timber.log.Timber
 
 
-abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
-    protected var response: RESPONSE_TYPE? = null
+abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     protected var assets: List<ITEM> = emptyList()
+    protected val startPage = 1
 
     private lateinit var mMetrics: DisplayMetrics
     private var mBackgroundManager: BackgroundManager? = null
@@ -41,18 +41,24 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
-    private val selectedItems: MutableList<ITEM> = mutableListOf()
+    private var currentPage: Int = startPage
+    private var allPagesLoaded: Boolean = false
     protected val selectionMode: Boolean
-        get() = requireArguments().getBoolean("selectionMode", false)
+        get() = arguments?.getBoolean("selectionMode", false) ?: false
 
     abstract fun sortItems(items: List<ITEM>): List<ITEM>
-    abstract fun loadItems(apiClient: ApiClient): Response<RESPONSE_TYPE>
-    abstract fun mapResponseToItems(response: RESPONSE_TYPE): List<ITEM>
+    abstract suspend fun loadItems(
+        apiClient: ApiClient,
+        page: Int,
+        pageCount: Int
+    ): Either<String, List<ITEM>>
+
     abstract fun createCard(a: ITEM): Card
     abstract fun getPicture(it: ITEM): String?
-    open fun setTitle(response: RESPONSE_TYPE) {
+    open fun setTitle(response: List<ITEM>) {
         // default no title
     }
+
     abstract fun onItemSelected(card: Card)
     abstract fun onItemClicked(card: Card)
 
@@ -95,22 +101,44 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
 //            }
             val selectedIndex = adapter.indexOf(item);
             if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
-                mainScope.launch {
-                    addAssetsPaginated()
+                if (assetsStillToRender.isEmpty() && !allPagesLoaded) {
+                    // try a next page if its available
+                    fetchNextItems()
+                } else {
+                    mainScope.launch {
+                        addAssetsPaginated()
+                    }
                 }
             }
         }
 
+        // fetch initial items
         ioScope.launch {
-            loadData()?.apply {
-                setupViews(this, mapResponseToItems(this))
-            }
+            loadData().fold(
+                { itLeft -> showErrorMessage(itLeft) },
+                { itRight -> setupViews(itRight) }
+            )
+        }
+    }
+
+    private fun fetchNextItems() {
+        ioScope.launch {
+            loadData().fold(
+                { errorMessage -> showErrorMessage(errorMessage) },
+                { items ->
+                    Timber.i("Loading next items, ${items.size}")
+                    if (items.isNotEmpty()) {
+                        setData(items)
+                    }
+                    allPagesLoaded = items.size < FETCH_PAGE_COUNT
+                }
+            )
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (response != null) {
+        if (assets.isNotEmpty()) {
             progressBar?.visibility = View.GONE
         }
     }
@@ -139,51 +167,24 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
         }
     }
 
-    private suspend fun setupViews(response: RESPONSE_TYPE, assets: List<ITEM>) =
+    private suspend fun setupViews(assets: List<ITEM>) =
         withContext(Dispatchers.Main) {
             progressBar?.visibility = View.GONE
-            this@VerticalCardGridFragment.response = response
-            val sortedItems = sortItems(assets)
-            this@VerticalCardGridFragment.assets = sortedItems
-            setTitle(response)
+            setTitle(assets)
+            currentPage += 1
             assets.firstOrNull()?.let { loadBackground(getPicture(it)) {} }
-            assetsStillToRender.addAll(sortedItems)
-            addAssetsPaginated()
+            setData(assets)
         }
 
-    private suspend fun loadData(): RESPONSE_TYPE? {
-        return try {
-            val res = loadItems(apiClient)
-            when (val code = res.code()) {
-                200 -> {
-                    return res.body()
-                }
+    private fun setData(assets: List<ITEM>) {
+        val sortedItems = sortItems(assets)
+        this.assets += sortedItems
+        assetsStillToRender.addAll(sortedItems)
+        addAssetsPaginated()
+    }
 
-                else -> {
-                    withContext(Dispatchers.Main) {
-                        Timber.e("Could not fetch items! Status code: $code")
-                        // todo use either
-                        Toast.makeText(
-                            ImmichApplication.appContext,
-                            "Could not fetch items! Status code: $code",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    return null
-                }
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Timber.e(e, "Could not fetch items")
-                // todo use either
-                Toast.makeText(
-                    ImmichApplication.appContext,
-                    "Could not fetch items! ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            null
-        }
+    private suspend fun loadData(): Either<String, List<ITEM>> {
+        return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT)
     }
 
     private fun loadBackground(backgroundUrl: String?, onLoadFailed: () -> Unit) {
@@ -219,22 +220,20 @@ abstract class VerticalCardGridFragment<ITEM, RESPONSE_TYPE> : GridFragment() {
 
     private fun addAssetsPaginated() {
         val assetsPaginated = assetsStillToRender.take(FETCH_COUNT)
-        // tryout preloading
-//        assetsPaginated.forEach {
-//            Glide.with(requireContext())
-//                .asBitmap()
-//                .load(getPicture(it))
-//                .submit()
-//        }
         val cards = assetsPaginated.map { createCard(it) }
         adapter.addAll(adapter.size(), cards)
         assetsStillToRender.removeAll(assetsPaginated)
     }
 
+    private suspend fun showErrorMessage(message: String) = withContext(Dispatchers.Main) {
+        Toast.makeText(activity, message, Toast.LENGTH_SHORT)
+            .show()
+    }
 
     companion object {
         private const val COLUMNS = 4
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 3
         private const val FETCH_COUNT = COLUMNS * 3
+        private const val FETCH_PAGE_COUNT = 100
     }
 }

@@ -53,15 +53,18 @@
     </fragment>
 
     <fragment
+        android:id="@+id/allAssetsFragment"
+        android:name="nl.giejay.android.tv.immich.assets.AllAssetFragment"
+        android:label="AllAssetsFragment">
+    </fragment>
+
+    <fragment
         android:id="@+id/photoSlider"
         android:name="nl.giejay.android.tv.immich.playback.ImmichMediaSlider"
         android:label="PhotoSlider">
         <argument
             android:name="config"
             app:argType="com.zeuskartik.mediaslider.MediaSliderConfiguration" />
-        <argument
-            android:name="albumId"
-            app:argType="string" />
         <action
             android:id="@+id/photo_slider_to_album_details_fragment"
             app:destination="@id/albumDetailsFragment" />
@@ -133,6 +136,9 @@
         <action
             android:id="@+id/action_homeFragment_to_view_settings"
             app:destination="@id/viewSettings" />
+        <action
+            android:id="@+id/action_homeFragment_to_photo_slider"
+            app:destination="@id/photoSlider" />
     </fragment>
 
     <fragment

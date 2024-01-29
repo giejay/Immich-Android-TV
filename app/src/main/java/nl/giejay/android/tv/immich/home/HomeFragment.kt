@@ -13,6 +13,7 @@ import androidx.leanback.widget.Row
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragment
+import nl.giejay.android.tv.immich.assets.AllAssetFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
 import timber.log.Timber
 
@@ -66,6 +67,9 @@ class HomeFragment : BrowseSupportFragment() {
         val headerItem1 = HeaderItem(HEADER_ID_1, HEADER_NAME_1)
         val pageRow1 = PageRow(headerItem1)
         mRowsAdapter.add(pageRow1)
+        val headerItem2 = HeaderItem(HEADER_ID_2, HEADER_NAME_2)
+        val pageRow2 = PageRow(headerItem2)
+        mRowsAdapter.add(pageRow2)
         val headerItem3 = HeaderItem(HEADER_ID_3, HEADER_NAME_3)
         val pageRow3 = PageRow(headerItem3)
         mRowsAdapter.add(pageRow3)
@@ -75,14 +79,21 @@ class HomeFragment : BrowseSupportFragment() {
         override fun createFragment(rowObj: Any): Fragment {
             val row = rowObj as Row
             Timber.i("Going to show page: ${row.headerItem.name}")
-            if (row.headerItem.id == HEADER_ID_1) {
-                return AlbumFragment().apply{
-                    arguments = bundleOf("selectionMode" to false)
-                }
-            } else if (row.headerItem.id == HEADER_ID_3) {
-                return SettingsFragment()
+            return when (row.headerItem.id) {
+                HEADER_ID_1 ->
+                    AlbumFragment().apply {
+                        arguments = bundleOf("selectionMode" to false)
+                    }
+
+                HEADER_ID_2 ->
+                    AllAssetFragment()
+
+                HEADER_ID_3 ->
+                    SettingsFragment()
+
+                else ->
+                    throw IllegalStateException("Unknown fragment: $row")
             }
-            throw IllegalStateException("Unknown fragment: $row")
         }
     }
 

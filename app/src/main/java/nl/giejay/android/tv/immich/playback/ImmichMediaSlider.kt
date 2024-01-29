@@ -20,7 +20,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
         if(LocalStorage.mediaSliderItems.isNullOrEmpty()){
             Timber.i("No items to play for photoslider")
             Toast.makeText(requireContext(),"No items to play", Toast.LENGTH_SHORT).show()
-            findNavController().navigate(ImmichMediaSliderDirections.photoSliderToAlbumDetailsFragment(bundle.albumId))
+            findNavController().popBackStack()
             return
         }
 

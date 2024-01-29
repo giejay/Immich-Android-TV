@@ -1,13 +1,17 @@
 package nl.giejay.android.tv.immich.api
 
+import arrow.core.Either
+import arrow.core.flatMap
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
+import nl.giejay.android.tv.immich.api.model.Asset
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import retrofit2.HttpException
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Path
+import timber.log.Timber
 
 class ApiClient(private val hostName: String, private val apiKey: String) {
     companion object ApiClient {
@@ -37,20 +41,42 @@ class ApiClient(private val hostName: String, private val apiKey: String) {
 
     private val service: ApiService = retrofit.create(ApiService::class.java)
 
-    fun listAlbums(): Response<List<Album>> {
-        val albums = service.listAlbums()
-            .execute()
-        if (albums.isSuccessful) {
-            val sharedAlbums = service.listAlbums(true).execute()
-            if (sharedAlbums.isSuccessful) {
-                return Response.success(albums.body()!! + sharedAlbums.body()!!)
+    suspend fun listAlbums(): Either<String, List<Album>> {
+        return executeAPICall { service.listAlbums() }.flatMap { albums ->
+            return executeAPICall { service.listAlbums(true) }.map { sharedAlbums ->
+                albums + sharedAlbums
             }
         }
-        return albums
     }
 
-    fun listAssetsFromAlbum(albumId: String): Response<AlbumDetails>{
-        return service.listAssetsFromAlbum(albumId).execute()
+    suspend fun listAssetsFromAlbum(albumId: String): Either<String, AlbumDetails> {
+        return executeAPICall { service.listAssetsFromAlbum(albumId) }
+    }
+
+    suspend fun listAssets(page: Int, pageCount: Int): Either<String, List<Asset>> {
+        return executeAPICall { service.listAssets(page, pageCount) }
+    }
+
+    private suspend fun <T> executeAPICall(handler: suspend () -> Response<T>): Either<String, T> {
+        try {
+            val res = handler()
+            return when (val code = res.code()) {
+                200 -> {
+                    return res.body()?.let { Either.Right(it) }
+                        ?: Either.Left("Did not receive a input from the server")
+                }
+
+                else -> {
+                    Either.Left("Could not fetch items! Status code: $code")
+                }
+            }
+        } catch (e: HttpException) {
+            Timber.e(e, "Could not fetch items due to http error")
+            return Either.Left("Could not fetch items! Status code: ${e.code()}")
+        } catch (e: Exception) {
+            Timber.e(e, "Could not fetch items, unknown error")
+            return Either.Left("Could not fetch items: ${e.message}")
+        }
     }
 }
 

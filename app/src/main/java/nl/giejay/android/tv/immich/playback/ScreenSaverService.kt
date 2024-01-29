@@ -51,22 +51,23 @@ class ScreenSaverService : DreamService() {
         try {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
-                val album = apiClient!!.listAssetsFromAlbum(albums.first()).body()
-                val randomAssets = album!!.assets.shuffled()
-                setInitialAssets(randomAssets)
-                if (albums.size > 1) {
-                    // load next ones
-                    val nextAlbums =
-                        albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it).body() }
-                    val assets = nextAlbums.flatMap { it?.assets ?: emptyList() }
-                    setAllAssets((randomAssets + assets).shuffled().distinct())
+                apiClient!!.listAssetsFromAlbum(albums.first()).map { album ->
+                    val randomAssets = album.assets.shuffled()
+                    setInitialAssets(randomAssets)
+                    if (albums.size > 1) {
+                        // load next ones
+                        val nextAlbums = albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }
+                        val assets =
+                            nextAlbums.flatMap { it.getOrNone().toList() }.flatMap { it.assets }
+                        setAllAssets((randomAssets + assets).shuffled().distinct())
+                    }
                 }
             } else {
                 showErrorMessageMainScope("Set the Immich albums to show in the screensaver settings")
                 finish()
             }
         } catch (e: Exception) {
-            Timber.e("Could not fetch assets from Immich for Screensaver", e)
+            Timber.e(e,"Could not fetch assets from Immich for Screensaver")
             showErrorMessageMainScope("Could not load assets from Immich")
             finish()
         }

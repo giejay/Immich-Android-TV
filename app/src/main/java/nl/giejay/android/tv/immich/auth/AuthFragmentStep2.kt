@@ -29,16 +29,34 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
     private val ACTION_NAME = 0L
     private val ACTION_API_KEY = 1L
     private val ACTION_CONTINUE = 2L
-    private val entry: AuthSettings = AuthSettings(PreferenceManager.hostName(), PreferenceManager.apiKey())
+    private val entry: AuthSettings =
+        AuthSettings(PreferenceManager.hostName(), PreferenceManager.apiKey())
 
     override fun onCreateGuidance(savedInstanceState: Bundle?): GuidanceStylist.Guidance {
         val icon: Drawable = requireActivity().getDrawable(R.drawable.icon)!!
-        return GuidanceStylist.Guidance("Immich TV", "Login to your Immich server or try a demo.", "", icon)
+        return GuidanceStylist.Guidance(
+            "Immich TV",
+            "Login to your Immich server or try a demo.",
+            "",
+            icon
+        )
     }
 
     override fun onCreateActions(actions: MutableList<GuidedAction>, savedInstanceState: Bundle?) {
-        addEditableAction(actions, ACTION_NAME, "Hostname", entry.hostName, InputType.TYPE_CLASS_TEXT)
-        addEditableAction(actions, ACTION_API_KEY, "API Key", entry.apiKey, InputType.TYPE_CLASS_TEXT)
+        addEditableAction(
+            actions,
+            ACTION_NAME,
+            "Hostname",
+            entry.hostName,
+            InputType.TYPE_CLASS_TEXT
+        )
+        addEditableAction(
+            actions,
+            ACTION_API_KEY,
+            "API Key",
+            entry.apiKey,
+            InputType.TYPE_CLASS_TEXT
+        )
     }
 
 //    override fun onCreateActionsStylist(): GuidedActionsStylist {
@@ -65,7 +83,10 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
 //        }
 //    }
 
-    override fun onCreateButtonActions(actions: MutableList<GuidedAction>, savedInstanceState: Bundle?) {
+    override fun onCreateButtonActions(
+        actions: MutableList<GuidedAction>,
+        savedInstanceState: Bundle?
+    ) {
         super.onCreateButtonActions(actions, savedInstanceState)
         addAction(actions, ACTION_CONTINUE, "Submit", "")
     }
@@ -74,12 +95,18 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
         super.onGuidedActionClicked(action)
         Timber.i("Clicked on ${action.title} in step 2, entry valid: ${entry.isValid()}")
         if (action.id == ACTION_CONTINUE) {
-            if(entry.isValid()){
+            if (entry.isValid()) {
                 PreferenceManager.saveApiKey(entry.apiKey!!)
                 PreferenceManager.saveHostName(entry.hostName!!)
                 findNavController().navigate(AuthFragmentStep2Directions.actionAuth2ToHomeFragment())
+            } else if (entry.hostName.isNullOrEmpty()) {
+                Toast.makeText(activity, "Please enter a hostname", Toast.LENGTH_SHORT)
+                    .show()
+            } else if (entry.apiKey.isNullOrEmpty()) {
+                Toast.makeText(activity, "Please enter an API key", Toast.LENGTH_SHORT)
+                    .show()
             } else {
-                Toast.makeText(activity, "Please enter a valid hostname and API key.", Toast.LENGTH_SHORT)
+                Toast.makeText(activity, "Please enter a valid hostname", Toast.LENGTH_SHORT)
                     .show()
             }
         }

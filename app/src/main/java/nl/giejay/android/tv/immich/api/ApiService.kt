@@ -2,8 +2,7 @@ package nl.giejay.android.tv.immich.api
 
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
-import okhttp3.ResponseBody
-import retrofit2.Call
+import nl.giejay.android.tv.immich.api.model.Asset
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -11,9 +10,12 @@ import retrofit2.http.Query
 
 
 interface ApiService {
+    @GET("assets")
+    suspend fun listAssets(@Query("page") page: Int = 0, @Query("size") size: Int = 100): Response<List<Asset>>
+
     @GET("album")
-    fun listAlbums(@Query("shared") shared: Boolean = false): Call<List<Album>>
+    suspend fun listAlbums(@Query("shared") shared: Boolean = false): Response<List<Album>>
 
     @GET("album/{albumId}")
-    fun listAssetsFromAlbum(@Path("albumId") albumId: String): Call<AlbumDetails>
+    suspend fun listAssetsFromAlbum(@Path("albumId") albumId: String): Response<AlbumDetails>
 }

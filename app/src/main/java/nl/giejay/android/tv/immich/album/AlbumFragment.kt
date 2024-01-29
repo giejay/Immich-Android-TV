@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.album
 
 import androidx.navigation.fragment.findNavController
+import arrow.core.Either
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Album
@@ -8,9 +9,8 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import retrofit2.Response
 
-class AlbumFragment : VerticalCardGridFragment<Album, List<Album>>() {
+class AlbumFragment : VerticalCardGridFragment<Album>() {
 
     override fun sortItems(items: List<Album>): List<Album> {
         return if (selectionMode) {
@@ -26,8 +26,12 @@ class AlbumFragment : VerticalCardGridFragment<Album, List<Album>>() {
         }
     }
 
-    override fun loadItems(apiClient: ApiClient): Response<List<Album>> {
-        return apiClient.listAlbums()
+    override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Album>> {
+        if(page == startPage){
+            // no pagination possible yet!
+            return apiClient.listAlbums()
+        }
+        return Either.Right(emptyList())
     }
 
     override fun onItemSelected(card: Card) {
@@ -49,10 +53,6 @@ class AlbumFragment : VerticalCardGridFragment<Album, List<Album>>() {
 
     override fun getPicture(it: Album): String? {
         return ApiUtil.getThumbnailUrl(it.albumThumbnailAssetId)
-    }
-
-    override fun mapResponseToItems(response: List<Album>): List<Album> {
-        return response
     }
 
     override fun createCard(a: Album): Card {
