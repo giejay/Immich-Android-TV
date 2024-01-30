@@ -11,7 +11,7 @@ import retrofit2.http.Query
 
 interface ApiService {
     @GET("assets")
-    suspend fun listAssets(@Query("page") page: Int = 0, @Query("size") size: Int = 100): Response<List<Asset>>
+    suspend fun listAssets(@Query("page") page: Int = 0, @Query("size") size: Int = 100, @Query("order") order: String = "desc"): Response<List<Asset>>
 
     @GET("album")
     suspend fun listAlbums(@Query("shared") shared: Boolean = false): Response<List<Album>>

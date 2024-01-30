@@ -45,8 +45,8 @@
     <dimen name="action_button_focused_elevation">4dp</dimen>
     <dimen name="action_button_padding_horizontal">20dp</dimen>
 
-    <dimen name="default_image_card_width">224dp</dimen>
-    <dimen name="default_image_card_height">126dp</dimen>
+    <dimen name="default_image_card_width">206dp</dimen>
+    <dimen name="default_image_card_height">116dp</dimen>
 
     <dimen name="movie_image_card_width">120dp</dimen>
     <dimen name="movie_image_card_height">172dp</dimen>

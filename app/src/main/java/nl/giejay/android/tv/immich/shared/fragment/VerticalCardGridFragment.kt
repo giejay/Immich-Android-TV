@@ -43,6 +43,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
     private var currentPage: Int = startPage
     private var allPagesLoaded: Boolean = false
+    private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
 
@@ -54,7 +55,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     ): Either<String, List<ITEM>>
 
     abstract fun createCard(a: ITEM): Card
-    abstract fun getPicture(it: ITEM): String?
+    abstract fun getBackgroundPicture(it: ITEM): String?
     open fun setTitle(response: List<ITEM>) {
         // default no title
     }
@@ -99,19 +100,20 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 //                    }
 //                }
 //            }
-            val selectedIndex = adapter.indexOf(item);
-            if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
-                if (assetsStillToRender.isEmpty() && !allPagesLoaded) {
-                    // try a next page if its available
-                    fetchNextItems()
-                } else {
-                    mainScope.launch {
-                        addAssetsPaginated()
+            with(this@VerticalCardGridFragment){
+                val selectedIndex = adapter.indexOf(item);
+                if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
+                    if (currentLoadingJob?.isActive != true && assetsStillToRender.isEmpty() && !allPagesLoaded) {
+                        // try a next page if its available
+                        currentLoadingJob = fetchNextItems()
+                    } else {
+                        mainScope.launch {
+                            addAssetsPaginated()
+                        }
                     }
                 }
             }
         }
-
         // fetch initial items
         ioScope.launch {
             loadData().fold(
@@ -121,10 +123,12 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         }
     }
 
-    private fun fetchNextItems() {
-        ioScope.launch {
+    private fun fetchNextItems(): Job {
+        return ioScope.launch {
             loadData().fold(
-                { errorMessage -> showErrorMessage(errorMessage) },
+                { errorMessage ->
+                    showErrorMessage(errorMessage)
+                },
                 { items ->
                     Timber.i("Loading next items, ${items.size}")
                     if (items.isNotEmpty()) {
@@ -171,16 +175,16 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         withContext(Dispatchers.Main) {
             progressBar?.visibility = View.GONE
             setTitle(assets)
-            currentPage += 1
-            assets.firstOrNull()?.let { loadBackground(getPicture(it)) {} }
+            assets.firstOrNull()?.let { loadBackground(getBackgroundPicture(it)) {} }
             setData(assets)
         }
 
-    private fun setData(assets: List<ITEM>) {
+    private suspend fun setData(assets: List<ITEM>) = withContext(Dispatchers.Main) {
         val sortedItems = sortItems(assets)
-        this.assets += sortedItems
+        this@VerticalCardGridFragment.assets += sortedItems
         assetsStillToRender.addAll(sortedItems)
         addAssetsPaginated()
+        currentPage += 1
     }
 
     private suspend fun loadData(): Either<String, List<ITEM>> {
@@ -226,13 +230,13 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     private suspend fun showErrorMessage(message: String) = withContext(Dispatchers.Main) {
-        Toast.makeText(activity, message, Toast.LENGTH_SHORT)
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT)
             .show()
     }
 
     companion object {
         private const val COLUMNS = 4
-        private const val FETCH_NEXT_THRESHOLD = COLUMNS * 3
+        private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
         private const val FETCH_COUNT = COLUMNS * 3
         private const val FETCH_PAGE_COUNT = 100
     }

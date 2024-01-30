@@ -16,7 +16,7 @@ import nl.giejay.android.tv.immich.shared.util.toSliderItems
 
 class AllAssetFragment : VerticalCardGridFragment<Asset>() {
     override fun sortItems(items: List<Asset>): List<Asset> {
-        return items.sortedByDescending { it.fileModifiedAt }
+        return items
     }
 
     override suspend fun loadItems(
@@ -49,8 +49,8 @@ class AllAssetFragment : VerticalCardGridFragment<Asset>() {
         )
     }
 
-    override fun getPicture(it: Asset): String? {
-        return ApiUtil.getThumbnailUrl(it.id)
+    override fun getBackgroundPicture(it: Asset): String? {
+        return ApiUtil.getFileUrl(it.id)
     }
 
     override fun createCard(a: Asset): Card {

@@ -56,8 +56,8 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
         )
     }
 
-    override fun getPicture(it: Asset): String? {
-        return ApiUtil.getThumbnailUrl(it.id)
+    override fun getBackgroundPicture(it: Asset): String? {
+        return ApiUtil.getFileUrl(it.id)
     }
 
     override fun setTitle(response: List<Asset>) {
