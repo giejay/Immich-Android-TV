@@ -26,7 +26,7 @@ class ApiClient(private val hostName: String, private val apiKey: String) {
 
     private val interceptor: Interceptor = Interceptor { chain ->
         val newRequest = chain.request().newBuilder()
-            .addHeader("x-api-key", apiKey)
+            .addHeader("x-api-key", apiKey.trim())
             .build();
         chain.proceed(newRequest)
     };
