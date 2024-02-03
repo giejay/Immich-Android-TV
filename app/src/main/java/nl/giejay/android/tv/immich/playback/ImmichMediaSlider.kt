@@ -1,16 +1,18 @@
 package nl.giejay.android.tv.immich.playback
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.zeuskartik.mediaslider.MediaSliderFragment
 import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
 class ImmichMediaSlider : MediaSliderFragment() {
+    @SuppressLint("UnsafeOptInUsageError")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Timber.i("Loading ${this.javaClass.simpleName}")

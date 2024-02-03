@@ -1,8 +1,9 @@
 package nl.giejay.android.tv.immich.playback
 
+import android.annotation.SuppressLint
 import android.service.dreams.DreamService
 import android.widget.Toast
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import com.zeuskartik.mediaslider.MediaSliderView
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,7 @@ class ScreenSaverService : DreamService() {
     private var apiClient: ApiClient? = null
     private var mediaSliderView: MediaSliderView? = null
 
+    @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
         Timber.i("Starting screensaver")
         if (!PreferenceManager.isLoggedId()) {
