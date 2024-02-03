@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.shared.util
 
 import com.zeuskartik.mediaslider.SliderItem
+import com.zeuskartik.mediaslider.SliderItemType
 import nl.giejay.android.tv.immich.api.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
@@ -9,7 +10,7 @@ fun List<Asset>.toSliderItems(): List<SliderItem> {
     return this.map {
         SliderItem(
             ApiUtil.getFileUrl(it.id),
-            it.type.lowercase(),
+            SliderItemType.valueOf(it.type.uppercase()),
             it.exifInfo?.description?.ifEmpty { it.deviceAssetId } ?: it.deviceAssetId
         )
     }
