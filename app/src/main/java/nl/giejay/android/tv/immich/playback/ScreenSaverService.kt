@@ -31,7 +31,7 @@ class ScreenSaverService : DreamService() {
             return
         }
         val apiKey = PreferenceManager.apiKey()
-        apiClient = ApiClient.getClient(PreferenceManager.hostName(), apiKey)
+        apiClient = ApiClient.getClient(PreferenceManager.hostName(), apiKey, PreferenceManager.disableSslVerification())
         mediaSliderView = MediaSliderView(this)
         mediaSliderView!!.setDefaultExoFactory(
             DefaultHttpDataSource.Factory()

@@ -13,6 +13,7 @@ object PreferenceManager {
     // host settings
     private val KEY_HOST_NAME = "hostName"
     private val KEY_API_KEY = "apiKey"
+    private val KEY_DISABLE_SSL_VERIFICATION = "disableSSLVerification"
 
     // screensaver settings
     private val KEY_SCREENSAVER_INTERVAL = "screensaver_interval"
@@ -28,6 +29,7 @@ object PreferenceManager {
     private val propsToWatch = mapOf(
         KEY_HOST_NAME to "",
         KEY_API_KEY to "",
+        KEY_DISABLE_SSL_VERIFICATION to false,
         KEY_SCREENSAVER_INTERVAL to "3",
         KEY_SLIDER_INTERVAL to "3",
         KEY_SLIDER_SHOW_DESCRIPTION to true,
@@ -50,6 +52,11 @@ object PreferenceManager {
     fun saveString(key: String, value: String) {
         liveContext[key] = value
         sharedPreference.edit().putString(key, value).apply()
+    }
+
+    fun saveBoolean(key: String, value: Boolean) {
+        liveContext[key] = value
+        sharedPreference.edit().putBoolean(key, value).apply()
     }
 
     fun saveStringSet(key: String, value: Set<String>) {
@@ -101,6 +108,10 @@ object PreferenceManager {
         saveString(KEY_HOST_NAME, value)
     }
 
+    fun saveSslVerification(value: Boolean){
+        saveBoolean(KEY_DISABLE_SSL_VERIFICATION, value)
+    }
+
     fun isLoggedId(): Boolean {
         return hostName().isNotBlank() && apiKey().isNotBlank() && URLUtil.isValidUrl(hostName())
     }
@@ -117,5 +128,9 @@ object PreferenceManager {
     fun saveScreenSaverAlbums(strings: Set<String>) {
         saveStringSet(KEY_SCREENSAVER_ALBUMS, strings)
         liveContext[KEY_SCREENSAVER_ALBUMS] = strings
+    }
+
+    fun disableSslVerification(): Boolean {
+        return liveContext[KEY_DISABLE_SSL_VERIFICATION] as Boolean
     }
 }

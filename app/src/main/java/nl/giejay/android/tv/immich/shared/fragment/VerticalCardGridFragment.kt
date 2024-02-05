@@ -68,7 +68,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
         if (PreferenceManager.isLoggedId()) {
             apiClient =
-                ApiClient.getClient(PreferenceManager.hostName(), PreferenceManager.apiKey())
+                ApiClient.getClient(PreferenceManager.hostName(), PreferenceManager.apiKey(), PreferenceManager.disableSslVerification())
         } else {
             Toast.makeText(
                 ImmichApplication.appContext,

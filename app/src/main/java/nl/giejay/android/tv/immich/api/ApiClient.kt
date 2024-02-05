@@ -13,12 +13,24 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
-class ApiClient(private val hostName: String, private val apiKey: String) {
+class ApiClient(
+    private val hostName: String,
+    private val apiKey: String,
+    private val disableSslVerification: Boolean
+) {
     companion object ApiClient {
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
-        fun getClient(hostName: String, apiKey: String): nl.giejay.android.tv.immich.api.ApiClient {
-            if (apiClient == null || apiClient?.apiKey != apiKey || apiClient?.hostName != hostName) {
-                apiClient = ApiClient(hostName, apiKey)
+        fun getClient(
+            hostName: String,
+            apiKey: String,
+            disableSslVerification: Boolean
+        ): nl.giejay.android.tv.immich.api.ApiClient {
+            if (apiClient == null ||
+                apiClient?.apiKey != apiKey ||
+                apiClient?.hostName != hostName ||
+                apiClient?.disableSslVerification != disableSslVerification
+            ) {
+                apiClient = ApiClient(hostName, apiKey, disableSslVerification)
             }
             return apiClient!!
         }
@@ -31,7 +43,7 @@ class ApiClient(private val hostName: String, private val apiKey: String) {
         chain.proceed(newRequest)
     };
 
-    private val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
+    private val client = if(disableSslVerification) UnsafeOkHttpClient.unsafeOkHttpClient(interceptor) else OkHttpClient.Builder().addInterceptor(interceptor).build()
 
     private val retrofit = Retrofit.Builder()
         .client(client)

@@ -12,6 +12,7 @@ import androidx.leanback.widget.GuidedActionEditText
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addAction
+import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addEditableAction
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
@@ -29,7 +30,8 @@ data class AuthSettings(val hostName: String, val apiKey: String) {
 class AuthFragmentStep2 : GuidedStepSupportFragment() {
     private val ACTION_NAME = 0L
     private val ACTION_API_KEY = 1L
-    private val ACTION_CONTINUE = 2L
+    private val ACTION_CHECK_CERTS = 2L
+    private val ACTION_CONTINUE = 3L
 
     override fun onCreateGuidance(savedInstanceState: Bundle?): GuidanceStylist.Guidance {
         val icon: Drawable = requireActivity().getDrawable(R.drawable.icon)!!
@@ -55,6 +57,13 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
             "API Key",
             PreferenceManager.apiKey(),
             InputType.TYPE_CLASS_TEXT
+        )
+        addCheckedAction(
+            actions,
+            ACTION_CHECK_CERTS,
+            "Disable SSL verification",
+            "Only use this when you have issues with self signed certificates!",
+            PreferenceManager.disableSslVerification()
         )
     }
 
@@ -98,13 +107,17 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
             if (entry.isValid()) {
                 PreferenceManager.saveApiKey(entry.apiKey)
                 PreferenceManager.saveHostName(entry.hostName)
+                PreferenceManager.saveSslVerification(findActionById(ACTION_CHECK_CERTS)?.isChecked == true)
                 findNavController().navigate(AuthFragmentStep2Directions.actionAuth2ToHomeFragment())
             } else if (entry.hostName.isEmpty()) {
                 Toast.makeText(activity, "Please enter a hostname", Toast.LENGTH_SHORT)
                     .show()
             } else if (entry.apiKey.isEmpty()) {
-                Toast.makeText(activity, "Please enter an API key, if you did enter it, try to highlight it again and press enter/OK, not back (sorry).", Toast.LENGTH_LONG)
-                    .show()
+                Toast.makeText(
+                    activity,
+                    "Please enter an API key, if you did enter it, try to highlight it again and press enter/OK, not back (sorry).",
+                    Toast.LENGTH_LONG
+                ).show()
             } else {
                 Toast.makeText(activity, "Please enter a valid hostname", Toast.LENGTH_SHORT)
                     .show()
