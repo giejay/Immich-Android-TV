@@ -26,10 +26,7 @@ You can join the open test here: https://play.google.com/apps/testing/nl.giejay.
 
 ## Todo
 
-- Add a tab with all photos
-- Improved error handling
 - Casting
-- More screensaver/slider settings
-- Add exif data view to slider
+- Add exif data view to slider/refactor photo slider
 - Dependency injection
 - Searching in and for albums
