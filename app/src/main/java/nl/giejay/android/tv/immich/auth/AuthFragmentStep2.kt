@@ -15,6 +15,7 @@ import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addEditableAction
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import okhttp3.HttpUrl
 import timber.log.Timber
 
 
@@ -23,7 +24,7 @@ import timber.log.Timber
  */
 data class AuthSettings(val hostName: String, val apiKey: String) {
     fun isValid(): Boolean {
-        return !(hostName.isEmpty() || apiKey.isEmpty()) && URLUtil.isValidUrl(hostName)
+        return !(hostName.isEmpty() || apiKey.isEmpty()) && HttpUrl.parse(hostName) != null
     }
 }
 
@@ -31,10 +32,11 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
     private val ACTION_NAME = 0L
     private val ACTION_API_KEY = 1L
     private val ACTION_CHECK_CERTS = 2L
-    private val ACTION_CONTINUE = 3L
+    private val ACTION_DEBUG_MODE = 3L
+    private val ACTION_CONTINUE = 4L
 
     override fun onCreateGuidance(savedInstanceState: Bundle?): GuidanceStylist.Guidance {
-        val icon: Drawable = requireActivity().getDrawable(R.drawable.icon)!!
+        val icon: Drawable = requireContext().getDrawable(R.drawable.icon)!!
         return GuidanceStylist.Guidance(
             "Immich TV",
             "Login to your Immich server or try a demo.",
@@ -65,31 +67,14 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
             "Only use this when you have issues with self signed certificates!",
             PreferenceManager.disableSslVerification()
         )
+        addCheckedAction(
+            actions,
+            ACTION_DEBUG_MODE,
+            "Debug mode",
+            "Enable this if you are experiencing issues with getting the Immich data.",
+            PreferenceManager.debugEnabled()
+        )
     }
-
-//    override fun onCreateActionsStylist(): GuidedActionsStylist {
-//        return object : GuidedActionsStylist() {
-//            override fun onProvideItemLayoutId(): Int {
-//                // return your custom layout for each GuidedAction item
-//                return R.layout.guided_step_text_view
-//            }
-//
-//            override fun onCreateViewHolder(parent: ViewGroup?): ViewHolder {
-//                val viewHolder = super.onCreateViewHolder(parent)
-////                viewHolder.itemView.setOnKeyListener(OnKeyListener { v, keyCode, event ->
-////                    if (keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_UP) {
-////                        val mgr = v.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-////                        v.isFocusable = true
-////                        v.requestFocus()
-////                        mgr.showSoftInput(v, 0)
-////                        return@OnKeyListener true
-////                    }
-////                    false
-////                })
-//                return viewHolder
-//            }
-//        }
-//    }
 
     override fun onCreateButtonActions(
         actions: MutableList<GuidedAction>,
@@ -108,6 +93,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
                 PreferenceManager.saveApiKey(entry.apiKey)
                 PreferenceManager.saveHostName(entry.hostName)
                 PreferenceManager.saveSslVerification(findActionById(ACTION_CHECK_CERTS)?.isChecked == true)
+                PreferenceManager.saveDebugMode(findActionById(ACTION_DEBUG_MODE)?.isChecked == true)
                 findNavController().navigate(AuthFragmentStep2Directions.actionAuth2ToHomeFragment())
             } else if (entry.hostName.isEmpty()) {
                 Toast.makeText(activity, "Please enter a hostname", Toast.LENGTH_SHORT)

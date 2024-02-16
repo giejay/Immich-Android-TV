@@ -27,6 +27,7 @@ import com.google.android.gms.cast.tv.CastReceiverContext
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
+import java.util.UUID
 
 
 /**
@@ -44,7 +45,7 @@ class ImmichApplication : Application() {
 //            enableStrictMode()
 //        }
 
-        if (BuildConfig.DEBUG) {
+        if (!BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         } else {
             Timber.plant(CrashReportingTree())
@@ -58,6 +59,12 @@ class ImmichApplication : Application() {
          */
         CastReceiverContext.initInstance((this))
         ProcessLifecycleOwner.get().lifecycle.addObserver(AppLifecycleObserver(ProcessLifecycleOwner.get().lifecycle))
+        var userId = PreferenceManager.getUserId()
+        if(userId.isBlank()){
+            userId = UUID.randomUUID().toString()
+            PreferenceManager.setUserId(userId)
+        }
+        FirebaseCrashlytics.getInstance().setUserId(userId)
     }
 
     private fun enableStrictMode() {
@@ -95,16 +102,14 @@ class ImmichApplication : Application() {
     private class CrashReportingTree : Timber.Tree() {
         val instance = FirebaseCrashlytics.getInstance()
 
-        override fun log(
-            priority: Int, tag: String?, message: String, t: Throwable?
-        ) {
-            if (priority == Log.VERBOSE || priority == Log.DEBUG) {
+        override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+            if (priority == Log.VERBOSE || (priority == Log.DEBUG && !PreferenceManager.debugEnabled())) {
                 return
             }
             instance.log("$tag : $message")
             if (t != null) {
                 instance.recordException(t)
-            } else if(priority == Log.ERROR){
+            } else if (priority == Log.ERROR) {
                 instance.recordException(UnknownError(message))
             }
         }

@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.api.ApiClient
+import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.card.CardPresenterSelector
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
@@ -68,7 +69,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
         if (PreferenceManager.isLoggedId()) {
             apiClient =
-                ApiClient.getClient(PreferenceManager.hostName(), PreferenceManager.apiKey(), PreferenceManager.disableSslVerification())
+                ApiClient.getClient(
+                    ApiClientConfig(
+                        PreferenceManager.hostName(),
+                        PreferenceManager.apiKey(),
+                        PreferenceManager.disableSslVerification(),
+                        PreferenceManager.debugEnabled()
+                    )
+                )
         } else {
             Toast.makeText(
                 ImmichApplication.appContext,
@@ -100,7 +108,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 //                    }
 //                }
 //            }
-            with(this@VerticalCardGridFragment){
+            with(this@VerticalCardGridFragment) {
                 val selectedIndex = adapter.indexOf(item);
                 if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
                     if (currentLoadingJob?.isActive != true && assetsStillToRender.isEmpty() && !allPagesLoaded) {
@@ -230,8 +238,11 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     private suspend fun showErrorMessage(message: String) = withContext(Dispatchers.Main) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT)
-            .show()
+        if (isAdded) {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT)
+                .show()
+        }
+        Timber.e(message)
     }
 
     companion object {

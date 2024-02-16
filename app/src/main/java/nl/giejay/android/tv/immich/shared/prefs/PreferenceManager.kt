@@ -2,8 +2,8 @@ package nl.giejay.android.tv.immich.shared.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.webkit.URLUtil
 import androidx.preference.PreferenceManager
+import okhttp3.HttpUrl
 
 object PreferenceManager {
     private lateinit var sharedPreference: SharedPreferences
@@ -26,6 +26,10 @@ object PreferenceManager {
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
 
+    // other
+    private val KEY_DEBUG_MODE = "debug_mode"
+    private val KEY_USER_ID = "user_id"
+
     private val propsToWatch = mapOf(
         KEY_HOST_NAME to "",
         KEY_API_KEY to "",
@@ -36,7 +40,8 @@ object PreferenceManager {
         KEY_SLIDER_SHOW_MEDIA_COUNT to true,
         KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
         KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true,
-        KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>()
+        KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
+        KEY_DEBUG_MODE to false
     )
 
     fun init(context: Context) {
@@ -113,7 +118,7 @@ object PreferenceManager {
     }
 
     fun isLoggedId(): Boolean {
-        return hostName().isNotBlank() && apiKey().isNotBlank() && URLUtil.isValidUrl(hostName())
+        return hostName().isNotBlank() && apiKey().isNotBlank() && HttpUrl.parse(hostName()) != null
     }
 
     fun removeApiSettings() {
@@ -132,5 +137,22 @@ object PreferenceManager {
 
     fun disableSslVerification(): Boolean {
         return liveContext[KEY_DISABLE_SSL_VERIFICATION] as Boolean
+    }
+
+    fun debugEnabled(): Boolean {
+        return liveContext[KEY_DEBUG_MODE] as Boolean
+    }
+
+    fun saveDebugMode(debugMode: Boolean){
+        liveContext[KEY_DEBUG_MODE] = debugMode
+        saveBoolean(KEY_DEBUG_MODE, debugMode)
+    }
+
+    fun getUserId(): String {
+        return getString(KEY_USER_ID, "")
+    }
+
+    fun setUserId(userId: String){
+        saveString(KEY_USER_ID, userId)
     }
 }

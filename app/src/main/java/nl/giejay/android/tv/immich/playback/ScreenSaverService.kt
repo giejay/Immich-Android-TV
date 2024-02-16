@@ -12,6 +12,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.api.ApiClient
+import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
@@ -31,7 +32,13 @@ class ScreenSaverService : DreamService() {
             return
         }
         val apiKey = PreferenceManager.apiKey()
-        apiClient = ApiClient.getClient(PreferenceManager.hostName(), apiKey, PreferenceManager.disableSslVerification())
+        val config = ApiClientConfig(
+            PreferenceManager.hostName(),
+            apiKey,
+            PreferenceManager.disableSslVerification(),
+            PreferenceManager.debugEnabled()
+        )
+        apiClient = ApiClient.getClient(config)
         mediaSliderView = MediaSliderView(this)
         mediaSliderView!!.setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
@@ -69,7 +76,7 @@ class ScreenSaverService : DreamService() {
                 finish()
             }
         } catch (e: Exception) {
-            Timber.e(e,"Could not fetch assets from Immich for Screensaver")
+            Timber.e(e, "Could not fetch assets from Immich for Screensaver")
             showErrorMessageMainScope("Could not load assets from Immich")
             finish()
         }

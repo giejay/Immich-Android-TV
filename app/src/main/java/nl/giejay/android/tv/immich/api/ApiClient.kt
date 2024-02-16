@@ -13,24 +13,19 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
-class ApiClient(
-    private val hostName: String,
-    private val apiKey: String,
-    private val disableSslVerification: Boolean
-) {
+class ApiClientConfig(
+    val hostName: String,
+    val apiKey: String,
+    val disableSslVerification: Boolean,
+    val debugMode: Boolean
+)
+
+class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
-        fun getClient(
-            hostName: String,
-            apiKey: String,
-            disableSslVerification: Boolean
-        ): nl.giejay.android.tv.immich.api.ApiClient {
-            if (apiClient == null ||
-                apiClient?.apiKey != apiKey ||
-                apiClient?.hostName != hostName ||
-                apiClient?.disableSslVerification != disableSslVerification
-            ) {
-                apiClient = ApiClient(hostName, apiKey, disableSslVerification)
+        fun getClient(config: ApiClientConfig): nl.giejay.android.tv.immich.api.ApiClient {
+            if (config != apiClient?.config) {
+                apiClient = ApiClient(config)
             }
             return apiClient!!
         }
@@ -38,17 +33,22 @@ class ApiClient(
 
     private val interceptor: Interceptor = Interceptor { chain ->
         val newRequest = chain.request().newBuilder()
-            .addHeader("x-api-key", apiKey.trim())
+            .addHeader("x-api-key", config.apiKey.trim())
             .build();
         chain.proceed(newRequest)
     };
 
-    private val client = if(disableSslVerification) UnsafeOkHttpClient.unsafeOkHttpClient(interceptor) else OkHttpClient.Builder().addInterceptor(interceptor).build()
+    private val clientBuilder = if (config.disableSslVerification)
+        UnsafeOkHttpClient.unsafeOkHttpClient(interceptor)
+    else OkHttpClient.Builder().addInterceptor(interceptor)
+
+    private val client = if (config.debugMode) clientBuilder.addInterceptor(ResponseLoggingInterceptor())
+        .build() else clientBuilder.build()
 
     private val retrofit = Retrofit.Builder()
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl("$hostName/api/")
+        .baseUrl("${config.hostName}/api/")
         .build()
 
     private val service: ApiService = retrofit.create(ApiService::class.java)

@@ -67,6 +67,17 @@ class SettingsFragment : RowsSupportFragment() {
                             findNavController().navigate(
                                 HomeFragmentDirections.actionHomeFragmentToScreensaverSettings()
                             )
+                        },
+                        SettingsCard(
+                            "Debug",
+                            null,
+                            "debug",
+                            "bug",
+                            "bug"
+                        ) {
+                            findNavController().navigate(
+                                HomeFragmentDirections.actionHomeFragmentToDebugSettings()
+                            )
                         }
                     )
                 )

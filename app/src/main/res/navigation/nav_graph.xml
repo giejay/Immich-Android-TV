@@ -137,6 +137,9 @@
             android:id="@+id/action_homeFragment_to_view_settings"
             app:destination="@id/viewSettings" />
         <action
+            android:id="@+id/action_homeFragment_to_debug_settings"
+            app:destination="@id/debugSettings" />
+        <action
             android:id="@+id/action_homeFragment_to_photo_slider"
             app:destination="@id/photoSlider" />
     </fragment>
@@ -154,6 +157,12 @@
         android:id="@+id/viewSettings"
         android:name="nl.giejay.android.tv.immich.settings.ViewSettingsFragment"
         android:label="ViewSettings">
+    </fragment>
+
+    <fragment
+        android:id="@+id/debugSettings"
+        android:name="nl.giejay.android.tv.immich.settings.DebugSettingsFragment"
+        android:label="DebugSettings">
     </fragment>
 
     <fragment

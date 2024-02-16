@@ -11,7 +11,7 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 object UnsafeOkHttpClient {
-    fun unsafeOkHttpClient(interceptor: Interceptor): OkHttpClient = try {
+    fun unsafeOkHttpClient(interceptor: Interceptor): OkHttpClient.Builder = try {
             // Create a trust manager that does not validate certificate chains
             val trustAllCerts: Array<TrustManager> = arrayOf(
                 object : X509TrustManager {
@@ -44,7 +44,7 @@ object UnsafeOkHttpClient {
             val builder: OkHttpClient.Builder = OkHttpClient.Builder().addInterceptor(interceptor)
             builder.sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
             builder.hostnameVerifier { _, _ -> true }
-            builder.build()
+            builder
         } catch (e: Exception) {
             throw RuntimeException(e)
         }
