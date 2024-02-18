@@ -61,7 +61,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
             a.albumName,
             a.description,
             a.id,
-            ApiUtil.getThumbnailUrl(a.albumThumbnailAssetId),
+            ApiUtil.getThumbnailUrl(a.albumThumbnailAssetId, "WEBP"),
             ApiUtil.getFileUrl(a.albumThumbnailAssetId),
             if (selectionMode) PreferenceManager.getScreenSaverAlbums().contains(a.id) else false
         )

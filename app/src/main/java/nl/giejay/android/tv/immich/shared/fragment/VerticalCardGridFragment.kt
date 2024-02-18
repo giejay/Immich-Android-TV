@@ -27,7 +27,9 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.card.CardPresenterSelector
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.util.Debouncer
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 
 abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
@@ -100,14 +102,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             }
         }
         setOnItemViewSelectedListener { _, item, _, _ ->
-//            item?.let {
-//                loadBackground((it as Card).pictureUrl) {
-//                    loadBackground(it.thumbnailUrl) {
-//                        Timber.tag(javaClass.name)
-//                            .e("Could not load background url")
-//                    }
-//                }
-//            }
+            item?.let {
+                loadBackgroundDebounced((it as Card).pictureUrl) {
+                    loadBackgroundDebounced(it.thumbnailUrl) {
+                        Timber.tag(javaClass.name)
+                            .e("Could not load background url")
+                    }
+                }
+            }
             with(this@VerticalCardGridFragment) {
                 val selectedIndex = adapter.indexOf(item);
                 if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
@@ -197,6 +199,10 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     private suspend fun loadData(): Either<String, List<ITEM>> {
         return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT)
+    }
+
+    private fun loadBackgroundDebounced(backgroundUrl: String?, onLoadFailed: () -> Unit){
+        Debouncer.debounce("background", { loadBackground(backgroundUrl, onLoadFailed)}, 1, TimeUnit.SECONDS)
     }
 
     private fun loadBackground(backgroundUrl: String?, onLoadFailed: () -> Unit) {
