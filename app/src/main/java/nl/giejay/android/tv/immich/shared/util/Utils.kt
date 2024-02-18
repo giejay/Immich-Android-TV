@@ -30,6 +30,13 @@ object Utils {
         return this
     }
 
+    fun <T> Comparable<T>.compareToNullSafe(date: T?): Int {
+        if(date == null){
+            return -1
+        }
+        return this.compareTo(date)
+    }
+
     fun convertDpToPixel(ctx: Context, dp: Int): Int {
         val density = ctx.resources.displayMetrics.density
         return Math.round(dp.toFloat() * density)

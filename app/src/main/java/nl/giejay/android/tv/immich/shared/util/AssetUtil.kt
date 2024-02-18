@@ -19,7 +19,7 @@ fun List<Asset>.toSliderItems(): List<SliderItem> {
 
 fun Asset.toCard(): Card {
     return Card(
-        this.deviceAssetId,
+        this.deviceAssetId ?: "",
         this.exifInfo?.description ?: "",
         this.id,
         ApiUtil.getThumbnailUrl(this.id),

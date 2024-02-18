@@ -10,7 +10,7 @@ data class AssetExifInfo(
 data class Asset(
     val id: String,
     val type: String,
-    val deviceAssetId: String,
+    val deviceAssetId: String?,
     val exifInfo: AssetExifInfo?,
-    val fileModifiedAt: Date
+    val fileModifiedAt: Date?
 )
