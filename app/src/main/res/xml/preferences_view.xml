@@ -1,18 +1,40 @@
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="View settings"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
-        android:title="General">
+        android:title="Ordering">
 
         <ListPreference
-            android:key="albums_sort"
+            android:key="albums_sorting"
             android:title="Albums sorting"
             android:summary="Set the order in which albums should appear"
             app:useSimpleSummaryProvider="true"
             android:entries="@array/albums_order"
-            android:entryValues="@array/albums_order"
-            android:dialogTitle="Sort albums by:"/>
+            android:defaultValue="LAST_UPDATED"
+            android:entryValues="@array/albums_order_keys"
+            android:dialogTitle="Sort albums by"/>
+
+        <CheckBoxPreference
+            android:key="albums_sorting_reverse"
+            android:title="Reverse album order"
+            android:summary="Reverse the album order shown above"/>
+
+        <ListPreference
+            android:key="photos_sorting"
+            android:title="Photos sorting"
+            android:summary="Set the order in which photos should appear"
+            app:useSimpleSummaryProvider="true"
+            android:entries="@array/photos_order"
+            android:defaultValue="OLDEST_NEWEST"
+            android:entryValues="@array/photos_order_keys"
+            android:dialogTitle="Sort photos by"/>
+
+        <CheckBoxPreference
+            android:key="photos_sorting_reverse"
+            android:title="Reverse photo order"
+            android:summary="Reverse the photo order shown above"/>
 
     </PreferenceCategory>
 

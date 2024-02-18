@@ -23,6 +23,13 @@ import java.io.InputStream
  * A collection of utility methods, all static.
  */
 object Utils {
+    fun <T> Comparator<T>.optionalReversed(reverse: Boolean): Comparator<T>{
+        if(reverse){
+            return this.reversed()
+        }
+        return this
+    }
+
     fun convertDpToPixel(ctx: Context, dp: Int): Int {
         val density = ctx.resources.displayMetrics.density
         return Math.round(dp.toFloat() * density)

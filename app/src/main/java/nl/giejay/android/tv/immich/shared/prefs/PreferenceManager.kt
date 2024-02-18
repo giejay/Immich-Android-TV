@@ -25,6 +25,10 @@ object PreferenceManager {
     private val KEY_SLIDER_INTERVAL = "slider_interval"
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
+    private val KEY_ALBUMS_SORTING = "albums_sorting"
+    private val KEY_PHOTOS_SORTING = "photos_sorting"
+    private val KEY_ALBUMS_SORTING_REVERSE = "albums_sorting_reverse"
+    private val KEY_PHOTOS_SORTING_REVERSE = "photos_sorting_reverse"
 
     // other
     private val KEY_DEBUG_MODE = "debug_mode"
@@ -41,7 +45,11 @@ object PreferenceManager {
         KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
         KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true,
         KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
-        KEY_DEBUG_MODE to false
+        KEY_DEBUG_MODE to false,
+        KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
+        KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),
+        KEY_ALBUMS_SORTING_REVERSE to false,
+        KEY_PHOTOS_SORTING_REVERSE to false
     )
 
     fun init(context: Context) {
@@ -52,25 +60,6 @@ object PreferenceManager {
                 liveContext[key] = value
             }
         }
-    }
-
-    fun saveString(key: String, value: String) {
-        liveContext[key] = value
-        sharedPreference.edit().putString(key, value).apply()
-    }
-
-    fun saveBoolean(key: String, value: Boolean) {
-        liveContext[key] = value
-        sharedPreference.edit().putBoolean(key, value).apply()
-    }
-
-    fun saveStringSet(key: String, value: Set<String>) {
-        liveContext[key] = value
-        sharedPreference.edit().putStringSet(key, value).apply()
-    }
-
-    fun getString(key: String, defaultValue: String): String {
-        return sharedPreference.getString(key, defaultValue) ?: defaultValue
     }
 
     fun apiKey(): String {
@@ -154,5 +143,40 @@ object PreferenceManager {
 
     fun setUserId(userId: String){
         saveString(KEY_USER_ID, userId)
+    }
+
+    fun albumsOrder(): AlbumsOrder {
+        return AlbumsOrder.valueOf(liveContext[KEY_ALBUMS_SORTING] as String)
+    }
+
+    fun photosOrder(): PhotosOrder {
+        return PhotosOrder.valueOf(liveContext[KEY_PHOTOS_SORTING] as String)
+    }
+
+    fun reversePhotosOrder(): Boolean {
+        return liveContext[KEY_PHOTOS_SORTING_REVERSE] as Boolean
+    }
+
+    fun reverseAlbumsOrder(): Boolean {
+        return liveContext[KEY_ALBUMS_SORTING_REVERSE] as Boolean
+    }
+
+    private fun saveString(key: String, value: String) {
+        liveContext[key] = value
+        sharedPreference.edit().putString(key, value).apply()
+    }
+
+    private fun saveBoolean(key: String, value: Boolean) {
+        liveContext[key] = value
+        sharedPreference.edit().putBoolean(key, value).apply()
+    }
+
+    private fun saveStringSet(key: String, value: Set<String>) {
+        liveContext[key] = value
+        sharedPreference.edit().putStringSet(key, value).apply()
+    }
+
+    private fun getString(key: String, defaultValue: String): String {
+        return sharedPreference.getString(key, defaultValue) ?: defaultValue
     }
 }

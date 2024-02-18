@@ -23,4 +23,23 @@
         <item>Last updated</item>
         <item>Alphabetically</item>
     </string-array>
+
+    <string-array name="albums_order_keys">
+        <item>LAST_UPDATED</item>
+        <item>ALPHABETICALLY</item>
+    </string-array>
+
+    <string-array name="photos_order">
+        <item>Newest - Oldest</item>
+        <item>Oldest - Newest</item>
+        <item>Alphabetically</item>
+    </string-array>
+
+    <string-array name="photos_order_keys">
+        <item>NEWEST_OLDEST</item>
+        <item>OLDEST_NEWEST</item>
+        <item>ALPHABETICALLY</item>
+    </string-array>
+
+
 </resources>

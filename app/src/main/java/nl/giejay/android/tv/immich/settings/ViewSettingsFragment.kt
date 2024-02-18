@@ -17,7 +17,7 @@ class ViewInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFragment()
 
     override fun handlePreferenceClick(preference: Preference?): Boolean {
         when(preference?.key){
-            "slider_play_sound", "albums_sort" -> {
+            "slider_play_sound" -> {
                 Toast.makeText(requireContext(), "Work in progress", Toast.LENGTH_SHORT).show()
             }
         }

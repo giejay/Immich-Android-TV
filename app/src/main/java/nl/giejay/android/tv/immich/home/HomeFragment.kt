@@ -15,6 +15,7 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragment
 import nl.giejay.android.tv.immich.assets.AllAssetFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
 class HomeFragment : BrowseSupportFragment() {

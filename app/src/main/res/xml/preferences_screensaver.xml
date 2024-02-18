@@ -1,9 +1,9 @@
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="Screensaver"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory
-        android:title="Screensaver">
+    <PreferenceCategory>
 
         <Preference
             android:key="screensaver_set"

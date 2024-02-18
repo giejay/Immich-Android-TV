@@ -1,20 +1,15 @@
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:title="Debug">
 
-    <PreferenceCategory
-        android:title="Debug">
+    <CheckBoxPreference
+        android:key="debug_mode"
+        android:title="Enable debug mode"
+        android:defaultValue="false"
+        android:summary="Enable this if you are experiencing issues."/>
 
-        <CheckBoxPreference
-            android:key="debug_mode"
-            android:title="Enable debug mode"
-            android:defaultValue="false"
-            android:summary="Enable this if you are experiencing issues."/>
-
-        <Preference
-            android:key="user_id"
-            android:title="Your user id, needed for debugging"/>
-
-    </PreferenceCategory>
+    <Preference
+        android:key="user_id"
+        android:title="Your user id, needed for debugging"/>
 
 </PreferenceScreen>

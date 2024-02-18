@@ -9,6 +9,7 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.util.Utils.optionalReversed
 
 class AlbumFragment : VerticalCardGridFragment<Album>() {
 
@@ -22,7 +23,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
                     { it.endDate })
             }
         } else {
-            items.sortedByDescending { it.endDate }
+            items.sortedWith(PreferenceManager.albumsOrder().sort.optionalReversed(PreferenceManager.reverseAlbumsOrder()))
         }
     }
 

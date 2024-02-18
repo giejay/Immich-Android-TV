@@ -8,6 +8,7 @@ import androidx.leanback.widget.HeaderItem
 import androidx.leanback.widget.ListRow
 import androidx.leanback.widget.ListRowPresenter
 import androidx.leanback.widget.OnItemViewClickedListener
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 
