@@ -107,7 +107,11 @@ object PreferenceManager {
     }
 
     fun isLoggedId(): Boolean {
-        return hostName().isNotBlank() && apiKey().isNotBlank() && HttpUrl.parse(hostName()) != null
+        return isValid(hostName(), apiKey())
+    }
+
+    fun isValid(hostName: String, apiKey: String): Boolean {
+        return hostName.isNotBlank() && apiKey.isNotBlank() && HttpUrl.parse(hostName) != null
     }
 
     fun removeApiSettings() {

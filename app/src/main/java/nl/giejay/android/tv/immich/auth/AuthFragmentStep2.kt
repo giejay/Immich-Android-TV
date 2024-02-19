@@ -3,19 +3,18 @@ package nl.giejay.android.tv.immich.auth
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.InputType
-import android.webkit.URLUtil
 import android.widget.Toast
 import androidx.leanback.app.GuidedStepSupportFragment
 import androidx.leanback.widget.GuidanceStylist
 import androidx.leanback.widget.GuidedAction
 import androidx.leanback.widget.GuidedActionEditText
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addEditableAction
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import okhttp3.HttpUrl
 import timber.log.Timber
 
 
@@ -24,7 +23,7 @@ import timber.log.Timber
  */
 data class AuthSettings(val hostName: String, val apiKey: String) {
     fun isValid(): Boolean {
-        return !(hostName.isEmpty() || apiKey.isEmpty()) && HttpUrl.parse(hostName) != null
+        return PreferenceManager.isValid(hostName, apiKey)
     }
 }
 
@@ -94,7 +93,8 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
                 PreferenceManager.saveHostName(entry.hostName)
                 PreferenceManager.saveSslVerification(findActionById(ACTION_CHECK_CERTS)?.isChecked == true)
                 PreferenceManager.saveDebugMode(findActionById(ACTION_DEBUG_MODE)?.isChecked == true)
-                findNavController().navigate(AuthFragmentStep2Directions.actionAuth2ToHomeFragment())
+                val navControl = findNavController()
+                navControl.navigate(AuthFragmentStep2Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())
             } else if (entry.hostName.isEmpty()) {
                 Toast.makeText(activity, "Please enter a hostname", Toast.LENGTH_SHORT)
                     .show()

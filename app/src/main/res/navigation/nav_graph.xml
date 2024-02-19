@@ -25,6 +25,14 @@
         android:id="@+id/action_global_signInFragment"
         app:destination="@id/authFragment" />
 
+    <action
+        android:id="@+id/action_global_signInByPhoneFragment"
+        app:destination="@id/authByPhoneFragment" />
+
+    <action
+        android:id="@+id/action_global_homeFragment"
+        app:destination="@id/homeFragment" />
+
 <!--    <fragment-->
 <!--        android:id="@+id/playbackFragment"-->
 <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
@@ -76,20 +84,24 @@
         android:name="nl.giejay.android.tv.immich.auth.AuthFragmentStep1"
         android:label="Authentication">
         <action
-            android:id="@+id/action_auth_to_homeFragment"
-            app:destination="@id/homeFragment" />
-        <action
             android:id="@+id/action_auth_to_auth_2"
             app:destination="@id/authFragmentStep2" />
+
+        <action
+            android:id="@+id/action_auth_to_auth_by_phone"
+            app:destination="@id/authByPhoneFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/authFragmentStep2"
         android:name="nl.giejay.android.tv.immich.auth.AuthFragmentStep2"
         android:label="Authentication">
-        <action
-            android:id="@+id/action_auth_2_to_homeFragment"
-            app:destination="@id/homeFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/authByPhoneFragment"
+        android:name="nl.giejay.android.tv.immich.auth.AuthByPhoneFragment"
+        android:label="Authentication">
     </fragment>
 
 <!--    <fragment-->
@@ -167,7 +179,7 @@
 
     <fragment
         android:id="@+id/noFirebaseFragment"
-        android:name="nl.giejay.android.tv.immich.auth.NoFirebaseFragment"
+        android:name="nl.giejay.android.tv.immich.auth.AuthByPhoneFragment"
         android:label="NoFirebaseFragment">
         <action
             android:id="@+id/action_noFirebaseFragment_to_browseFragment"

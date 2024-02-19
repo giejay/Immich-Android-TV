@@ -29,8 +29,6 @@ class HomeFragment : BrowseSupportFragment() {
         setupUi()
         loadData()
 
-        findNavController().popBackStack(R.id.homeFragment, false)
-
         mainFragmentRegistry.registerFragment(
             PageRow::class.java,
             PageRowFragmentFactory()
@@ -44,6 +42,8 @@ class HomeFragment : BrowseSupportFragment() {
             selectedPosition = mRowsAdapter.indexOf(row)
         }
     }
+
+
 
     private fun setupUi() {
         headersState = HEADERS_ENABLED

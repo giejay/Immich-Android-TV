@@ -36,7 +36,7 @@ class ApiClient(private val config: ApiClientConfig) {
             .addHeader("x-api-key", config.apiKey.trim())
             .build();
         chain.proceed(newRequest)
-    };
+    }
 
     private val clientBuilder = if (config.disableSslVerification)
         UnsafeOkHttpClient.unsafeOkHttpClient(interceptor)

@@ -30,8 +30,8 @@ android {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
         targetSdkVersion 34
-        versionCode 34
-        versionName "1.24.1"
+        versionCode 35
+        versionName "1.25"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
@@ -122,6 +122,9 @@ dependencies {
 
     // Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // qr
+    implementation 'com.github.alexzhirkevich:custom-qr-generator:1.6.2'
 
     kapt 'com.github.bumptech.glide:compiler:4.14.2'
 

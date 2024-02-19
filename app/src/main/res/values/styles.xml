@@ -36,6 +36,12 @@
         <item name="android:textColor">@color/screen_white</item>
     </style>
 
+    <style name="QRTitle">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textSize">@dimen/text_size_h1</item>
+        <item name="android:textColor">@color/screen_black</item>
+    </style>
+
     <style name="CardViewStyle" parent="Widget.Leanback.ImageCardViewStyle">
         <item name="lbImageCardViewType">Title|Content</item>
     </style>

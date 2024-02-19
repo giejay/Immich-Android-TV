@@ -29,6 +29,7 @@
 
     <!-- Text sizes. -->
     <dimen name="text_size_h3">16sp</dimen>
+    <dimen name="text_size_h1">32sp</dimen>
 
     <!-- Error Fragment. -->
     <dimen name="error_ui_margin_start">194dp</dimen>
