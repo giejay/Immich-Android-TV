@@ -4,7 +4,7 @@ import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import nl.giejay.android.tv.immich.api.ApiClient
-import nl.giejay.android.tv.immich.api.ApiUtil
+import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card

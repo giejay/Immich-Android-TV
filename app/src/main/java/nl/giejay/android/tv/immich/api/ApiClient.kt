@@ -2,9 +2,12 @@ package nl.giejay.android.tv.immich.api
 
 import arrow.core.Either
 import arrow.core.flatMap
+import nl.giejay.android.tv.immich.api.interceptor.ResponseLoggingInterceptor
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.service.ApiService
+import nl.giejay.android.tv.immich.api.util.UnsafeOkHttpClient
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.HttpException
@@ -42,8 +45,9 @@ class ApiClient(private val config: ApiClientConfig) {
         UnsafeOkHttpClient.unsafeOkHttpClient(interceptor)
     else OkHttpClient.Builder().addInterceptor(interceptor)
 
-    private val client = if (config.debugMode) clientBuilder.addInterceptor(ResponseLoggingInterceptor())
-        .build() else clientBuilder.build()
+    private val client = if (config.debugMode) clientBuilder.addInterceptor(
+        ResponseLoggingInterceptor()
+    ).build() else clientBuilder.build()
 
     private val retrofit = Retrofit.Builder()
         .client(client)

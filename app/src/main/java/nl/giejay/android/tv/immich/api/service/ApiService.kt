@@ -1,4 +1,4 @@
-package nl.giejay.android.tv.immich.api
+package nl.giejay.android.tv.immich.api.service
 
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails

@@ -1,4 +1,4 @@
-package nl.giejay.android.tv.immich.api
+package nl.giejay.android.tv.immich.api.util
 
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.hostName
 

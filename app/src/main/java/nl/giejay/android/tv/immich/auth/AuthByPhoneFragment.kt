@@ -31,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.onCompletion
@@ -39,8 +40,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
-import nl.giejay.android.tv.immich.api.DeviceConfigResponse
-import nl.giejay.android.tv.immich.api.ImmichAuthenticationService
+import nl.giejay.android.tv.immich.api.AuthenticationClient
+import nl.giejay.android.tv.immich.api.service.DeviceConfigResponse
+import nl.giejay.android.tv.immich.api.service.ImmichAuthenticationService
 import nl.giejay.android.tv.immich.databinding.FragmentAuthByPhoneBinding
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import okhttp3.Interceptor
@@ -50,25 +52,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
 class AuthByPhoneFragment : Fragment() {
-    var job: Job? = null
-    private val interceptor: Interceptor = Interceptor { chain ->
-        val newRequest = chain.request().newBuilder()
-            .addHeader(
-                "x-api-key",
-                ImmichApplication.appContext!!.resources.getString(R.string.api_key)
-            )
-            .build();
-        chain.proceed(newRequest)
-    }
-
-    private val retrofit = Retrofit.Builder()
-        .client(OkHttpClient.Builder().addInterceptor(interceptor).build())
-        .addConverterFactory(GsonConverterFactory.create())
-        .baseUrl(ImmichApplication.appContext!!.resources.getString(R.string.authentication_url))
-        .build()
-
-    private val authService = retrofit.create(ImmichAuthenticationService::class.java)
+    private var job: Job? = null
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
+    private val authClient = AuthenticationClient()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -86,27 +72,29 @@ class AuthByPhoneFragment : Fragment() {
                 binding.qrProgressBar.visibility = View.GONE
                 binding.qrText.text = "Or enter the code $code on $authUrl"
                 job = ioScope.launch {
-                    val timer = (0..60)
-                        .asSequence()
-                        .asFlow()
-                        .onEach { delay(3_000) } // specify delay
-                        .onCompletion {
-                            showErrorMessage("Did not authenticate within the timeout, recreating QR code.")
-                            rebootQRFlow(findNavController())
-                        }
-                    timer.collect {
-                        val config = authService.getConfig(code).body()
-                        if (config?.status == "SUCCESS") {
-                            validateConfig(config)
-                            cancel()
-                        }
-                    }
-
-
+                    pollConfig(code)
                 }
             }
         }
         return binding.root
+    }
+
+    private suspend fun pollConfig(code: String) {
+        val timer = (0..60)
+            .asSequence()
+            .asFlow()
+            .onEach { delay(3_000) } // specify delay
+            .onCompletion {
+                showErrorMessage("Did not authenticate within the timeout, recreating QR code.")
+                rebootQRFlow(findNavController())
+            }
+        timer.collect {
+            val config = authClient.getConfig(code)
+            if (config?.status == "SUCCESS") {
+                validateConfig(config)
+                coroutineScope { cancel() }
+            }
+        }
     }
 
     override fun onDestroyView() {
@@ -147,7 +135,7 @@ class AuthByPhoneFragment : Fragment() {
 
     private suspend fun fetchDeviceCode(callback: (String) -> Unit) = withContext(Dispatchers.IO) {
         try {
-            val deviceCode = authService.registerDevice().body()
+            val deviceCode = authClient.registerDevice()
             withContext(Dispatchers.Main) {
                 callback(deviceCode!!.code)
             }
@@ -155,7 +143,6 @@ class AuthByPhoneFragment : Fragment() {
             Timber.e("Could not fetch qr", e)
             showErrorMessage("Could not fetch QR code!")
         }
-
     }
 
     private suspend fun showErrorMessage(message: String) {

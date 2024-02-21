@@ -2,7 +2,7 @@ package nl.giejay.android.tv.immich.shared.util
 
 import com.zeuskartik.mediaslider.SliderItem
 import com.zeuskartik.mediaslider.SliderItemType
-import nl.giejay.android.tv.immich.api.ApiUtil
+import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
 

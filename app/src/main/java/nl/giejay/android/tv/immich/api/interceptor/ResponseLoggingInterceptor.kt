@@ -1,4 +1,4 @@
-package nl.giejay.android.tv.immich.api
+package nl.giejay.android.tv.immich.api.interceptor
 
 import okhttp3.Interceptor
 import okhttp3.MediaType
