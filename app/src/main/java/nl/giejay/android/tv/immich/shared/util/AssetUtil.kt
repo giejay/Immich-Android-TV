@@ -23,7 +23,7 @@ fun Asset.toCard(): Card {
         this.exifInfo?.description ?: "",
         this.id,
         ApiUtil.getThumbnailUrl(this.id, "WEBP"),
-        ApiUtil.getFileUrl(this.id)
+        ApiUtil.getThumbnailUrl(this.id, "JPEG")
     )
 }
 

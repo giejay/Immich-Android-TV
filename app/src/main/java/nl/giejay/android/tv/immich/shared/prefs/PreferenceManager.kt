@@ -25,6 +25,7 @@ object PreferenceManager {
     private val KEY_SLIDER_INTERVAL = "slider_interval"
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
+    private val KEY_SLIDER_ONLY_USE_THUMBNAILS = "slider_only_use_thumbnails"
     private val KEY_ALBUMS_SORTING = "albums_sorting"
     private val KEY_PHOTOS_SORTING = "photos_sorting"
     private val KEY_ALBUMS_SORTING_REVERSE = "albums_sorting_reverse"
@@ -49,7 +50,8 @@ object PreferenceManager {
         KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
         KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),
         KEY_ALBUMS_SORTING_REVERSE to false,
-        KEY_PHOTOS_SORTING_REVERSE to false
+        KEY_PHOTOS_SORTING_REVERSE to false,
+        KEY_SLIDER_ONLY_USE_THUMBNAILS to true
     )
 
     fun init(context: Context) {
@@ -92,6 +94,10 @@ object PreferenceManager {
 
     fun sliderShowMediaCount(): Boolean {
         return liveContext[KEY_SLIDER_SHOW_MEDIA_COUNT] as Boolean
+    }
+
+    fun sliderOnlyUseThumbnails(): Boolean {
+        return liveContext[KEY_SLIDER_ONLY_USE_THUMBNAILS] as Boolean
     }
 
     fun saveApiKey(value: String) {

@@ -7,7 +7,7 @@ class SettingsCard(
     override val description: String?,
     override val id: String,
     override val thumbnailUrl: String?,
-    override val pictureUrl: String?,
+    override val backgroundUrl: String?,
     override val selected: Boolean = false,
     val onClick: () -> Unit,
 ) : ICard {

@@ -103,7 +103,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         }
         setOnItemViewSelectedListener { _, item, _, _ ->
             item?.let {
-                loadBackgroundDebounced((it as Card).pictureUrl) {
+                loadBackgroundDebounced((it as Card).backgroundUrl) {
                     loadBackgroundDebounced(it.thumbnailUrl) {
                         Timber.tag(javaClass.name)
                             .e("Could not load background url")
