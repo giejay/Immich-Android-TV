@@ -45,7 +45,7 @@ class ImmichApplication : Application() {
 //            enableStrictMode()
 //        }
 
-        if (!BuildConfig.DEBUG) {
+        if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         } else {
             Timber.plant(CrashReportingTree())
