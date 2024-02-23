@@ -6,6 +6,8 @@ import nl.giejay.android.tv.immich.shared.util.Utils.compareToNullSafe
 enum class AlbumsOrder(val sort: Comparator<Album>) {
     ALPHABETICALLY_A_Z({ a1, a2 -> a1.albumName.compareToNullSafe(a2.albumName) }),
     ALPHABETICALLY_Z_A({ a2, a1 -> a1.albumName.compareToNullSafe(a2.albumName) }),
+    // backwards compatible
+    ALPHABETICALLY({ a1, a2 -> a1.albumName.compareToNullSafe(a2.albumName) }),
     LAST_UPDATED(Sort@{ album, album2 ->
         // just testing with labeled returns here...
         return@Sort album2.endDate?.compareToNullSafe(album.endDate) ?: -1
