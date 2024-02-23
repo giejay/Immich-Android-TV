@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
@@ -24,7 +25,7 @@ class AllAssetFragment : VerticalCardGridFragment<Asset>() {
         page: Int,
         pageCount: Int
     ): Either<String, List<Asset>> {
-        return apiClient.listAssets(page, pageCount)
+        return apiClient.listAssets(page, pageCount, if(PreferenceManager.allAssetsOrder() == PhotosOrder.NEWEST_OLDEST) "desc" else "asc")
     }
 
     override fun onItemSelected(card: Card) {

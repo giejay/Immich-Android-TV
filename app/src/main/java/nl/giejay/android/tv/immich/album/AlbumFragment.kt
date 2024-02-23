@@ -23,7 +23,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
                     { it.endDate })
             }
         } else {
-            items.sortedWith(PreferenceManager.albumsOrder().sort.optionalReversed(PreferenceManager.reverseAlbumsOrder()))
+            items.sortedWith(PreferenceManager.albumsOrder().sort)
         }
     }
 

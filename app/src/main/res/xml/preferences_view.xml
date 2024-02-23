@@ -8,7 +8,7 @@
 
         <ListPreference
             android:key="albums_sorting"
-            android:title="Albums sorting"
+            android:title="Albums"
             android:summary="Set the order in which albums should appear"
             app:useSimpleSummaryProvider="true"
             android:entries="@array/albums_order"
@@ -16,25 +16,25 @@
             android:entryValues="@array/albums_order_keys"
             android:dialogTitle="Sort albums by"/>
 
-        <CheckBoxPreference
-            android:key="albums_sorting_reverse"
-            android:title="Reverse album order"
-            android:summary="Reverse the album order shown above"/>
-
         <ListPreference
             android:key="photos_sorting"
-            android:title="Photos sorting"
-            android:summary="Set the order in which photos should appear"
+            android:title="Photos in albums"
+            android:summary="Set the order in which photos should appear inside albums"
             app:useSimpleSummaryProvider="true"
             android:entries="@array/photos_order"
             android:defaultValue="OLDEST_NEWEST"
             android:entryValues="@array/photos_order_keys"
             android:dialogTitle="Sort photos by"/>
 
-        <CheckBoxPreference
-            android:key="photos_sorting_reverse"
-            android:title="Reverse photo order"
-            android:summary="Reverse the photo order shown above"/>
+        <ListPreference
+            android:key="all_assets_sorting"
+            android:title="Photos"
+            android:summary="Set the order in which photos should appear in the Photos tab"
+            app:useSimpleSummaryProvider="true"
+            android:entries="@array/all_assets_order"
+            android:defaultValue="NEWEST_OLDEST"
+            android:entryValues="@array/all_assets_order_keys"
+            android:dialogTitle="Sort photos by"/>
 
     </PreferenceCategory>
 

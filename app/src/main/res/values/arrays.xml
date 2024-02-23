@@ -21,25 +21,40 @@
 
     <string-array name="albums_order">
         <item>Last updated</item>
-        <item>Alphabetically</item>
+        <item>Alphabetically (A-Z)</item>
+        <item>Alphabetically (Z-A)</item>
+        <item>Least updated</item>
     </string-array>
 
     <string-array name="albums_order_keys">
         <item>LAST_UPDATED</item>
-        <item>ALPHABETICALLY</item>
+        <item>ALPHABETICALLY_A_Z</item>
+        <item>ALPHABETICALLY_Z_A</item>
+        <item>LEAST_UPDATED</item>
     </string-array>
 
     <string-array name="photos_order">
         <item>Newest - Oldest</item>
         <item>Oldest - Newest</item>
-        <item>Alphabetically</item>
+        <item>Alphabetically (A-Z)</item>
+        <item>Alphabetically (Z-A)</item>
     </string-array>
 
     <string-array name="photos_order_keys">
         <item>NEWEST_OLDEST</item>
         <item>OLDEST_NEWEST</item>
-        <item>ALPHABETICALLY</item>
+        <item>ALPHABETICALLY_A_Z</item>
+        <item>ALPHABETICALLY_Z_A</item>
     </string-array>
 
+    <string-array name="all_assets_order">
+        <item>Newest - Oldest</item>
+        <item>Oldest - Newest</item>
+    </string-array>
+
+    <string-array name="all_assets_order_keys">
+        <item>NEWEST_OLDEST</item>
+        <item>OLDEST_NEWEST</item>
+    </string-array>
 
 </resources>
