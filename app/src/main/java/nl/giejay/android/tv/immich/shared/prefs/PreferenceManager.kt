@@ -105,7 +105,7 @@ object PreferenceManager {
     }
 
     fun saveHostName(value: String) {
-        saveString(KEY_HOST_NAME, value)
+        saveString(KEY_HOST_NAME, value.replace(Regex("/$"), ""))
     }
 
     fun saveSslVerification(value: Boolean){

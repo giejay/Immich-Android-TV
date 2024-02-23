@@ -41,10 +41,6 @@ class ImmichApplication : Application() {
         appContext = this
         PreferenceManager.init(this)
 
-//        if (BuildConfig.DEBUG) {
-//            enableStrictMode()
-//        }
-
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         } else {
@@ -65,17 +61,6 @@ class ImmichApplication : Application() {
             PreferenceManager.setUserId(userId)
         }
         FirebaseCrashlytics.getInstance().setUserId(userId)
-    }
-
-    private fun enableStrictMode() {
-        StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder()
-                .detectDiskReads()
-                .detectDiskWrites()
-                .detectNetwork()
-                .penaltyDeath()
-                .build()
-        )
     }
 
     /**
