@@ -16,6 +16,8 @@ package nl.giejay.android.tv.immich.shared.util
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import android.view.View
+import android.view.ViewGroup
 import java.io.IOException
 import java.io.InputStream
 
@@ -23,6 +25,20 @@ import java.io.InputStream
  * A collection of utility methods, all static.
  */
 object Utils {
+
+    fun View.getAllChildren(): List<View> {
+        val result = ArrayList<View>()
+        if (this !is ViewGroup) {
+            result.add(this)
+        } else {
+            for (index in 0 until this.childCount) {
+                val child = this.getChildAt(index)
+                result.addAll(child.getAllChildren())
+            }
+        }
+        return result
+    }
+
     fun <T> Comparator<T>.optionalReversed(reverse: Boolean): Comparator<T>{
         if(reverse){
             return this.reversed()

@@ -1,11 +1,6 @@
 package nl.giejay.android.tv.immich.settings
 
-import android.R
 import android.app.Activity
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.appcompat.widget.LinearLayoutCompat
-import androidx.fragment.app.FragmentTransaction
 import androidx.leanback.app.RowsSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.HeaderItem
@@ -58,14 +53,9 @@ class SettingsFragment : RowsSupportFragment() {
                             "icon_view",
                             "icon_view"
                         ) {
-                            val ft: FragmentTransaction =
-                                parentFragmentManager.beginTransaction()
-                            ft.replace(nl.giejay.android.tv.immich.R.id.fragment_settings_holder_inner, ViewSettingsFragment())
-                            ft.commit()
-                            val findViewById =
-                                requireActivity().findViewById<TextView>(nl.giejay.android.tv.immich.R.id.test)
-                            findViewById.bringToFront()
-                            findViewById.findFocus()
+                            findNavController().navigate(
+                                HomeFragmentDirections.actionHomeFragmentToSettingsDialog("view")
+                            )
                         },
                         SettingsCard(
                             "Screensaver",
@@ -75,7 +65,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "ic_settings_settings"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionHomeFragmentToScreensaverSettings()
+                                HomeFragmentDirections.actionHomeFragmentToSettingsDialog("screensaver")
                             )
                         },
                         SettingsCard(
@@ -86,7 +76,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "bug"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionHomeFragmentToDebugSettings()
+                                HomeFragmentDirections.actionHomeFragmentToSettingsDialog("debug")
                             )
                         }
                     )

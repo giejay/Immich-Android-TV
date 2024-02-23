@@ -33,17 +33,17 @@
         android:id="@+id/action_global_homeFragment"
         app:destination="@id/homeFragment" />
 
-<!--    <fragment-->
-<!--        android:id="@+id/playbackFragment"-->
-<!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
-<!--        android:label="PlaybackFragment">-->
-<!--        <argument-->
-<!--            android:name="video"-->
-<!--            app:argType="nl.giejay.android.tv.immich.shared.datamodel.Video" />-->
-<!--        <action-->
-<!--            android:id="@+id/action_playbackFragment_to_playbackErrorFragment"-->
-<!--            app:destination="@id/playbackErrorFragment" />-->
-<!--    </fragment>-->
+    <!--    <fragment-->
+    <!--        android:id="@+id/playbackFragment"-->
+    <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
+    <!--        android:label="PlaybackFragment">-->
+    <!--        <argument-->
+    <!--            android:name="video"-->
+    <!--            app:argType="nl.giejay.android.tv.immich.shared.datamodel.Video" />-->
+    <!--        <action-->
+    <!--            android:id="@+id/action_playbackFragment_to_playbackErrorFragment"-->
+    <!--            app:destination="@id/playbackErrorFragment" />-->
+    <!--    </fragment>-->
 
     <fragment
         android:id="@+id/albumDetailsFragment"
@@ -63,8 +63,7 @@
     <fragment
         android:id="@+id/allAssetsFragment"
         android:name="nl.giejay.android.tv.immich.assets.AllAssetFragment"
-        android:label="AllAssetsFragment">
-    </fragment>
+        android:label="AllAssetsFragment"></fragment>
 
     <fragment
         android:id="@+id/photoSlider"
@@ -95,36 +94,34 @@
     <fragment
         android:id="@+id/authFragmentStep2"
         android:name="nl.giejay.android.tv.immich.auth.AuthFragmentStep2"
-        android:label="Authentication">
-    </fragment>
+        android:label="Authentication"></fragment>
 
     <fragment
         android:id="@+id/authByPhoneFragment"
         android:name="nl.giejay.android.tv.immich.auth.AuthByPhoneFragment"
-        android:label="Authentication">
-    </fragment>
+        android:label="Authentication"></fragment>
 
-<!--    <fragment-->
-<!--        android:id="@+id/playbackErrorFragment"-->
-<!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackErrorFragment"-->
-<!--        android:label="PlaybackErrorFragment">-->
-<!--        <argument-->
-<!--            android:name="video"-->
-<!--            app:argType="nl.giejay.android.tv.immich.shared.datamodel.Video" />-->
-<!--        <argument-->
-<!--            android:name="error"-->
-<!--            app:argType="java.lang.Exception" />-->
-<!--        <action-->
-<!--            app:popUpTo="@+id/playbackFragment"-->
-<!--            app:popUpToInclusive="true"-->
-<!--            android:id="@+id/action_playbackErrorFragment_to_playbackFragment"-->
-<!--            app:destination="@id/playbackFragment" />-->
-<!--        <action-->
-<!--            app:popUpTo="@+id/playbackFragment"-->
-<!--            app:popUpToInclusive="true"-->
-<!--            android:id="@+id/action_playbackErrorFragment_to_browseFragment"-->
-<!--            app:destination="@id/browseFragment" />-->
-<!--    </fragment>-->
+    <!--    <fragment-->
+    <!--        android:id="@+id/playbackErrorFragment"-->
+    <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackErrorFragment"-->
+    <!--        android:label="PlaybackErrorFragment">-->
+    <!--        <argument-->
+    <!--            android:name="video"-->
+    <!--            app:argType="nl.giejay.android.tv.immich.shared.datamodel.Video" />-->
+    <!--        <argument-->
+    <!--            android:name="error"-->
+    <!--            app:argType="java.lang.Exception" />-->
+    <!--        <action-->
+    <!--            app:popUpTo="@+id/playbackFragment"-->
+    <!--            app:popUpToInclusive="true"-->
+    <!--            android:id="@+id/action_playbackErrorFragment_to_playbackFragment"-->
+    <!--            app:destination="@id/playbackFragment" />-->
+    <!--        <action-->
+    <!--            app:popUpTo="@+id/playbackFragment"-->
+    <!--            app:popUpToInclusive="true"-->
+    <!--            android:id="@+id/action_playbackErrorFragment_to_browseFragment"-->
+    <!--            app:destination="@id/browseFragment" />-->
+    <!--    </fragment>-->
     <fragment
         android:id="@+id/albumFragment"
         android:name="nl.giejay.android.tv.immich.album.AlbumFragment"
@@ -154,7 +151,19 @@
         <action
             android:id="@+id/action_homeFragment_to_photo_slider"
             app:destination="@id/photoSlider" />
+
+        <action
+            android:id="@+id/action_homeFragment_to_settings_dialog"
+            app:destination="@id/settings_dialog_fragment" />
     </fragment>
+
+    <dialog
+        android:id="@+id/settings_dialog_fragment"
+        android:name="nl.giejay.android.tv.immich.settings.SettingsDialogFragment">
+        <argument
+            android:name="settings_type"
+            app:argType="string" />
+    </dialog>
 
     <fragment
         android:id="@+id/screenSaverSettings"
@@ -168,14 +177,12 @@
     <fragment
         android:id="@+id/viewSettings"
         android:name="nl.giejay.android.tv.immich.settings.ViewSettingsFragment"
-        android:label="ViewSettings">
-    </fragment>
+        android:label="ViewSettings"></fragment>
 
     <fragment
         android:id="@+id/debugSettings"
         android:name="nl.giejay.android.tv.immich.settings.DebugSettingsFragment"
-        android:label="DebugSettings">
-    </fragment>
+        android:label="DebugSettings"></fragment>
 
     <fragment
         android:id="@+id/noFirebaseFragment"
