@@ -33,6 +33,10 @@
         android:id="@+id/action_global_homeFragment"
         app:destination="@id/homeFragment" />
 
+    <action
+        android:id="@+id/action_global_to_settings_dialog"
+        app:destination="@id/settings_dialog_fragment" />
+
     <!--    <fragment-->
     <!--        android:id="@+id/playbackFragment"-->
     <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
@@ -151,10 +155,6 @@
         <action
             android:id="@+id/action_homeFragment_to_photo_slider"
             app:destination="@id/photoSlider" />
-
-        <action
-            android:id="@+id/action_homeFragment_to_settings_dialog"
-            app:destination="@id/settings_dialog_fragment" />
     </fragment>
 
     <dialog

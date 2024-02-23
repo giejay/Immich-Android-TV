@@ -17,6 +17,12 @@ fun List<Asset>.toSliderItems(): List<SliderItem> {
     }
 }
 
+fun List<Asset>.toCards(): List<Card> {
+    return this.map {
+        it.toCard()
+    }
+}
+
 fun Asset.toCard(): Card {
     return Card(
         this.deviceAssetId ?: "",

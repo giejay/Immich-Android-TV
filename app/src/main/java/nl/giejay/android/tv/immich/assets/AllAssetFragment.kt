@@ -28,7 +28,7 @@ class AllAssetFragment : VerticalCardGridFragment<Asset>() {
         return apiClient.listAssets(page, pageCount, if(PreferenceManager.allAssetsOrder() == PhotosOrder.NEWEST_OLDEST) "desc" else "asc")
     }
 
-    override fun onItemSelected(card: Card) {
+    override fun onItemSelected(card: Card, indexOf: Int) {
         // no use case yet
     }
 

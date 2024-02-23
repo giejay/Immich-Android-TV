@@ -24,6 +24,7 @@ class SettingsDialogFragment : DialogFragment() {
         val settingsType = SettingsDialogFragmentArgs.fromBundle(requireArguments()).settingsType
         val fragment = when(settingsType) {
             "view" -> ViewSettingsFragment()
+            "album_details" -> AlbumDetailsSettingsFragment()
             "debug" -> DebugSettingsFragment()
             else -> ScreenSaverSettingsFragment()
         }

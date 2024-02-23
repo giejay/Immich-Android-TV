@@ -88,13 +88,12 @@ open class GridFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFr
                 )
             }
         }
-    private val mChildLaidOutListener: OnChildLaidOutListener = object : OnChildLaidOutListener {
-        override fun onChildLaidOut(parent: ViewGroup, view: View, position: Int, id: Long) {
+    private val mChildLaidOutListener: OnChildLaidOutListener =
+        OnChildLaidOutListener { _, _, position, _ ->
             if (position == 0) {
                 showOrHideTitle()
             }
         }
-    }
 
     /**
      * Sets an item selection listener.

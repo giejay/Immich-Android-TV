@@ -6,7 +6,7 @@ import androidx.preference.PreferenceManager
 import okhttp3.HttpUrl
 
 object PreferenceManager {
-    private lateinit var sharedPreference: SharedPreferences
+    lateinit var sharedPreference: SharedPreferences
     private lateinit var liveSharedPreferences: LiveSharedPreferences
     private val liveContext: MutableMap<String, Any> = mutableMapOf()
 

@@ -18,19 +18,23 @@ package nl.giejay.android.tv.immich
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.fragment.NavHostFragment
 import nl.giejay.android.tv.immich.castconnect.CastHelper
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
 import timber.log.Timber
+
 
 /**
  * FragmentActivity that displays the various fragments
  */
 class MainActivity : FragmentActivity() {
-
+    private lateinit var keyEventsModel: KeyEventsViewModel
     private lateinit var navGraph: NavGraph
     private lateinit var navController: NavController
     private lateinit var castHelper: CastHelper
@@ -41,6 +45,8 @@ class MainActivity : FragmentActivity() {
         Timber.i("Booting main activity")
 
         setContentView(R.layout.activity_main)
+
+        keyEventsModel = ViewModelProvider(this)[KeyEventsViewModel::class.java]
 
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
@@ -58,6 +64,11 @@ class MainActivity : FragmentActivity() {
         }
 
         loadDeepLinkOrStartingPage(intent.data)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        keyEventsModel.postKeyEvent(event)
+        return super.onKeyDown(keyCode, event)
     }
 
     /**

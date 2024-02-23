@@ -54,7 +54,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "icon_view"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionHomeFragmentToSettingsDialog("view")
+                                HomeFragmentDirections.actionGlobalToSettingsDialog("view")
                             )
                         },
                         SettingsCard(
@@ -65,7 +65,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "ic_settings_settings"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionHomeFragmentToSettingsDialog("screensaver")
+                                HomeFragmentDirections.actionGlobalToSettingsDialog("screensaver")
                             )
                         },
                         SettingsCard(
@@ -76,7 +76,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "bug"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionHomeFragmentToSettingsDialog("debug")
+                                HomeFragmentDirections.actionGlobalToSettingsDialog("debug")
                             )
                         }
                     )

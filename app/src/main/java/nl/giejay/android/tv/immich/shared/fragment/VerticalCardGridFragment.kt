@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.shared.fragment
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.DisplayMetrics
+import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
 import androidx.leanback.app.BackgroundManager
@@ -10,6 +11,10 @@ import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.FocusHighlight
 import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.leanback.widget.VerticalGridPresenter
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import com.bumptech.glide.Glide
@@ -28,6 +33,7 @@ import nl.giejay.android.tv.immich.card.CardPresenterSelector
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.Debouncer
+import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -39,7 +45,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private lateinit var mMetrics: DisplayMetrics
     private var mBackgroundManager: BackgroundManager? = null
 
-    private lateinit var apiClient: ApiClient;
+    private lateinit var apiClient: ApiClient
+    private lateinit var keyEvents: KeyEventsViewModel
     private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_SMALL
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
@@ -49,6 +56,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
+    protected var currentSelectedIndex: Int = 0
 
     abstract fun sortItems(items: List<ITEM>): List<ITEM>
     abstract suspend fun loadItems(
@@ -63,7 +71,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         // default no title
     }
 
-    abstract fun onItemSelected(card: Card)
+    abstract fun onItemSelected(card: Card, indexOf: Int)
     abstract fun onItemClicked(card: Card)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,19 +97,32 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             return
         }
 
+        keyEvents = ViewModelProvider(requireActivity())[KeyEventsViewModel::class.java]
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                keyEvents.state.collect {
+                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size())) {
+                        openPopUpMenu()
+                    }
+                }
+            }
+        }
+
         setupAdapter()
         setupBackgroundManager()
+
         onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
             val card: Card = item as Card
             if (selectionMode) {
                 card.selected = !card.selected
-                adapter.notifyArrayItemRangeChanged(adapter.indexOf(item), 1)
-                onItemSelected(card)
+                adapter.notifyArrayItemRangeChanged(currentSelectedIndex, 1)
+                onItemSelected(card, currentSelectedIndex)
             } else {
                 onItemClicked(card)
             }
         }
         setOnItemViewSelectedListener { _, item, _, _ ->
+            currentSelectedIndex = adapter.indexOf(item)
             item?.let {
                 loadBackgroundDebounced((it as Card).backgroundUrl) {
                     loadBackgroundDebounced(it.thumbnailUrl) {
@@ -131,6 +152,10 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                 { itRight -> setupViews(itRight) }
             )
         }
+    }
+
+    protected open fun openPopUpMenu() {
+        // to implement by children
     }
 
     private fun fetchNextItems(): Job {
@@ -252,7 +277,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     companion object {
-        private const val COLUMNS = 4
+        const val COLUMNS = 4
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
         private const val FETCH_COUNT = COLUMNS * 3
         private const val FETCH_PAGE_COUNT = 100
