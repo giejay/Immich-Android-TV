@@ -1,16 +1,20 @@
 package nl.giejay.android.tv.immich.settings
 
+import android.R
 import android.app.Activity
-import android.content.Intent
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.appcompat.widget.LinearLayoutCompat
+import androidx.fragment.app.FragmentTransaction
 import androidx.leanback.app.RowsSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.HeaderItem
 import androidx.leanback.widget.ListRow
 import androidx.leanback.widget.ListRowPresenter
 import androidx.leanback.widget.OnItemViewClickedListener
-import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+
 
 class SettingsFragment : RowsSupportFragment() {
     private val mRowsAdapter: ArrayObjectAdapter
@@ -54,9 +58,14 @@ class SettingsFragment : RowsSupportFragment() {
                             "icon_view",
                             "icon_view"
                         ) {
-                            findNavController().navigate(
-                                HomeFragmentDirections.actionHomeFragmentToViewSettings()
-                            )
+                            val ft: FragmentTransaction =
+                                parentFragmentManager.beginTransaction()
+                            ft.replace(nl.giejay.android.tv.immich.R.id.fragment_settings_holder_inner, ViewSettingsFragment())
+                            ft.commit()
+                            val findViewById =
+                                requireActivity().findViewById<TextView>(nl.giejay.android.tv.immich.R.id.test)
+                            findViewById.bringToFront()
+                            findViewById.findFocus()
                         },
                         SettingsCard(
                             "Screensaver",
