@@ -28,8 +28,9 @@ object PreferenceManager {
     private val KEY_SLIDER_ONLY_USE_THUMBNAILS = "slider_only_use_thumbnails"
     private val KEY_ALBUMS_SORTING = "albums_sorting"
     private val KEY_PHOTOS_SORTING = "photos_sorting"
-    private val KEY_ALBUMS_SORTING_REVERSE = "albums_sorting_reverse"
-    private val KEY_PHOTOS_SORTING_REVERSE = "photos_sorting_reverse"
+    private val KEY_ALL_ASSETS_SORTING = "all_assets_sorting"
+//    private val KEY_ALBUMS_SORTING_REVERSE = "albums_sorting_reverse"
+//    private val KEY_PHOTOS_SORTING_REVERSE = "photos_sorting_reverse"
 
     // other
     private val KEY_DEBUG_MODE = "debug_mode"
@@ -49,8 +50,9 @@ object PreferenceManager {
         KEY_DEBUG_MODE to false,
         KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
         KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),
-        KEY_ALBUMS_SORTING_REVERSE to false,
-        KEY_PHOTOS_SORTING_REVERSE to false,
+        KEY_ALL_ASSETS_SORTING to PhotosOrder.NEWEST_OLDEST.toString(),
+//        KEY_ALBUMS_SORTING_REVERSE to false,
+//        KEY_PHOTOS_SORTING_REVERSE to false,
         KEY_SLIDER_ONLY_USE_THUMBNAILS to true
     )
 
@@ -163,13 +165,17 @@ object PreferenceManager {
         return PhotosOrder.valueOf(liveContext[KEY_PHOTOS_SORTING] as String)
     }
 
-    fun reversePhotosOrder(): Boolean {
-        return liveContext[KEY_PHOTOS_SORTING_REVERSE] as Boolean
+    fun allAssetsOrder(): PhotosOrder {
+        return PhotosOrder.valueOf(liveContext[KEY_ALL_ASSETS_SORTING] as String)
     }
 
-    fun reverseAlbumsOrder(): Boolean {
-        return liveContext[KEY_ALBUMS_SORTING_REVERSE] as Boolean
-    }
+//    fun reversePhotosOrder(): Boolean {
+//        return liveContext[KEY_PHOTOS_SORTING_REVERSE] as Boolean
+//    }
+//
+//    fun reverseAlbumsOrder(): Boolean {
+//        return liveContext[KEY_ALBUMS_SORTING_REVERSE] as Boolean
+//    }
 
     private fun saveString(key: String, value: String) {
         liveContext[key] = value

@@ -69,8 +69,8 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall { service.listAssetsFromAlbum(albumId) }
     }
 
-    suspend fun listAssets(page: Int, pageCount: Int): Either<String, List<Asset>> {
-        return executeAPICall { service.listAssets(page, pageCount) }
+    suspend fun listAssets(page: Int, pageCount: Int, order: String): Either<String, List<Asset>> {
+        return executeAPICall { service.listAssets(page, pageCount, order) }
     }
 
     private suspend fun <T> executeAPICall(handler: suspend () -> Response<T>): Either<String, T> {

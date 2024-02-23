@@ -11,7 +11,6 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import nl.giejay.android.tv.immich.shared.util.Utils.optionalReversed
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 
@@ -19,7 +18,7 @@ import nl.giejay.android.tv.immich.shared.util.toSliderItems
 class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
     private var currentAlbum: AlbumDetails? = null
     override fun sortItems(items: List<Asset>): List<Asset> {
-        return items.sortedWith(PreferenceManager.photosOrder().sort.optionalReversed(PreferenceManager.reversePhotosOrder()))
+        return items.sortedWith(PreferenceManager.photosOrder().sort)
     }
 
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
