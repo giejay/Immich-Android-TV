@@ -12,7 +12,8 @@ More info here: https://github.com/immich-app/immich
 
 This Android TV app will allow you to view those uploaded photos and videos. Current features include:
 
-- Login screen to set hostname + API key
+- Sign in by phone (see: https://github.com/giejay/Immich-Android-TV-Authentication)
+- Sign in by hostname + API key
 - Demo environment if you want to try it before adding credentials
 - Album fetching + Lazy loading
 - Photos/Videos in Album fetching + Lazy loading
@@ -20,6 +21,7 @@ This Android TV app will allow you to view those uploaded photos and videos. Cur
 - Slideshow of the photos/videos
 - Playing the slideshow with a configured interval
 - Setting the app as the screensaver
+- All sorts of sorting options for albums and photos. Being able to sort specific albums.
 
 ## Joining the Open Test
 You can join the open test here: https://play.google.com/apps/testing/nl.giejay.android.tv.immich
