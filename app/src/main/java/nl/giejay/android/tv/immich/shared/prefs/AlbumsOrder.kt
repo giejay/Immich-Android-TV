@@ -13,4 +13,10 @@ enum class AlbumsOrder(val sort: Comparator<Album>) {
     LEAST_UPDATED({ album2, album ->
         album2.endDate?.compareToNullSafe(album.endDate) ?: -1
     });
+
+    companion object {
+        fun valueOfSafe(name: String, default: AlbumsOrder): AlbumsOrder{
+            return values().find { it.toString() == name } ?: default
+        }
+    }
 }

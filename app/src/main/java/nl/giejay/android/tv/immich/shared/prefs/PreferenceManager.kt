@@ -158,15 +158,15 @@ object PreferenceManager {
     }
 
     fun albumsOrder(): AlbumsOrder {
-        return AlbumsOrder.valueOf(liveContext[KEY_ALBUMS_SORTING] as String)
+        return AlbumsOrder.valueOfSafe(liveContext[KEY_ALBUMS_SORTING] as String, AlbumsOrder.LAST_UPDATED)
     }
 
     fun photosOrder(): PhotosOrder {
-        return PhotosOrder.valueOf(liveContext[KEY_PHOTOS_SORTING] as String)
+        return PhotosOrder.valueOfSafe(liveContext[KEY_PHOTOS_SORTING] as String, PhotosOrder.OLDEST_NEWEST)
     }
 
     fun allAssetsOrder(): PhotosOrder {
-        return PhotosOrder.valueOf(liveContext[KEY_ALL_ASSETS_SORTING] as String)
+        return PhotosOrder.valueOfSafe(liveContext[KEY_ALL_ASSETS_SORTING] as String, PhotosOrder.NEWEST_OLDEST)
     }
 
 //    fun reversePhotosOrder(): Boolean {
