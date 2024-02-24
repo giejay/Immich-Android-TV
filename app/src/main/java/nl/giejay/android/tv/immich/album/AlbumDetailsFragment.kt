@@ -26,8 +26,8 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
     private lateinit var livePref: LivePreference<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
+        super.onCreate(savedInstanceState)
         livePref = LiveSharedPreferences(PreferenceManager.sharedPreference)
             .getString(PreferenceManager.keyAlbumsSorting(albumId), PreferenceManager.photosOrder().toString(), true)
     }
