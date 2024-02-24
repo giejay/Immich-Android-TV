@@ -163,6 +163,14 @@
         <argument
             android:name="settings_type"
             app:argType="string" />
+        <argument
+            android:name="albumId"
+            android:defaultValue=""
+            app:argType="string" />
+        <argument
+            android:name="albumName"
+            android:defaultValue=""
+            app:argType="string" />
     </dialog>
 
     <fragment

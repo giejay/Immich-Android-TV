@@ -13,34 +13,39 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.prefs.LivePreference
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toCard
-import nl.giejay.android.tv.immich.shared.util.toCards
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 
 
 class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
     private var currentAlbum: AlbumDetails? = null
-    private var livePref = LiveSharedPreferences(PreferenceManager.sharedPreference).getString("photos_sorting", PreferenceManager.photosOrder().toString())
+    private lateinit var albumId: String
+    private lateinit var livePref: LivePreference<String>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
+        livePref = LiveSharedPreferences(PreferenceManager.sharedPreference)
+            .getString(PreferenceManager.keyAlbumsSorting(albumId), PreferenceManager.photosOrder().toString(), true)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         livePref.observe(viewLifecycleOwner) { _ ->
-            assets = sortItems(assets)
-            adapter.clear()
-            adapter.addAll(0, assets.toCards())
+            resortItems()
         }
     }
 
     override fun sortItems(items: List<Asset>): List<Asset> {
-        return items.sortedWith(PreferenceManager.photosOrder().sort)
+        return items.sortedWith(PreferenceManager.getSortingForAlbum(albumId).sort)
     }
 
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
         if(page == startPage){
             // no pagination possible yet!
-            val albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
             return apiClient.listAssetsFromAlbum(albumId).map {
                 currentAlbum = it
                 it.assets
@@ -55,7 +60,7 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
 
     override fun openPopUpMenu() {
         findNavController().navigate(
-            HomeFragmentDirections.actionGlobalToSettingsDialog("album_details")
+            HomeFragmentDirections.actionGlobalToSettingsDialog("album_details", albumId, currentAlbum!!.albumName)
         )
     }
 

@@ -12,7 +12,8 @@ class LivePreference<T> constructor(
     private val updates: Observable<String>,
     private val preferences: SharedPreferences,
     private val key: String,
-    private val defaultValue: T
+    private val defaultValue: T,
+    private val ignoreInitialValue: Boolean = false
 ) : MutableLiveData<T>() {
 
     private var disposable: Disposable? = null
@@ -23,7 +24,9 @@ class LivePreference<T> constructor(
 
     override fun onActive() {
         super.onActive()
-        value = (preferences.all[key] as T) ?: defaultValue
+        if(!ignoreInitialValue){
+            value = (preferences.all[key] as T) ?: defaultValue
+        }
 
         disposable = updates.filter { t -> t == key }
             .subscribeOn(Schedulers.io())

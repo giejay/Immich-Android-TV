@@ -1,13 +1,13 @@
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:title="View settings"
+    android:title="Specific album settings"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
         android:title="Ordering">
 
         <ListPreference
-            android:key="photos_sorting"
+            android:key="photos_sorting_specific_album"
             android:title="Photos in albums"
             android:summary="Set the order in which photos should appear inside albums"
             app:useSimpleSummaryProvider="true"

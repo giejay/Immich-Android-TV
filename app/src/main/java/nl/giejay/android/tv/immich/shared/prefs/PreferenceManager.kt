@@ -26,7 +26,7 @@ object PreferenceManager {
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
     private val KEY_SLIDER_ONLY_USE_THUMBNAILS = "slider_only_use_thumbnails"
-    private val KEY_ALBUMS_SORTING = "albums_sorting"
+    val KEY_ALBUMS_SORTING = "albums_sorting"
     private val KEY_PHOTOS_SORTING = "photos_sorting"
     private val KEY_ALL_ASSETS_SORTING = "all_assets_sorting"
 //    private val KEY_ALBUMS_SORTING_REVERSE = "albums_sorting_reverse"
@@ -110,7 +110,7 @@ object PreferenceManager {
         saveString(KEY_HOST_NAME, value.replace(Regex("/$"), ""))
     }
 
-    fun saveSslVerification(value: Boolean){
+    fun saveSslVerification(value: Boolean) {
         saveBoolean(KEY_DISABLE_SSL_VERIFICATION, value)
     }
 
@@ -144,7 +144,7 @@ object PreferenceManager {
         return liveContext[KEY_DEBUG_MODE] as Boolean
     }
 
-    fun saveDebugMode(debugMode: Boolean){
+    fun saveDebugMode(debugMode: Boolean) {
         liveContext[KEY_DEBUG_MODE] = debugMode
         saveBoolean(KEY_DEBUG_MODE, debugMode)
     }
@@ -153,20 +153,44 @@ object PreferenceManager {
         return getString(KEY_USER_ID, "")
     }
 
-    fun setUserId(userId: String){
+    fun setUserId(userId: String) {
         saveString(KEY_USER_ID, userId)
     }
 
     fun albumsOrder(): AlbumsOrder {
-        return AlbumsOrder.valueOfSafe(liveContext[KEY_ALBUMS_SORTING] as String, AlbumsOrder.LAST_UPDATED)
+        return AlbumsOrder.valueOfSafe(
+            liveContext[KEY_ALBUMS_SORTING] as String,
+            AlbumsOrder.LAST_UPDATED
+        )
     }
 
     fun photosOrder(): PhotosOrder {
-        return PhotosOrder.valueOfSafe(liveContext[KEY_PHOTOS_SORTING] as String, PhotosOrder.OLDEST_NEWEST)
+        return PhotosOrder.valueOfSafe(
+            liveContext[KEY_PHOTOS_SORTING] as String,
+            PhotosOrder.OLDEST_NEWEST
+        )
     }
 
     fun allAssetsOrder(): PhotosOrder {
-        return PhotosOrder.valueOfSafe(liveContext[KEY_ALL_ASSETS_SORTING] as String, PhotosOrder.NEWEST_OLDEST)
+        return PhotosOrder.valueOfSafe(
+            liveContext[KEY_ALL_ASSETS_SORTING] as String,
+            PhotosOrder.NEWEST_OLDEST
+        )
+    }
+
+    fun saveSortingForAlbum(albumId: String, value: String) {
+        saveString(keyAlbumsSorting(albumId), value)
+    }
+
+    fun getSortingForAlbum(albumId: String): PhotosOrder {
+        return PhotosOrder.valueOfSafe(
+            getString(keyAlbumsSorting(albumId), photosOrder().toString()),
+            photosOrder()
+        )
+    }
+
+    fun keyAlbumsSorting(albumId: String): String {
+        return "photos_sorting_${albumId}"
     }
 
 //    fun reversePhotosOrder(): Boolean {

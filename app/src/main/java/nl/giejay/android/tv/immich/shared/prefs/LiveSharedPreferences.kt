@@ -19,8 +19,8 @@ class LiveSharedPreferences(private val preferences: SharedPreferences) {
         return preferences
     }
 
-    fun getString(key: String, defaultValue: String): LivePreference<String> {
-        return LivePreference(updates, preferences, key, defaultValue)
+    fun getString(key: String, defaultValue: String, ignoreInitialValue: Boolean = false): LivePreference<String> {
+        return LivePreference(updates, preferences, key, defaultValue, ignoreInitialValue)
     }
 
     fun <T>subscribe(key: String, defaultValue: T, onChange: (T) -> Unit){

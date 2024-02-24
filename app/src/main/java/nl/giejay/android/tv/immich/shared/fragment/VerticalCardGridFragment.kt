@@ -101,7 +101,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 keyEvents.state.collect {
-                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size())) {
+                    // open popup menu on the right side if its the last photo in the row and user presses right button
+                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size())) {
                         openPopUpMenu()
                     }
                 }
@@ -152,6 +153,12 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                 { itRight -> setupViews(itRight) }
             )
         }
+    }
+
+    protected open fun resortItems(){
+        assets = sortItems(assets)
+        adapter.clear()
+        adapter.addAll(0, assets.map { createCard(it) })
     }
 
     protected open fun openPopUpMenu() {

@@ -15,7 +15,9 @@ abstract class SettingsScreenFragment : LeanbackSettingsFragmentCompat() {
     abstract fun getFragment(): SettingsInnerFragment
 
     override fun onPreferenceStartInitialScreen() {
-        startPreferenceFragment(getFragment())
+        val fragment = getFragment()
+        fragment.arguments = arguments
+        startPreferenceFragment(fragment)
     }
 
     override fun onPreferenceStartFragment(

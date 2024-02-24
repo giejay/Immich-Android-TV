@@ -21,10 +21,16 @@ class SettingsDialogFragment : DialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val settingsType = SettingsDialogFragmentArgs.fromBundle(requireArguments()).settingsType
-        val fragment = when(settingsType) {
+        val args = SettingsDialogFragmentArgs.fromBundle(requireArguments())
+        val settingsType = args.settingsType
+        val fragment = when (settingsType) {
             "view" -> ViewSettingsFragment()
-            "album_details" -> AlbumDetailsSettingsFragment()
+            "album_details" -> {
+                val frag = AlbumDetailsSettingsFragment()
+                frag.arguments = requireArguments()
+                frag
+            }
+
             "debug" -> DebugSettingsFragment()
             else -> ScreenSaverSettingsFragment()
         }
