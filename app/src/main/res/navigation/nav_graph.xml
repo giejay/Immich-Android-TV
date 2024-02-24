@@ -37,6 +37,10 @@
         android:id="@+id/action_global_to_settings_dialog"
         app:destination="@id/settings_dialog_fragment" />
 
+    <action
+        android:id="@+id/action_global_album_fragment"
+        app:destination="@id/albumFragment" />
+
     <!--    <fragment-->
     <!--        android:id="@+id/playbackFragment"-->
     <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
@@ -177,9 +181,6 @@
         android:id="@+id/screenSaverSettings"
         android:name="nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragment"
         android:label="ScreenSaverSettings">
-        <action
-            android:id="@+id/action_screensaver_settings_to_album_fragment"
-            app:destination="@id/albumFragment" />
     </fragment>
 
     <fragment

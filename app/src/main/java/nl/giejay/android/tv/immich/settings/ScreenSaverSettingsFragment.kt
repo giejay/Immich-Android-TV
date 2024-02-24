@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 
 
 class ScreenSaverSettingsFragment : SettingsScreenFragment() {
@@ -24,7 +25,11 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
     override fun handlePreferenceClick(preference: Preference?): Boolean {
         when (preference?.key) {
             "screensaver_set" -> {
-                startScreenSaverIntent()
+                if(PreferenceManager.getScreenSaverAlbums().isEmpty()){
+                    Toast.makeText(requireContext(), "Please set your albums to show first!", Toast.LENGTH_SHORT).show()
+                } else {
+                    startScreenSaverIntent()
+                }
                 return true
             }
 
@@ -34,7 +39,7 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
 
             "screensaver_set_albums" ->
                 findNavController().navigate(
-                    ScreenSaverSettingsFragmentDirections.actionScreensaverSettingsToAlbumFragment(
+                    ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
                         true
                     )
                 )
