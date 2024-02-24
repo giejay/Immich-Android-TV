@@ -19,7 +19,11 @@ enum class PhotosOrder(val sort: Comparator<Asset>) {
         }
     ),
     ALPHABETICALLY_A_Z({ a1, a2 -> a1.deviceAssetId?.compareToNullSafe(a2.deviceAssetId) ?: 1 }),
-    // backwards compatible
-    ALPHABETICALLY({ a1, a2 -> a1.deviceAssetId?.compareToNullSafe(a2.deviceAssetId) ?: 1 }),
-    ALPHABETICALLY_Z_A({ a2, a1 -> a1.deviceAssetId?.compareToNullSafe(a2.deviceAssetId) ?: 1 })
+    ALPHABETICALLY_Z_A({ a2, a1 -> a1.deviceAssetId?.compareToNullSafe(a2.deviceAssetId) ?: 1 });
+
+    companion object {
+        fun valueOfSafe(name: String, default: PhotosOrder): PhotosOrder{
+            return PhotosOrder.values().find { it.toString() == name } ?: default
+        }
+    }
 }
