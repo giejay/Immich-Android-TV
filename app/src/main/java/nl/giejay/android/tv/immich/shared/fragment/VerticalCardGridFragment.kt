@@ -56,7 +56,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
-    protected var currentSelectedIndex: Int = 0
+    private var currentSelectedIndex: Int = 0
 
     abstract fun sortItems(items: List<ITEM>): List<ITEM>
     abstract suspend fun loadItems(

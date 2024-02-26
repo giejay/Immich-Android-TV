@@ -49,8 +49,8 @@ class LiveSharedPreferences(private val preferences: SharedPreferences) {
         return LivePreference(updates, preferences, key, defaultValue)
     }
 
-    fun <T> listenMultiple(keys: List<String>, defaultValue: T): MultiPreference<T> {
-        return MultiPreference(updates, preferences, keys, defaultValue)
+    fun listenMultiple(keys: List<String>): MultiPreference {
+        return MultiPreference(updates, preferences, keys)
     }
 
 }

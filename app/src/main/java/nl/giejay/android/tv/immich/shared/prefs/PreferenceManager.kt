@@ -11,9 +11,9 @@ object PreferenceManager {
     private val liveContext: MutableMap<String, Any> = mutableMapOf()
 
     // host settings
-    private val KEY_HOST_NAME = "hostName"
-    private val KEY_API_KEY = "apiKey"
-    private val KEY_DISABLE_SSL_VERIFICATION = "disableSSLVerification"
+    val KEY_HOST_NAME = "hostName"
+    val KEY_API_KEY = "apiKey"
+    val KEY_DISABLE_SSL_VERIFICATION = "disableSSLVerification"
 
     // screensaver settings
     private val KEY_SCREENSAVER_INTERVAL = "screensaver_interval"
@@ -33,7 +33,7 @@ object PreferenceManager {
 //    private val KEY_PHOTOS_SORTING_REVERSE = "photos_sorting_reverse"
 
     // other
-    private val KEY_DEBUG_MODE = "debug_mode"
+    val KEY_DEBUG_MODE = "debug_mode"
     private val KEY_USER_ID = "user_id"
 
     private val propsToWatch = mapOf(
@@ -201,6 +201,10 @@ object PreferenceManager {
 //        return liveContext[KEY_ALBUMS_SORTING_REVERSE] as Boolean
 //    }
 
+    fun getBoolean(key: String, default: Boolean): Boolean {
+        return sharedPreference.getBoolean(key, default)
+    }
+
     private fun saveString(key: String, value: String) {
         liveContext[key] = value
         sharedPreference.edit().putString(key, value).apply()
@@ -216,7 +220,7 @@ object PreferenceManager {
         sharedPreference.edit().putStringSet(key, value).apply()
     }
 
-    private fun getString(key: String, defaultValue: String): String {
+    fun getString(key: String, defaultValue: String): String {
         return sharedPreference.getString(key, defaultValue) ?: defaultValue
     }
 }

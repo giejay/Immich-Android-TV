@@ -8,17 +8,16 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.observers.DisposableObserver
 import io.reactivex.rxjava3.schedulers.Schedulers
 
-class MultiPreference<T> constructor(private val updates: Observable<String>,
+class MultiPreference constructor(private val updates: Observable<String>,
                                      private val preferences: SharedPreferences,
-                                     private val keys: List<String>,
-                                     private val defaultValue: T) : MutableLiveData<Map<String, T>>() {
+                                     private val keys: List<String>) : MutableLiveData<Map<String, Any?>>() {
 
     private var disposable: Disposable? = null
-    private val values = mutableMapOf<String, T>()
+    private val values = mutableMapOf<String, Any?>()
 
     init {
         for (key in keys)
-            values[key] = preferences.all[key] as T ?: defaultValue
+            values[key] = preferences.all[key]
     }
 
     override fun onActive() {
@@ -32,7 +31,7 @@ class MultiPreference<T> constructor(private val updates: Observable<String>,
                 }
 
                 override fun onNext(t: String) {
-                    values[t] = preferences.all[t] as T ?: defaultValue
+                    values[t] = preferences.all[t] as Any
                     postValue(values)
                 }
 

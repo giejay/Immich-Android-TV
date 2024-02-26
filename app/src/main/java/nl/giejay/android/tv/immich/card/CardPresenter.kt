@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.ContextThemeWrapper
 import androidx.leanback.widget.ImageCardView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.model.GlideUrl
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.presenter.AbstractPresenter
 

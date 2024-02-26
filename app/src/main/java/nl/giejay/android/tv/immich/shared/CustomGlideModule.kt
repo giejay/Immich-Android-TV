@@ -1,81 +1,71 @@
-package nl.giejay.android.tv.immich.shared
-
-import android.content.Context
-import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.GlideBuilder
-import com.bumptech.glide.Registry
-import com.bumptech.glide.annotation.GlideModule
-import com.bumptech.glide.load.Options
-import com.bumptech.glide.load.model.GlideUrl
-import com.bumptech.glide.load.model.Headers
-import com.bumptech.glide.load.model.LazyHeaders
-import com.bumptech.glide.load.model.ModelLoader
-import com.bumptech.glide.load.model.ModelLoaderFactory
-import com.bumptech.glide.load.model.MultiModelLoaderFactory
-import com.bumptech.glide.load.model.stream.BaseGlideUrlLoader
-import com.bumptech.glide.module.AppGlideModule
-import nl.giejay.android.tv.immich.shared.prefs.LivePreference
-import java.io.InputStream
-
-
-@GlideModule
-class CustomGlideModule : AppGlideModule() {
-    override fun applyOptions(context: Context, builder: GlideBuilder) {
-    }
-
-    override fun registerComponents(
-        context: Context, glide: Glide, registry: Registry
-    ) {
-        // override default loader with one that attaches headers
-        registry.replace(
-            String::class.java,
-            InputStream::class.java, Loader.Factory()
-        )
-    }
-
-    private class Loader(concreteLoader: ModelLoader<GlideUrl?, InputStream?>?) :
-        BaseGlideUrlLoader<String?>(concreteLoader) {
-
-        override fun handles(model: String): Boolean {
-            return true
-        }
-
-        override fun getHeaders(
-            model: String?,
-            width: Int,
-            height: Int,
-            options: Options?
-        ): Headers {
-            val apiKey = PreferenceManager.apiKey()
-            if(apiKey.isNotEmpty()){
-                return LazyHeaders.Builder()
-                    .addHeader("x-api-key", apiKey)
-                    .build()
-            }
-            return Headers.DEFAULT
-
-        }
-
-        class Factory :
-            ModelLoaderFactory<String?, InputStream?> {
-            override fun build(
-                multiFactory: MultiModelLoaderFactory
-            ): ModelLoader<String?, InputStream?> {
-                return Loader(
-                    multiFactory.build(
-                        GlideUrl::class.java,
-                        InputStream::class.java
-                    )
-                )
-            }
-
-            override fun teardown() { /* nothing to free */
-            }
-        }
-
-        override fun getUrl(model: String?, width: Int, height: Int, options: Options?): String {
-            return model!!
-        }
-    }
-}
+//package nl.giejay.android.tv.immich.shared
+//
+//import android.content.Context
+//import com.bumptech.glide.Glide
+//import com.bumptech.glide.GlideBuilder
+//import com.bumptech.glide.Registry
+//import com.bumptech.glide.annotation.GlideModule
+//import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
+//import com.bumptech.glide.load.model.GlideUrl
+//import com.bumptech.glide.module.AppGlideModule
+//import nl.giejay.android.tv.immich.api.ApiClientFactory
+//import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
+//import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+//import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.KEY_API_KEY
+//import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.KEY_DEBUG_MODE
+//import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.KEY_DISABLE_SSL_VERIFICATION
+//import java.io.InputStream
+//
+//
+//@GlideModule
+//class CustomGlideModule : AppGlideModule() {
+//    private var factory: OkHttpUrlLoader.Factory = OkHttpUrlLoader.Factory()
+//    private var registry: Registry? = null
+//    private val prefs: LiveSharedPreferences =
+//        LiveSharedPreferences(PreferenceManager.sharedPreference)
+//
+//    init {
+//        prefs.listenMultiple(listOf(KEY_API_KEY, KEY_DEBUG_MODE, KEY_DISABLE_SSL_VERIFICATION))
+//            .observeForever {
+//                reloadFactory(
+//                    it[KEY_API_KEY] as String,
+//                    it[KEY_DISABLE_SSL_VERIFICATION] == true,
+//                    it[KEY_DEBUG_MODE] == true
+//                )
+//            }
+//    }
+//
+//    private fun reloadFactory(apiKey: String, disableSsl: Boolean, debugMode: Boolean) {
+//        factory = if (PreferenceManager.isLoggedId()) {
+//            OkHttpUrlLoader.Factory(
+//                ApiClientFactory.getClient(
+//                    disableSsl,
+//                    apiKey,
+//                    false
+//                )
+//            )
+//        } else {
+//            OkHttpUrlLoader.Factory()
+//        }
+////        if (this.registry != null) {
+////            this.registry!!.replace(
+////                GlideUrl::class.java,
+////                InputStream::class.java, factory
+////            )
+////        }
+//    }
+//
+//    override fun applyOptions(context: Context, builder: GlideBuilder) {
+//    }
+//
+//    override fun registerComponents(
+//        context: Context, glide: Glide, registry: Registry
+//    ) {
+//        this.registry = registry
+//        // override default loader with one that attaches headers
+//        registry.replace(
+//            GlideUrl::class.java,
+//            InputStream::class.java, factory
+//        )
+//    }
+//}
