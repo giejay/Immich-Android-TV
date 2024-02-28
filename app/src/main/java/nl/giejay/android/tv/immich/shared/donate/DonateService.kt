@@ -3,11 +3,11 @@ package nl.giejay.android.tv.immich.shared.donate
 import android.app.Activity
 import android.content.Context
 import android.widget.Toast
-import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -65,6 +65,18 @@ class DonateService(private val context: Context) : PurchasesUpdatedListener {
         }
     }
 
+    private fun consumePurchase(purchase: Purchase) {
+        val params = ConsumeParams.newBuilder()
+            .setPurchaseToken(purchase.purchaseToken)
+            .build()
+        mBillingClient.consumeAsync(params) { _, _ ->
+            showToast(
+                "Thanks for your donation, highly appreciated!",
+                Toast.LENGTH_LONG
+            )
+        }
+    }
+
     fun launchBilling(activity: Activity, productDetails: ProductDetails) {
         val flowParams: BillingFlowParams = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(
@@ -92,26 +104,7 @@ class DonateService(private val context: Context) : PurchasesUpdatedListener {
             for (purchase in list) {
                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                     if (!purchase.isAcknowledged) {
-                        val acknowledgePurchaseParams: AcknowledgePurchaseParams =
-                            AcknowledgePurchaseParams.newBuilder()
-                                .setPurchaseToken(purchase.purchaseToken)
-                                .build()
-                        mBillingClient.acknowledgePurchase(
-                            acknowledgePurchaseParams
-                        ) { innerResult ->
-                            if (innerResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                                showToast(
-                                    "Thanks for your donation, highly appreciated!",
-                                    Toast.LENGTH_LONG
-                                )
-                            } else {
-                                Timber.e(innerResult.debugMessage)
-//                                showToast(
-//                                    "Error while verifying your purchase, please contact the developer.",
-//                                    Toast.LENGTH_SHORT
-//                                )
-                            }
-                        }
+                        consumePurchase(purchase)
                     }
                 } else if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
                     showToast("Thanks for your donation, highly appreciated!", Toast.LENGTH_LONG)

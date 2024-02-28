@@ -30,7 +30,7 @@ android {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
         targetSdkVersion 34
-        versionCode 45
+        versionCode 46
         versionName "1.30.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
