@@ -99,6 +99,13 @@
             app:destination="@id/authByPhoneFragment" />
     </fragment>
 
+
+    <fragment
+        android:id="@+id/donateFragment"
+        android:name="nl.giejay.android.tv.immich.shared.donate.DonateFragment"
+        android:label="Donate">
+    </fragment>
+
     <fragment
         android:id="@+id/authFragmentStep2"
         android:name="nl.giejay.android.tv.immich.auth.AuthFragmentStep2"
@@ -159,6 +166,9 @@
         <action
             android:id="@+id/action_homeFragment_to_photo_slider"
             app:destination="@id/photoSlider" />
+        <action
+            android:id="@+id/action_home_to_donate"
+            app:destination="@id/donateFragment" />
     </fragment>
 
     <dialog

@@ -18,9 +18,6 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
 
-/**
- * Created by kurt on 2016/02/29.
- */
 data class AuthSettings(val hostName: String, val apiKey: String) {
     fun isValid(): Boolean {
         return PreferenceManager.isValid(hostName, apiKey)

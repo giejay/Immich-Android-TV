@@ -15,9 +15,6 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
 
-/**
- * Created by kurt on 2016/02/29.
- */
 
 class AuthFragmentStep1 : GuidedStepSupportFragment() {
     private val ACTION_SIGN_IN = 0L

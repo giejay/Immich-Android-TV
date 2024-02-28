@@ -90,7 +90,9 @@ class SettingsFragment : RowsSupportFragment() {
                             "donate",
 //                            donateService.isInitialized()
                         ) {
-                            donateService.showDonationOptions(requireActivity())
+                            findNavController().navigate(
+                                HomeFragmentDirections.actionHomeToDonate()
+                            )
                         }
                     )
                 )
