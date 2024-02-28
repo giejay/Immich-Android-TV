@@ -9,10 +9,12 @@ import androidx.leanback.widget.ListRowPresenter
 import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+import nl.giejay.android.tv.immich.shared.donate.DonateService
 
 
 class SettingsFragment : RowsSupportFragment() {
     private val mRowsAdapter: ArrayObjectAdapter
+    private lateinit var donateService: DonateService
 
     init {
         val selector = ListRowPresenter()
@@ -27,6 +29,7 @@ class SettingsFragment : RowsSupportFragment() {
 
     override fun onAttach(activity: Activity) {
         super.onAttach(activity)
+        donateService = DonateService(activity)
         loadData()
     }
 
@@ -78,6 +81,16 @@ class SettingsFragment : RowsSupportFragment() {
                             findNavController().navigate(
                                 HomeFragmentDirections.actionGlobalToSettingsDialog("debug")
                             )
+                        },
+                        SettingsCard(
+                            "Donate",
+                            null,
+                            "donate",
+                            "donate",
+                            "donate",
+//                            donateService.isInitialized()
+                        ) {
+                            donateService.showDonationOptions(requireActivity())
                         }
                     )
                 )
@@ -91,7 +104,7 @@ class SettingsFragment : RowsSupportFragment() {
     private fun createCardRow(cards: List<SettingsCard>): ListRow {
         val iconCardPresenter = SettingsIconPresenter(requireContext())
         val adapter = ArrayObjectAdapter(iconCardPresenter)
-        adapter.addAll(0, cards)
+        adapter.addAll(0, cards.filter { it.visible })
         val headerItem = HeaderItem("Settings")
         return ListRow(headerItem, adapter)
     }
