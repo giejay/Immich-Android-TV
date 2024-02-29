@@ -46,3 +46,12 @@ Lastly, if you feel this Android TV app is a useful addition to the already grea
 might consider buying me a coffee or a beer:
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/giejay)
+
+## FAQ
+#### I'n not able to set the app as a screensaver
+  1. Enable development mode on the device (click the build number or "Android TV OS Build" 7 times in the System->About settings).
+2. Go to System -> Developer Options and enable USB Debugging.
+3. If you don't have ADB installed on your PC, follow these instructions: https://www.xda-developers.com/install-adb-windows-macos-linux/
+4. After downloading/installing ADB on the PC, connect to the device using it's IP: adb connect 192.168.xx.xx.
+5. Once you are connected, execute the following command: 'adb shell settings put secure screensaver_components nl.giejay.android.tv.immich/.playback.ScreenSaverService'
+6. Done!
