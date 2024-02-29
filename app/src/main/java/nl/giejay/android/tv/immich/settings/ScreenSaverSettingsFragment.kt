@@ -1,6 +1,11 @@
 package nl.giejay.android.tv.immich.settings
 
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
@@ -12,11 +17,10 @@ class ScreenSaverSettingsFragment : SettingsScreenFragment() {
     override fun getFragment(): SettingsInnerFragment {
         return ScreenSaverInnerSettingsFragment()
     }
-
 }
+
 class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFragment() {
     private val SCREENSAVER_SETTINGS = "android.settings.DREAM_SETTINGS"
-    private val SETTINGS = "android.settings.SETTINGS"
 
     override fun getFragmentLayout(): Int {
         return R.xml.preferences_screensaver
@@ -25,8 +29,12 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
     override fun handlePreferenceClick(preference: Preference?): Boolean {
         when (preference?.key) {
             "screensaver_set" -> {
-                if(PreferenceManager.getScreenSaverAlbums().isEmpty()){
-                    Toast.makeText(requireContext(), "Please set your albums to show first!", Toast.LENGTH_SHORT).show()
+                if (PreferenceManager.getScreenSaverAlbums().isEmpty()) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Please set your albums to show first!",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
                     startScreenSaverIntent()
                 }
@@ -63,12 +71,21 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
                 "com.android.tv.settings",
                 "com.android.tv.settings.device.display.daydream.DaydreamActivity"
             );
-            if (!intentAvailable(intent)) {
-                // If all else fails, open the normal settings screen
-                intent = Intent(SETTINGS);
+            if (!intentAvailable(intent) || Build.MANUFACTURER == "Google") {
+                val layoutInflater =
+                    requireActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                val inflate: View = layoutInflater.inflate(R.layout.screensaver_adb, null)
+                val dialog = AlertDialog.Builder(requireContext())
+                    .setTitle("Not possible to set screensaver")
+                    .create()
+                dialog.setView(inflate)
+                dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Close") { d, _ ->
+                    d.dismiss()
+                }
+                return dialog.show()
             }
+            startActivity(intent);
         }
-        startActivity(intent);
-    }
 
+    }
 }

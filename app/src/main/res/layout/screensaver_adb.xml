@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="5dp"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/screensaverAdb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="10dp"
+            android:autoLink="web"
+            android:text="Could not open the screensaver settings on this device. You can use the following steps to enable the screensaver:\n\n
+1. Enable development mode on the device (click the build number or 'Android TV OS Build' 7 times in the System->About settings).\n
+2. Go to System -> Developer Options and enable USB Debugging\n
+3. If you don't have ADB installed on your PC, follow these instructions: https://www.xda-developers.com/install-adb-windows-macos-linux/
+4. After downloading/installing ADB on the PC, connect to the device using it's IP: 'adb connect 192.168.xx.xx'.\n
+5. Once you are connected, execute the following command: 'adb shell settings put secure screensaver_components nl.giejay.android.tv.immich/.playback.ScreenSaverService'\n
+6. Done!.\n\nYou can also check the instructions on the GitHub page: https://github.com/giejay/Immich-Android-TV"
+            android:textColor="@color/screen_white"
+            android:textColorLink="@android:color/holo_blue_dark" />
+    </LinearLayout>
+</ScrollView>
