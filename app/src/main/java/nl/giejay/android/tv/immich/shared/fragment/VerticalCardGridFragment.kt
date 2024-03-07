@@ -256,7 +256,11 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                         resource: Drawable,
                         transition: Transition<in Drawable?>?
                     ) {
-                        mBackgroundManager?.drawable = resource
+                        try {
+                            mBackgroundManager?.drawable = resource
+                        } catch (e: Exception){
+                            Timber.e(e, "Could not set background")
+                        }
                     }
 
                     override fun onLoadFailed(errorDrawable: Drawable?) {

@@ -15,6 +15,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
+import timber.log.Timber
+import java.lang.IllegalStateException
 
 
 class DonateFragment : GuidedStepSupportFragment() {
@@ -89,6 +91,10 @@ class DonateFragment : GuidedStepSupportFragment() {
     }
 
     private fun finalizeFragment() {
-        findNavController().popBackStack()
+        try {
+            findNavController().popBackStack()
+        } catch (e: IllegalStateException){
+            Timber.e(e, "Could not close Donate fragment")
+        }
     }
 }
