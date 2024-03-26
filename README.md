@@ -33,10 +33,6 @@ include:
 | Searching in and for albums                                                    | Not started  |
 | Dependency injection with Hilt/Dagger                                          | Not started  |
 
-## Joining the Open Test
-
-You can join the open test here: https://play.google.com/apps/testing/nl.giejay.android.tv.immich
-
 ## Support the project
 
 You can support the project in several ways. The first one is by creating nice descriptive bug
