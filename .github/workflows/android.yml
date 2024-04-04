@@ -24,12 +24,13 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: google-services.json
+    - name: google-services.json and extra strings file
       env:
         GOOGLE_SERVICES_BASE64: ${{secrets.GOOGLE_SERVICES_BASE64}}
+        STRINGS_OTHER_BASE64: ${{secrets.STRINGS_OTHER}}
       run: |
-         cp  app/src/strings_other.xml.example app/src/main/res/values/strings_other.xml
          echo $GOOGLE_SERVICES_BASE64 | base64 --decode > ./app/google-services.json
+         echo $STRINGS_OTHER_BASE64 | base64 --decode > ./app/src/main/res/values/strings_other.xml
     - name: Build with Gradle
       run: ./gradlew assembleRelease
     - name: Upload Artifacts

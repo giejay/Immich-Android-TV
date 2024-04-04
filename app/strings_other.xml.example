@@ -1,0 +1,7 @@
+<resources>
+    <!-- Api key and URL for Demo environment (omiting /api for immich installation to use as demo / default -->
+    <string name="host_name">https://10.1.15.216:2283</string>
+    <string name="api_key">GetSecretAPIKeyFromUI</string>
+    <!-- Link to remote system supporting phone authentication, see: https://github.com/giejay/Immich-Android-TV-Authentication -->
+    <string name="authentication_url">https://example.com/authentication_using_phone_url</string>
+</resources>
