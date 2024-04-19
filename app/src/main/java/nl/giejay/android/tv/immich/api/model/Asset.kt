@@ -10,6 +10,7 @@ data class AssetExifInfo(
     val exifImageHeight: Number?,
     val city: String?,
     val state: String?,
+    val country: String?,
 )
 
 data class Asset(

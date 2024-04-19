@@ -17,8 +17,6 @@ object PreferenceManager {
 
     // screensaver settings
     private val KEY_SCREENSAVER_INTERVAL = "screensaver_interval"
-    private val KEY_SCREENSAVER_SHOW_MEDIA_COUNT = "screensaver_show_media_count"
-    private val KEY_SCREENSAVER_SHOW_DESCRIPTION = "screensaver_show_description"
     private val KEY_SCREENSAVER_ALBUMS = "screensaver_albums"
 
     // slider/view settings
@@ -40,19 +38,15 @@ object PreferenceManager {
         KEY_HOST_NAME to "",
         KEY_API_KEY to "",
         KEY_DISABLE_SSL_VERIFICATION to false,
-        KEY_SCREENSAVER_INTERVAL to "3",
+        KEY_SCREENSAVER_INTERVAL to "30",
         KEY_SLIDER_INTERVAL to "3",
         KEY_SLIDER_SHOW_DESCRIPTION to true,
         KEY_SLIDER_SHOW_MEDIA_COUNT to true,
-        KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
-        KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true,
         KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
         KEY_DEBUG_MODE to false,
         KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
         KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),
         KEY_ALL_ASSETS_SORTING to PhotosOrder.NEWEST_OLDEST.toString(),
-//        KEY_ALBUMS_SORTING_REVERSE to false,
-//        KEY_PHOTOS_SORTING_REVERSE to false,
         KEY_SLIDER_ONLY_USE_THUMBNAILS to true
     )
 
@@ -76,14 +70,6 @@ object PreferenceManager {
 
     fun screensaverInterval(): Int {
         return liveContext[KEY_SCREENSAVER_INTERVAL]?.toString()?.toInt() ?: 3
-    }
-
-    fun screensaverShowDescription(): Boolean {
-        return liveContext[KEY_SCREENSAVER_SHOW_DESCRIPTION] as Boolean
-    }
-
-    fun screensaverShowMediaCount(): Boolean {
-        return liveContext[KEY_SCREENSAVER_SHOW_MEDIA_COUNT] as Boolean
     }
 
     fun sliderInterval(): Int {

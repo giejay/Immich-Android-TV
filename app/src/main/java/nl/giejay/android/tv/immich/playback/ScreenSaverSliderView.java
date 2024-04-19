@@ -43,14 +43,13 @@ import timber.log.Timber;
 public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager.OnPageChangeListener {
     private Handler mainHandler;
     private ViewPager mPager;
-    private boolean slideShowPlaying;
     private final Runnable goToNextAssetRunnable = this::goToNextAsset;
     private List<ScreenSaverItem> items;
     private ScreenSaverPagerAdapter pagerAdapter;
     private TextView timeTextView;
     private TextView subtitleTextView;
     @SuppressLint("SimpleDateFormat")
-    private final SimpleDateFormat sdf = new SimpleDateFormat("h:mma");
+    private final SimpleDateFormat sdf = new SimpleDateFormat("h:mm");
     private long automatedPagingIntervalMs = 1000L;
 
     public ScreenSaverSliderView(@NonNull Context context) {
@@ -72,7 +71,6 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
     }
 
     private void init(Context context) {
-//        inflate(getContext(), R.layout.screensaver, this);
         inflate(context, R.layout.screensaver, this);
         timeTextView = findViewById(R.id.time);
         subtitleTextView = findViewById(R.id.album_info);
@@ -85,12 +83,11 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
         mPager.setAdapter(pagerAdapter);
         mPager.setCurrentItem(0);
         mPager.setOffscreenPageLimit(2);
-
         mPager.addOnPageChangeListener(this);
     }
 
     public void onTimeChanged() {
-        timeTextView.setText(sdf.format(new Date()).toLowerCase());
+        timeTextView.setText(sdf.format(new Date()));
     }
 
     @Override
@@ -99,49 +96,22 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
             return super.dispatchKeyEvent(event);
         }
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            if ((event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER || event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                toggleSlideshow();
-                return false;
-            } else if (slideShowPlaying) {
-                if (event.getKeyCode() != KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    toggleSlideshow();
-                } else {
-                    // remove all current callbacks to prevent multiple runnables
-                    mainHandler.removeCallbacks(goToNextAssetRunnable);
-                }
-                // Go to next photo if dpad right is clicked or just stop
-                return super.dispatchKeyEvent(event);
-            } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT && mPager.getAdapter().getCount() - 1 == mPager.getCurrentItem()) {
+            if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT && mPager.getAdapter().getCount() - 1 == mPager.getCurrentItem()) {
                 // last item, go to first
-                mPager.setCurrentItem(0, true);
+                mPager.setCurrentItem(0, false);
                 return false;
             } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT && 0 == mPager.getCurrentItem()) {
                 // last item, go to first
-                mPager.setCurrentItem(mPager.getAdapter().getCount() - 1, true);
+                mPager.setCurrentItem(mPager.getAdapter().getCount() - 1, false);
                 return false;
             }
         }
         return super.dispatchKeyEvent(event);
     }
 
-
-    public void toggleSlideshow() {
-        slideShowPlaying = !slideShowPlaying;
-        if (slideShowPlaying) {
-            startTimerNextAsset();
-            if (getContext() instanceof Activity) {
-                // view is being triggered from main app, prevent app going to sleep
-                ((Activity) getContext()).getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            }
-        } else {
-            clearKeepScreenOnFlags();
-            mainHandler.removeCallbacks(goToNextAssetRunnable);
-        }
-    }
-
-
     private void startTimerNextAsset() {
-        mainHandler.postDelayed(goToNextAssetRunnable, automatedPagingIntervalMs * 1000);
+        mainHandler.removeCallbacks(goToNextAssetRunnable);
+        mainHandler.postDelayed(goToNextAssetRunnable, automatedPagingIntervalMs);
     }
 
     public void setPagingInterval(int pagingIntervalSeconds) {
@@ -149,7 +119,8 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
     }
 
     private void goToNextAsset() {
-        if (mPager.getCurrentItem() < Objects.requireNonNull(Objects.requireNonNull(mPager.getAdapter())).getCount() - 1) {
+        if (pagerAdapter.getCount() == 0) return;
+        if (mPager.getCurrentItem() < Objects.requireNonNull(mPager.getAdapter()).getCount() - 1) {
             mPager.setCurrentItem(mPager.getCurrentItem() + 1, true);
         } else {
             mPager.setCurrentItem(0, true);
@@ -174,13 +145,12 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
     }
 
     public void addItems(@NotNull List<ScreenSaverItem> items) {
-        if (slideShowPlaying) {
-            // to prevent timing issues when adding + sliding at the same time
-            mainHandler.removeCallbacks(goToNextAssetRunnable);
-        }
+        int oldItemCount = this.items.size();
         this.items.addAll(items);
         pagerAdapter.notifyDataSetChanged();
-        if (slideShowPlaying) {
+
+        // ensure timer is started if we have more than 1 item for the first time
+        if (oldItemCount <= 1 && this.items.size() > 1) {
             startTimerNextAsset();
         }
     }
@@ -190,27 +160,20 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
         ScreenSaverItem screenSaverItem = items.get(i);
         StringBuilder sb = new StringBuilder();
         if (screenSaverItem.getRightUrl() == null) {
-            boolean hasCity = screenSaverItem.getCity() != null;
-            if (hasCity) {
-                sb.append(screenSaverItem.getCity());
-            }
-            if (screenSaverItem.getState() != null) {
-                if (hasCity) sb.append(", ");
-                sb.append(screenSaverItem.getState());
-            }
-//            sb.append(" Orientation: ").append(screenSaverItem.getOrientation());
-
+            sb.append(screenSaverItem.getLeftCity())
+                    .append(", ").append(screenSaverItem.getLeftCountry());
         } else {
-            sb.append("Multiple photos");
+            sb.append(screenSaverItem.getLeftCountry());
+            if (screenSaverItem.getLeftCountry() != screenSaverItem.getRightCountry()) {
+                sb.append(" • ").append(screenSaverItem.getRightCountry());
+            }
         }
         subtitleTextView.setText(sb.toString());
     }
 
     @Override
     public void onPageSelected(int i) {
-        if (slideShowPlaying) {
-            startTimerNextAsset();
-        }
+        startTimerNextAsset();
     }
 
     @Override

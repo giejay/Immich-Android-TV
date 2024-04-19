@@ -129,9 +129,22 @@ class ScreenSaverService : DreamService() {
         val imageAssets = assets.filter {
             it.type.uppercase() != "VIDEO"
         }
+
+        val landscapeItems = imageAssets.filter {
+            it.exifInfo?.orientation != 6
+        }.map {
+            ScreenSaverItem(
+                ApiUtil.getFileUrl(it.id),
+                it.exifInfo?.city,
+                it.exifInfo?.state,
+                it.exifInfo?.country,
+                it.exifInfo?.orientation,
+            )
+        }
+
         val portImages = imageAssets.filter { asset ->
             asset.exifInfo?.orientation == 6
-        }.shuffled()
+        }.shuffled() // shuffle before pairing
 
         val pairedItems = portImages.chunked(2)
             .filter { it.size == 2 } // Ensure each group has exactly two items
@@ -140,24 +153,16 @@ class ScreenSaverService : DreamService() {
                 val right = it[1]
                 ScreenSaverItem(
                     ApiUtil.getFileUrl(left.id),
-                    ApiUtil.getFileUrl(right.id),
-                    "${left.exifInfo?.city} • ${right.exifInfo?.city}",
-                    "${left.exifInfo?.state} • ${right.exifInfo?.state}",
+                    left.exifInfo?.city,
+                    left.exifInfo?.state,
+                    left.exifInfo?.country,
                     null,
+                    ApiUtil.getFileUrl(right.id),
+                    right.exifInfo?.city,
+                    right.exifInfo?.state,
+                    right.exifInfo?.country,
                 )
             }
-
-        val landscapeItems = imageAssets.filter {
-            it.exifInfo?.orientation != 6
-        }.map {
-            ScreenSaverItem(
-                ApiUtil.getFileUrl(it.id),
-                null,
-                it.exifInfo?.city,
-                it.exifInfo?.state,
-                it.exifInfo?.orientation,
-            )
-        }
 
         return (pairedItems + landscapeItems).shuffled()
     }
