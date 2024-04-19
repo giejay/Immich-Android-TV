@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.service.dreams.DreamService
-import android.util.Log
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -131,16 +130,7 @@ class ScreenSaverService : DreamService() {
             it.type.uppercase() != "VIDEO"
         }
         val portImages = imageAssets.filter { asset ->
-            var height = asset.exifInfo?.exifImageHeight?.toInt()
-            var width = asset.exifInfo?.exifImageWidth?.toInt()
-
-            if (asset.exifInfo?.orientation == 6) {
-                val tempHeight = height
-                height = width
-                width = tempHeight
-            }
-
-            height != null && width != null && height > width
+            asset.exifInfo?.orientation == 6
         }.shuffled()
 
         val pairedItems = portImages.chunked(2)
@@ -153,22 +143,22 @@ class ScreenSaverService : DreamService() {
                     ApiUtil.getFileUrl(right.id),
                     "${left.exifInfo?.city} • ${right.exifInfo?.city}",
                     "${left.exifInfo?.state} • ${right.exifInfo?.state}",
+                    null,
                 )
             }
 
-        val singleItems = imageAssets.filter {
-            val height = it.exifInfo?.exifImageHeight?.toInt()
-            val width = it.exifInfo?.exifImageWidth?.toInt()
-            height != null && width != null && height <= width
+        val landscapeItems = imageAssets.filter {
+            it.exifInfo?.orientation != 6
         }.map {
             ScreenSaverItem(
                 ApiUtil.getFileUrl(it.id),
                 null,
                 it.exifInfo?.city,
                 it.exifInfo?.state,
+                it.exifInfo?.orientation,
             )
         }
 
-        return (pairedItems + singleItems).shuffled()
+        return (pairedItems + landscapeItems).shuffled()
     }
 }

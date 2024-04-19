@@ -198,6 +198,8 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
                 if (hasCity) sb.append(", ");
                 sb.append(screenSaverItem.getState());
             }
+//            sb.append(" Orientation: ").append(screenSaverItem.getOrientation());
+
         } else {
             sb.append("Multiple photos");
         }

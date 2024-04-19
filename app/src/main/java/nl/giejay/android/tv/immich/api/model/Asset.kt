@@ -5,7 +5,7 @@ import java.util.Date
 data class AssetExifInfo(
     val description: String,
     val dateTimeOriginal: Date?,
-    val orientation: Number?,
+    val orientation: Int?,
     val exifImageWidth: Number?,
     val exifImageHeight: Number?,
     val city: String?,

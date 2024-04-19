@@ -5,4 +5,5 @@ data class ScreenSaverItem(
     public val rightUrl: String?,
     public val city: String?,
     public val state: String?,
+    public val orientation: Int?,
 )
