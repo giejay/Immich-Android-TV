@@ -54,7 +54,7 @@ class ScreenSaverService : DreamService() {
         setContentView(screenSaverSliderView)
         isInteractive = true
         ioScope.launch {
-            loadImages(PreferenceManager.getScreenSaverAlbums())
+            loadImages(PreferenceManager.getScreenSaverAlbums().shuffled())
         }
     }
 
@@ -64,7 +64,7 @@ class ScreenSaverService : DreamService() {
         super.onDreamingStopped()
     }
 
-    private suspend fun loadImages(albums: Set<String>) {
+    private suspend fun loadImages(albums: List<String>) {
         try {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
