@@ -5,6 +5,7 @@ import com.zeuskartik.mediaslider.SliderItemType
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
+import nl.giejay.android.tv.immich.playback.ScreenSaverItem
 
 fun List<Asset>.toSliderItems(): List<SliderItem> {
     return this.map {

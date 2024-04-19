@@ -8,6 +8,10 @@
         <item>20 seconds</item>
         <item>30 seconds</item>
         <item>1 minute</item>
+        <item>5 minutes</item>
+        <item>10 minute</item>
+        <item>30 minute</item>
+        <item>1 hour</item>
     </array>
     <string-array name="interval_values">
         <item>1</item>
@@ -17,6 +21,10 @@
         <item>20</item>
         <item>30</item>
         <item>60</item>
+        <item>300</item>
+        <item>600</item>
+        <item>1800</item>
+        <item>3600</item>
     </string-array>
 
     <string-array name="albums_order">
