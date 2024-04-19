@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.service.dreams.DreamService
+import android.util.Log
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,7 +55,7 @@ class ScreenSaverService : DreamService() {
         setContentView(screenSaverSliderView)
         isInteractive = true
         ioScope.launch {
-            loadImages(PreferenceManager.getScreenSaverAlbums().shuffled())
+            loadImages(PreferenceManager.getScreenSaverAlbums().toList().shuffled())
         }
     }
 
@@ -74,18 +75,20 @@ class ScreenSaverService : DreamService() {
                         return
                     }
 
+                    val firstAlbumAssets = firstAlbum.assets.shuffled()
+
                     // else more than one album
                     // set first landscape photos to allow time to load remaining albums
                     // limit to single photo instead of all photos in first album
                     // so first images are not all from first album
-                    val firstLandscapePhoto = firstAlbum.assets.first {
+                    val firstLandscapePhotoIndex = firstAlbumAssets.indexOfFirst {
                         it.exifInfo?.orientation != null && it.exifInfo.orientation != 6
                     }
                     val l = ArrayList<Asset>();
-                    l.add(firstLandscapePhoto)
+                    l.add(firstAlbumAssets[firstLandscapePhotoIndex])
                     addAssets(l)
 
-                    val remainingAssetsFirstAlbum = firstAlbum.assets.drop(1)
+                    val remainingAssetsFirstAlbum = firstAlbumAssets.filterIndexed { index, _ -> index != firstLandscapePhotoIndex }
 
                     // load remaining albums
                     val nextAlbums = albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }
