@@ -164,7 +164,7 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
                     .append(", ").append(screenSaverItem.getLeftCountry());
         } else {
             sb.append(screenSaverItem.getLeftCountry());
-            if (screenSaverItem.getLeftCountry() != screenSaverItem.getRightCountry()) {
+            if (!Objects.equals(screenSaverItem.getLeftCountry(), screenSaverItem.getRightCountry())) {
                 sb.append(" • ").append(screenSaverItem.getRightCountry());
             }
         }
