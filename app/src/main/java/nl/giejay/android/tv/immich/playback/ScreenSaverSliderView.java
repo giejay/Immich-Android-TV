@@ -2,8 +2,13 @@ package nl.giejay.android.tv.immich.playback;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
-import android.graphics.drawable.Drawable;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
@@ -23,11 +28,6 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.RequestBuilder;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Objects;
 
 import nl.giejay.android.tv.immich.R;
-import timber.log.Timber;
 
 public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager.OnPageChangeListener {
     private Handler mainHandler;
@@ -48,6 +47,10 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
     private ScreenSaverPagerAdapter pagerAdapter;
     private TextView timeTextView;
     private TextView subtitleTextView;
+    private TextView artistTextView;
+    private TextView songTitleTextView;
+    private AppCompatImageView albumArtImageView;
+
     @SuppressLint("SimpleDateFormat")
     private final SimpleDateFormat sdf = new SimpleDateFormat("h:mm");
     private long automatedPagingIntervalMs = 1000L;
@@ -74,6 +77,9 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
         inflate(context, R.layout.screensaver, this);
         timeTextView = findViewById(R.id.time);
         subtitleTextView = findViewById(R.id.album_info);
+        songTitleTextView = findViewById(R.id.song_title);
+        artistTextView = findViewById(R.id.artist_name);
+        albumArtImageView = findViewById(R.id.album_art);
         onTimeChanged();
         mainHandler = new Handler(Looper.getMainLooper());
         mPager = findViewById(R.id.pager);
@@ -88,6 +94,20 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
 
     public void onTimeChanged() {
         timeTextView.setText(sdf.format(new Date()));
+    }
+
+    public void updateMediaInfo(String artistName, String songTitle, String albumArtUrl) {
+        int visibility = View.VISIBLE;
+        if (artistName == null || songTitle == null || albumArtUrl == null) {
+            visibility = View.GONE;
+        } else {
+            artistTextView.setText(artistName);
+            songTitleTextView.setText(songTitle);
+            Glide.with(getContext()).load(albumArtUrl).into(albumArtImageView);
+        }
+        artistTextView.setVisibility(visibility);
+        songTitleTextView.setVisibility(visibility);
+        albumArtImageView.setVisibility(visibility);
     }
 
     @Override
@@ -210,26 +230,6 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
             return POSITION_NONE;
         }
 
-        private void loadImage(AppCompatImageView imageView, String url) {
-            RequestBuilder<Drawable> glideLoader = Glide.with(context)
-                    .load(url)
-                    .centerInside()
-                    // .placeholder(context.getResources().getDrawable(com.zeuskartik.mediaslider.R.drawable.images))
-                    .listener(new RequestListener<Drawable>() {
-                        @Override
-                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                            Timber.e(e, "Could not fetch image: %s", model);
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                            return false;
-                        }
-                    });
-            glideLoader.into(imageView);
-        }
-
         @NonNull
         @Override
         @SuppressLint("UnsafeOptInUsageError")
@@ -240,13 +240,13 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
             if (model.getRightUrl() == null) {
                 view = inflater.inflate(R.layout.screensaver_image_single, container, false);
                 AppCompatImageView imageView = view.findViewById(R.id.image);
-                loadImage(imageView, model.getLeftUrl());
+                Glide.with(context).load(model.getLeftUrl()).into(imageView);
             } else {
                 view = inflater.inflate(R.layout.screensaver_image_double, container, false);
                 AppCompatImageView leftImage = view.findViewById(R.id.left_image);
-                loadImage(leftImage, model.getLeftUrl());
+                Glide.with(context).load(model.getLeftUrl()).into(leftImage);
                 AppCompatImageView rightImage = view.findViewById(R.id.right_image);
-                loadImage(rightImage, model.getRightUrl());
+                Glide.with(context).load(model.getRightUrl()).into(rightImage);
             }
             container.addView(view);
             return view;

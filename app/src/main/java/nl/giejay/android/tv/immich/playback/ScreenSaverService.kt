@@ -2,11 +2,19 @@ package nl.giejay.android.tv.immich.playback
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.MediaMetadata
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
+import android.media.session.PlaybackState.STATE_STOPPED
 import android.service.dreams.DreamService
+import android.util.Log
 import android.widget.Toast
+import androidx.core.content.getSystemService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,10 +29,26 @@ import timber.log.Timber
 
 
 class ScreenSaverService : DreamService() {
+    private var mediaController: MediaController? = null
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private var apiClient: ApiClient? = null
     private var screenSaverSliderView: ScreenSaverSliderView? = null
     private var _broadcastReceiver: BroadcastReceiver? = null
+
+    private var callback = object : MediaController.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackState?) {
+            super.onPlaybackStateChanged(state)
+            Timber.d("onPlaybackStateChanged state: " + state.toString())
+            if (state?.state == STATE_STOPPED) {
+                updateMediaInfo(null)
+            }
+        }
+
+        override fun onMetadataChanged(metadata: MediaMetadata?) {
+            super.onMetadataChanged(metadata)
+            updateMediaInfo(metadata)
+        }
+    }
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
@@ -56,6 +80,35 @@ class ScreenSaverService : DreamService() {
         ioScope.launch {
             loadImages(PreferenceManager.getScreenSaverAlbums().toList().shuffled())
         }
+
+        initMedia();
+    }
+
+    @SuppressLint("LogNotTimber", "BinaryOperationInTimber")
+    private fun initMedia() {
+        try {
+            val m = getSystemService<MediaSessionManager>()!!
+            val component = ComponentName(
+                "nl.giejay.android.tv.immich",
+                MediaService::class.qualifiedName.toString()
+            )
+
+            val sessions = m.getActiveSessions(component)
+            mediaController = sessions.first { it.metadata?.keySet()?.size!! > 0 }
+            mediaController?.registerCallback(callback)
+            val metadata = mediaController?.metadata ?: return
+            updateMediaInfo(metadata)
+
+        } catch (e: Exception) {
+            Log.e(ScreenSaverService::class.simpleName, "Unable to get media info", e)
+        }
+    }
+
+    private fun updateMediaInfo(metadata: MediaMetadata?) {
+        val artistName = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+        val songTitle = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
+        val albumArtUrl = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)
+        screenSaverSliderView?.updateMediaInfo(artistName, songTitle, albumArtUrl)
     }
 
     override fun onDreamingStopped() {
@@ -87,7 +140,8 @@ class ScreenSaverService : DreamService() {
                     l.add(firstAlbumAssets[firstLandscapePhotoIndex])
                     addAssets(l)
 
-                    val remainingAssetsFirstAlbum = firstAlbumAssets.filterIndexed { index, _ -> index != firstLandscapePhotoIndex }
+                    val remainingAssetsFirstAlbum =
+                        firstAlbumAssets.filterIndexed { index, _ -> index != firstLandscapePhotoIndex }
 
                     // load remaining albums
                     val nextAlbums = albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }

@@ -64,6 +64,15 @@
                 android:resource="@xml/screensaver" />
         </service>
 
+        <service android:name="nl.giejay.android.tv.immich.playback.MediaService"
+            android:label="Enable media controls"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
