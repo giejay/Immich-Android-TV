@@ -159,13 +159,24 @@ public class ScreenSaverSliderView extends ConstraintLayout implements ViewPager
     public void onPageScrolled(int i, float v, int i1) {
         ScreenSaverItem screenSaverItem = items.get(i);
         StringBuilder sb = new StringBuilder();
+        boolean hasLeftCountry = screenSaverItem.getLeftCountry() != null;
         if (screenSaverItem.getRightUrl() == null) {
-            sb.append(screenSaverItem.getLeftCity())
-                    .append(", ").append(screenSaverItem.getLeftCountry());
+            if (hasLeftCountry) {
+                sb.append(screenSaverItem.getLeftCity())
+                        .append(", ").append(screenSaverItem.getLeftCountry());
+            }
         } else {
-            sb.append(screenSaverItem.getLeftCountry());
-            if (!Objects.equals(screenSaverItem.getLeftCountry(), screenSaverItem.getRightCountry())) {
-                sb.append(" • ").append(screenSaverItem.getRightCountry());
+            if (hasLeftCountry) {
+                sb.append(screenSaverItem.getLeftCountry());
+            }
+            if (screenSaverItem.getRightCountry() != null) {
+                if (hasLeftCountry) {
+                    if (!Objects.equals(screenSaverItem.getLeftCountry(), screenSaverItem.getRightCountry())) {
+                        sb.append(" • ").append(screenSaverItem.getRightCountry());
+                    }
+                } else {
+                    sb.append(screenSaverItem.getRightCountry());
+                }
             }
         }
         subtitleTextView.setText(sb.toString());
