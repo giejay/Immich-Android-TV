@@ -23,6 +23,11 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
         setSelected(cardView, card.selected)
     }
 
+    override fun onUnbindViewHolder(viewHolder: ViewHolder) {
+        super.onUnbindViewHolder(viewHolder)
+        Glide.with(context).clear((viewHolder.view as ImageCardView).mainImageView!!)
+    }
+
     open fun loadImage(card: ICard, cardView: ImageCardView) {
         card.thumbnailUrl?.let {
             Glide.with(context)
