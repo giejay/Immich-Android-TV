@@ -5,6 +5,7 @@ import arrow.core.flatMap
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
 import retrofit2.Retrofit
@@ -49,7 +50,7 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     suspend fun listAssets(page: Int, pageCount: Int, order: String): Either<String, List<Asset>> {
-        return executeAPICall(200) { service.listAssets(page, pageCount, order) }
+        return executeAPICall(200) { service.listAssets(SearchRequest(page, pageCount, order)) }.map { res -> res.assets.items }
     }
 }
 
