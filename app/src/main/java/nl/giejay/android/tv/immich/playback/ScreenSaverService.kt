@@ -28,7 +28,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
 
-class ScreenSaverService : DreamService() {
+class ScreenSaverService : DreamService(), MediaSessionManager.OnActiveSessionsChangedListener {
     private var mediaController: MediaController? = null
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private var apiClient: ApiClient? = null
@@ -99,6 +99,8 @@ class ScreenSaverService : DreamService() {
             val metadata = mediaController?.metadata ?: return
             updateMediaInfo(metadata)
 
+            m.addOnActiveSessionsChangedListener(this, component)
+
         } catch (e: Exception) {
             Log.e(ScreenSaverService::class.simpleName, "Unable to get media info", e)
         }
@@ -114,6 +116,9 @@ class ScreenSaverService : DreamService() {
     override fun onDreamingStopped() {
         screenSaverSliderView?.onDestroy()
         if (_broadcastReceiver != null) unregisterReceiver(_broadcastReceiver)
+
+        val m = getSystemService<MediaSessionManager>()!!
+        m.removeOnActiveSessionsChangedListener(this)
         super.onDreamingStopped()
     }
 
@@ -219,5 +224,13 @@ class ScreenSaverService : DreamService() {
             }
 
         return (pairedItems + landscapeItems).shuffled()
+    }
+
+    override fun onActiveSessionsChanged(sessions: MutableList<MediaController>?) {
+        Timber.i("active media sessions changed");
+        mediaController = sessions?.first { it.metadata?.keySet()?.size!! > 0 }
+        mediaController?.registerCallback(callback)
+        val metadata = mediaController?.metadata
+        updateMediaInfo(metadata)
     }
 }
