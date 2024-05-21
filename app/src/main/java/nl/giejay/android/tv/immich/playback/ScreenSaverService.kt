@@ -84,7 +84,7 @@ class ScreenSaverService : DreamService(), MediaSessionManager.OnActiveSessionsC
         initMedia();
     }
 
-    @SuppressLint("LogNotTimber", "BinaryOperationInTimber")
+    @SuppressLint("LogNotTimber", "BinaryOperationInTimber", "WrongConstant")
     private fun initMedia() {
         try {
             val m = getSystemService<MediaSessionManager>()!!
@@ -94,7 +94,7 @@ class ScreenSaverService : DreamService(), MediaSessionManager.OnActiveSessionsC
             )
 
             val sessions = m.getActiveSessions(component)
-            mediaController = sessions.first { it.metadata?.keySet()?.size!! > 0 }
+            mediaController = sessions.first { it.metadata?.keySet()?.size!! > 0 && it.metadata?.getString("com.google.android.apps.mediashell.CAST_APP_NAME") != "YouTube"}
             mediaController?.registerCallback(callback)
             val metadata = mediaController?.metadata ?: return
             updateMediaInfo(metadata)
