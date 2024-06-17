@@ -10,13 +10,13 @@ object ApiUtil {
 
     fun getThumbnailUrl(assetId: String?, format: String): String? {
         return assetId?.let {
-            "${hostName().lowercase()}/api/asset/thumbnail/${it}?format=${format}"
+            "${hostName().lowercase()}/api/assets/${it}/thumbnail?size=${format}"
         }
     }
 
     fun getFileUrl(assetId: String?): String? {
         return assetId?.let {
-            "${hostName().lowercase()}/api/asset/file/${it}"
+            "${hostName().lowercase()}/api/assets/${it}/original"
         }
     }
 

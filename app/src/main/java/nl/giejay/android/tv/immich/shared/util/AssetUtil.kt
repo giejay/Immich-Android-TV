@@ -12,7 +12,7 @@ fun List<Asset>.toSliderItems(): List<SliderItem> {
             ApiUtil.getFileUrl(it.id),
             SliderItemType.valueOf(it.type.uppercase()),
             it.exifInfo?.description?.ifEmpty { it.deviceAssetId } ?: it.deviceAssetId,
-            ApiUtil.getThumbnailUrl(it.id, "JPEG")
+            ApiUtil.getThumbnailUrl(it.id, "preview")
         )
     }
 }
@@ -28,8 +28,8 @@ fun Asset.toCard(): Card {
         this.deviceAssetId ?: "",
         this.exifInfo?.description ?: "",
         this.id,
-        ApiUtil.getThumbnailUrl(this.id, "WEBP"),
-        ApiUtil.getThumbnailUrl(this.id, "JPEG")
+        ApiUtil.getThumbnailUrl(this.id, "thumbnail"),
+        ApiUtil.getThumbnailUrl(this.id, "preview")
     )
 }
 

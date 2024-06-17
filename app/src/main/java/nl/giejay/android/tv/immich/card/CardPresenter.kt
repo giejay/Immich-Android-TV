@@ -1,10 +1,10 @@
 package nl.giejay.android.tv.immich.card
 
+import android.app.Activity
 import android.content.Context
 import android.view.ContextThemeWrapper
 import androidx.leanback.widget.ImageCardView
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.model.GlideUrl
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.presenter.AbstractPresenter
 
@@ -25,6 +25,9 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
 
     override fun onUnbindViewHolder(viewHolder: ViewHolder) {
         super.onUnbindViewHolder(viewHolder)
+        if(context is Activity && context.isFinishing){
+            return
+        }
         Glide.with(context).clear((viewHolder.view as ImageCardView).mainImageView!!)
     }
 

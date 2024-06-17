@@ -118,8 +118,8 @@ object PreferenceManager {
         return isValid(hostName(), apiKey())
     }
 
-    fun isValid(hostName: String, apiKey: String): Boolean {
-        return hostName.isNotBlank() && apiKey.isNotBlank() && HttpUrl.parse(hostName) != null
+    fun isValid(hostName: String?, apiKey: String?): Boolean {
+        return hostName?.isNotBlank() == true && apiKey?.isNotBlank() == true && HttpUrl.parse(hostName) != null
     }
 
     fun removeApiSettings() {
