@@ -147,7 +147,9 @@ class AuthByPhoneFragment : Fragment() {
 
     private suspend fun showErrorMessage(message: String) {
         withContext(Dispatchers.Main) {
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            context?.let {
+                Toast.makeText(it, message, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

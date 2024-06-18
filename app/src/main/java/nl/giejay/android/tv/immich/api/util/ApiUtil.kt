@@ -30,7 +30,7 @@ object ApiUtil {
                 }
 
                 else -> {
-                    Either.Left("Invalid status code from API: $code")
+                    Either.Left("Invalid status code from API: $code, make sure you are using the latest Immich server release.")
                 }
             }
         } catch (e: HttpException) {
