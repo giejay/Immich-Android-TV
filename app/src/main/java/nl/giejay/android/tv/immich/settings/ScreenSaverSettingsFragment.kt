@@ -41,7 +41,7 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
                 return true
             }
 
-            "screensaver_include_videos", "screensaver_play_sound" -> {
+            "screensaver_play_sound" -> {
                 Toast.makeText(requireContext(), "Work in progress", Toast.LENGTH_SHORT).show()
             }
 

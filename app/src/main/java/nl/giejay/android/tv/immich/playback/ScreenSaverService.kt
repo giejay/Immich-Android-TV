@@ -61,13 +61,26 @@ class ScreenSaverService : DreamService() {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
                 apiClient!!.listAssetsFromAlbum(albums.first()).map { album ->
-                    val randomAssets = album.assets.shuffled()
+
+                    val randomAssets =
+                        if (PreferenceManager.screensaverIncludeVideos()) {
+                            album.assets.shuffled()
+                        } else {
+                            album.assets.filter {it.type != "VIDEO"}.shuffled()
+                        }
+
                     setInitialAssets(randomAssets)
                     if (albums.size > 1) {
                         // load next ones
                         val nextAlbums = albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }
                         val assets =
-                            nextAlbums.flatMap { it.getOrNone().toList() }.flatMap { it.assets }
+                            nextAlbums.flatMap { it.getOrNone().toList() }.flatMap { 
+                                if (PreferenceManager.screensaverIncludeVideos()) {
+                                    it.assets.shuffled()
+                                } else {
+                                    it.assets.filter {it.type != "VIDEO"}.shuffled()
+                                }
+                            }
                         setAllAssets((randomAssets + assets).shuffled().distinct())
                     }
                 }

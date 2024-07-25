@@ -39,7 +39,7 @@
         <CheckBoxPreference
             android:key="screensaver_include_videos"
             android:title="Include videos"
-            android:summary="Include videos in screensaver (WIP)"/>
+            android:summary="Include videos in screensaver"/>
 
         <CheckBoxPreference
             android:key="screensaver_play_sound"
