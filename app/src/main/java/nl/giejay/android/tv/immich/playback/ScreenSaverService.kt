@@ -120,7 +120,8 @@ class ScreenSaverService : DreamService() {
                 null,
                 0,
                 PreferenceManager.screensaverInterval(),
-                PreferenceManager.sliderOnlyUseThumbnails()
+                PreferenceManager.sliderOnlyUseThumbnails(),
+                PreferenceManager.screensaverVideoSound(),
             ), assets.toSliderItems()
         )
         mediaSliderView!!.toggleSlideshow(false)

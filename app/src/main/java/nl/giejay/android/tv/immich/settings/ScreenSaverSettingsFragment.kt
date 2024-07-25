@@ -41,9 +41,6 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
                 return true
             }
 
-            "screensaver_play_sound" -> {
-                Toast.makeText(requireContext(), "Work in progress", Toast.LENGTH_SHORT).show()
-            }
 
             "screensaver_set_albums" ->
                 findNavController().navigate(
