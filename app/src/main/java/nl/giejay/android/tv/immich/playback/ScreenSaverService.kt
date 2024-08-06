@@ -94,7 +94,11 @@ class ScreenSaverService : DreamService(), MediaSessionManager.OnActiveSessionsC
             )
 
             val sessions = m.getActiveSessions(component)
-            mediaController = sessions.first { it.metadata?.keySet()?.size!! > 0 && it.metadata?.getString("com.google.android.apps.mediashell.CAST_APP_NAME") != "YouTube"}
+            mediaController = sessions.first {
+                it.metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) != null &&
+                it.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) != null &&
+                it.metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI) != null
+            }
             mediaController?.registerCallback(callback)
             val metadata = mediaController?.metadata ?: return
             updateMediaInfo(metadata)
