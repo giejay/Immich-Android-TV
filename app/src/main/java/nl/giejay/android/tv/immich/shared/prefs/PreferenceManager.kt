@@ -20,6 +20,8 @@ object PreferenceManager {
     private val KEY_SCREENSAVER_SHOW_MEDIA_COUNT = "screensaver_show_media_count"
     private val KEY_SCREENSAVER_SHOW_DESCRIPTION = "screensaver_show_description"
     private val KEY_SCREENSAVER_ALBUMS = "screensaver_albums"
+    private val KEY_SCREENSAVER_INCLUDE_VIDEOS = "screensaver_include_videos"
+    private val KEY_SCREENSAVER_VIDEO_SOUND = "screensaver_play_sound"
 
     // slider/view settings
     private val KEY_SLIDER_INTERVAL = "slider_interval"
@@ -47,6 +49,8 @@ object PreferenceManager {
         KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
         KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true,
         KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
+        KEY_SCREENSAVER_INCLUDE_VIDEOS to false,
+        KEY_SCREENSAVER_VIDEO_SOUND to false,
         KEY_DEBUG_MODE to false,
         KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
         KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),
@@ -84,6 +88,14 @@ object PreferenceManager {
 
     fun screensaverShowMediaCount(): Boolean {
         return liveContext[KEY_SCREENSAVER_SHOW_MEDIA_COUNT] as Boolean
+    }
+
+    fun screensaverIncludeVideos(): Boolean {
+        return liveContext[KEY_SCREENSAVER_INCLUDE_VIDEOS] as Boolean
+    }
+
+    fun screensaverVideoSound(): Boolean {
+        return liveContext[KEY_SCREENSAVER_VIDEO_SOUND] as Boolean
     }
 
     fun sliderInterval(): Int {

@@ -45,7 +45,8 @@ class AllAssetFragment : VerticalCardGridFragment<Asset>() {
                     "",
                     adapter.indexOf(card),
                     PreferenceManager.sliderInterval(),
-                    PreferenceManager.sliderOnlyUseThumbnails()
+                    PreferenceManager.sliderOnlyUseThumbnails(),
+                    true
                 )
             )
         )

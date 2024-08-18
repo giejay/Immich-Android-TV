@@ -78,7 +78,8 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
                     "",
                     adapter.indexOf(card),
                     PreferenceManager.sliderInterval(),
-                    PreferenceManager.sliderOnlyUseThumbnails()
+                    PreferenceManager.sliderOnlyUseThumbnails(),
+                    true
                 )
             )
         )
