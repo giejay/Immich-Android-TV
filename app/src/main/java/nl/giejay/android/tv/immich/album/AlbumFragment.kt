@@ -26,13 +26,10 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
 
     override fun sortItems(items: List<Album>): List<Album> {
         return if (selectionMode) {
-            items.sortedWith { b, a ->
-                compareValuesBy(
-                    a,
-                    b,
-                    { PreferenceManager.getScreenSaverAlbums().contains(it.id) },
-                    { it.endDate })
-            }
+            val sorted = items.sortedWith(PreferenceManager.albumsOrder().sort)
+            val selected = sorted.filter { PreferenceManager.getScreenSaverAlbums().contains(it.id) }
+            val unselected = sorted.filter { !selected.contains(it) }
+            selected + unselected
         } else {
             items.sortedWith(PreferenceManager.albumsOrder().sort)
         }

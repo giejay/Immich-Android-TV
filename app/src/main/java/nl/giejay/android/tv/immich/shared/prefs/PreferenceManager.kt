@@ -19,6 +19,10 @@ object PreferenceManager {
     private val KEY_SCREENSAVER_INTERVAL = "screensaver_interval"
     private val KEY_SCREENSAVER_SHOW_MEDIA_COUNT = "screensaver_show_media_count"
     private val KEY_SCREENSAVER_SHOW_DESCRIPTION = "screensaver_show_description"
+    private val KEY_SCREENSAVER_SHOW_ALBUM_NAME = "screensaver_show_album_name"
+    private val KEY_SCREENSAVER_SHOW_DATE = "screensaver_show_date"
+    private val KEY_SCREENSAVER_SHOW_CLOCK = "screensaver_show_clock"
+    private val KEY_SCREENSAVER_ANIMATE_ASSET_SLIDE = "screensaver_animate_asset_slide"
     private val KEY_SCREENSAVER_ALBUMS = "screensaver_albums"
     private val KEY_SCREENSAVER_INCLUDE_VIDEOS = "screensaver_include_videos"
     private val KEY_SCREENSAVER_VIDEO_SOUND = "screensaver_play_sound"
@@ -47,6 +51,10 @@ object PreferenceManager {
         KEY_SLIDER_SHOW_DESCRIPTION to true,
         KEY_SLIDER_SHOW_MEDIA_COUNT to true,
         KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
+        KEY_SCREENSAVER_SHOW_ALBUM_NAME to true,
+        KEY_SCREENSAVER_SHOW_DATE to true,
+        KEY_SCREENSAVER_SHOW_CLOCK to true,
+        KEY_SCREENSAVER_ANIMATE_ASSET_SLIDE to true,
         KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true,
         KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
         KEY_SCREENSAVER_INCLUDE_VIDEOS to false,
@@ -88,6 +96,22 @@ object PreferenceManager {
 
     fun screensaverShowMediaCount(): Boolean {
         return liveContext[KEY_SCREENSAVER_SHOW_MEDIA_COUNT] as Boolean
+    }
+
+    fun screensaverShowAlbumName(): Boolean {
+        return liveContext[KEY_SCREENSAVER_SHOW_ALBUM_NAME] as Boolean
+    }
+
+    fun screensaverShowDate(): Boolean {
+        return liveContext[KEY_SCREENSAVER_SHOW_DATE] as Boolean
+    }
+
+    fun screensaverShowClock(): Boolean {
+        return liveContext[KEY_SCREENSAVER_SHOW_CLOCK] as Boolean
+    }
+
+    fun screensaverAnimateAssetSlide(): Boolean {
+        return liveContext[KEY_SCREENSAVER_ANIMATE_ASSET_SLIDE] as Boolean
     }
 
     fun screensaverIncludeVideos(): Boolean {

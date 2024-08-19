@@ -31,6 +31,18 @@
             android:summary="Show description of asset in screensaver"/>
 
         <CheckBoxPreference
+            android:key="screensaver_show_album_name"
+            android:title="Show album name"
+            android:defaultValue="true"
+            android:summary="Show album name of asset in screensaver"/>
+
+        <CheckBoxPreference
+            android:key="screensaver_show_date"
+            android:title="Show date"
+            android:defaultValue="true"
+            android:summary="Show date of asset in screensaver"/>
+
+        <CheckBoxPreference
             android:key="screensaver_show_media_count"
             android:title="Show media count"
             android:defaultValue="true"
@@ -45,6 +57,18 @@
             android:key="screensaver_play_sound"
             android:title="Play sound"
             android:summary="Play sound of videos during screensaver"/>
+
+        <CheckBoxPreference
+            android:key="screensaver_show_clock"
+            android:title="Show clock"
+            android:defaultValue="true"
+            android:summary="Show clock in screensaver"/>
+
+        <CheckBoxPreference
+            android:key="screensaver_animate_asset_slide"
+            android:title="Slide the new asset in"
+            android:defaultValue="true"
+            android:summary="Slide the new asset in when transitioning"/>
 
     </PreferenceCategory>
 

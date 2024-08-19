@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.service.dreams.DreamService
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
+import com.zeuskartik.mediaslider.DisplayOptions
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import com.zeuskartik.mediaslider.MediaSliderView
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +18,7 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import timber.log.Timber
+import java.util.EnumSet
 
 class ScreenSaverService : DreamService() {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
@@ -60,7 +62,8 @@ class ScreenSaverService : DreamService() {
         try {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
-                apiClient!!.listAssetsFromAlbum(albums.first()).map { album ->
+                val shuffledAlbums = albums.toList().shuffled()
+                apiClient!!.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
 
                     val randomAssets =
                         if (PreferenceManager.screensaverIncludeVideos()) {
@@ -70,9 +73,9 @@ class ScreenSaverService : DreamService() {
                         }
 
                     setInitialAssets(randomAssets)
-                    if (albums.size > 1) {
+                    if (shuffledAlbums.size > 1) {
                         // load next ones
-                        val nextAlbums = albums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }
+                        val nextAlbums = shuffledAlbums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }
                         val assets =
                             nextAlbums.flatMap { it.getOrNone().toList() }.flatMap { 
                                 if (PreferenceManager.screensaverIncludeVideos()) {
@@ -110,18 +113,36 @@ class ScreenSaverService : DreamService() {
     }
 
     private suspend fun setInitialAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
+        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
+        if (PreferenceManager.screensaverShowClock()) {
+            displayOptions += DisplayOptions.CLOCK
+        }
+        if (PreferenceManager.screensaverShowDescription()) {
+            displayOptions += DisplayOptions.TITLE
+        }
+        if (PreferenceManager.screensaverShowAlbumName()) {
+            displayOptions += DisplayOptions.SUBTITLE
+        }
+        if (PreferenceManager.screensaverShowDate()) {
+            displayOptions += DisplayOptions.DATE
+        }
+        if (PreferenceManager.screensaverShowMediaCount()) {
+            displayOptions += DisplayOptions.MEDIA_COUNT
+        }
+        if (PreferenceManager.screensaverAnimateAssetSlide()) {
+            displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
+        }
+
         mediaSliderView!!.loadMediaSliderView(
             MediaSliderConfiguration(
-                PreferenceManager.screensaverShowDescription(),
-                PreferenceManager.screensaverShowMediaCount(),
-                false,
+                displayOptions,
                 "",
                 "#000000",
                 null,
                 0,
                 PreferenceManager.screensaverInterval(),
                 PreferenceManager.sliderOnlyUseThumbnails(),
-                PreferenceManager.screensaverVideoSound(),
+                PreferenceManager.screensaverVideoSound()
             ), assets.toSliderItems()
         )
         mediaSliderView!!.toggleSlideshow(false)

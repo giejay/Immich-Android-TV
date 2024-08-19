@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
+import com.zeuskartik.mediaslider.DisplayOptions
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
@@ -18,6 +19,7 @@ import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
+import java.util.EnumSet
 
 
 class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
@@ -66,13 +68,18 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
 
     override fun onItemClicked(card: Card) {
         // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
+        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
+        if (PreferenceManager.screensaverShowDescription()) {
+            displayOptions += DisplayOptions.TITLE
+        }
+        if (PreferenceManager.screensaverShowMediaCount()) {
+            displayOptions += DisplayOptions.MEDIA_COUNT
+        }
         LocalStorage.mediaSliderItems = assets.toSliderItems()
         findNavController().navigate(
             AlbumDetailsFragmentDirections.actionDetailsToPhotoSlider(
                 MediaSliderConfiguration(
-                    PreferenceManager.sliderShowDescription(),
-                    PreferenceManager.sliderShowMediaCount(),
-                    false,
+                    displayOptions,
                     currentAlbum!!.albumName,
                     "",
                     "",

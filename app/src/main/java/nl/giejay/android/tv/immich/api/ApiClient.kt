@@ -8,6 +8,7 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -46,7 +47,13 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     suspend fun listAssetsFromAlbum(albumId: String): Either<String, AlbumDetails> {
-        return executeAPICall(200) { service.listAssetsFromAlbum(albumId) }
+        return executeAPICall(200) {
+            val response = service.listAssetsFromAlbum(albumId)
+            val album = response.body()
+            val assets = album!!.assets.map{ Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName)}
+            val updatedAlbum = AlbumDetails(album.albumName, album.description, album.id, album.albumThumbnailAssetId, assets)
+            Response.success(updatedAlbum)
+        }
     }
 
     suspend fun listAssets(page: Int, pageCount: Int, order: String): Either<String, List<Asset>> {
