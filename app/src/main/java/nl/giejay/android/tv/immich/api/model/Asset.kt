@@ -12,5 +12,6 @@ data class Asset(
     val type: String,
     val deviceAssetId: String?,
     val exifInfo: AssetExifInfo?,
-    val fileModifiedAt: Date?
+    val fileModifiedAt: Date?,
+    val albumName: String?
 )

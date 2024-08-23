@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.assets
 
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
+import com.zeuskartik.mediaslider.DisplayOptions
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.util.ApiUtil
@@ -14,6 +15,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
+import java.util.EnumSet
 
 class AllAssetFragment : VerticalCardGridFragment<Asset>() {
     override fun sortItems(items: List<Asset>): List<Asset> {
@@ -33,13 +35,18 @@ class AllAssetFragment : VerticalCardGridFragment<Asset>() {
     }
 
     override fun onItemClicked(card: Card) {
+        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
+        if (PreferenceManager.screensaverShowDescription()) {
+            displayOptions += DisplayOptions.TITLE
+        }
+        if (PreferenceManager.screensaverShowMediaCount()) {
+            displayOptions += DisplayOptions.MEDIA_COUNT
+        }
         LocalStorage.mediaSliderItems = assets.toSliderItems()
         findNavController().navigate(
             HomeFragmentDirections.actionHomeFragmentToPhotoSlider(
                 MediaSliderConfiguration(
-                    PreferenceManager.sliderShowDescription(),
-                    PreferenceManager.sliderShowMediaCount(),
-                    false,
+                    displayOptions,
                     "",
                     "",
                     "",

@@ -11,7 +11,9 @@ fun List<Asset>.toSliderItems(): List<SliderItem> {
         SliderItem(
             ApiUtil.getFileUrl(it.id),
             SliderItemType.valueOf(it.type.uppercase()),
-            it.exifInfo?.description?.ifEmpty { it.deviceAssetId } ?: it.deviceAssetId,
+            it.exifInfo?.description,
+            it.albumName,
+            it.exifInfo?.dateTimeOriginal,
             ApiUtil.getThumbnailUrl(it.id, "preview")
         )
     }
