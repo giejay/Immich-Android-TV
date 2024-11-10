@@ -20,6 +20,7 @@ import android.view.View
 import android.view.ViewGroup
 import java.io.IOException
 import java.io.InputStream
+import kotlin.math.roundToInt
 
 /**
  * A collection of utility methods, all static.
@@ -55,7 +56,7 @@ object Utils {
 
     fun convertDpToPixel(ctx: Context, dp: Int): Int {
         val density = ctx.resources.displayMetrics.density
-        return Math.round(dp.toFloat() * density)
+        return (dp.toFloat() * density).roundToInt()
     }
 
     /**
