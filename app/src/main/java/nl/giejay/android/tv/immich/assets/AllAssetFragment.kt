@@ -36,10 +36,10 @@ class AllAssetFragment : VerticalCardGridFragment<Asset>() {
 
     override fun onItemClicked(card: Card) {
         val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
-        if (PreferenceManager.screensaverShowDescription()) {
+        if (PreferenceManager.sliderShowDescription()) {
             displayOptions += DisplayOptions.TITLE
         }
-        if (PreferenceManager.screensaverShowMediaCount()) {
+        if (PreferenceManager.sliderShowMediaCount()) {
             displayOptions += DisplayOptions.MEDIA_COUNT
         }
         LocalStorage.mediaSliderItems = assets.toSliderItems()

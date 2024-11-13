@@ -113,7 +113,7 @@ class ScreenSaverService : DreamService() {
     }
 
     private suspend fun setInitialAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
-        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
+        val displayOptions: EnumSet<DisplayOptions> = EnumSet.of(DisplayOptions.GRADIENT_OVERLAY);
         if (PreferenceManager.screensaverShowClock()) {
             displayOptions += DisplayOptions.CLOCK
         }

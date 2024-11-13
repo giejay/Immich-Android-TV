@@ -69,10 +69,10 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
     override fun onItemClicked(card: Card) {
         // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
         val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
-        if (PreferenceManager.screensaverShowDescription()) {
+        if (PreferenceManager.sliderShowDescription()) {
             displayOptions += DisplayOptions.TITLE
         }
-        if (PreferenceManager.screensaverShowMediaCount()) {
+        if (PreferenceManager.sliderShowMediaCount()) {
             displayOptions += DisplayOptions.MEDIA_COUNT
         }
         LocalStorage.mediaSliderItems = assets.toSliderItems()
