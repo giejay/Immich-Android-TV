@@ -25,7 +25,7 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
 
     override fun onCreateGuidance(savedInstanceState: Bundle?): GuidanceStylist.Guidance {
         val icon: Drawable =
-            requireContext().getDrawable(nl.giejay.android.tv.immich.R.drawable.icon)!!
+            requireContext().getDrawable(R.drawable.icon)!!
         return GuidanceStylist.Guidance(
             "Immich TV (${BuildConfig.VERSION_NAME})",
             "Login to your Immich server or try a demo.",
