@@ -75,7 +75,7 @@
 
     <fragment
         android:id="@+id/photoSlider"
-        android:name="nl.giejay.android.tv.immich.playback.ImmichMediaSlider"
+        android:name="nl.giejay.android.tv.immich.slider.ImmichMediaSlider"
         android:label="PhotoSlider">
         <argument
             android:name="config"

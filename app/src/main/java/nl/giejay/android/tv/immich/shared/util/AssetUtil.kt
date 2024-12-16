@@ -11,8 +11,8 @@ fun List<Asset>.toSliderItems(): List<SliderItem> {
         SliderItem(
             ApiUtil.getFileUrl(it.id),
             SliderItemType.valueOf(it.type.uppercase()),
-            it.exifInfo?.description,
-            it.albumName,
+            if(it.exifInfo?.description?.isNotBlank() == true) it.exifInfo.description else it.exifInfo?.country,
+            it.albumName ?: it.exifInfo?.city,
             it.exifInfo?.dateTimeOriginal,
             ApiUtil.getThumbnailUrl(it.id, "preview")
         )

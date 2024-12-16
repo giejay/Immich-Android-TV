@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.shared.prefs
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
+import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import okhttp3.HttpUrl
 
 object PreferenceManager {
@@ -26,11 +27,13 @@ object PreferenceManager {
     private val KEY_SCREENSAVER_ALBUMS = "screensaver_albums"
     private val KEY_SCREENSAVER_INCLUDE_VIDEOS = "screensaver_include_videos"
     private val KEY_SCREENSAVER_VIDEO_SOUND = "screensaver_play_sound"
+    private val KEY_SCREENSAVER_TYPE = "screensaver_type"
 
     // slider/view settings
     private val KEY_SLIDER_INTERVAL = "slider_interval"
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
+    private val KEY_SLIDER_SHOW_DATE = "slider_show_date"
     private val KEY_SLIDER_ONLY_USE_THUMBNAILS = "slider_only_use_thumbnails"
     val KEY_ALBUMS_SORTING = "albums_sorting"
     private val KEY_PHOTOS_SORTING = "photos_sorting"
@@ -50,6 +53,7 @@ object PreferenceManager {
         KEY_SLIDER_INTERVAL to "3",
         KEY_SLIDER_SHOW_DESCRIPTION to true,
         KEY_SLIDER_SHOW_MEDIA_COUNT to true,
+        KEY_SLIDER_SHOW_DATE to false,
         KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
         KEY_SCREENSAVER_SHOW_ALBUM_NAME to true,
         KEY_SCREENSAVER_SHOW_DATE to true,
@@ -59,6 +63,7 @@ object PreferenceManager {
         KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
         KEY_SCREENSAVER_INCLUDE_VIDEOS to false,
         KEY_SCREENSAVER_VIDEO_SOUND to false,
+        KEY_SCREENSAVER_TYPE to ScreenSaverType.ALBUMS.toString(),
         KEY_DEBUG_MODE to false,
         KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
         KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),
@@ -134,6 +139,10 @@ object PreferenceManager {
         return liveContext[KEY_SLIDER_SHOW_MEDIA_COUNT] as Boolean
     }
 
+    fun sliderShowDate(): Boolean {
+        return liveContext[KEY_SLIDER_SHOW_DATE] as Boolean
+    }
+
     fun sliderOnlyUseThumbnails(): Boolean {
         return liveContext[KEY_SLIDER_ONLY_USE_THUMBNAILS] as Boolean
     }
@@ -165,6 +174,10 @@ object PreferenceManager {
 
     fun getScreenSaverAlbums(): Set<String> {
         return liveContext[KEY_SCREENSAVER_ALBUMS] as Set<String>
+    }
+
+    fun getScreenSaverType(): ScreenSaverType {
+        return ScreenSaverType.valueOf(liveContext[KEY_SCREENSAVER_TYPE] as String)
     }
 
     fun saveScreenSaverAlbums(strings: Set<String>) {

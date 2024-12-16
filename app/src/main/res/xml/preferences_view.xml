@@ -60,6 +60,12 @@
             android:summary="Show the number of total items and currently selected item"/>
 
         <CheckBoxPreference
+            android:key="slider_show_date"
+            android:title="Show date"
+            android:defaultValue="false"
+            android:summary="Show date of asset in slideshow"/>
+
+        <CheckBoxPreference
             android:key="slider_play_sound"
             android:title="Play sound"
             android:summary="Play sound of videos"/>

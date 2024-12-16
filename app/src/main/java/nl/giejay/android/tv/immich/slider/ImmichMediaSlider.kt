@@ -1,4 +1,4 @@
-package nl.giejay.android.tv.immich.playback
+package nl.giejay.android.tv.immich.slider
 
 import android.annotation.SuppressLint
 import android.os.Bundle

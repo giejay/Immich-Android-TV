@@ -75,6 +75,9 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
         if (PreferenceManager.sliderShowMediaCount()) {
             displayOptions += DisplayOptions.MEDIA_COUNT
         }
+        if (PreferenceManager.sliderShowDate()) {
+            displayOptions += DisplayOptions.DATE
+        }
         LocalStorage.mediaSliderItems = assets.toSliderItems()
         findNavController().navigate(
             AlbumDetailsFragmentDirections.actionDetailsToPhotoSlider(

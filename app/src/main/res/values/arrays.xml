@@ -57,4 +57,18 @@
         <item>OLDEST_NEWEST</item>
     </string-array>
 
+    <string-array name="screensaver_type_keys">
+        <item>ALBUMS</item>
+        <item>RANDOM</item>
+        <item>RECENT</item>
+        <item>SIMILAR_TIME_PERIOD</item>
+    </string-array>
+
+    <string-array name="screensaver_type_values">
+        <item>Albums</item>
+        <item>Random</item>
+        <item>Recent</item>
+        <item>Similar time period</item>
+    </string-array>
+
 </resources>

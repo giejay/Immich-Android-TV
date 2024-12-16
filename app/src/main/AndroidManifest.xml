@@ -49,7 +49,7 @@
         android:theme="@style/AppTheme">
 
         <service
-            android:name="nl.giejay.android.tv.immich.playback.ScreenSaverService"
+            android:name="nl.giejay.android.tv.immich.screensaver.ScreenSaverService"
             android:exported="true"
             android:label="Immich"
             android:permission="android.permission.BIND_DREAM_SERVICE">

@@ -11,6 +11,8 @@ import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 data class ApiClientConfig(
     val hostName: String,
@@ -28,6 +30,8 @@ class ApiClient(private val config: ApiClientConfig) {
             }
             return apiClient!!
         }
+
+        val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME;
     }
 
     private val retrofit = Retrofit.Builder()
@@ -50,14 +54,28 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) {
             val response = service.listAssetsFromAlbum(albumId)
             val album = response.body()
-            val assets = album!!.assets.map{ Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName)}
+            val assets = album!!.assets.map { Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName) }
             val updatedAlbum = AlbumDetails(album.albumName, album.description, album.id, album.albumThumbnailAssetId, assets)
             Response.success(updatedAlbum)
         }
     }
 
-    suspend fun listAssets(page: Int, pageCount: Int, order: String): Either<String, List<Asset>> {
-        return executeAPICall(200) { service.listAssets(SearchRequest(page, pageCount, order)) }.map { res -> res.assets.items }
+    suspend fun listAssets(page: Int,
+                           pageCount: Int,
+                           random: Boolean,
+                           order: String,
+                           includeVideos: Boolean = true,
+                           fromDate: LocalDateTime? = null,
+                           endDate: LocalDateTime? = null): Either<String, List<Asset>> {
+        val searchRequest = SearchRequest(page, pageCount, order, if (includeVideos) null else "IMAGE",
+            endDate?.format(dateTimeFormatter),
+            fromDate?.format(dateTimeFormatter))
+        return if (random) {
+            executeAPICall(200) { service.randomAssets(searchRequest) }
+        } else {
+            executeAPICall(200) { service.listAssets(searchRequest) }.map { res -> res.assets.items }
+        }
+
     }
 }
 

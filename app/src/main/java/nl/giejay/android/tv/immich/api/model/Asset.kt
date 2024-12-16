@@ -3,7 +3,9 @@ package nl.giejay.android.tv.immich.api.model
 import java.util.Date
 
 data class AssetExifInfo(
-    val description: String,
+    val description: String?,
+    val city: String?,
+    val country: String?,
     val dateTimeOriginal: Date?
 )
 

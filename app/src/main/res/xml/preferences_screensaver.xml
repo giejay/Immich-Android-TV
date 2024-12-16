@@ -19,6 +19,15 @@
             android:entryValues="@array/interval_values"
             android:dialogTitle="Interval"/>
 
+        <ListPreference
+            android:key="screensaver_type"
+            android:title="What to show: albums, random, same season etc."
+            android:summary="What to show: albums, random, same season etc."
+            app:useSimpleSummaryProvider="true"
+            android:entries="@array/screensaver_type_values"
+            android:entryValues="@array/screensaver_type_keys"
+            android:dialogTitle="Screensaver Type"/>
+
         <Preference
             android:key="screensaver_set_albums"
             android:title="Set albums to show in screensaver"

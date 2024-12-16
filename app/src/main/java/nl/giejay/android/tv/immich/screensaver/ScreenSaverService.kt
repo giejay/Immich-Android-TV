@@ -1,23 +1,27 @@
-package nl.giejay.android.tv.immich.playback
+package nl.giejay.android.tv.immich.screensaver
 
 import android.annotation.SuppressLint
 import android.service.dreams.DreamService
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
+import arrow.core.getOrElse
 import com.zeuskartik.mediaslider.DisplayOptions
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import com.zeuskartik.mediaslider.MediaSliderView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
+import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import timber.log.Timber
+import java.time.LocalDateTime
 import java.util.EnumSet
 
 class ScreenSaverService : DreamService() {
@@ -49,7 +53,12 @@ class ScreenSaverService : DreamService() {
         setContentView(mediaSliderView)
         isInteractive = true
         ioScope.launch {
-            loadImages(PreferenceManager.getScreenSaverAlbums())
+            when (val screenSaverType = PreferenceManager.getScreenSaverType()) {
+                ScreenSaverType.ALBUMS -> loadImagesFromAlbums(PreferenceManager.getScreenSaverAlbums())
+                ScreenSaverType.RANDOM -> loadRandomImages(screenSaverType)
+                ScreenSaverType.SIMILAR_TIME_PERIOD -> loadRandomImages(screenSaverType)
+                ScreenSaverType.RECENT -> loadRandomImages(screenSaverType)
+            }
         }
     }
 
@@ -58,32 +67,49 @@ class ScreenSaverService : DreamService() {
         super.onDreamingStopped()
     }
 
-    private suspend fun loadImages(albums: Set<String>) {
+    private suspend fun loadRandomImages(screenSaverType: ScreenSaverType) {
+        val now = LocalDateTime.now()
+        when (screenSaverType) {
+            ScreenSaverType.RECENT -> {
+                apiClient!!.listAssets(0, 1000, true, "desc", PreferenceManager.screensaverIncludeVideos(), now.minusMonths(5), now).map {
+                    setInitialAssets(it, false)
+                }
+            }
+
+            ScreenSaverType.SIMILAR_TIME_PERIOD -> {
+                val similarPeriodAssets = (1 until 10).toList().flatMap {
+                    apiClient!!.listAssets(0,
+                        1000,
+                        true,
+                        "desc",
+                        PreferenceManager.screensaverIncludeVideos(),
+                        now.minusMonths(1).minusYears(it.toLong()),
+                        now.plusMonths(1).minusYears(it.toLong())).getOrElse { emptyList() }
+                }
+                setInitialAssets(similarPeriodAssets.shuffled(), false)
+            }
+
+            else -> {
+                // random
+                apiClient!!.listAssets(0, 1000, true, "desc", PreferenceManager.screensaverIncludeVideos()).map {
+                    setInitialAssets(it, false)
+                }
+            }
+        }
+    }
+
+    private suspend fun loadImagesFromAlbums(albums: Set<String>) {
         try {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
                 val shuffledAlbums = albums.toList().shuffled()
                 apiClient!!.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
-
-                    val randomAssets =
-                        if (PreferenceManager.screensaverIncludeVideos()) {
-                            album.assets.shuffled()
-                        } else {
-                            album.assets.filter {it.type != "VIDEO"}.shuffled()
-                        }
-
-                    setInitialAssets(randomAssets)
+                    val randomAssets = getAssets(listOf(album))
+                    setInitialAssets(randomAssets, PreferenceManager.screensaverShowMediaCount())
                     if (shuffledAlbums.size > 1) {
                         // load next ones
                         val nextAlbums = shuffledAlbums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }
-                        val assets =
-                            nextAlbums.flatMap { it.getOrNone().toList() }.flatMap { 
-                                if (PreferenceManager.screensaverIncludeVideos()) {
-                                    it.assets.shuffled()
-                                } else {
-                                    it.assets.filter {it.type != "VIDEO"}.shuffled()
-                                }
-                            }
+                        val assets = getAssets(nextAlbums.flatMap { it.getOrNone().toList() })
                         setAllAssets((randomAssets + assets).shuffled().distinct())
                     }
                 }
@@ -112,7 +138,17 @@ class ScreenSaverService : DreamService() {
         ).show()
     }
 
-    private suspend fun setInitialAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
+    private fun getAssets(albums: List<AlbumDetails>): List<Asset> {
+        return albums.flatMap { filterVideos(it.assets) }
+    }
+
+    private fun filterVideos(assets: List<Asset>) = if (PreferenceManager.screensaverIncludeVideos()) {
+        assets.shuffled()
+    } else {
+        assets.filter { it.type != "VIDEO" }.shuffled()
+    }
+
+    private suspend fun setInitialAssets(assets: List<Asset>, showMediaCount: Boolean) = withContext(Dispatchers.Main) {
         val displayOptions: EnumSet<DisplayOptions> = EnumSet.of(DisplayOptions.GRADIENT_OVERLAY);
         if (PreferenceManager.screensaverShowClock()) {
             displayOptions += DisplayOptions.CLOCK
@@ -126,7 +162,7 @@ class ScreenSaverService : DreamService() {
         if (PreferenceManager.screensaverShowDate()) {
             displayOptions += DisplayOptions.DATE
         }
-        if (PreferenceManager.screensaverShowMediaCount()) {
+        if (showMediaCount) {
             displayOptions += DisplayOptions.MEDIA_COUNT
         }
         if (PreferenceManager.screensaverAnimateAssetSlide()) {
