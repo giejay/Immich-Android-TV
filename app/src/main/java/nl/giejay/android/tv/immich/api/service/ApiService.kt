@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.api.service
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
 import retrofit2.Response
@@ -22,6 +23,9 @@ interface ApiService {
 
     @GET("albums")
     suspend fun listAlbums(@Query("shared") shared: Boolean = false): Response<List<Album>>
+
+    @GET("people")
+    suspend fun listPeople(): Response<PeopleResponse>
 
     @GET("albums/{albumId}")
     suspend fun listAssetsFromAlbum(@Path("albumId") albumId: String): Response<AlbumDetails>

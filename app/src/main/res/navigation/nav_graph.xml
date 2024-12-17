@@ -41,6 +41,10 @@
         android:id="@+id/action_global_album_fragment"
         app:destination="@id/albumFragment" />
 
+    <action
+        android:id="@+id/action_to_photo_slider"
+        app:destination="@id/photoSlider" />
+
     <!--    <fragment-->
     <!--        android:id="@+id/playbackFragment"-->
     <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
@@ -60,18 +64,41 @@
         <argument
             android:name="albumId"
             app:argType="string" />
+        <argument
+            android:name="albumName"
+            app:argType="string" />
         <action
             android:id="@+id/action_details_to_album_fragment"
             app:destination="@id/albumFragment" />
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/personAssetsFragment"
+        android:name="nl.giejay.android.tv.immich.people.PersonAssetsFragment"
+        android:label="PersonAssetsFragment">
+        <argument
+            android:name="personId"
+            app:argType="string" />
+        <argument
+            android:name="personName"
+            app:argType="string" />
         <action
-            android:id="@+id/action_details_to_photo_slider"
-            app:destination="@id/photoSlider" />
+            android:id="@+id/action_details_to_person_fragment"
+            app:destination="@id/peopleFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/peopleFragment"
+        android:name="nl.giejay.android.tv.immich.people.PeopleFragment"
+        android:label="PeopleFragment">
     </fragment>
 
     <fragment
         android:id="@+id/allAssetsFragment"
         android:name="nl.giejay.android.tv.immich.assets.AllAssetFragment"
-        android:label="AllAssetsFragment"></fragment>
+        android:label="AllAssetsFragment">
+    </fragment>
 
     <fragment
         android:id="@+id/photoSlider"
@@ -154,6 +181,9 @@
         <action
             android:id="@+id/action_homeFragment_to_albumDetailsFragment"
             app:destination="@id/albumDetailsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_personAssetsFragment"
+            app:destination="@id/personAssetsFragment" />
         <action
             android:id="@+id/action_homeFragment_to_screensaver_settings"
             app:destination="@id/screenSaverSettings" />

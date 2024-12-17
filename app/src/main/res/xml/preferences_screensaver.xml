@@ -21,9 +21,10 @@
 
         <ListPreference
             android:key="screensaver_type"
-            android:title="What to show: albums, random, same season etc."
-            android:summary="What to show: albums, random, same season etc."
+            android:title="What to show: albums, random, recent etc."
+            android:summary="What to show: albums, random, recent etc."
             app:useSimpleSummaryProvider="true"
+            android:defaultValue="RECENT"
             android:entries="@array/screensaver_type_values"
             android:entryValues="@array/screensaver_type_keys"
             android:dialogTitle="Screensaver Type"/>

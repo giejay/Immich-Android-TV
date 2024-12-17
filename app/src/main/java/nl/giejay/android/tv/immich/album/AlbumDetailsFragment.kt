@@ -4,31 +4,25 @@ import android.os.Bundle
 import android.view.View
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
-import com.zeuskartik.mediaslider.DisplayOptions
-import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
-import nl.giejay.android.tv.immich.api.util.ApiUtil
+import nl.giejay.android.tv.immich.assets.GenericAssetFragment
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
-import nl.giejay.android.tv.immich.shared.db.LocalStorage
-import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.LivePreference
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import nl.giejay.android.tv.immich.shared.util.toCard
-import nl.giejay.android.tv.immich.shared.util.toSliderItems
-import java.util.EnumSet
 
 
-class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
-    private var currentAlbum: AlbumDetails? = null
+class AlbumDetailsFragment : GenericAssetFragment() {
     private lateinit var albumId: String
+    private lateinit var albumName: String
     private lateinit var livePref: LivePreference<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
+        albumName = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumName
         super.onCreate(savedInstanceState)
         livePref = LiveSharedPreferences(PreferenceManager.sharedPreference)
             .getString(PreferenceManager.keyAlbumsSorting(albumId), PreferenceManager.photosOrder().toString(), true)
@@ -49,7 +43,6 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
         if(page == startPage){
             // no pagination possible yet!
             return apiClient.listAssetsFromAlbum(albumId).map {
-                currentAlbum = it
                 it.assets
             }
         }
@@ -62,48 +55,11 @@ class AlbumDetailsFragment : VerticalCardGridFragment<Asset>() {
 
     override fun openPopUpMenu() {
         findNavController().navigate(
-            HomeFragmentDirections.actionGlobalToSettingsDialog("album_details", albumId, currentAlbum!!.albumName)
+            HomeFragmentDirections.actionGlobalToSettingsDialog("album_details", albumId, albumName)
         )
-    }
-
-    override fun onItemClicked(card: Card) {
-        // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
-        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
-        if (PreferenceManager.sliderShowDescription()) {
-            displayOptions += DisplayOptions.TITLE
-        }
-        if (PreferenceManager.sliderShowMediaCount()) {
-            displayOptions += DisplayOptions.MEDIA_COUNT
-        }
-        if (PreferenceManager.sliderShowDate()) {
-            displayOptions += DisplayOptions.DATE
-        }
-        LocalStorage.mediaSliderItems = assets.toSliderItems()
-        findNavController().navigate(
-            AlbumDetailsFragmentDirections.actionDetailsToPhotoSlider(
-                MediaSliderConfiguration(
-                    displayOptions,
-                    currentAlbum!!.albumName,
-                    "",
-                    "",
-                    adapter.indexOf(card),
-                    PreferenceManager.sliderInterval(),
-                    PreferenceManager.sliderOnlyUseThumbnails(),
-                    true
-                )
-            )
-        )
-    }
-
-    override fun getBackgroundPicture(it: Asset): String? {
-        return ApiUtil.getFileUrl(it.id)
     }
 
     override fun setTitle(response: List<Asset>) {
-        title = currentAlbum?.albumName
-    }
-
-    override fun createCard(a: Asset): Card {
-       return a.toCard()
+        title = albumName
     }
 }

@@ -68,30 +68,25 @@ class ScreenSaverService : DreamService() {
     }
 
     private suspend fun loadRandomImages(screenSaverType: ScreenSaverType) {
-        val now = LocalDateTime.now()
         when (screenSaverType) {
             ScreenSaverType.RECENT -> {
-                apiClient!!.listAssets(0, 1000, true, "desc", PreferenceManager.screensaverIncludeVideos(), now.minusMonths(5), now).map {
-                    setInitialAssets(it, false)
+                // todo add pagination!
+                apiClient!!.recentAssets(0, 1000, PreferenceManager.screensaverIncludeVideos()).map {
+                    setInitialAssets(it.shuffled(), false)
                 }
             }
 
             ScreenSaverType.SIMILAR_TIME_PERIOD -> {
-                val similarPeriodAssets = (1 until 10).toList().flatMap {
-                    apiClient!!.listAssets(0,
-                        1000,
-                        true,
-                        "desc",
-                        PreferenceManager.screensaverIncludeVideos(),
-                        now.minusMonths(1).minusYears(it.toLong()),
-                        now.plusMonths(1).minusYears(it.toLong())).getOrElse { emptyList() }
+                // todo add pagination!
+                apiClient!!.similarAssets(0, 1000, PreferenceManager.screensaverIncludeVideos()).map {
+                    setInitialAssets(it.shuffled(), false)
                 }
-                setInitialAssets(similarPeriodAssets.shuffled(), false)
             }
 
             else -> {
                 // random
-                apiClient!!.listAssets(0, 1000, true, "desc", PreferenceManager.screensaverIncludeVideos()).map {
+                // todo add pagination!
+                apiClient!!.listAssets(0, 1000, true, includeVideos = PreferenceManager.screensaverIncludeVideos()).map {
                     setInitialAssets(it, false)
                 }
             }

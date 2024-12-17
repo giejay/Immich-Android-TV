@@ -21,7 +21,7 @@ enum class AlbumsOrder(val sort: Comparator<Album>) {
 
     companion object {
         fun valueOfSafe(name: String, default: AlbumsOrder): AlbumsOrder{
-            return values().find { it.toString() == name } ?: default
+            return entries.find { it.toString() == name } ?: default
         }
     }
 }

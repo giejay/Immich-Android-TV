@@ -63,7 +63,7 @@ object PreferenceManager {
         KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
         KEY_SCREENSAVER_INCLUDE_VIDEOS to false,
         KEY_SCREENSAVER_VIDEO_SOUND to false,
-        KEY_SCREENSAVER_TYPE to ScreenSaverType.ALBUMS.toString(),
+        KEY_SCREENSAVER_TYPE to ScreenSaverType.RECENT.toString(),
         KEY_DEBUG_MODE to false,
         KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
         KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),

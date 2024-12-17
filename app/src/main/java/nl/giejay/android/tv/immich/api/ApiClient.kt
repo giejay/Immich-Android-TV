@@ -2,9 +2,11 @@ package nl.giejay.android.tv.immich.api
 
 import arrow.core.Either
 import arrow.core.flatMap
+import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
@@ -13,6 +15,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 data class ApiClientConfig(
     val hostName: String,
@@ -50,6 +53,10 @@ class ApiClient(private val config: ApiClientConfig) {
         }
     }
 
+    suspend fun listPeople(): Either<String, List<Person>> {
+        return executeAPICall(200) { service.listPeople() }.map { response -> response.people }
+    }
+
     suspend fun listAssetsFromAlbum(albumId: String): Either<String, AlbumDetails> {
         return executeAPICall(200) {
             val response = service.listAssetsFromAlbum(albumId)
@@ -60,14 +67,42 @@ class ApiClient(private val config: ApiClientConfig) {
         }
     }
 
+    suspend fun recentAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
+        val now = LocalDateTime.now()
+        return apiClient!!.listAssets(page, pageCount, true, "desc",
+            includeVideos = includeVideos, fromDate = now.minusMonths(5), endDate = now)
+    }
+
+    suspend fun similarAssets(page: Int, pageCount: Int,includeVideos: Boolean): Either<String, List<Asset>> {
+        val now = LocalDateTime.now()
+        val map: List<Either<String, List<Asset>>> = (1 until 10).toList().map {
+            apiClient!!.listAssets(page,
+                pageCount,
+                true,
+                "desc",
+                includeVideos = includeVideos,
+                fromDate = now.minusMonths(1).minusYears(it.toLong()),
+                endDate = now.plusMonths(1).minusYears(it.toLong()))
+        }
+        if (map.all { it.isLeft() }) {
+            return map.first()
+        }
+        return Either.Right(map.flatMap { it.getOrElse { emptyList() } }.shuffled())
+    }
+
     suspend fun listAssets(page: Int,
                            pageCount: Int,
-                           random: Boolean,
-                           order: String,
+                           random: Boolean = false,
+                           order: String = "desc",
+                           personIds: List<UUID> = emptyList(),
                            includeVideos: Boolean = true,
                            fromDate: LocalDateTime? = null,
                            endDate: LocalDateTime? = null): Either<String, List<Asset>> {
-        val searchRequest = SearchRequest(page, pageCount, order, if (includeVideos) null else "IMAGE",
+        val searchRequest = SearchRequest(page,
+            pageCount,
+            order,
+            if (includeVideos) null else "IMAGE",
+            personIds,
             endDate?.format(dateTimeFormatter),
             fromDate?.format(dateTimeFormatter))
         return if (random) {

@@ -10,12 +10,13 @@ import androidx.leanback.widget.HeaderItem
 import androidx.leanback.widget.ListRowPresenter
 import androidx.leanback.widget.PageRow
 import androidx.leanback.widget.Row
-import androidx.navigation.fragment.findNavController
-import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragment
 import nl.giejay.android.tv.immich.assets.AllAssetFragment
+import nl.giejay.android.tv.immich.assets.RandomAssetsFragment
+import nl.giejay.android.tv.immich.assets.RecentAssetsFragment
+import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
+import nl.giejay.android.tv.immich.people.PeopleFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
-import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
 class HomeFragment : BrowseSupportFragment() {
@@ -29,10 +30,7 @@ class HomeFragment : BrowseSupportFragment() {
         setupUi()
         loadData()
 
-        mainFragmentRegistry.registerFragment(
-            PageRow::class.java,
-            PageRowFragmentFactory()
-        )
+        mainFragmentRegistry.registerFragment(PageRow::class.java, PageRowFragmentFactory())
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -42,8 +40,6 @@ class HomeFragment : BrowseSupportFragment() {
             selectedPosition = mRowsAdapter.indexOf(row)
         }
     }
-
-
 
     private fun setupUi() {
         headersState = HEADERS_ENABLED
@@ -65,45 +61,32 @@ class HomeFragment : BrowseSupportFragment() {
     }
 
     private fun createRows() {
-        val headerItem1 = HeaderItem(HEADER_ID_1, HEADER_NAME_1)
-        val pageRow1 = PageRow(headerItem1)
-        mRowsAdapter.add(pageRow1)
-        val headerItem2 = HeaderItem(HEADER_ID_2, HEADER_NAME_2)
-        val pageRow2 = PageRow(headerItem2)
-        mRowsAdapter.add(pageRow2)
-        val headerItem3 = HeaderItem(HEADER_ID_3, HEADER_NAME_3)
-        val pageRow3 = PageRow(headerItem3)
-        mRowsAdapter.add(pageRow3)
+        HEADERS.forEachIndexed { index, header -> mRowsAdapter.add(PageRow(HeaderItem(index.toLong(), header.name))) }
     }
 
     private class PageRowFragmentFactory : FragmentFactory<Fragment>() {
         override fun createFragment(rowObj: Any): Fragment {
             val row = rowObj as Row
             Timber.i("Going to show page: ${row.headerItem.name}")
-            return when (row.headerItem.id) {
-                HEADER_ID_1 ->
-                    AlbumFragment().apply {
-                        arguments = bundleOf("selectionMode" to false)
-                    }
-
-                HEADER_ID_2 ->
-                    AllAssetFragment()
-
-                HEADER_ID_3 ->
-                    SettingsFragment()
-
-                else ->
-                    throw IllegalStateException("Unknown fragment: $row")
-            }
+            return HEADERS[row.headerItem.id.toInt()].fragment()
         }
     }
 
     companion object {
-        private const val HEADER_ID_1: Long = 1
-        private const val HEADER_NAME_1 = "Albums"
-        private const val HEADER_ID_2: Long = 2
-        private const val HEADER_NAME_2 = "Photos"
-        private const val HEADER_ID_3: Long = 3
-        private const val HEADER_NAME_3 = "Settings"
+        private val HEADERS: List<Header> = listOf(
+            Header("Albums") {
+                AlbumFragment().apply {
+                    arguments = bundleOf("selectionMode" to false)
+                }
+            },
+            Header("Photos") { AllAssetFragment() },
+            Header("Random") { RandomAssetsFragment() },
+            Header("People") { PeopleFragment() },
+            Header("Recent") { RecentAssetsFragment() },
+            Header("Seasonal") { SimilarTimeAssetsFragment() },
+            Header("Settings") { SettingsFragment() },
+        )
     }
 }
+
+class Header(val name: String, val fragment: () -> Fragment)

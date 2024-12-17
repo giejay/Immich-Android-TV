@@ -59,7 +59,8 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
     override fun onItemClicked(card: Card) {
         findNavController().navigate(
             HomeFragmentDirections.actionHomeFragmentToAlbumDetailsFragment(
-                card.id
+                card.id,
+                card.title
             )
         )
     }

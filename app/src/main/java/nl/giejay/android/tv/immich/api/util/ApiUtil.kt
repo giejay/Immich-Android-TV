@@ -5,6 +5,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.hostName
 import retrofit2.HttpException
 import retrofit2.Response
 import timber.log.Timber
+import java.util.UUID
 
 object ApiUtil {
 
@@ -18,6 +19,10 @@ object ApiUtil {
         return assetId?.let {
             "${hostName().lowercase()}/api/assets/${it}/original"
         }
+    }
+
+    fun getPersonThumbnail(personId: UUID): String {
+        return "${hostName().lowercase()}/api/people/$personId/thumbnail"
     }
 
     suspend fun <T> executeAPICall(expectedStatus: Int, handler: suspend () -> Response<T>): Either<String, T> {
