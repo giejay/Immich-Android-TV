@@ -48,7 +48,7 @@ fun Asset.toSliderItem(): SliderItem {
 }
 
 fun Asset.isPortraitImage(): Boolean {
-    return (this.exifInfo?.orientation == 6 || (this.exifInfo?.exifImageWidth != null && this.exifInfo.exifImageHeight != null && this.exifInfo.exifImageWidth - 500 < this.exifInfo.exifImageHeight)) && this.type == SliderItemType.IMAGE.toString()
+    return (this.exifInfo?.orientation == 6 || (this.exifInfo?.exifImageWidth != null && this.exifInfo.exifImageHeight != null && this.exifInfo.exifImageWidth - 100 < this.exifInfo.exifImageHeight)) && this.type == SliderItemType.IMAGE.toString()
 }
 
 fun List<Asset>.toCards(): List<Card> {
