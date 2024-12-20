@@ -35,6 +35,7 @@ object PreferenceManager {
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
     private val KEY_SLIDER_SHOW_DATE = "slider_show_date"
     private val KEY_SLIDER_ONLY_USE_THUMBNAILS = "slider_only_use_thumbnails"
+    private val KEY_SLIDER_MERGE_PORTRAIT_PHOTOS = "slider_merge_portrait_photos"
     val KEY_ALBUMS_SORTING = "albums_sorting"
     private val KEY_PHOTOS_SORTING = "photos_sorting"
     private val KEY_ALL_ASSETS_SORTING = "all_assets_sorting"
@@ -70,7 +71,8 @@ object PreferenceManager {
         KEY_ALL_ASSETS_SORTING to PhotosOrder.NEWEST_OLDEST.toString(),
 //        KEY_ALBUMS_SORTING_REVERSE to false,
 //        KEY_PHOTOS_SORTING_REVERSE to false,
-        KEY_SLIDER_ONLY_USE_THUMBNAILS to true
+        KEY_SLIDER_ONLY_USE_THUMBNAILS to true,
+        KEY_SLIDER_MERGE_PORTRAIT_PHOTOS to true
     )
 
     fun init(context: Context) {
@@ -145,6 +147,10 @@ object PreferenceManager {
 
     fun sliderOnlyUseThumbnails(): Boolean {
         return liveContext[KEY_SLIDER_ONLY_USE_THUMBNAILS] as Boolean
+    }
+
+    fun sliderMergePortraitPhotos(): Boolean {
+        return liveContext[KEY_SLIDER_MERGE_PORTRAIT_PHOTOS] as Boolean
     }
 
     fun saveApiKey(value: String) {

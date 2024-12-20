@@ -167,20 +167,17 @@ class ScreenSaverService : DreamService() {
         mediaSliderView!!.loadMediaSliderView(
             MediaSliderConfiguration(
                 displayOptions,
-                "",
-                "#000000",
-                null,
                 0,
                 PreferenceManager.screensaverInterval(),
                 PreferenceManager.sliderOnlyUseThumbnails(),
                 PreferenceManager.screensaverVideoSound()
-            ), assets.toSliderItems(keepOrder = false, mergePortrait = true)
+            ), assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos())
         )
         mediaSliderView!!.toggleSlideshow(false)
     }
 
     private suspend fun setAllAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
-        mediaSliderView!!.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = true))
+        mediaSliderView!!.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()))
     }
 
 }
