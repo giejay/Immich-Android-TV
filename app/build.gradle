@@ -54,12 +54,12 @@ android {
         // Desugaring enables using Java 8 APIs like java.time in a backwards compatible manner.
         coreLibraryDesugaringEnabled true
         // Exoplayer requires targeting Java 8
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     namespace 'nl.giejay.android.tv.immich'
 }

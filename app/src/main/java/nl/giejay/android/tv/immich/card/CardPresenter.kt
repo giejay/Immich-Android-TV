@@ -7,6 +7,7 @@ import androidx.leanback.widget.ImageCardView
 import com.bumptech.glide.Glide
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.presenter.AbstractPresenter
+import timber.log.Timber
 
 
 open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme) :
@@ -28,7 +29,11 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
         if(context is Activity && context.isFinishing){
             return
         }
-        Glide.with(context).clear((viewHolder.view as ImageCardView).mainImageView!!)
+        try {
+            Glide.with(context).clear((viewHolder.view as ImageCardView).mainImageView!!)
+        } catch (e: IllegalArgumentException){
+            Timber.e(e)
+        }
     }
 
     open fun loadImage(card: ICard, cardView: ImageCardView) {

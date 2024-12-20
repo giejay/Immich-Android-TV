@@ -40,7 +40,8 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
             displayOptions += DisplayOptions.DATE
         }
         // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
-        LocalStorage.mediaSliderItems = assets.toSliderItems()
+        val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = true)
+        LocalStorage.mediaSliderItems = toSliderItems
         findNavController().navigate(
             AlbumDetailsFragmentDirections.actionToPhotoSlider(
                 MediaSliderConfiguration(
@@ -48,7 +49,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     "",
                     "",
                     "",
-                    adapter.indexOf(card),
+                    toSliderItems.indexOfFirst { it.ids().contains(card.id) },
                     PreferenceManager.sliderInterval(),
                     PreferenceManager.sliderOnlyUseThumbnails(),
                     true
