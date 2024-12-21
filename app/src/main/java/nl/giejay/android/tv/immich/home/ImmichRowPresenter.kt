@@ -6,36 +6,42 @@ import android.view.ViewGroup
 import androidx.leanback.widget.Presenter
 import androidx.leanback.widget.Row
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 
-class QTVRowPresenter : Presenter() {
+class ImmichRowPresenter : Presenter() {
     var editMode: Boolean = false
 
-    override fun onCreateViewHolder(parent: ViewGroup): QTVRowViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup): ImmichRowViewHolder {
         val root: View = LayoutInflater.from(parent.context)
             .inflate(R.layout.presenter_row, parent, false)
 
-        val viewHolder = QTVRowViewHolder(root)
+        val viewHolder = ImmichRowViewHolder(root)
         return viewHolder
     }
 
     override fun onBindViewHolder(viewHolder: ViewHolder, item: Any?) {
         val headerItem = if (item == null) null else (item as Row).headerItem
-        val vh = viewHolder as QTVRowViewHolder
+        val vh = viewHolder as ImmichRowViewHolder
         vh.tvTitle.text = headerItem?.name
 
         if (editMode) {
             if (headerItem?.name == "Edit") {
                 vh.tvTitle.text = "Done"
-            } else if (headerItem?.contentDescription == "0") {
-                vh.tvTitle.text = vh.tvTitle.text.toString() + " (Hidden)"
             } else {
-                vh.tvTitle.text = vh.tvTitle.text.toString() + " (Shown)"
+                vh.icon.visibility = View.VISIBLE
+                if (PreferenceManager.isHomeItemHidden(headerItem?.name)) {
+                    vh.icon.setImageResource(R.drawable.closed_eye)
+                } else {
+                    vh.icon.setImageResource(R.drawable.visible_eye)
+                }
             }
+        } else {
+            vh.icon.visibility = View.GONE
         }
     }
 
     override fun onUnbindViewHolder(viewHolder: ViewHolder) {
-        val vh = viewHolder as QTVRowViewHolder
+        val vh = viewHolder as ImmichRowViewHolder
         vh.tvTitle.text = null
     }
 

@@ -3,10 +3,14 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:src="@drawable/character_focused"
-        android:layout_height="wrap_content"></ImageButton>
+    <ImageView
+        android:layout_width="22dp"
+        android:id="@+id/row_visible"
+        android:src="@drawable/closed_eye"
+        android:visibility="gone"
+        android:layout_gravity="center_vertical"
+        android:layout_marginRight="10dp"
+        android:layout_height="22dp"></ImageView>
     <TextView android:id="@+id/tvTitle"
         android:layout_width="match_parent"
         android:textSize="20sp"

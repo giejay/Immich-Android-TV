@@ -75,7 +75,7 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun similarAssets(page: Int, pageCount: Int,includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
-        val map: List<Either<String, List<Asset>>> = (1 until 10).toList().map {
+        val map: List<Either<String, List<Asset>>> = (0 until 10).toList().map {
             apiClient!!.listAssets(page,
                 pageCount,
                 true,

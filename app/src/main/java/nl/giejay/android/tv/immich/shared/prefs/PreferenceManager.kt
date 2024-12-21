@@ -44,6 +44,7 @@ object PreferenceManager {
 
     // other
     val KEY_DEBUG_MODE = "debug_mode"
+    val KEY_HIDDEN_HOME_ITEMS = "hidden_home_items"
     private val KEY_USER_ID = "user_id"
 
     private val propsToWatch = mapOf(
@@ -72,7 +73,8 @@ object PreferenceManager {
 //        KEY_ALBUMS_SORTING_REVERSE to false,
 //        KEY_PHOTOS_SORTING_REVERSE to false,
         KEY_SLIDER_ONLY_USE_THUMBNAILS to true,
-        KEY_SLIDER_MERGE_PORTRAIT_PHOTOS to true
+        KEY_SLIDER_MERGE_PORTRAIT_PHOTOS to true,
+        KEY_HIDDEN_HOME_ITEMS to emptySet<String>()
     )
 
     fun init(context: Context) {
@@ -204,6 +206,18 @@ object PreferenceManager {
         saveBoolean(KEY_DEBUG_MODE, debugMode)
     }
 
+    fun hiddenHomeItems(): Set<String> {
+        return liveContext[KEY_HIDDEN_HOME_ITEMS] as Set<String>
+    }
+
+    fun removeHiddenHomeItem(item: String) {
+        saveStringSet(KEY_HIDDEN_HOME_ITEMS, hiddenHomeItems().filter { it != item }.toSet())
+    }
+
+    fun addHiddenHomeItem(item: String) {
+        saveStringSet(KEY_HIDDEN_HOME_ITEMS, hiddenHomeItems() + item)
+    }
+
     fun getUserId(): String {
         return getString(KEY_USER_ID, "")
     }
@@ -277,5 +291,17 @@ object PreferenceManager {
 
     fun getString(key: String, defaultValue: String): String {
         return sharedPreference.getString(key, defaultValue) ?: defaultValue
+    }
+
+    fun toggleHiddenHomeItem(name: String) {
+        if(hiddenHomeItems().contains(name)){
+            removeHiddenHomeItem(name)
+        } else {
+            addHiddenHomeItem(name)
+        }
+    }
+
+    fun isHomeItemHidden(name: String?): Boolean {
+        return name?.let { hiddenHomeItems().contains(it) } ?: false
     }
 }

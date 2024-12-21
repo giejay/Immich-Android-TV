@@ -2,7 +2,6 @@ package nl.giejay.android.tv.immich.home
 
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.leanback.app.BrowseSupportFragment
@@ -25,11 +24,13 @@ import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
 import nl.giejay.android.tv.immich.people.PeopleFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
 import nl.giejay.android.tv.immich.shared.fragment.GridFragment
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
 class HomeFragment : BrowseSupportFragment() {
     private lateinit var mRowsAdapter: ArrayObjectAdapter
-    val qtvRowPresenter = QTVRowPresenter()
+    private lateinit var rows: List<PageRow>
+    val immichRowPresenter = ImmichRowPresenter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,26 +46,31 @@ class HomeFragment : BrowseSupportFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         headersSupportFragment.setOnHeaderViewSelectedListener { _, row ->
-            title = row.headerItem.name
-            selectedPosition = mRowsAdapter.indexOf(row)
+            title = row?.headerItem?.name ?: "-"
+            selectedPosition = row?.let { mRowsAdapter.indexOf(it) } ?: 0
         }
 
         headersSupportFragment.setOnHeaderClickedListener { _, row ->
             if (row.headerItem.name == "Edit") {
-                qtvRowPresenter.editMode = !qtvRowPresenter.editMode
-                val unmodifiableList = mRowsAdapter.unmodifiableList<PageRow>()
-                adapter.notifyItemRangeChanged(0, adapter.size() - 1);
-            } else if(qtvRowPresenter.editMode){
-                row.headerItem.contentDescription = if(row.headerItem.contentDescription == "0") "1" else "0"
-                adapter.notifyItemRangeChanged(0, adapter.size() - 1);
+                immichRowPresenter.editMode = !immichRowPresenter.editMode
+                if(immichRowPresenter.editMode){
+                    mRowsAdapter.clear()
+                    mRowsAdapter.addAll(0, rows.filter { it.headerItem.name != "Settings" })
+                } else {
+                    mRowsAdapter.clear();
+                    mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.isHomeItemHidden(it.headerItem.name) })
+                }
+                adapter.notifyItemRangeChanged(0, mRowsAdapter.size());
+            } else if(immichRowPresenter.editMode){
+                PreferenceManager.toggleHiddenHomeItem(row.headerItem.name)
+                adapter.notifyItemRangeChanged(0, mRowsAdapter.size())
             } else{
                 if (!this.isInHeadersTransition) {
                     this.startHeadersTransition(false)
-                    this.mainFragment.requireView().requestFocus()
+//                    this.mainFragment.requireView().requestFocus()
                 }
             }
         }
-
     }
 
     private fun setupUi() {
@@ -85,7 +91,7 @@ class HomeFragment : BrowseSupportFragment() {
                 SectionRow::class.java,
                 RowHeaderPresenter()
             )
-            .addClassPresenter(Row::class.java, qtvRowPresenter)
+            .addClassPresenter(Row::class.java, immichRowPresenter)
 
         setHeaderPresenterSelector(sHeaderPresenter)
     }
@@ -93,11 +99,12 @@ class HomeFragment : BrowseSupportFragment() {
     private fun loadData() {
         mRowsAdapter = ArrayObjectAdapter(ListRowPresenter())
         adapter = mRowsAdapter
-        createRows()
+        rows = createRows()
+        mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.isHomeItemHidden(it.headerItem.name) })
     }
 
-    private fun createRows() {
-        HEADERS.forEachIndexed { index, header -> mRowsAdapter.add(PageRow(HeaderItem(index.toLong(), header.name))) }
+    private fun createRows(): List<PageRow> {
+        return HEADERS.mapIndexed { index, header -> PageRow(HeaderItem(index.toLong(), header.name)) }
     }
 
     private class PageRowFragmentFactory : FragmentFactory<Fragment>() {

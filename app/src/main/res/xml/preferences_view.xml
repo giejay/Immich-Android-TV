@@ -74,6 +74,7 @@
         <CheckBoxPreference
             android:key="slider_play_sound"
             android:title="Play sound"
+            android:defaultValue="true"
             android:summary="Play sound of videos"/>
 
         <ListPreference
