@@ -74,6 +74,12 @@
             android:summary="Show date of asset in slideshow"/>
 
         <CheckBoxPreference
+            android:key="slider_show_city"
+            android:title="Show city"
+            android:defaultValue="true"
+            android:summary="Show city of asset in slideshow"/>
+
+        <CheckBoxPreference
             android:key="slider_play_sound"
             android:title="Play sound"
             android:defaultValue="true"

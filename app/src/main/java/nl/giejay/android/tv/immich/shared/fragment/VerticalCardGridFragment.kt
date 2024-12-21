@@ -222,7 +222,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         }
 
     private suspend fun setData(assets: List<ITEM>) = withContext(Dispatchers.Main) {
-        val sortedItems = sortItems(assets)
+        val sortedItems = sortItems(assets.filter { !this@VerticalCardGridFragment.assets.contains(it) })
         this@VerticalCardGridFragment.assets += sortedItems
         assetsStillToRender.addAll(sortedItems)
         addAssetsPaginated()

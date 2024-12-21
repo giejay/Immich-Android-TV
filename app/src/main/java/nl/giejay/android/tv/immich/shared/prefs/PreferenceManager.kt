@@ -34,6 +34,7 @@ object PreferenceManager {
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
     private val KEY_SLIDER_SHOW_DATE = "slider_show_date"
+    private val KEY_SLIDER_SHOW_CITY = "slider_show_city"
     private val KEY_SLIDER_ONLY_USE_THUMBNAILS = "slider_only_use_thumbnails"
     private val KEY_SLIDER_MERGE_PORTRAIT_PHOTOS = "slider_merge_portrait_photos"
     val KEY_ALBUMS_SORTING = "albums_sorting"
@@ -59,6 +60,7 @@ object PreferenceManager {
         KEY_SLIDER_SHOW_DESCRIPTION to true,
         KEY_SLIDER_SHOW_MEDIA_COUNT to true,
         KEY_SLIDER_SHOW_DATE to false,
+        KEY_SLIDER_SHOW_CITY to true,
         KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
         KEY_SCREENSAVER_SHOW_ALBUM_NAME to true,
         KEY_SCREENSAVER_SHOW_DATE to true,
@@ -321,5 +323,9 @@ object PreferenceManager {
 
     fun recentAssetsMonthsBack(): Int {
         return Integer.parseInt(liveContext[KEY_RECENT_ASSETS_MONTHS_BACK].toString())
+    }
+
+    fun sliderShowCity(): Boolean {
+        return liveContext[KEY_SLIDER_SHOW_CITY] as Boolean
     }
 }

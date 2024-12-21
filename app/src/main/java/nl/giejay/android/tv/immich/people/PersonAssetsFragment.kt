@@ -27,7 +27,7 @@ class PersonAssetsFragment : GenericAssetFragment() {
             random = true,
             order = "desc",
             includeVideos = true,
-            personIds = listOf(UUID.fromString(personId)))
+            personIds = listOf(UUID.fromString(personId))).map { it.shuffled() }
     }
 
     override fun showMediaCount(): Boolean {

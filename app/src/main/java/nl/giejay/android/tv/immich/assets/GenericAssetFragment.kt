@@ -33,6 +33,9 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
         if (PreferenceManager.sliderShowDescription()) {
             displayOptions += DisplayOptions.TITLE
         }
+        if (PreferenceManager.sliderShowCity()) {
+            displayOptions += DisplayOptions.SUBTITLE
+        }
         if (showMediaCount()) {
             displayOptions += DisplayOptions.MEDIA_COUNT
         }
