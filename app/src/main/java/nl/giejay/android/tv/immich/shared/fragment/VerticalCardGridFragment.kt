@@ -45,14 +45,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private lateinit var mMetrics: DisplayMetrics
     private var mBackgroundManager: BackgroundManager? = null
 
-    private lateinit var apiClient: ApiClient
+    protected lateinit var apiClient: ApiClient
     private lateinit var keyEvents: KeyEventsViewModel
     private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_SMALL
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
-    private var currentPage: Int = startPage
-    private var allPagesLoaded: Boolean = false
+    protected var currentPage: Int = startPage
+    protected var allPagesLoaded: Boolean = false
     private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
@@ -291,6 +291,6 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         const val COLUMNS = 4
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
         private const val FETCH_COUNT = COLUMNS * 3
-        private const val FETCH_PAGE_COUNT = 100
+        const val FETCH_PAGE_COUNT = 50
     }
 }

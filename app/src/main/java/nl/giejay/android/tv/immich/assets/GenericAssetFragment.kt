@@ -1,8 +1,11 @@
 package nl.giejay.android.tv.immich.assets
 
 import androidx.navigation.fragment.findNavController
+import arrow.core.getOrElse
 import com.zeuskartik.mediaslider.DisplayOptions
+import com.zeuskartik.mediaslider.LoadMore
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
+import com.zeuskartik.mediaslider.SliderItemViewHolder
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.util.ApiUtil
@@ -29,7 +32,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     }
 
     override fun onItemClicked(card: Card) {
-        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java);
+        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java)
         if (PreferenceManager.sliderShowDescription()) {
             displayOptions += DisplayOptions.TITLE
         }
@@ -45,6 +48,17 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
         // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
         val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.sliderMergePortraitPhotos())
         LocalStorage.mediaSliderItems = toSliderItems
+
+        val loadMore = object: LoadMore {
+            override suspend fun loadMore(): List<SliderItemViewHolder> {
+                if(!allPagesLoaded){
+                    return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT).map { it.toSliderItems(true, PreferenceManager.sliderMergePortraitPhotos()) }
+                        .getOrElse { emptyList() }
+                }
+                return emptyList()
+            }
+        }
+
         findNavController().navigate(
             AlbumDetailsFragmentDirections.actionToPhotoSlider(
                 MediaSliderConfiguration(
@@ -52,7 +66,8 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     toSliderItems.indexOfFirst { it.ids().contains(card.id) },
                     PreferenceManager.sliderInterval(),
                     PreferenceManager.sliderOnlyUseThumbnails(),
-                    true
+                    true,
+                    loadMore
                 )
             )
         )
