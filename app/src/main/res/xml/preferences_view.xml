@@ -107,8 +107,7 @@
             app:useSimpleSummaryProvider="true"
             android:entries="@array/similar_assets_period_days"
             android:defaultValue="30"
-            android:entryValues="@array/similar_assets_period_days"
-            android:dialogTitle="Sort photos by"/>
+            android:entryValues="@array/similar_assets_period_days"/>
 
         <ListPreference
             android:key="recent_assets_months_back"
@@ -116,8 +115,7 @@
             android:entries="@array/recent_assets_months_back"
             android:defaultValue="5"
             app:useSimpleSummaryProvider="true"
-            android:entryValues="@array/recent_assets_months_back"
-            android:dialogTitle="Sort photos by"/>
+            android:entryValues="@array/recent_assets_months_back"/>
 
     </PreferenceCategory>
 

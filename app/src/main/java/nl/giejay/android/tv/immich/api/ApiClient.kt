@@ -70,8 +70,8 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun recentAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
-        return apiClient!!.listAssets(page, pageCount, true, "desc",
-            includeVideos = includeVideos, fromDate = now.minusMonths(PreferenceManager.recentAssetsMonthsBack().toLong()), endDate = now)
+        return apiClient!!.listAssets(page, pageCount, false, "desc",
+            includeVideos = includeVideos, fromDate = now.minusMonths(PreferenceManager.recentAssetsMonthsBack().toLong()), endDate = now).map { it.shuffled() }
     }
 
     suspend fun similarAssets(page: Int, pageCount: Int,includeVideos: Boolean): Either<String, List<Asset>> {
@@ -79,7 +79,7 @@ class ApiClient(private val config: ApiClientConfig) {
         val map: List<Either<String, List<Asset>>> = (0 until PreferenceManager.similarAssetsYearsBack()).toList().map {
             apiClient!!.listAssets(page,
                 pageCount,
-                true,
+                false,
                 "desc",
                 includeVideos = includeVideos,
                 fromDate = now.minusDays((PreferenceManager.similarAssetsPeriodDays() / 2).toLong()).minusYears(it.toLong()),
