@@ -34,7 +34,7 @@ import timber.log.Timber
 /**
  * A fragment for rendering items in a vertical grids.
  */
-open class GridFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
+open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
     private var mAdapter: ArrayObjectAdapter = ArrayObjectAdapter()
     private var mGridPresenter: VerticalGridPresenter? = null
     private var mGridViewHolder: VerticalGridPresenter.ViewHolder? = null
@@ -153,6 +153,9 @@ open class GridFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFr
         super.onViewCreated(view, savedInstanceState)
         val gridDock: ViewGroup = view.findViewById(R.id.browse_grid_dock)
         progressBar = gridDock.findViewById(R.id.browse_progressbar)
+        if(hideProgressBar){
+            progressBar?.visibility = View.GONE
+        }
         installTitleView(LayoutInflater.from(requireContext()), gridDock, savedInstanceState)
         mGridViewHolder = mGridPresenter?.onCreateViewHolder(gridDock)
         mGridViewHolder?.view?.apply { gridDock.addView(this) }

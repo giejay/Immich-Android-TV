@@ -127,7 +127,7 @@ class HomeFragment : BrowseSupportFragment() {
             Header("People") { PeopleFragment() },
             Header("Recent") { RecentAssetsFragment() },
             Header("Seasonal") { SimilarTimeAssetsFragment() },
-            Header("Edit") { GridFragment() },
+            Header("Edit") { GridFragment(hideProgressBar = true) },
             Header("Settings") { SettingsFragment() },
         )
     }
