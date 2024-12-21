@@ -4,14 +4,12 @@ import android.annotation.SuppressLint
 import android.service.dreams.DreamService
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
-import arrow.core.getOrElse
 import com.zeuskartik.mediaslider.DisplayOptions
 import com.zeuskartik.mediaslider.MediaSliderConfiguration
 import com.zeuskartik.mediaslider.MediaSliderView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.api.ApiClient
@@ -21,7 +19,6 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import timber.log.Timber
-import java.time.LocalDateTime
 import java.util.EnumSet
 
 class ScreenSaverService : DreamService() {

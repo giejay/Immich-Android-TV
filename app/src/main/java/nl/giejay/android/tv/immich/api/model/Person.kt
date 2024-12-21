@@ -3,7 +3,7 @@ package nl.giejay.android.tv.immich.api.model
 import java.util.UUID
 
 data class Person(
-    val name: String,
+    val name: String?,
     val id: UUID,
     val thumbnailPath: String
 )

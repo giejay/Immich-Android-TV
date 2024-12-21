@@ -86,6 +86,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
         Timber.i("Clicked on ${action.title} in step 2, entry valid: ${entry.isValid()}")
         if (action.id == ACTION_CONTINUE) {
             if (entry.isValid()) {
+                PreferenceManager.saveScreenSaverAlbums(emptySet())
                 PreferenceManager.saveApiKey(entry.apiKey)
                 PreferenceManager.saveHostName(entry.hostName)
                 PreferenceManager.saveSslVerification(findActionById(ACTION_CHECK_CERTS)?.isChecked == true)

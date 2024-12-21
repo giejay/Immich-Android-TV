@@ -13,25 +13,35 @@ More info here: https://github.com/immich-app/immich
 This Android TV app will allow you to view those uploaded photos and videos. Current features
 include:
 
-| Features                                                                       | Status       |
-|:-------------------------------------------------------------------------------|--------------|
-| Sign in by phone (https://github.com/giejay/Immich-Android-TV-Authentication)  | Done         |
-| Sign in by entering API key                                                    | Done         |
-| Demo environment                                                               | Done         |
-| Album fetching + Lazy loading                                                  | Done         |
-| Showing the photos inside an album                                             | Done         |
-| Slideshow of the photos and videos with a configured interval                  | Done         |
-| Setting the app as the screensaver                                             | Done         |
-| Setting the albums to show in the screensaver                                  | Done         |
-| Configure the interval of the screensaver                                      | Done         |
-| Add generic sorting of albums and photos                                       | Done         |
-| Add sorting for specific album (select last item in row and press right again) | Done         |
-| Showing the 4K thumbnail instead of the full image to speed up loading         | Done         |
-| Showing the EXIF data and improving the slideshow view                         | Design phase |
-| Configure whether to play sound with videos                                    | Not started  |
-| Casting capabilities                                                           | Not started  |
-| Searching in and for albums                                                    | Not started  |
-| Dependency injection with Hilt/Dagger                                          | Not started  |
+| Features                                                                       | Status      |
+|:-------------------------------------------------------------------------------|-------------|
+| Sign in by phone (https://github.com/giejay/Immich-Android-TV-Authentication)  | Done        |
+| Sign in by entering API key                                                    | Done        |
+| Demo environment                                                               | Done        |
+| Album fetching + Lazy loading                                                  | Done        |
+| Showing the photos inside an album                                             | Done        |
+| Showing people, random, recent or seasonal photos                              | Done        |
+| Slideshow of the photos and videos with a configured interval                  | Done        |
+| Setting the app as the screensaver                                             | Done        |
+| Setting the albums to show in the screensaver                                  | Done        |
+| Configure the interval of the screensaver                                      | Done        |
+| Add generic sorting of albums and photos                                       | Done        |
+| Add sorting for specific album (select last item in row and press right again) | Done        |
+| Showing the 4K thumbnail instead of the full image to speed up loading         | Done        |
+| Showing the EXIF data and improving the slideshow view                         | Done        |
+| Configure whether to play sound with videos                                    | Done        |
+| Casting capabilities                                                           | Not started |
+| Searching in and for albums                                                    | Not started |
+| Dependency injection with Hilt/Dagger                                          | Not started |
+
+## Screenshots
+![Alt text](/screenshots/homescreen-1.png?raw=true "Album overview")
+![Alt text](/screenshots/photos.png?raw=true "All photos")
+![Alt text](/screenshots/sorting-options.png?raw=true "Sorting options")
+![Alt text](/screenshots/home-edit.png?raw=true "Edit homescreen")
+![Alt text](/screenshots/settings-view.png?raw=true "View settings")
+![Alt text](/screenshots/settings-screensaver.png?raw=true "Screensaver settings")
+![Alt text](/screenshots/screensaver-portrait.png?raw=true "Screensaver portrait")
 
 ## Build steps
 1. Clone project with `git clone --recurse git@github.com:giejay/Immich-Android-TV.git`

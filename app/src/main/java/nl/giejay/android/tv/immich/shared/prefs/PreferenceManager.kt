@@ -45,6 +45,9 @@ object PreferenceManager {
     // other
     val KEY_DEBUG_MODE = "debug_mode"
     val KEY_HIDDEN_HOME_ITEMS = "hidden_home_items"
+    val KEY_SIMILAR_ASSETS_YEARS_BACK = "similar_assets_years_back"
+    val KEY_SIMILAR_ASSETS_PERIOD_DAYS = "similar_assets_period_days"
+    val KEY_RECENT_ASSETS_MONTHS_BACK = "recent_assets_months_back"
     private val KEY_USER_ID = "user_id"
 
     private val propsToWatch = mapOf(
@@ -74,7 +77,10 @@ object PreferenceManager {
 //        KEY_PHOTOS_SORTING_REVERSE to false,
         KEY_SLIDER_ONLY_USE_THUMBNAILS to true,
         KEY_SLIDER_MERGE_PORTRAIT_PHOTOS to true,
-        KEY_HIDDEN_HOME_ITEMS to emptySet<String>()
+        KEY_HIDDEN_HOME_ITEMS to emptySet<String>(),
+        KEY_SIMILAR_ASSETS_YEARS_BACK to 10,
+        KEY_RECENT_ASSETS_MONTHS_BACK to 5,
+        KEY_SIMILAR_ASSETS_PERIOD_DAYS to 30
     )
 
     fun init(context: Context) {
@@ -303,5 +309,17 @@ object PreferenceManager {
 
     fun isHomeItemHidden(name: String?): Boolean {
         return name?.let { hiddenHomeItems().contains(it) } ?: false
+    }
+
+    fun similarAssetsYearsBack(): Int {
+        return Integer.parseInt(liveContext[KEY_SIMILAR_ASSETS_YEARS_BACK].toString())
+    }
+
+    fun similarAssetsPeriodDays(): Int {
+        return Integer.parseInt(liveContext[KEY_SIMILAR_ASSETS_PERIOD_DAYS].toString())
+    }
+
+    fun recentAssetsMonthsBack(): Int {
+        return Integer.parseInt(liveContext[KEY_RECENT_ASSETS_MONTHS_BACK].toString())
     }
 }

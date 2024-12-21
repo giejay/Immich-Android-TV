@@ -76,6 +76,7 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
             val hostName = requireContext().resources.getString(R.string.host_name)
             val navController = findNavController()
             if (SELECTED_OPTION == ACTION_DEMO) {
+                PreferenceManager.saveScreenSaverAlbums(emptySet())
                 PreferenceManager.saveApiKey(requireContext().resources.getString(R.string.api_key))
                 PreferenceManager.saveHostName(hostName)
                 navController.navigate(AuthFragmentStep1Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())

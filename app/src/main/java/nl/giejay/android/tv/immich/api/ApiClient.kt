@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -54,7 +55,7 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     suspend fun listPeople(): Either<String, List<Person>> {
-        return executeAPICall(200) { service.listPeople() }.map { response -> response.people }
+        return executeAPICall(200) { service.listPeople() }.map { response -> response.people.filter { !it.name.isNullOrBlank() } }
     }
 
     suspend fun listAssetsFromAlbum(albumId: String): Either<String, AlbumDetails> {
@@ -70,19 +71,19 @@ class ApiClient(private val config: ApiClientConfig) {
     suspend fun recentAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
         return apiClient!!.listAssets(page, pageCount, true, "desc",
-            includeVideos = includeVideos, fromDate = now.minusMonths(5), endDate = now)
+            includeVideos = includeVideos, fromDate = now.minusMonths(PreferenceManager.recentAssetsMonthsBack().toLong()), endDate = now)
     }
 
     suspend fun similarAssets(page: Int, pageCount: Int,includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
-        val map: List<Either<String, List<Asset>>> = (0 until 10).toList().map {
+        val map: List<Either<String, List<Asset>>> = (0 until PreferenceManager.similarAssetsYearsBack()).toList().map {
             apiClient!!.listAssets(page,
                 pageCount,
                 true,
                 "desc",
                 includeVideos = includeVideos,
-                fromDate = now.minusMonths(1).minusYears(it.toLong()),
-                endDate = now.plusMonths(1).minusYears(it.toLong()))
+                fromDate = now.minusDays((PreferenceManager.similarAssetsPeriodDays() / 2).toLong()).minusYears(it.toLong()),
+                endDate = now.plusDays((PreferenceManager.similarAssetsPeriodDays() / 2).toLong()).minusYears(it.toLong()))
         }
         if (map.all { it.isLeft() }) {
             return map.first()

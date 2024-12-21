@@ -3,7 +3,6 @@ package nl.giejay.android.tv.immich.people
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import nl.giejay.android.tv.immich.api.ApiClient
-import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
@@ -47,7 +46,7 @@ class PeopleFragment : VerticalCardGridFragment<Person>() {
 
     override fun createCard(a: Person): Card {
         return Card(
-            a.name,
+            a.name ?: "Unknown",
             "",
             a.id.toString(),
             ApiUtil.getPersonThumbnail(a.id),
