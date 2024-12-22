@@ -35,6 +35,7 @@ import timber.log.Timber
  * A fragment for rendering items in a vertical grids.
  */
 open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
+    private var manuallySelectedPosition: Boolean = false
     private var mAdapter: ArrayObjectAdapter = ArrayObjectAdapter()
     private var mGridPresenter: VerticalGridPresenter? = null
     private var mGridViewHolder: VerticalGridPresenter.ViewHolder? = null
@@ -103,9 +104,12 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     }
 
     private fun gridOnItemSelected(position: Int) {
-        if (position != mSelectedPosition) {
+        if (!manuallySelectedPosition && position != mSelectedPosition) {
             mSelectedPosition = position
             showOrHideTitle()
+        } else {
+            setSelectedPosition(mSelectedPosition)
+            manuallySelectedPosition = false
         }
     }
 
@@ -190,9 +194,18 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
         if (mGridViewHolder != null) {
             mGridPresenter?.onBindViewHolder(mGridViewHolder!!, mAdapter)
             if (mSelectedPosition != -1) {
-                mGridViewHolder?.gridView?.selectedPosition = mSelectedPosition
+                updateSelectionPosition(mSelectedPosition)
             }
         }
+    }
+
+    fun manualUpdatePosition(position: Int){
+        mSelectedPosition = position
+        manuallySelectedPosition = true
+    }
+
+    private fun updateSelectionPosition(selectionPosition: Int) {
+        mGridViewHolder?.gridView?.selectedPosition = selectionPosition
     }
 
     fun setEntranceTransitionState(afterTransition: Boolean) {

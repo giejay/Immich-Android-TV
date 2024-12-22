@@ -58,7 +58,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     true,
                     toSliderItems,
                     loadMore
-                )
+                ) { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) }
             )
         )
     }
