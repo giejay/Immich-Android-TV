@@ -1,20 +1,17 @@
 package nl.giejay.android.tv.immich.assets
 
 import androidx.navigation.fragment.findNavController
-import arrow.core.getOrElse
 import com.zeuskartik.mediaslider.DisplayOptions
-import com.zeuskartik.mediaslider.LoadMore
-import com.zeuskartik.mediaslider.MediaSliderConfiguration
-import com.zeuskartik.mediaslider.SliderItemViewHolder
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
-import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
+import nl.giejay.mediaslider.LoadMore
+import nl.giejay.mediaslider.MediaSliderConfiguration
 import java.util.EnumSet
 
 abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
@@ -45,18 +42,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
         if (PreferenceManager.sliderShowDate()) {
             displayOptions += DisplayOptions.DATE
         }
-        // todo find a better way to pass data to other fragment without using the Intent extras (possibly too large)
-        val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.sliderMergePortraitPhotos())
-        LocalStorage.mediaSliderItems = toSliderItems
 
-        val loadMore = object: LoadMore {
-            override suspend fun loadMore(): List<SliderItemViewHolder> {
-                if(!allPagesLoaded){
-                    return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT).map { it.toSliderItems(true, PreferenceManager.sliderMergePortraitPhotos()) }
-                        .getOrElse { emptyList() }
-                }
-                return emptyList()
-            }
+        val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.sliderMergePortraitPhotos())
+        val loadMore: LoadMore = suspend {
+            loadAssets().toSliderItems(true, PreferenceManager.sliderMergePortraitPhotos())
         }
 
         findNavController().navigate(
@@ -67,6 +56,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     PreferenceManager.sliderInterval(),
                     PreferenceManager.sliderOnlyUseThumbnails(),
                     true,
+                    toSliderItems,
                     loadMore
                 )
             )

@@ -106,7 +106,7 @@
         android:label="PhotoSlider">
         <argument
             android:name="config"
-            app:argType="com.zeuskartik.mediaslider.MediaSliderConfiguration" />
+            app:argType="nl.giejay.mediaslider.MediaSliderConfiguration" />
         <action
             android:id="@+id/photo_slider_to_album_details_fragment"
             app:destination="@id/albumDetailsFragment" />

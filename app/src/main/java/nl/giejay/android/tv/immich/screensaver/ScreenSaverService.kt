@@ -7,10 +7,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import arrow.core.Either
 import arrow.core.getOrElse
 import com.zeuskartik.mediaslider.DisplayOptions
-import com.zeuskartik.mediaslider.LoadMore
-import com.zeuskartik.mediaslider.MediaSliderConfiguration
-import com.zeuskartik.mediaslider.MediaSliderView
-import com.zeuskartik.mediaslider.SliderItemViewHolder
+import nl.giejay.mediaslider.MediaSliderConfiguration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,20 +19,17 @@ import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
+import nl.giejay.mediaslider.LoadMore
+import nl.giejay.mediaslider.MediaSliderView
 import timber.log.Timber
 import java.util.EnumSet
 
 class ScreenSaverService : DreamService() {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
-    private var apiClient: ApiClient? = null
-    private var mediaSliderView: MediaSliderView? = null
+    private lateinit var apiClient: ApiClient
+    private lateinit var mediaSliderView: MediaSliderView
     private var currentPage = 0
-    private val PAGE_COUNT = 10
     private var doneLoading: Boolean = false
-
-    private val recentPhotos: suspend () -> Either<String, List<Asset>> = suspend {
-        apiClient!!.recentAssets(currentPage, PAGE_COUNT, PreferenceManager.screensaverIncludeVideos())
-    }
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
@@ -54,7 +48,7 @@ class ScreenSaverService : DreamService() {
         )
         apiClient = ApiClient.getClient(config)
         mediaSliderView = MediaSliderView(this)
-        mediaSliderView!!.setDefaultExoFactory(
+        mediaSliderView.setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
                 .setDefaultRequestProperties(mapOf("x-api-key" to apiKey))
         )
@@ -65,15 +59,16 @@ class ScreenSaverService : DreamService() {
                 loadImagesFromAlbums(PreferenceManager.getScreenSaverAlbums())
             } else {
                 loadRandomImages(PreferenceManager.getScreenSaverType()).invoke().map {
-                    setInitialAssets(it, false, object: LoadMore {
-                        override suspend fun loadMore(): List<SliderItemViewHolder> {
-                            currentPage += 1
-
-                            // todo should stop loading on last image
-                            return loadRandomImages(PreferenceManager.getScreenSaverType()).invoke()
-                                .map { it.toSliderItems(false, PreferenceManager.sliderMergePortraitPhotos()) }.getOrElse { emptyList() }
-                        }
-
+                    setInitialAssets(it, false, suspend {
+                            if(doneLoading){
+                                emptyList()
+                            } else {
+                                currentPage += 1
+                                val assets = loadRandomImages(PreferenceManager.getScreenSaverType()).invoke()
+                                    .map { asset -> asset.toSliderItems(false, PreferenceManager.sliderMergePortraitPhotos()) }.getOrElse { emptyList() }
+                                doneLoading = assets.size < PAGE_COUNT
+                                assets
+                            }
                     })
                 }
             }
@@ -81,26 +76,28 @@ class ScreenSaverService : DreamService() {
     }
 
     override fun onDreamingStopped() {
-        mediaSliderView?.onDestroy()
+        mediaSliderView.onDestroy()
         super.onDreamingStopped()
     }
 
     private fun loadRandomImages(screenSaverType: ScreenSaverType): suspend () -> Either<String, List<Asset>> {
         when (screenSaverType) {
             ScreenSaverType.RECENT -> {
-                return recentPhotos
+                return suspend {
+                    apiClient.recentAssets(currentPage, PAGE_COUNT, PreferenceManager.screensaverIncludeVideos())
+                }
             }
 
             ScreenSaverType.SIMILAR_TIME_PERIOD -> {
                 return suspend {
-                    apiClient!!.similarAssets(currentPage, PAGE_COUNT, PreferenceManager.screensaverIncludeVideos())
+                    apiClient.similarAssets(currentPage, PAGE_COUNT, PreferenceManager.screensaverIncludeVideos())
                 }
             }
 
             else -> {
                 // random
                 return suspend {
-                    apiClient!!.listAssets(currentPage, PAGE_COUNT, true, includeVideos = PreferenceManager.screensaverIncludeVideos())
+                    apiClient.listAssets(currentPage, PAGE_COUNT, true, includeVideos = PreferenceManager.screensaverIncludeVideos())
                 }
             }
         }
@@ -111,12 +108,12 @@ class ScreenSaverService : DreamService() {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
                 val shuffledAlbums = albums.toList().shuffled()
-                apiClient!!.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
+                apiClient.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
                     val randomAssets = getAssets(listOf(album))
                     setInitialAssets(randomAssets, PreferenceManager.screensaverShowMediaCount(), null)
                     if (shuffledAlbums.size > 1) {
                         // load next ones
-                        val nextAlbums = shuffledAlbums.drop(1).map { apiClient!!.listAssetsFromAlbum(it) }
+                        val nextAlbums = shuffledAlbums.drop(1).map { apiClient.listAssetsFromAlbum(it) }
                         val assets = getAssets(nextAlbums.flatMap { it.getOrNone().toList() })
                         setAllAssets((randomAssets + assets).shuffled().distinct())
                     }
@@ -177,21 +174,26 @@ class ScreenSaverService : DreamService() {
             displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
         }
 
-        mediaSliderView!!.loadMediaSliderView(
+        mediaSliderView.loadMediaSliderView(
             MediaSliderConfiguration(
                 displayOptions,
                 0,
                 PreferenceManager.screensaverInterval(),
                 PreferenceManager.sliderOnlyUseThumbnails(),
                 PreferenceManager.screensaverVideoSound(),
+                assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()),
                 loadMore
-            ), assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos())
+            )
         )
-        mediaSliderView!!.toggleSlideshow(false)
+        mediaSliderView.toggleSlideshow(false)
     }
 
     private suspend fun setAllAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
-        mediaSliderView!!.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()))
+        mediaSliderView.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()))
     }
 
+    companion object ScreenSaverService{
+        private const val PAGE_COUNT = 10
+    }
 }
+

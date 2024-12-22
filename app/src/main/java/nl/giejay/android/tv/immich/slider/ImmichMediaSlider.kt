@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
 import com.zeuskartik.mediaslider.MediaSliderFragment
-import nl.giejay.android.tv.immich.shared.db.LocalStorage
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
@@ -19,7 +18,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
 
         val bundle = ImmichMediaSliderArgs.fromBundle(requireArguments())
 
-        if(LocalStorage.mediaSliderItems.isNullOrEmpty()){
+        if(bundle.config.items.isEmpty()){
             Timber.i("No items to play for photoslider")
             Toast.makeText(requireContext(),"No items to play", Toast.LENGTH_SHORT).show()
             findNavController().popBackStack()
@@ -31,6 +30,6 @@ class ImmichMediaSlider : MediaSliderFragment() {
                 .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.apiKey()))
         )
 
-        loadMediaSliderView(bundle.config, LocalStorage.mediaSliderItems)
+        loadMediaSliderView(bundle.config)
     }
 }

@@ -167,19 +167,28 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     private fun fetchNextItems(): Job {
         return ioScope.launch {
-            loadData().fold(
-                { errorMessage ->
-                    showErrorMessage(errorMessage)
-                },
-                { items ->
-                    Timber.i("Loading next items, ${items.size}")
-                    if (items.isNotEmpty()) {
-                        setData(items)
-                    }
-                    allPagesLoaded = items.size < FETCH_PAGE_COUNT
-                }
-            )
+            loadAssets()
         }
+    }
+
+    protected suspend fun loadAssets(): List<ITEM> {
+        if(allPagesLoaded){
+            return emptyList()
+        }
+        return loadData().fold(
+            { errorMessage ->
+                showErrorMessage(errorMessage)
+                emptyList()
+            },
+            { items ->
+                Timber.i("Loading next items, ${items.size}")
+                if (items.isNotEmpty()) {
+                    setData(items)
+                }
+                allPagesLoaded = items.size < FETCH_PAGE_COUNT
+                items
+            }
+        )
     }
 
     override fun onResume() {
