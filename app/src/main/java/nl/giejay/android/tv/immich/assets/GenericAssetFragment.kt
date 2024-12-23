@@ -57,8 +57,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     PreferenceManager.sliderOnlyUseThumbnails(),
                     true,
                     toSliderItems,
-                    loadMore
-                ) { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) }
+                    loadMore,
+                    { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) },
+                    animationSpeedMillis = PreferenceManager.animationSpeedMillis()
+                )
             )
         )
     }

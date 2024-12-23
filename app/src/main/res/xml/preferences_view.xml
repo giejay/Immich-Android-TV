@@ -93,6 +93,16 @@
             android:entries="@array/interval_titles"
             android:entryValues="@array/interval_values"
             android:dialogTitle="Interval"/>
+
+        <ListPreference
+            android:key="slider_animation_speed"
+            android:title="Animation speed (ms)"
+            android:summary="Animation speed in milliseconds"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="0"
+            android:entries="@array/animation_speed_ms"
+            android:entryValues="@array/animation_speed_ms"
+            android:dialogTitle="Animation speed (ms)"/>
     </PreferenceCategory>
 
     <PreferenceCategory

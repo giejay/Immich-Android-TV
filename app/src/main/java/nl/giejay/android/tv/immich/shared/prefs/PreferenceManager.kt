@@ -31,6 +31,7 @@ object PreferenceManager {
 
     // slider/view settings
     private val KEY_SLIDER_INTERVAL = "slider_interval"
+    private val KEY_SLIDER_ANIMATION_SPEED = "slider_animation_speed"
     private val KEY_SLIDER_SHOW_DESCRIPTION = "slider_show_description"
     private val KEY_SLIDER_SHOW_MEDIA_COUNT = "slider_show_media_count"
     private val KEY_SLIDER_SHOW_DATE = "slider_show_date"
@@ -82,7 +83,8 @@ object PreferenceManager {
         KEY_HIDDEN_HOME_ITEMS to emptySet<String>(),
         KEY_SIMILAR_ASSETS_YEARS_BACK to 10,
         KEY_RECENT_ASSETS_MONTHS_BACK to 5,
-        KEY_SIMILAR_ASSETS_PERIOD_DAYS to 30
+        KEY_SIMILAR_ASSETS_PERIOD_DAYS to 30,
+        KEY_SLIDER_ANIMATION_SPEED to 0
     )
 
     fun init(context: Context) {
@@ -327,5 +329,9 @@ object PreferenceManager {
 
     fun sliderShowCity(): Boolean {
         return liveContext[KEY_SLIDER_SHOW_CITY] as Boolean
+    }
+
+    fun animationSpeedMillis(): Int {
+        return liveContext[KEY_SLIDER_ANIMATION_SPEED].toString().toInt()
     }
 }

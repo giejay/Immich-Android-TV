@@ -19,6 +19,17 @@
         <item>60</item>
     </string-array>
 
+    <array name="animation_speed_ms">
+        <item>100</item>
+        <item>200</item>
+        <item>300</item>
+        <item>400</item>
+        <item>500</item>
+        <item>800</item>
+        <item>1000</item>
+        <item>2000</item>
+    </array>
+
     <string-array name="albums_order">
         <item>Last updated</item>
         <item>Alphabetically (A-Z)</item>

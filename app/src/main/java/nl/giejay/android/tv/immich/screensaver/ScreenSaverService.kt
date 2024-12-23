@@ -186,7 +186,8 @@ class ScreenSaverService : DreamService() {
                     PreferenceManager.sliderOnlyUseThumbnails(),
                     PreferenceManager.screensaverVideoSound(),
                     assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()),
-                    loadMore
+                    loadMore,
+                    animationSpeedMillis = PreferenceManager.animationSpeedMillis()
                 )
             )
             mediaSliderView.toggleSlideshow(false)
