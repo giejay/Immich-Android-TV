@@ -62,7 +62,7 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) {
             val response = service.listAssetsFromAlbum(albumId)
             val album = response.body()
-            val assets = album!!.assets.map { Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName) }
+            val assets = album!!.assets.map { Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName, it.people) }
             val updatedAlbum = AlbumDetails(album.albumName, album.description, album.id, album.albumThumbnailAssetId, assets)
             Response.success(updatedAlbum)
         }

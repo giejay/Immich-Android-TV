@@ -51,8 +51,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
-    protected var currentPage: Int = startPage
-    protected var allPagesLoaded: Boolean = false
+    private var currentPage: Int = startPage
+    private var allPagesLoaded: Boolean = false
     private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false

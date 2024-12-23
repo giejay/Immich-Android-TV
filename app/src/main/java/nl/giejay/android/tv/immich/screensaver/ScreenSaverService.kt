@@ -55,20 +55,19 @@ class ScreenSaverService : DreamService() {
         setContentView(mediaSliderView)
         isInteractive = true
         ioScope.launch {
-            if(ScreenSaverType.ALBUMS == PreferenceManager.getScreenSaverType()) {
+            if (ScreenSaverType.ALBUMS == PreferenceManager.getScreenSaverType()) {
                 loadImagesFromAlbums(PreferenceManager.getScreenSaverAlbums())
             } else {
                 loadRandomImages(PreferenceManager.getScreenSaverType()).invoke().map {
                     setInitialAssets(it, false, suspend {
-                            if(doneLoading){
-                                emptyList()
-                            } else {
-                                currentPage += 1
-                                val assets = loadRandomImages(PreferenceManager.getScreenSaverType()).invoke()
-                                    .map { asset -> asset.toSliderItems(false, PreferenceManager.sliderMergePortraitPhotos()) }.getOrElse { emptyList() }
-                                doneLoading = assets.size < PAGE_COUNT
-                                assets
-                            }
+                        if (doneLoading) {
+                            emptyList()
+                        } else {
+                            currentPage += 1
+                            val newAssets = loadRandomImages(PreferenceManager.getScreenSaverType()).invoke().getOrElse { emptyList() }
+                            doneLoading = newAssets.size < PAGE_COUNT
+                            newAssets.toSliderItems(false, PreferenceManager.sliderMergePortraitPhotos())
+                        }
                     })
                 }
             }
@@ -154,8 +153,10 @@ class ScreenSaverService : DreamService() {
     }
 
     private suspend fun setInitialAssets(assets: List<Asset>, showMediaCount: Boolean, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
-        if(assets.isEmpty()){
-            Toast.makeText(this@ScreenSaverService, "No assets to show for screensaver. Please configure a different screensaver type in the settings.", Toast.LENGTH_LONG).show()
+        if (assets.isEmpty()) {
+            Toast.makeText(this@ScreenSaverService,
+                "No assets to show for screensaver. Please configure a different screensaver type in the settings.",
+                Toast.LENGTH_LONG).show()
         } else {
             val displayOptions: EnumSet<DisplayOptions> = EnumSet.of(DisplayOptions.GRADIENT_OVERLAY);
             if (PreferenceManager.screensaverShowClock()) {
@@ -196,8 +197,8 @@ class ScreenSaverService : DreamService() {
         mediaSliderView.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()))
     }
 
-    companion object ScreenSaverService{
-        private const val PAGE_COUNT = 10
+    companion object ScreenSaverService {
+        private const val PAGE_COUNT = 100
     }
 }
 

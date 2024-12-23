@@ -12,7 +12,7 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
         return this.map{SliderItemViewHolder(it.toSliderItem())}
     }
     if (!keepOrder) {
-        val portraitItems = this.filter { it.isPortraitImage() }
+        val portraitItems = this.filter { it.isPortraitImage() }.sortedWith(compareBy<Asset> { it.people?.firstOrNull()?.id }.thenBy { it.people?.size }.thenBy { it.exifInfo?.city})
         val landscapeItems = this.minus(portraitItems.toSet())
 
         val portraitSliders = portraitItems.chunked(2).map { SliderItemViewHolder(it.first().toSliderItem(), it.getOrNull(1)?.toSliderItem()) }
