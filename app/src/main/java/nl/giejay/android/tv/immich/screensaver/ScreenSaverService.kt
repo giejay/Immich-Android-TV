@@ -154,38 +154,42 @@ class ScreenSaverService : DreamService() {
     }
 
     private suspend fun setInitialAssets(assets: List<Asset>, showMediaCount: Boolean, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
-        val displayOptions: EnumSet<DisplayOptions> = EnumSet.of(DisplayOptions.GRADIENT_OVERLAY);
-        if (PreferenceManager.screensaverShowClock()) {
-            displayOptions += DisplayOptions.CLOCK
-        }
-        if (PreferenceManager.screensaverShowDescription()) {
-            displayOptions += DisplayOptions.TITLE
-        }
-        if (PreferenceManager.screensaverShowAlbumName()) {
-            displayOptions += DisplayOptions.SUBTITLE
-        }
-        if (PreferenceManager.screensaverShowDate()) {
-            displayOptions += DisplayOptions.DATE
-        }
-        if (showMediaCount) {
-            displayOptions += DisplayOptions.MEDIA_COUNT
-        }
-        if (PreferenceManager.screensaverAnimateAssetSlide()) {
-            displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
-        }
+        if(assets.isEmpty()){
+            Toast.makeText(this@ScreenSaverService, "No assets to show for screensaver. Please configure a different screensaver type in the settings.", Toast.LENGTH_LONG).show()
+        } else {
+            val displayOptions: EnumSet<DisplayOptions> = EnumSet.of(DisplayOptions.GRADIENT_OVERLAY);
+            if (PreferenceManager.screensaverShowClock()) {
+                displayOptions += DisplayOptions.CLOCK
+            }
+            if (PreferenceManager.screensaverShowDescription()) {
+                displayOptions += DisplayOptions.TITLE
+            }
+            if (PreferenceManager.screensaverShowAlbumName()) {
+                displayOptions += DisplayOptions.SUBTITLE
+            }
+            if (PreferenceManager.screensaverShowDate()) {
+                displayOptions += DisplayOptions.DATE
+            }
+            if (showMediaCount) {
+                displayOptions += DisplayOptions.MEDIA_COUNT
+            }
+            if (PreferenceManager.screensaverAnimateAssetSlide()) {
+                displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
+            }
 
-        mediaSliderView.loadMediaSliderView(
-            MediaSliderConfiguration(
-                displayOptions,
-                0,
-                PreferenceManager.screensaverInterval(),
-                PreferenceManager.sliderOnlyUseThumbnails(),
-                PreferenceManager.screensaverVideoSound(),
-                assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()),
-                loadMore
+            mediaSliderView.loadMediaSliderView(
+                MediaSliderConfiguration(
+                    displayOptions,
+                    0,
+                    PreferenceManager.screensaverInterval(),
+                    PreferenceManager.sliderOnlyUseThumbnails(),
+                    PreferenceManager.screensaverVideoSound(),
+                    assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()),
+                    loadMore
+                )
             )
-        )
-        mediaSliderView.toggleSlideshow(false)
+            mediaSliderView.toggleSlideshow(false)
+        }
     }
 
     private suspend fun setAllAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {

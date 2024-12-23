@@ -12,6 +12,7 @@ import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import timber.log.Timber
 
 class AlbumFragment : VerticalCardGridFragment<Album>() {
 
@@ -31,7 +32,12 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
             val unselected = sorted.filter { !selected.contains(it) }
             selected + unselected
         } else {
-            items.sortedWith(PreferenceManager.albumsOrder().sort)
+            try {
+                items.sortedWith(PreferenceManager.albumsOrder().sort)
+            } catch (e: IllegalArgumentException){
+                Timber.e(e, "Could not sort using sorting order: " + PreferenceManager.albumsOrder().toString())
+                items
+            }
         }
     }
 

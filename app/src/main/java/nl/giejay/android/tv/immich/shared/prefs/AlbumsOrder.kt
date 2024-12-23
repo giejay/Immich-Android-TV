@@ -8,10 +8,10 @@ enum class AlbumsOrder(val sort: Comparator<Album>) {
     ALPHABETICALLY_Z_A({ a1, a2 -> ALPHABETICALLY_A_Z.sort.reversed().compare(a1, a2) }),
     LAST_UPDATED(Sort@{ album, album2 ->
         // just testing with labeled returns here...
-        if(album.endDate == null){
-            return@Sort 1;
+        if(album2.endDate == null && album.endDate == null){
+            return@Sort 0;
         } else if(album2.endDate == null){
-            return@Sort -1;
+            return@Sort 1
         }
         return@Sort album2.endDate.compareToNullSafe(album.endDate);
     }),

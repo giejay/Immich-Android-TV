@@ -13,26 +13,30 @@ More info here: https://github.com/immich-app/immich
 This Android TV app will allow you to view those uploaded photos and videos. Current features
 include:
 
-| Features                                                                       | Status      |
-|:-------------------------------------------------------------------------------|-------------|
-| Sign in by phone (https://github.com/giejay/Immich-Android-TV-Authentication)  | Done        |
-| Sign in by entering API key                                                    | Done        |
-| Demo environment                                                               | Done        |
-| Album fetching + Lazy loading                                                  | Done        |
-| Showing the photos inside an album                                             | Done        |
-| Showing people, random, recent or seasonal photos                              | Done        |
-| Slideshow of the photos and videos with a configured interval                  | Done        |
-| Setting the app as the screensaver                                             | Done        |
-| Setting the albums to show in the screensaver                                  | Done        |
-| Configure the interval of the screensaver                                      | Done        |
-| Add generic sorting of albums and photos                                       | Done        |
-| Add sorting for specific album (select last item in row and press right again) | Done        |
-| Showing the 4K thumbnail instead of the full image to speed up loading         | Done        |
-| Showing the EXIF data and improving the slideshow view                         | Done        |
-| Configure whether to play sound with videos                                    | Done        |
-| Casting capabilities                                                           | Not started |
-| Searching in and for albums                                                    | Not started |
-| Dependency injection with Hilt/Dagger                                          | Not started |
+| Features                                                                       | Status |
+|:-------------------------------------------------------------------------------|--------|
+| Sign in by phone (https://github.com/giejay/Immich-Android-TV-Authentication)  | Done   |
+| Sign in by entering API key                                                    | Done   |
+| Demo environment                                                               | Done   |
+| Album fetching + Lazy loading                                                  | Done   |
+| Showing the photos inside an album                                             | Done   |
+| Showing people, random, recent or seasonal photos                              | Done   |
+| Slideshow of the photos and videos with a configured interval                  | Done   |
+| Setting the app as the screensaver                                             | Done   |
+| Setting the albums to show in the screensaver                                  | Done   |
+| Configure the interval of the screensaver                                      | Done   |
+| Add generic sorting of albums and photos                                       | Done   |
+| Add sorting for specific album (select last item in row and press right again) | Done   |
+| Showing the 4K thumbnail instead of the full image to speed up loading         | Done   |
+| Showing the EXIF data and improving the slideshow view                         | Done   |
+| Configure whether to play sound with videos                                    | Done   |
+| Smarter merging of portrait photos (same people, same date, same city)         | Todo   |
+| Add transitions to slideshow                                                   | Todo   |
+| Add places/tags view                                                           | Todo   |
+| Add background media playing info to screensaver                               | Todo   |
+| Casting capabilities                                                           | Todo   |
+| Searching in and for albums                                                    | Todo   |
+| Dependency injection with Hilt/Dagger                                          | Todo   |
 
 ## Screenshots
 
