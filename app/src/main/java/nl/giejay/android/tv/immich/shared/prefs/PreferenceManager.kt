@@ -129,7 +129,7 @@ object PreferenceManager {
         return liveContext[KEY_SCREENSAVER_SHOW_CLOCK] as Boolean
     }
 
-    fun screensaverAnimateAssetSlide(): Boolean {
+    fun enableSlideAnimation(): Boolean {
         return liveContext[KEY_SCREENSAVER_ANIMATE_ASSET_SLIDE] as Boolean
     }
 

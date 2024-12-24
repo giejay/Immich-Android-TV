@@ -42,6 +42,9 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
         if (PreferenceManager.sliderShowDate()) {
             displayOptions += DisplayOptions.DATE
         }
+        if (PreferenceManager.enableSlideAnimation()) {
+            displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
+        }
 
         val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.sliderMergePortraitPhotos())
         val loadMore: LoadMore = suspend {

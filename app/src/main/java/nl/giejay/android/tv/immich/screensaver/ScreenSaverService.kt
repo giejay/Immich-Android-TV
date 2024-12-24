@@ -174,7 +174,7 @@ class ScreenSaverService : DreamService() {
             if (showMediaCount) {
                 displayOptions += DisplayOptions.MEDIA_COUNT
             }
-            if (PreferenceManager.screensaverAnimateAssetSlide()) {
+            if (PreferenceManager.enableSlideAnimation()) {
                 displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
             }
 

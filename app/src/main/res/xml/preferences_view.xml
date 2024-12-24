@@ -94,10 +94,16 @@
             android:entryValues="@array/interval_values"
             android:dialogTitle="Interval"/>
 
+        <CheckBoxPreference
+            android:key="screensaver_animate_asset_slide"
+            android:title="Slide the new asset in"
+            android:defaultValue="true"
+            android:summary="Slide the new asset in when transitioning"/>
+
         <ListPreference
             android:key="slider_animation_speed"
-            android:title="Animation speed (ms)"
-            android:summary="Animation speed in milliseconds"
+            android:title="Slide animation speed (ms)"
+            android:summary="Slide animation speed in milliseconds"
             app:useSimpleSummaryProvider="true"
             android:defaultValue="0"
             android:entries="@array/animation_speed_ms"
