@@ -31,6 +31,18 @@
         <item>2000</item>
     </string-array>
 
+    <string-array name="glide_transformation_labels">
+        <item>Center Inside (keep image width/height)</item>
+        <item>Center Crop (fit screen)</item>
+        <item>Safe Center Crop (max crop percentage)</item>
+    </string-array>
+
+    <array name="glide_transformation_keys">
+        <item>CENTER_INSIDE</item>
+        <item>CENTER_CROP</item>
+        <item>SAFE_CENTER_CROP</item>
+    </array>
+
     <string-array name="albums_order">
         <item>Last updated</item>
         <item>Alphabetically (A-Z)</item>

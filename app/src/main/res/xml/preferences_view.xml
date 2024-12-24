@@ -38,8 +38,6 @@
 
     </PreferenceCategory>
 
-
-
     <PreferenceCategory
         android:title="Slideshow">
 
@@ -109,6 +107,32 @@
             android:entries="@array/animation_speed_ms"
             android:entryValues="@array/animation_speed_ms"
             android:dialogTitle="Animation speed (ms)"/>
+
+        <ListPreference
+            android:key="slider_glide_transformation"
+            android:title="Photo transformation"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="CENTER_INSIDE"
+            android:entries="@array/glide_transformation_labels"
+            android:entryValues="@array/glide_transformation_keys"
+            android:dialogTitle="Photo transformation"/>
+
+        <SeekBarPreference
+            android:key="slider_max_cut_off_width"
+            android:title="Safe Center Crop max cutoff width %"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="20"
+            android:dialogTitle="Maximum percentage to cut off image width if using SafeCenterCrop"
+            >
+        </SeekBarPreference>
+        <SeekBarPreference
+            android:key="slider_max_cut_off_height"
+            android:title="Safe Center Crop max cutoff height %"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="20"
+            android:dialogTitle="Maximum percentage to cut off image height if using SafeCenterCrop"
+            >
+        </SeekBarPreference>
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
+import nl.giejay.mediaslider.transformations.GlideTransformations
 import okhttp3.HttpUrl
 
 object PreferenceManager {
@@ -38,6 +39,11 @@ object PreferenceManager {
     private val KEY_SLIDER_SHOW_CITY = "slider_show_city"
     private val KEY_SLIDER_ONLY_USE_THUMBNAILS = "slider_only_use_thumbnails"
     private val KEY_SLIDER_MERGE_PORTRAIT_PHOTOS = "slider_merge_portrait_photos"
+    private val KEY_MAX_CUT_OFF_WIDTH = "slider_max_cut_off_width"
+    private val KEY_MAX_CUT_OFF_HEIGHT = "slider_max_cut_off_height"
+    private val KEY_GLIDE_TRANSFORMATION = "slider_glide_transformation"
+
+    // sorting
     val KEY_ALBUMS_SORTING = "albums_sorting"
     private val KEY_PHOTOS_SORTING = "photos_sorting"
     private val KEY_ALL_ASSETS_SORTING = "all_assets_sorting"
@@ -84,7 +90,9 @@ object PreferenceManager {
         KEY_SIMILAR_ASSETS_YEARS_BACK to 10,
         KEY_RECENT_ASSETS_MONTHS_BACK to 5,
         KEY_SIMILAR_ASSETS_PERIOD_DAYS to 30,
-        KEY_SLIDER_ANIMATION_SPEED to 0
+        KEY_SLIDER_ANIMATION_SPEED to 0,
+        KEY_MAX_CUT_OFF_HEIGHT to 20,
+        KEY_MAX_CUT_OFF_WIDTH to 20
     )
 
     fun init(context: Context) {
@@ -333,5 +341,20 @@ object PreferenceManager {
 
     fun animationSpeedMillis(): Int {
         return liveContext[KEY_SLIDER_ANIMATION_SPEED].toString().toInt()
+    }
+
+    fun maxCutOffWidth(): Int {
+        return liveContext[KEY_MAX_CUT_OFF_WIDTH].toString().toInt()
+    }
+
+    fun maxCutOffHeight(): Int {
+        return liveContext[KEY_MAX_CUT_OFF_HEIGHT].toString().toInt()
+    }
+
+    fun glideTransformation(): GlideTransformations {
+        return GlideTransformations.valueOfSafe(
+            getString(KEY_GLIDE_TRANSFORMATION, GlideTransformations.CENTER_INSIDE.toString()),
+            GlideTransformations.CENTER_INSIDE
+        )
     }
 }

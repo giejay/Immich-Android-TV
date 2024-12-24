@@ -62,7 +62,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     toSliderItems,
                     loadMore,
                     { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) },
-                    animationSpeedMillis = PreferenceManager.animationSpeedMillis()
+                    animationSpeedMillis = PreferenceManager.animationSpeedMillis(),
+                    maxCutOffHeight = PreferenceManager.maxCutOffHeight(),
+                    maxCutOffWidth = PreferenceManager.maxCutOffWidth(),
+                    transformation = PreferenceManager.glideTransformation()
                 )
             )
         )

@@ -187,7 +187,10 @@ class ScreenSaverService : DreamService() {
                     PreferenceManager.screensaverVideoSound(),
                     assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()),
                     loadMore,
-                    animationSpeedMillis = PreferenceManager.animationSpeedMillis()
+                    animationSpeedMillis = PreferenceManager.animationSpeedMillis(),
+                    maxCutOffHeight = PreferenceManager.maxCutOffHeight(),
+                    maxCutOffWidth = PreferenceManager.maxCutOffWidth(),
+                    transformation = PreferenceManager.glideTransformation()
                 )
             )
             mediaSliderView.toggleSlideshow(false)

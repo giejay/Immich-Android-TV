@@ -23,7 +23,7 @@ enum class PhotosOrder(val sort: Comparator<Asset>) {
 
     companion object {
         fun valueOfSafe(name: String, default: PhotosOrder): PhotosOrder{
-            return PhotosOrder.values().find { it.toString() == name } ?: default
+            return entries.find { it.toString() == name } ?: default
         }
     }
 }
