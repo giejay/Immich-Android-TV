@@ -15,6 +15,8 @@ package nl.giejay.android.tv.immich.shared.fragment
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,7 +37,7 @@ import timber.log.Timber
  * A fragment for rendering items in a vertical grids.
  */
 open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
-    private var manuallySelectedPosition: Boolean = false
+    private var manuallySelectedPosition: Int = -1
     private var mAdapter: ArrayObjectAdapter = ArrayObjectAdapter()
     private var mGridPresenter: VerticalGridPresenter? = null
     private var mGridViewHolder: VerticalGridPresenter.ViewHolder? = null
@@ -104,13 +106,8 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     }
 
     private fun gridOnItemSelected(position: Int) {
-        if (!manuallySelectedPosition && position != mSelectedPosition) {
-            mSelectedPosition = position
-            showOrHideTitle()
-        } else {
-            setSelectedPosition(mSelectedPosition)
-            manuallySelectedPosition = false
-        }
+        mSelectedPosition = position
+        showOrHideTitle()
     }
 
     private fun showOrHideTitle() {
@@ -157,7 +154,7 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
         super.onViewCreated(view, savedInstanceState)
         val gridDock: ViewGroup = view.findViewById(R.id.browse_grid_dock)
         progressBar = gridDock.findViewById(R.id.browse_progressbar)
-        if(hideProgressBar){
+        if (hideProgressBar) {
             progressBar?.visibility = View.GONE
         }
         installTitleView(LayoutInflater.from(requireContext()), gridDock, savedInstanceState)
@@ -183,7 +180,7 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     /**
      * Sets the selected item position.
      */
-    fun setSelectedPosition(position: Int) {
+    private fun setSelectedPosition(position: Int) {
         mSelectedPosition = position
         if (mGridViewHolder != null && mGridViewHolder!!.gridView.adapter != null) {
             mGridViewHolder!!.gridView.setSelectedPositionSmooth(position)
@@ -199,9 +196,18 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
         }
     }
 
-    fun manualUpdatePosition(position: Int){
-        mSelectedPosition = position
-        manuallySelectedPosition = true
+    override fun onResume() {
+        super.onResume()
+        if (manuallySelectedPosition != -1) {
+            Handler(Looper.getMainLooper()!!).postDelayed({
+                setSelectedPosition(manuallySelectedPosition)
+                manuallySelectedPosition = -1
+            }, 100)
+        }
+    }
+
+    fun manualUpdatePosition(position: Int) {
+        manuallySelectedPosition = position
     }
 
     private fun updateSelectionPosition(selectionPosition: Int) {

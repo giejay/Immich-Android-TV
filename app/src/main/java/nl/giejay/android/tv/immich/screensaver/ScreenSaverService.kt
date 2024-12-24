@@ -190,7 +190,8 @@ class ScreenSaverService : DreamService() {
                     animationSpeedMillis = PreferenceManager.animationSpeedMillis(),
                     maxCutOffHeight = PreferenceManager.maxCutOffHeight(),
                     maxCutOffWidth = PreferenceManager.maxCutOffWidth(),
-                    transformation = PreferenceManager.glideTransformation()
+                    transformation = PreferenceManager.glideTransformation(),
+                    debugEnabled = PreferenceManager.debugEnabled()
                 )
             )
             mediaSliderView.toggleSlideshow(false)
