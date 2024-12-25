@@ -107,6 +107,7 @@ class ScreenSaverService : DreamService() {
             // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
                 val shuffledAlbums = albums.toList().shuffled()
+                // todo use timeline buckets to speed up loading
                 apiClient.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
                     val randomAssets = getAssets(listOf(album))
                     setInitialAssets(randomAssets, PreferenceManager.screensaverShowMediaCount(), null)

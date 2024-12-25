@@ -48,10 +48,10 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     protected lateinit var apiClient: ApiClient
     private lateinit var keyEvents: KeyEventsViewModel
     private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_SMALL
-    private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
+    protected val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
-    private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
-    private var currentPage: Int = startPage
+    protected val assetsStillToRender: MutableList<ITEM> = mutableListOf()
+    protected var currentPage: Int = startPage
     private var allPagesLoaded: Boolean = false
     private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
@@ -133,20 +133,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                 }
             }
             with(this@VerticalCardGridFragment) {
-                val selectedIndex = adapter.indexOf(item);
-                if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
-                    if (currentLoadingJob?.isActive != true && assetsStillToRender.isEmpty() && !allPagesLoaded) {
-                        // try a next page if its available
-                        currentLoadingJob = fetchNextItems()
-                    } else {
-                        mainScope.launch {
-                            addAssetsPaginated()
-                        }
-                    }
-                }
+                loadNextItemsIfNeeded(adapter.indexOf(item))
             }
         }
         // fetch initial items
+        fetchInitialItems()
+    }
+
+    protected open fun fetchInitialItems() {
         ioScope.launch {
             loadData().fold(
                 { itLeft -> showErrorMessage(itLeft) },
@@ -155,10 +149,30 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         }
     }
 
+    private fun loadNextItemsIfNeeded(selectedIndex: Int) {
+        if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
+            if (currentLoadingJob?.isActive != true && assetsStillToRender.isEmpty() && !allPagesLoaded) {
+                // try a next page if its available
+                currentLoadingJob = fetchNextItems()
+            } else {
+                mainScope.launch {
+                    addAssetsPaginated()
+                }
+            }
+        }
+    }
+
     protected open fun resortItems(){
         assets = sortItems(assets)
         adapter.clear()
         adapter.addAll(0, assets.map { createCard(it) })
+    }
+
+    protected open fun clearState(){
+        currentPage = 0
+        assets = emptyList()
+        assetsStillToRender.clear()
+        adapter.clear()
     }
 
     protected open fun openPopUpMenu() {
@@ -185,11 +199,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                 if (items.isNotEmpty()) {
                     setData(items)
                 }
-                allPagesLoaded = items.size < FETCH_PAGE_COUNT
+                allPagesLoaded = allPagesLoaded(items)
                 items
             }
         )
     }
+
+    protected open fun allPagesLoaded(items: List<ITEM>): Boolean =
+        items.size < FETCH_PAGE_COUNT
 
     override fun onResume() {
         super.onResume()
@@ -238,7 +255,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         currentPage += 1
     }
 
-    private suspend fun loadData(): Either<String, List<ITEM>> {
+    protected open suspend fun loadData(): Either<String, List<ITEM>> {
         return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT)
     }
 
@@ -299,7 +316,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     companion object {
         const val COLUMNS = 4
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
-        private const val FETCH_COUNT = COLUMNS * 3
+        const val FETCH_COUNT = COLUMNS * 3
         const val FETCH_PAGE_COUNT = 50
     }
 }

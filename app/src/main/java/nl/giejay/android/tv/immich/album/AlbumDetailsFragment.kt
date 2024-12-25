@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.view.View
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
+import arrow.core.flatMap
 import nl.giejay.android.tv.immich.api.ApiClient
-import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.assets.GenericAssetFragment
 import nl.giejay.android.tv.immich.card.Card
@@ -19,6 +19,8 @@ class AlbumDetailsFragment : GenericAssetFragment() {
     private lateinit var albumId: String
     private lateinit var albumName: String
     private lateinit var livePref: LivePreference<String>
+    private var pageToBucket: Map<Int, String>? = null
+    private var currentSort: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
@@ -26,12 +28,19 @@ class AlbumDetailsFragment : GenericAssetFragment() {
         super.onCreate(savedInstanceState)
         livePref = LiveSharedPreferences(PreferenceManager.sharedPreference)
             .getString(PreferenceManager.keyAlbumsSorting(albumId), PreferenceManager.photosOrder().toString(), true)
+        currentSort = livePref.value
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        livePref.observe(viewLifecycleOwner) { _ ->
-            resortItems()
+        livePref.observe(viewLifecycleOwner) { state ->
+            if(state != currentSort){
+                // need to refetch everything because of the timeline buckets approach
+                clearState()
+                pageToBucket = null
+                currentSort = state
+                fetchInitialItems()
+            }
         }
     }
 
@@ -39,14 +48,43 @@ class AlbumDetailsFragment : GenericAssetFragment() {
         return items.sortedWith(PreferenceManager.getSortingForAlbum(albumId).sort)
     }
 
-    override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
-        if(page == startPage){
-            // no pagination possible yet!
-            return apiClient.listAssetsFromAlbum(albumId).map {
-                it.assets
+    override suspend fun loadData(): Either<String, List<Asset>> {
+        if (pageToBucket == null) {
+            // initial call, fetch the buckets
+            val listBuckets = apiClient.listBuckets(albumId, PreferenceManager.getSortingForAlbum(albumId))
+            return listBuckets.map { list ->
+                pageToBucket = list.associateBy({ list.indexOf(it) + 1 }, { it.timeBucket })
+                return internalLoadData(emptyList())
+            }
+        } else {
+            return internalLoadData(emptyList())
+        }
+    }
+
+    private suspend fun internalLoadData(prevAssets: List<Asset>): Either<String, List<Asset>> {
+        return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT).flatMap {
+            val combined = it + prevAssets
+            if (combined.size <= FETCH_COUNT && !allPagesLoaded(it)) {
+                // immediately load next bucket
+                currentPage += 1
+                internalLoadData(combined)
+            } else {
+                Either.Right(combined)
             }
         }
-        return Either.Right(emptyList())
+    }
+
+    override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
+        val bucketForPage = pageToBucket!![page]
+        return if (bucketForPage != null) {
+            apiClient.getAssetsForBucket(albumId, bucketForPage, PreferenceManager.getSortingForAlbum(albumId))
+        } else {
+            Either.Right(emptyList())
+        }
+    }
+
+    override fun allPagesLoaded(items: List<Asset>): Boolean {
+        return this.pageToBucket == null || !this.pageToBucket!!.contains(currentPage + 1)
     }
 
     override fun onItemSelected(card: Card, indexOf: Int) {

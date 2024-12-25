@@ -141,7 +141,7 @@ class AuthByPhoneFragment : Fragment() {
             }
         } catch (e: Exception) {
             Timber.e("Could not fetch qr", e)
-            showErrorMessage("Could not fetch QR code!")
+            showErrorMessage("Could not fetch QR code: ${e.message}")
         }
     }
 

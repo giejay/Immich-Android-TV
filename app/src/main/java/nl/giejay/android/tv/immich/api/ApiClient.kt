@@ -6,10 +6,12 @@ import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.Bucket
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
+import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -35,7 +37,7 @@ class ApiClient(private val config: ApiClientConfig) {
             return apiClient!!
         }
 
-        val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME;
+        val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME;
     }
 
     private val retrofit = Retrofit.Builder()
@@ -111,7 +113,18 @@ class ApiClient(private val config: ApiClientConfig) {
         } else {
             executeAPICall(200) { service.listAssets(searchRequest) }.map { res -> res.assets.items }
         }
+    }
 
+    suspend fun listBuckets(albumId: String, order: PhotosOrder): Either<String, List<Bucket>>{
+        return executeAPICall(200){
+            service.listBuckets(albumId = albumId, order = if(order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+        }
+    }
+
+    suspend fun getAssetsForBucket(albumId: String, bucket: String, order: PhotosOrder): Either<String, List<Asset>>{
+        return executeAPICall(200){
+            service.getBucket(albumId = albumId, timeBucket = bucket, order = if(order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+        }
     }
 }
 

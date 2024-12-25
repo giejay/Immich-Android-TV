@@ -17,7 +17,7 @@ class AuthenticationClient {
                 "x-api-key",
                 ImmichApplication.appContext!!.resources.getString(R.string.api_key)
             )
-            .build();
+            .build()
         chain.proceed(newRequest)
     }
 

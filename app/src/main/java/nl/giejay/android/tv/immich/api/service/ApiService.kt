@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.api.service
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.Bucket
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -29,4 +30,11 @@ interface ApiService {
 
     @GET("albums/{albumId}")
     suspend fun listAssetsFromAlbum(@Path("albumId") albumId: String): Response<AlbumDetails>
+
+    @GET("timeline/buckets")
+    suspend fun listBuckets(@Query("albumId") albumId: String, @Query("size") size: String = "MONTH", @Query("order") order: String = "desc"): Response<List<Bucket>>
+
+    @GET("timeline/bucket")
+    suspend fun getBucket(@Query("albumId") albumId: String, @Query("timeBucket") timeBucket: String, @Query("size") size: String = "MONTH",  @Query("order") order: String = "desc"): Response<List<Asset>>
+
 }

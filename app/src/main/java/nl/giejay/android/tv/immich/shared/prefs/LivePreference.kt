@@ -8,7 +8,7 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.observers.DisposableObserver
 import io.reactivex.rxjava3.schedulers.Schedulers
 
-class LivePreference<T> constructor(
+class LivePreference<T>(
     private val updates: Observable<String>,
     private val preferences: SharedPreferences,
     private val key: String,
@@ -44,10 +44,6 @@ class LivePreference<T> constructor(
 
                 }
             })
-    }
-
-    override fun getValue(): T {
-        return super.getValue()!!
     }
 
     override fun onInactive() {
