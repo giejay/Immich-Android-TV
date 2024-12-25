@@ -18,6 +18,7 @@ import androidx.leanback.widget.RowHeaderPresenter
 import androidx.leanback.widget.SectionRow
 import nl.giejay.android.tv.immich.album.AlbumFragment
 import nl.giejay.android.tv.immich.assets.AllAssetFragment
+import nl.giejay.android.tv.immich.assets.FolderFragment
 import nl.giejay.android.tv.immich.assets.RandomAssetsFragment
 import nl.giejay.android.tv.immich.assets.RecentAssetsFragment
 import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
@@ -127,6 +128,7 @@ class HomeFragment : BrowseSupportFragment() {
             Header("People") { PeopleFragment() },
             Header("Recent") { RecentAssetsFragment() },
             Header("Seasonal") { SimilarTimeAssetsFragment() },
+            Header("Folders") { FolderFragment() },
             Header("Edit") { GridFragment(hideProgressBar = true) },
             Header("Settings") { SettingsFragment() },
         )

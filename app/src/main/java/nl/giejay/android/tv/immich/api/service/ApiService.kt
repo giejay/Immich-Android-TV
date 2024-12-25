@@ -37,4 +37,9 @@ interface ApiService {
     @GET("timeline/bucket")
     suspend fun getBucket(@Query("albumId") albumId: String, @Query("timeBucket") timeBucket: String, @Query("size") size: String = "MONTH",  @Query("order") order: String = "desc"): Response<List<Asset>>
 
+    @GET("view/folder/unique-paths")
+    suspend fun getUniquePaths(): Response<List<String>>
+
+    @GET("view/folder")
+    suspend fun getAssetsForPath(@Query("path") path: String): Response<List<Asset>>
 }

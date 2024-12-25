@@ -40,6 +40,8 @@ object Utils {
         return result
     }
 
+    fun <T> List<T>.tail() = drop(1)
+
     fun <T> Comparator<T>.optionalReversed(reverse: Boolean): Comparator<T>{
         if(reverse){
             return this.reversed()

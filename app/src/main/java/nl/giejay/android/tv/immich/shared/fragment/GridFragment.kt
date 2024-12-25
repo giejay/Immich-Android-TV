@@ -199,11 +199,15 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     override fun onResume() {
         super.onResume()
         if (manuallySelectedPosition != -1) {
-            Handler(Looper.getMainLooper()!!).postDelayed({
-                setSelectedPosition(manuallySelectedPosition)
-                manuallySelectedPosition = -1
-            }, 100)
+            updateManualPositionHandler(manuallySelectedPosition)
         }
+    }
+
+    protected open fun updateManualPositionHandler(selectedPosition: Int) {
+        Handler(Looper.getMainLooper()!!).postDelayed({
+            setSelectedPosition(selectedPosition)
+            manuallySelectedPosition = -1
+        }, 100)
     }
 
     fun manualUpdatePosition(position: Int) {

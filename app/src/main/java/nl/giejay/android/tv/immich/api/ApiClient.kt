@@ -7,6 +7,7 @@ import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Bucket
+import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
@@ -73,10 +74,11 @@ class ApiClient(private val config: ApiClientConfig) {
     suspend fun recentAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
         return apiClient!!.listAssets(page, pageCount, true, "desc",
-            includeVideos = includeVideos, fromDate = now.minusMonths(PreferenceManager.recentAssetsMonthsBack().toLong()), endDate = now).map { it.shuffled() }
+            includeVideos = includeVideos, fromDate = now.minusMonths(PreferenceManager.recentAssetsMonthsBack().toLong()), endDate = now)
+            .map { it.shuffled() }
     }
 
-    suspend fun similarAssets(page: Int, pageCount: Int,includeVideos: Boolean): Either<String, List<Asset>> {
+    suspend fun similarAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
         val map: List<Either<String, List<Asset>>> = (0 until PreferenceManager.similarAssetsYearsBack()).toList().map {
             apiClient!!.listAssets(page,
@@ -115,15 +117,50 @@ class ApiClient(private val config: ApiClientConfig) {
         }
     }
 
-    suspend fun listBuckets(albumId: String, order: PhotosOrder): Either<String, List<Bucket>>{
-        return executeAPICall(200){
-            service.listBuckets(albumId = albumId, order = if(order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+    suspend fun listBuckets(albumId: String, order: PhotosOrder): Either<String, List<Bucket>> {
+        return executeAPICall(200) {
+            service.listBuckets(albumId = albumId, order = if (order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
         }
     }
 
-    suspend fun getAssetsForBucket(albumId: String, bucket: String, order: PhotosOrder): Either<String, List<Asset>>{
-        return executeAPICall(200){
-            service.getBucket(albumId = albumId, timeBucket = bucket, order = if(order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+    suspend fun getAssetsForBucket(albumId: String, bucket: String, order: PhotosOrder): Either<String, List<Asset>> {
+        return executeAPICall(200) {
+            service.getBucket(albumId = albumId, timeBucket = bucket, order = if (order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+        }
+    }
+
+    suspend fun listFolders(): Either<String, Folder> {
+        return executeAPICall(200) {
+            service.getUniquePaths()
+        }.map { paths ->
+            return Either.Right(createRootFolder(Folder("", mutableListOf(), null), paths))
+        }
+    }
+
+    private fun createRootFolder(parent: Folder, paths: List<String>): Folder {
+        paths.forEach { path ->
+            val directories = path.split("/")
+            createFolders(directories, parent)
+        }
+        return parent
+    }
+
+    private fun createFolders(paths: List<String>, currentParent: Folder): Folder{
+        if(paths.isEmpty()){
+            return currentParent
+        }
+        val createdChild = Folder(paths.first(), mutableListOf(), currentParent)
+        val alreadyOwnedChild = currentParent.hasPath(paths.first())
+        if(alreadyOwnedChild != null){
+            return createFolders(paths.drop(1), alreadyOwnedChild)
+        }
+        currentParent.children.add(createdChild)
+        return createFolders(paths.drop(1), createdChild)
+    }
+
+    suspend fun listAssetsForFolder(folder: String): Either<String, List<Asset>> {
+        return executeAPICall(200) {
+            service.getAssetsForPath(folder)
         }
     }
 }

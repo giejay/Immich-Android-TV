@@ -197,7 +197,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             { items ->
                 Timber.i("Loading next items, ${items.size}")
                 if (items.isNotEmpty()) {
-                    setData(items)
+                    setDataOnMain(items)
                 }
                 allPagesLoaded = allPagesLoaded(items)
                 items
@@ -244,10 +244,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             progressBar?.visibility = View.GONE
             setTitle(assets)
             assets.firstOrNull()?.let { loadBackground(getBackgroundPicture(it)) {} }
-            setData(assets)
+            setDataOnMain(assets)
         }
 
-    private suspend fun setData(assets: List<ITEM>) = withContext(Dispatchers.Main) {
+    private suspend fun setDataOnMain(assets: List<ITEM>) = withContext(Dispatchers.Main) {
+        setData(assets)
+    }
+
+    protected open fun setData(assets: List<ITEM>) {
         val sortedItems = sortItems(assets.filter { !this@VerticalCardGridFragment.assets.contains(it) })
         this@VerticalCardGridFragment.assets += sortedItems
         assetsStillToRender.addAll(sortedItems)
