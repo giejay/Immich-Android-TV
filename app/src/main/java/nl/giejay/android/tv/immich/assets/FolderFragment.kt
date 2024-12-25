@@ -67,7 +67,7 @@ class FolderFragment : VerticalCardGridFragment<Folder>() {
             a.path,
             "",
             a.path,
-            null,
+            if(a.path == "..") "folder_up" else "folder",
             null,
             false
         )

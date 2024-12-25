@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.card
 import android.app.Activity
 import android.content.Context
 import android.view.ContextThemeWrapper
+import android.widget.ImageView
 import androidx.leanback.widget.ImageCardView
 import com.bumptech.glide.Glide
 import nl.giejay.android.tv.immich.R
@@ -38,9 +39,18 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
 
     open fun loadImage(card: ICard, cardView: ImageCardView) {
         card.thumbnailUrl?.let {
-            Glide.with(context)
-                .asBitmap()
-                .load(it)
+            if(it.startsWith("http")){
+                Glide.with(context)
+                    .asBitmap()
+                    .centerInside()
+                    .load(it)
+                    .into(cardView.mainImageView!!)
+            } else {
+                cardView.mainImageView!!.scaleType = ImageView.ScaleType.CENTER_INSIDE
+                val resourceId = context.resources.getIdentifier(it, "drawable",
+                    context.packageName);
+                cardView.mainImageView!!.setImageResource(resourceId)
+            }
 //                .addListener(object : RequestListener<Bitmap> {
 //                    override fun onLoadFailed(
 //                        e: GlideException?,
@@ -63,7 +73,6 @@ open class CardPresenter(context: Context, style: Int = R.style.DefaultCardTheme
 //                    }
 //
 //                })
-                .into(cardView.mainImageView!!)
         }
     }
 
