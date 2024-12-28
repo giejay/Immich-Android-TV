@@ -73,7 +73,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     }
 
     override fun getBackgroundPicture(it: Asset): String? {
-        return ApiUtil.getFileUrl(it.id)
+        return ApiUtil.getFileUrl(it.id, "IMAGE")
     }
 
     override fun createCard(a: Asset): Card {

@@ -38,7 +38,7 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 fun Asset.toSliderItem(): SliderItem {
     return SliderItem(
         this.id,
-        ApiUtil.getFileUrl(this.id),
+        ApiUtil.getFileUrl(this.id, this.type),
         SliderItemType.valueOf(this.type.uppercase()),
         if (this.exifInfo?.description?.isNotBlank() == true) this.exifInfo.description else this.exifInfo?.country,
         this.albumName ?: this.exifInfo?.city,

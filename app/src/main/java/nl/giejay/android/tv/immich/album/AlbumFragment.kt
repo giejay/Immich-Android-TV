@@ -72,7 +72,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
     }
 
     override fun getBackgroundPicture(it: Album): String? {
-        return ApiUtil.getFileUrl(it.albumThumbnailAssetId)
+        return ApiUtil.getFileUrl(it.albumThumbnailAssetId, "IMAGE")
     }
 
     override fun openPopUpMenu() {
@@ -87,7 +87,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
             a.description,
             a.id,
             ApiUtil.getThumbnailUrl(a.albumThumbnailAssetId, "thumbnail"),
-            ApiUtil.getFileUrl(a.albumThumbnailAssetId),
+            ApiUtil.getFileUrl(a.albumThumbnailAssetId, "IMAGE"),
             if (selectionMode) PreferenceManager.getScreenSaverAlbums().contains(a.id) else false
         )
     }

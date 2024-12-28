@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.api.util
 
 import arrow.core.Either
+import com.zeuskartik.mediaslider.SliderItemType
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.hostName
 import retrofit2.HttpException
 import retrofit2.Response
@@ -15,9 +16,18 @@ object ApiUtil {
         }
     }
 
-    fun getFileUrl(assetId: String?): String? {
-        return assetId?.let {
-            "${hostName().lowercase()}/api/assets/${it}/original"
+    fun getFileUrl(assetId: String?, type: String): String? {
+        return when (type) {
+            "VIDEO" ->
+                assetId?.let {
+                    "${hostName().lowercase()}/api/assets/${it}/video/playback"
+                }
+
+            else ->
+                assetId?.let {
+                    "${hostName().lowercase()}/api/assets/${it}/original"
+                }
+
         }
     }
 
