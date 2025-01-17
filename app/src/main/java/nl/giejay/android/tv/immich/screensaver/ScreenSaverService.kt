@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.screensaver
 
 import android.annotation.SuppressLint
 import android.service.dreams.DreamService
+import android.view.KeyEvent
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import arrow.core.Either
@@ -20,11 +21,12 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.LoadMore
+import nl.giejay.mediaslider.MediaSliderListener
 import nl.giejay.mediaslider.MediaSliderView
 import timber.log.Timber
 import java.util.EnumSet
 
-class ScreenSaverService : DreamService() {
+class ScreenSaverService : DreamService(),MediaSliderListener {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
     private lateinit var mediaSliderView: MediaSliderView
@@ -192,7 +194,7 @@ class ScreenSaverService : DreamService() {
                     maxCutOffHeight = PreferenceManager.maxCutOffHeight(),
                     maxCutOffWidth = PreferenceManager.maxCutOffWidth(),
                     transformation = PreferenceManager.glideTransformation(),
-                    debugEnabled = PreferenceManager.debugEnabled()
+                    debugEnabled = PreferenceManager.debugEnabled(),
                 )
             )
             mediaSliderView.toggleSlideshow(false)
@@ -205,6 +207,14 @@ class ScreenSaverService : DreamService() {
 
     companion object ScreenSaverService {
         private const val PAGE_COUNT = 100
+    }
+
+    override fun onButtonPressed(event: KeyEvent): Boolean {
+        if(event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER){
+            finish()
+            return true
+        }
+        return false
     }
 }
 
