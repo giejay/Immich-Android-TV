@@ -65,7 +65,8 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) {
             val response = service.listAssetsFromAlbum(albumId)
             val album = response.body()
-            val assets = album!!.assets.map { Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName, it.people) }
+            val assets = album!!.assets.filter(excludeByTag())
+                .map { Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName, it.people, it.tags) }
             val updatedAlbum = AlbumDetails(album.albumName, album.description, album.id, album.albumThumbnailAssetId, assets)
             Response.success(updatedAlbum)
         }
@@ -73,7 +74,7 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun recentAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
-        return apiClient!!.listAssets(page, pageCount, true, "desc",
+        return listAssets(page, pageCount, true, "desc",
             includeVideos = includeVideos, fromDate = now.minusMonths(PreferenceManager.recentAssetsMonthsBack().toLong()), endDate = now)
             .map { it.shuffled() }
     }
@@ -81,7 +82,7 @@ class ApiClient(private val config: ApiClientConfig) {
     suspend fun similarAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
         val map: List<Either<String, List<Asset>>> = (0 until PreferenceManager.similarAssetsYearsBack()).toList().map {
-            apiClient!!.listAssets(page,
+            listAssets(page,
                 pageCount,
                 true,
                 "desc",
@@ -110,11 +111,15 @@ class ApiClient(private val config: ApiClientConfig) {
             personIds,
             endDate?.format(dateTimeFormatter),
             fromDate?.format(dateTimeFormatter))
-        return if (random) {
+        return (if (random) {
             executeAPICall(200) { service.randomAssets(searchRequest) }
         } else {
             executeAPICall(200) { service.listAssets(searchRequest) }.map { res -> res.assets.items }
-        }
+        }).map { it.filter(excludeByTag()) }
+    }
+
+    private fun excludeByTag() = { asset: Asset ->
+        asset.tags?.none { t -> t.name == "exclude_immich_tv" } ?: true
     }
 
     suspend fun listBuckets(albumId: String, order: PhotosOrder): Either<String, List<Bucket>> {
@@ -145,13 +150,13 @@ class ApiClient(private val config: ApiClientConfig) {
         return parent
     }
 
-    private fun createFolders(paths: List<String>, currentParent: Folder): Folder{
-        if(paths.isEmpty()){
+    private fun createFolders(paths: List<String>, currentParent: Folder): Folder {
+        if (paths.isEmpty()) {
             return currentParent
         }
         val createdChild = Folder(paths.first(), mutableListOf(), currentParent)
         val alreadyOwnedChild = currentParent.hasPath(paths.first())
-        if(alreadyOwnedChild != null){
+        if (alreadyOwnedChild != null) {
             return createFolders(paths.drop(1), alreadyOwnedChild)
         }
         currentParent.children.add(createdChild)
@@ -161,7 +166,7 @@ class ApiClient(private val config: ApiClientConfig) {
     suspend fun listAssetsForFolder(folder: String): Either<String, List<Asset>> {
         return executeAPICall(200) {
             service.getAssetsForPath(folder)
-        }
+        }.map { it.filter(excludeByTag()) }
     }
 }
 

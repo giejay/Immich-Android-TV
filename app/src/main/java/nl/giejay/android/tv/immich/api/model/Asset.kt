@@ -12,6 +12,13 @@ data class AssetExifInfo(
     val dateTimeOriginal: Date?
 )
 
+data class Tag(
+    val color: String?,
+    val createdAt: Date,
+    val name: String,
+    val value: String
+)
+
 data class Asset(
     val id: String,
     val type: String,
@@ -19,5 +26,6 @@ data class Asset(
     val exifInfo: AssetExifInfo?,
     val fileModifiedAt: Date?,
     val albumName: String?,
-    val people: List<Person>?
+    val people: List<Person>?,
+    val tags: List<Tag>?
 )
