@@ -41,7 +41,7 @@ fun Asset.toSliderItem(): SliderItem {
         ApiUtil.getFileUrl(this.id, this.type),
         SliderItemType.valueOf(this.type.uppercase()),
         if (this.exifInfo?.description?.isNotBlank() == true) this.exifInfo.description else this.exifInfo?.country,
-        this.albumName ?: this.exifInfo?.city,
+        (this.albumName?.let { if(this.exifInfo?.city != null) "$it - " else it } ?: "") + (this.exifInfo?.city ?: ""),
         this.exifInfo?.dateTimeOriginal,
         ApiUtil.getThumbnailUrl(this.id, "preview")
     )

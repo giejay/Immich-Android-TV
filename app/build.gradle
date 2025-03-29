@@ -31,7 +31,7 @@ android {
         minSdkVersion 24
         targetSdkVersion 35
         versionCode 80
-        versionName "2.6.0"
+        versionName "2.6.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
