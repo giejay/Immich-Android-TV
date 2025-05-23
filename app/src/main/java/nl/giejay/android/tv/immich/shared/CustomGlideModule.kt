@@ -9,11 +9,11 @@ import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
 import nl.giejay.android.tv.immich.api.ApiClientFactory
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.KEY_API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.KEY_DEBUG_MODE
-import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.KEY_DISABLE_SSL_VERIFICATION
 import java.io.InputStream
 
 
@@ -25,11 +25,11 @@ class CustomGlideModule : AppGlideModule() {
         LiveSharedPreferences(PreferenceManager.sharedPreference)
 
     init {
-        prefs.listenMultiple(listOf(KEY_API_KEY, KEY_DEBUG_MODE, KEY_DISABLE_SSL_VERIFICATION))
+        prefs.listenMultiple(listOf(API_KEY.key(), KEY_DEBUG_MODE, DISABLE_SSL_VERIFICATION.key()))
             .observeForever {
                 reloadFactory(
-                    it[KEY_API_KEY] as String,
-                    it[KEY_DISABLE_SSL_VERIFICATION] == true
+                    it[API_KEY.key()] as String,
+                    it[DISABLE_SSL_VERIFICATION.key()] == true
                 )
             }
     }

@@ -11,7 +11,10 @@ import nl.giejay.android.tv.immich.BuildConfig
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import timber.log.Timber
 
 
@@ -76,12 +79,12 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
             val hostName = requireContext().resources.getString(R.string.host_name)
             val navController = findNavController()
             if (SELECTED_OPTION == ACTION_DEMO) {
-                PreferenceManager.saveScreenSaverAlbums(emptySet())
-                PreferenceManager.saveApiKey(requireContext().resources.getString(R.string.api_key))
-                PreferenceManager.saveHostName(hostName)
+                PreferenceManager.save(SCREENSAVER_ALBUMS, emptySet())
+                PreferenceManager.save(API_KEY, requireContext().resources.getString(R.string.api_key))
+                PreferenceManager.save(HOST_NAME, hostName)
                 navController.navigate(AuthFragmentStep1Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())
             } else if (SELECTED_OPTION == ACTION_SIGN_IN) {
-                if (PreferenceManager.hostName() == hostName) {
+                if (PreferenceManager.get(HOST_NAME) == hostName) {
                     // remove demo instance api key
                     PreferenceManager.removeApiSettings()
                 }

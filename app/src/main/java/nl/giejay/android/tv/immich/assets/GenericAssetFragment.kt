@@ -8,6 +8,7 @@ import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.LoadMore
@@ -42,7 +43,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
         if (PreferenceManager.sliderShowDate()) {
             displayOptions += DisplayOptions.DATE
         }
-        if (PreferenceManager.enableSlideAnimation()) {
+        if (PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE)) {
             displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
         }
 

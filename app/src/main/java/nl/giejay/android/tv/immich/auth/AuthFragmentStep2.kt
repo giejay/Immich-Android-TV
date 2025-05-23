@@ -14,7 +14,11 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addEditableAction
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
+import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import timber.log.Timber
 
 
@@ -46,14 +50,14 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
             actions,
             ACTION_NAME,
             "Hostname",
-            PreferenceManager.hostName(),
+            PreferenceManager.get(HOST_NAME),
             InputType.TYPE_CLASS_TEXT
         )
         addEditableAction(
             actions,
             ACTION_API_KEY,
             "API Key",
-            PreferenceManager.apiKey(),
+            PreferenceManager.get(API_KEY),
             InputType.TYPE_CLASS_TEXT
         )
         addCheckedAction(
@@ -61,7 +65,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
             ACTION_CHECK_CERTS,
             "Disable SSL verification",
             "Only use this when you have issues with self signed certificates!",
-            PreferenceManager.disableSslVerification()
+            PreferenceManager.get(DISABLE_SSL_VERIFICATION)
         )
         addCheckedAction(
             actions,
@@ -86,10 +90,10 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
         Timber.i("Clicked on ${action.title} in step 2, entry valid: ${entry.isValid()}")
         if (action.id == ACTION_CONTINUE) {
             if (entry.isValid()) {
-                PreferenceManager.saveScreenSaverAlbums(emptySet())
-                PreferenceManager.saveApiKey(entry.apiKey)
-                PreferenceManager.saveHostName(entry.hostName)
-                PreferenceManager.saveSslVerification(findActionById(ACTION_CHECK_CERTS)?.isChecked == true)
+                PreferenceManager.save(SCREENSAVER_ALBUMS, emptySet())
+                PreferenceManager.save(API_KEY, entry.apiKey)
+                PreferenceManager.save(HOST_NAME, entry.hostName)
+                PreferenceManager.save(DISABLE_SSL_VERIFICATION, findActionById(ACTION_CHECK_CERTS)?.isChecked == true)
                 PreferenceManager.saveDebugMode(findActionById(ACTION_DEBUG_MODE)?.isChecked == true)
                 val navControl = findNavController()
                 navControl.navigate(AuthFragmentStep2Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())

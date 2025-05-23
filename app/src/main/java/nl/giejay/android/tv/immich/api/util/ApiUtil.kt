@@ -1,8 +1,8 @@
 package nl.giejay.android.tv.immich.api.util
 
 import arrow.core.Either
-import com.zeuskartik.mediaslider.SliderItemType
-import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.hostName
+import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import retrofit2.HttpException
 import retrofit2.Response
 import timber.log.Timber
@@ -14,6 +14,10 @@ object ApiUtil {
         return assetId?.let {
             "${hostName().lowercase()}/api/assets/${it}/thumbnail?size=${format}"
         }
+    }
+
+    private fun hostName(): String {
+        return PreferenceManager.get(HOST_NAME)
     }
 
     fun getFileUrl(assetId: String?, type: String): String? {

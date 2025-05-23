@@ -18,7 +18,21 @@ import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
+import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INCLUDE_VIDEOS
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INTERVAL
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_PLAY_SOUND
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_ALBUM_NAME
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_CLOCK
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DATE
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DESCRIPTION
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_MEDIA_COUNT
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.LoadMore
 import nl.giejay.mediaslider.MediaSliderListener
@@ -41,11 +55,11 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
             finish()
             return
         }
-        val apiKey = PreferenceManager.apiKey()
+        val apiKey = PreferenceManager.get(API_KEY)
         val config = ApiClientConfig(
-            PreferenceManager.hostName(),
+            PreferenceManager.get(HOST_NAME),
             apiKey,
-            PreferenceManager.disableSslVerification(),
+            PreferenceManager.get(DISABLE_SSL_VERIFICATION),
             PreferenceManager.debugEnabled()
         )
         apiClient = ApiClient.getClient(config)
@@ -57,16 +71,16 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
         setContentView(mediaSliderView)
         isInteractive = true
         ioScope.launch {
-            if (ScreenSaverType.ALBUMS == PreferenceManager.getScreenSaverType()) {
-                loadImagesFromAlbums(PreferenceManager.getScreenSaverAlbums())
+            if (ScreenSaverType.ALBUMS == PreferenceManager.get(SCREENSAVER_TYPE)) {
+                loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS))
             } else {
-                loadRandomImages(PreferenceManager.getScreenSaverType()).invoke().map {
+                loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().map {
                     setInitialAssets(it, false, suspend {
                         if (doneLoading) {
                             emptyList()
                         } else {
                             currentPage += 1
-                            val newAssets = loadRandomImages(PreferenceManager.getScreenSaverType()).invoke().getOrElse { emptyList() }
+                            val newAssets = loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().getOrElse { emptyList() }
                             doneLoading = newAssets.size < PAGE_COUNT
                             newAssets.toSliderItems(false, PreferenceManager.sliderMergePortraitPhotos())
                         }
@@ -85,20 +99,20 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
         when (screenSaverType) {
             ScreenSaverType.RECENT -> {
                 return suspend {
-                    apiClient.recentAssets(currentPage, PAGE_COUNT, PreferenceManager.screensaverIncludeVideos())
+                    apiClient.recentAssets(currentPage, PAGE_COUNT, PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS))
                 }
             }
 
             ScreenSaverType.SIMILAR_TIME_PERIOD -> {
                 return suspend {
-                    apiClient.similarAssets(currentPage, PAGE_COUNT, PreferenceManager.screensaverIncludeVideos())
+                    apiClient.similarAssets(currentPage, PAGE_COUNT, PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS))
                 }
             }
 
             else -> {
                 // random
                 return suspend {
-                    apiClient.listAssets(currentPage, PAGE_COUNT, true, includeVideos = PreferenceManager.screensaverIncludeVideos())
+                    apiClient.listAssets(currentPage, PAGE_COUNT, true, includeVideos = PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS))
                 }
             }
         }
@@ -112,7 +126,7 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
                 // todo use timeline buckets to speed up loading
                 apiClient.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
                     val randomAssets = getAssets(listOf(album))
-                    setInitialAssets(randomAssets, PreferenceManager.screensaverShowMediaCount(), null)
+                    setInitialAssets(randomAssets, PreferenceManager.get(SCREENSAVER_SHOW_MEDIA_COUNT), null)
                     if (shuffledAlbums.size > 1) {
                         // load next ones
                         val nextAlbums = shuffledAlbums.drop(1).map { apiClient.listAssetsFromAlbum(it) }
@@ -149,7 +163,7 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
         return albums.flatMap { filterVideos(it.assets) }
     }
 
-    private fun filterVideos(assets: List<Asset>) = if (PreferenceManager.screensaverIncludeVideos()) {
+    private fun filterVideos(assets: List<Asset>) = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) {
         assets.shuffled()
     } else {
         assets.filter { it.type != "VIDEO" }.shuffled()
@@ -162,22 +176,22 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
                 Toast.LENGTH_LONG).show()
         } else {
             val displayOptions: EnumSet<DisplayOptions> = EnumSet.of(DisplayOptions.GRADIENT_OVERLAY);
-            if (PreferenceManager.screensaverShowClock()) {
+            if (PreferenceManager.get(SCREENSAVER_SHOW_CLOCK)) {
                 displayOptions += DisplayOptions.CLOCK
             }
-            if (PreferenceManager.screensaverShowDescription()) {
+            if (PreferenceManager.get(SCREENSAVER_SHOW_DESCRIPTION)) {
                 displayOptions += DisplayOptions.TITLE
             }
-            if (PreferenceManager.screensaverShowAlbumName()) {
+            if (PreferenceManager.get(SCREENSAVER_SHOW_ALBUM_NAME)) {
                 displayOptions += DisplayOptions.SUBTITLE
             }
-            if (PreferenceManager.screensaverShowDate()) {
+            if (PreferenceManager.get(SCREENSAVER_SHOW_DATE)) {
                 displayOptions += DisplayOptions.DATE
             }
             if (showMediaCount) {
                 displayOptions += DisplayOptions.MEDIA_COUNT
             }
-            if (PreferenceManager.enableSlideAnimation()) {
+            if (PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE)) {
                 displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
             }
 
@@ -185,9 +199,9 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
                 MediaSliderConfiguration(
                     displayOptions,
                     0,
-                    PreferenceManager.screensaverInterval(),
+                    PreferenceManager.get(SCREENSAVER_INTERVAL),
                     PreferenceManager.sliderOnlyUseThumbnails(),
-                    PreferenceManager.screensaverVideoSound(),
+                    PreferenceManager.get(SCREENSAVER_PLAY_SOUND),
                     assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()),
                     loadMore,
                     animationSpeedMillis = PreferenceManager.animationSpeedMillis(),

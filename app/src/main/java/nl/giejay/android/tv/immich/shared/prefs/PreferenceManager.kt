@@ -4,31 +4,84 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.sharedPreference
 import nl.giejay.mediaslider.transformations.GlideTransformations
 import okhttp3.HttpUrl
+import kotlin.reflect.KClass
+
+sealed class PrefI<T>(val defaultValue: T) {
+    open fun key() = javaClass.simpleName.lowercase()
+    abstract fun save(sharedPreferences: SharedPreferences, value: T)
+    open fun parse(any: Any?): T {
+        return any as T
+    }
+}
+
+sealed class BooleanPref(defaultValue: Boolean) : PrefI<Boolean>(defaultValue) {
+    override fun save(sharedPreferences: SharedPreferences, value: Boolean) {
+        sharedPreference.edit().putBoolean(key(), value).apply()
+    }
+}
+
+sealed class StringPref(defaultValue: String) : PrefI<String>(defaultValue) {
+    override fun save(sharedPreferences: SharedPreferences, value: String) {
+        sharedPreference.edit().putString(key(), value).apply()
+    }
+}
+
+sealed class StringSetPref(defaultValue: Set<String>) : PrefI<Set<String>>(defaultValue) {
+    override fun save(sharedPreferences: SharedPreferences, value: Set<String>) {
+        sharedPreference.edit().putStringSet(key(), value).apply()
+    }
+}
+
+sealed class IntPref(defaultValue: Int) : PrefI<Int>(defaultValue) {
+    override fun save(sharedPreferences: SharedPreferences, value: Int) {
+        sharedPreference.edit().putInt(key(), value).apply()
+    }
+}
+
+data object SCREENSAVER_INTERVAL : IntPref(3)
+
+data object DISABLE_SSL_VERIFICATION : BooleanPref(false) {
+    override fun key() = "disableSSLVerification"
+}
+
+data object API_KEY : StringPref("") {
+    override fun key() = "apiKey"
+}
+
+data object HOST_NAME : StringPref("") {
+    override fun key() = "hostName"
+
+    override fun save(sharedPreferences: SharedPreferences, value: String) {
+        super.save(sharedPreferences, value.replace(Regex("/$"), ""))
+    }
+}
+data object SCREENSAVER_SHOW_MEDIA_COUNT : BooleanPref(true)
+data object SCREENSAVER_SHOW_DESCRIPTION : BooleanPref(true)
+data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true)
+data object SCREENSAVER_SHOW_DATE : BooleanPref(true)
+data object SCREENSAVER_SHOW_CLOCK : BooleanPref(true)
+data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true)
+data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf())
+data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false)
+data object SCREENSAVER_PLAY_SOUND : BooleanPref(false)
+data object SCREENSAVER_TYPE : PrefI<ScreenSaverType>(ScreenSaverType.RECENT) {
+    override fun save(sharedPreferences: SharedPreferences, value: ScreenSaverType) {
+        sharedPreferences.edit().putString(key(), value.toString()).apply()
+    }
+
+    override fun parse(any: Any?): ScreenSaverType {
+        return ScreenSaverType.valueOf(any as String)
+    }
+}
+
 
 object PreferenceManager {
     lateinit var sharedPreference: SharedPreferences
     private lateinit var liveSharedPreferences: LiveSharedPreferences
     private val liveContext: MutableMap<String, Any> = mutableMapOf()
-
-    // host settings
-    val KEY_HOST_NAME = "hostName"
-    val KEY_API_KEY = "apiKey"
-    val KEY_DISABLE_SSL_VERIFICATION = "disableSSLVerification"
-
-    // screensaver settings
-    private val KEY_SCREENSAVER_INTERVAL = "screensaver_interval"
-    private val KEY_SCREENSAVER_SHOW_MEDIA_COUNT = "screensaver_show_media_count"
-    private val KEY_SCREENSAVER_SHOW_DESCRIPTION = "screensaver_show_description"
-    private val KEY_SCREENSAVER_SHOW_ALBUM_NAME = "screensaver_show_album_name"
-    private val KEY_SCREENSAVER_SHOW_DATE = "screensaver_show_date"
-    private val KEY_SCREENSAVER_SHOW_CLOCK = "screensaver_show_clock"
-    private val KEY_SCREENSAVER_ANIMATE_ASSET_SLIDE = "screensaver_animate_asset_slide"
-    private val KEY_SCREENSAVER_ALBUMS = "screensaver_albums"
-    private val KEY_SCREENSAVER_INCLUDE_VIDEOS = "screensaver_include_videos"
-    private val KEY_SCREENSAVER_VIDEO_SOUND = "screensaver_play_sound"
-    private val KEY_SCREENSAVER_TYPE = "screensaver_type"
 
     // slider/view settings
     private val KEY_SLIDER_INTERVAL = "slider_interval"
@@ -59,25 +112,11 @@ object PreferenceManager {
     private val KEY_USER_ID = "user_id"
 
     private val propsToWatch = mapOf(
-        KEY_HOST_NAME to "",
-        KEY_API_KEY to "",
-        KEY_DISABLE_SSL_VERIFICATION to false,
-        KEY_SCREENSAVER_INTERVAL to "3",
         KEY_SLIDER_INTERVAL to "3",
         KEY_SLIDER_SHOW_DESCRIPTION to true,
         KEY_SLIDER_SHOW_MEDIA_COUNT to true,
         KEY_SLIDER_SHOW_DATE to false,
         KEY_SLIDER_SHOW_CITY to true,
-        KEY_SCREENSAVER_SHOW_DESCRIPTION to true,
-        KEY_SCREENSAVER_SHOW_ALBUM_NAME to true,
-        KEY_SCREENSAVER_SHOW_DATE to true,
-        KEY_SCREENSAVER_SHOW_CLOCK to true,
-        KEY_SCREENSAVER_ANIMATE_ASSET_SLIDE to true,
-        KEY_SCREENSAVER_SHOW_MEDIA_COUNT to true,
-        KEY_SCREENSAVER_ALBUMS to mutableSetOf<String>(),
-        KEY_SCREENSAVER_INCLUDE_VIDEOS to false,
-        KEY_SCREENSAVER_VIDEO_SOUND to false,
-        KEY_SCREENSAVER_TYPE to ScreenSaverType.RECENT.toString(),
         KEY_DEBUG_MODE to false,
         KEY_ALBUMS_SORTING to AlbumsOrder.LAST_UPDATED.toString(),
         KEY_PHOTOS_SORTING to PhotosOrder.OLDEST_NEWEST.toString(),
@@ -95,9 +134,23 @@ object PreferenceManager {
         KEY_MAX_CUT_OFF_WIDTH to 20
     )
 
+    fun <T: Any> subclasses(clazz: KClass<T>): List<KClass<out T>>{
+        return clazz.sealedSubclasses.flatMap {  subclasses(it) + it }
+    }
+
     fun init(context: Context) {
         sharedPreference = PreferenceManager.getDefaultSharedPreferences(context)
         liveSharedPreferences = LiveSharedPreferences(sharedPreference)
+        subclasses(PrefI::class).filter { it.objectInstance != null }.forEach { pref ->
+            val prefInstance = pref.objectInstance!!
+            liveSharedPreferences.subscribe(prefInstance.key(), prefInstance.defaultValue as Any) { value ->
+                if (prefInstance.defaultValue is Int) {
+                    liveContext[prefInstance.key()] = value.toString().toInt()
+                } else {
+                    liveContext[prefInstance.key()] = value
+                }
+            }
+        }
         propsToWatch.forEach { (key, defaultValue) ->
             liveSharedPreferences.subscribe(key, defaultValue) { value ->
                 liveContext[key] = value
@@ -105,48 +158,14 @@ object PreferenceManager {
         }
     }
 
-    fun apiKey(): String {
-        return liveContext[KEY_API_KEY] as String
+    @Suppress("UNCHECKED_CAST")
+    fun <T> get(key: PrefI<T>): T {
+        return key.parse(liveContext[key.key()])
     }
 
-    fun hostName(): String {
-        return liveContext[KEY_HOST_NAME] as String
-    }
-
-    fun screensaverInterval(): Int {
-        return liveContext[KEY_SCREENSAVER_INTERVAL]?.toString()?.toInt() ?: 3
-    }
-
-    fun screensaverShowDescription(): Boolean {
-        return liveContext[KEY_SCREENSAVER_SHOW_DESCRIPTION] as Boolean
-    }
-
-    fun screensaverShowMediaCount(): Boolean {
-        return liveContext[KEY_SCREENSAVER_SHOW_MEDIA_COUNT] as Boolean
-    }
-
-    fun screensaverShowAlbumName(): Boolean {
-        return liveContext[KEY_SCREENSAVER_SHOW_ALBUM_NAME] as Boolean
-    }
-
-    fun screensaverShowDate(): Boolean {
-        return liveContext[KEY_SCREENSAVER_SHOW_DATE] as Boolean
-    }
-
-    fun screensaverShowClock(): Boolean {
-        return liveContext[KEY_SCREENSAVER_SHOW_CLOCK] as Boolean
-    }
-
-    fun enableSlideAnimation(): Boolean {
-        return liveContext[KEY_SCREENSAVER_ANIMATE_ASSET_SLIDE] as Boolean
-    }
-
-    fun screensaverIncludeVideos(): Boolean {
-        return liveContext[KEY_SCREENSAVER_INCLUDE_VIDEOS] as Boolean
-    }
-
-    fun screensaverVideoSound(): Boolean {
-        return liveContext[KEY_SCREENSAVER_VIDEO_SOUND] as Boolean
+    fun <T> save(key: PrefI<T>, value: T) {
+        liveContext[key.key()] = value as Any
+        key.save(sharedPreference, value)
     }
 
     fun sliderInterval(): Int {
@@ -173,20 +192,8 @@ object PreferenceManager {
         return liveContext[KEY_SLIDER_MERGE_PORTRAIT_PHOTOS] as Boolean
     }
 
-    fun saveApiKey(value: String) {
-        saveString(KEY_API_KEY, value)
-    }
-
-    fun saveHostName(value: String) {
-        saveString(KEY_HOST_NAME, value.replace(Regex("/$"), ""))
-    }
-
-    fun saveSslVerification(value: Boolean) {
-        saveBoolean(KEY_DISABLE_SSL_VERIFICATION, value)
-    }
-
     fun isLoggedId(): Boolean {
-        return isValid(hostName(), apiKey())
+        return isValid(get(HOST_NAME), get(API_KEY))
     }
 
     fun isValid(hostName: String?, apiKey: String?): Boolean {
@@ -194,25 +201,8 @@ object PreferenceManager {
     }
 
     fun removeApiSettings() {
-        saveString(KEY_HOST_NAME, "")
-        saveString(KEY_API_KEY, "")
-    }
-
-    fun getScreenSaverAlbums(): Set<String> {
-        return liveContext[KEY_SCREENSAVER_ALBUMS] as Set<String>
-    }
-
-    fun getScreenSaverType(): ScreenSaverType {
-        return ScreenSaverType.valueOf(liveContext[KEY_SCREENSAVER_TYPE] as String)
-    }
-
-    fun saveScreenSaverAlbums(strings: Set<String>) {
-        saveStringSet(KEY_SCREENSAVER_ALBUMS, strings)
-        liveContext[KEY_SCREENSAVER_ALBUMS] = strings
-    }
-
-    fun disableSslVerification(): Boolean {
-        return liveContext[KEY_DISABLE_SSL_VERIFICATION] as Boolean
+        HOST_NAME.save(sharedPreference, "")
+        API_KEY.save(sharedPreference, "")
     }
 
     fun debugEnabled(): Boolean {
@@ -312,7 +302,7 @@ object PreferenceManager {
     }
 
     fun toggleHiddenHomeItem(name: String) {
-        if(hiddenHomeItems().contains(name)){
+        if (hiddenHomeItems().contains(name)) {
             removeHiddenHomeItem(name)
         } else {
             addHiddenHomeItem(name)

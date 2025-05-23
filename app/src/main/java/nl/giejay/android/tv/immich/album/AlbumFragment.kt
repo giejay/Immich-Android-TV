@@ -12,6 +12,7 @@ import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import timber.log.Timber
 
 class AlbumFragment : VerticalCardGridFragment<Album>() {
@@ -28,7 +29,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
     override fun sortItems(items: List<Album>): List<Album> {
         return if (selectionMode) {
             val sorted = items.sortedWith(PreferenceManager.albumsOrder().sort)
-            val selected = sorted.filter { PreferenceManager.getScreenSaverAlbums().contains(it.id) }
+            val selected = sorted.filter { PreferenceManager.get(SCREENSAVER_ALBUMS).contains(it.id) }
             val unselected = sorted.filter { !selected.contains(it) }
             selected + unselected
         } else {
@@ -54,11 +55,11 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
     }
 
     override fun onItemSelected(card: Card, indexOf: Int) {
-        val currentAlbums = PreferenceManager.getScreenSaverAlbums()
+        val currentAlbums = PreferenceManager.get(SCREENSAVER_ALBUMS)
         if (card.selected) {
-            PreferenceManager.saveScreenSaverAlbums(currentAlbums + card.id)
+            PreferenceManager.save(SCREENSAVER_ALBUMS, currentAlbums + card.id)
         } else {
-            PreferenceManager.saveScreenSaverAlbums(currentAlbums - card.id)
+            PreferenceManager.save(SCREENSAVER_ALBUMS, currentAlbums - card.id)
         }
     }
 
@@ -88,7 +89,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
             a.id,
             ApiUtil.getThumbnailUrl(a.albumThumbnailAssetId, "thumbnail"),
             ApiUtil.getFileUrl(a.albumThumbnailAssetId, "IMAGE"),
-            if (selectionMode) PreferenceManager.getScreenSaverAlbums().contains(a.id) else false
+            if (selectionMode) PreferenceManager.get(SCREENSAVER_ALBUMS).contains(a.id) else false
         )
     }
 }

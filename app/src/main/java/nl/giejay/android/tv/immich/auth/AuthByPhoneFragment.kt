@@ -44,6 +44,8 @@ import nl.giejay.android.tv.immich.api.AuthenticationClient
 import nl.giejay.android.tv.immich.api.service.DeviceConfigResponse
 import nl.giejay.android.tv.immich.api.service.ImmichAuthenticationService
 import nl.giejay.android.tv.immich.databinding.FragmentAuthByPhoneBinding
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -110,8 +112,8 @@ class AuthByPhoneFragment : Fragment() {
                     config.configuration.apiKey
                 )
             ) {
-                PreferenceManager.saveApiKey(config.configuration.apiKey)
-                PreferenceManager.saveHostName(config.configuration.host)
+                PreferenceManager.save(API_KEY, config.configuration.apiKey)
+                PreferenceManager.save(HOST_NAME, config.configuration.host)
                 findNavController.navigate(
                     AuthByPhoneFragmentDirections.actionGlobalHomeFragment(),
                     NavOptions.Builder().setPopUpTo(R.id.authFragment, true)

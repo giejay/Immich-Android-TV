@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
 import com.zeuskartik.mediaslider.MediaSliderFragment
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
@@ -27,7 +28,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
 
         setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
-                .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.apiKey()))
+                .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.get(API_KEY)))
         )
 
         loadMediaSliderView(bundle.config)

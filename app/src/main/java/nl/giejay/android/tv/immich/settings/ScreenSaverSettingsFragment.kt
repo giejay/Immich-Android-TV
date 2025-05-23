@@ -12,6 +12,8 @@ import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 
 
 class ScreenSaverSettingsFragment : SettingsScreenFragment() {
@@ -30,7 +32,7 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
     override fun handlePreferenceClick(preference: Preference?): Boolean {
         when (preference?.key) {
             "screensaver_set" -> {
-                if (PreferenceManager.getScreenSaverType() == ScreenSaverType.ALBUMS && PreferenceManager.getScreenSaverAlbums().isEmpty()) {
+                if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS && PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()) {
                     Toast.makeText(
                         requireContext(),
                         "Please set your albums to show first!",
