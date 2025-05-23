@@ -15,6 +15,7 @@ import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addEditableAction
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -72,7 +73,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
             ACTION_DEBUG_MODE,
             "Debug mode",
             "Enable this if you are experiencing issues with getting the Immich data.",
-            PreferenceManager.debugEnabled()
+            PreferenceManager.get(DEBUG_MODE)
         )
     }
 
@@ -94,7 +95,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
                 PreferenceManager.save(API_KEY, entry.apiKey)
                 PreferenceManager.save(HOST_NAME, entry.hostName)
                 PreferenceManager.save(DISABLE_SSL_VERIFICATION, findActionById(ACTION_CHECK_CERTS)?.isChecked == true)
-                PreferenceManager.saveDebugMode(findActionById(ACTION_DEBUG_MODE)?.isChecked == true)
+                PreferenceManager.save(DEBUG_MODE, findActionById(ACTION_DEBUG_MODE)?.isChecked == true)
                 val navControl = findNavController()
                 navControl.navigate(AuthFragmentStep2Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())
             } else if (entry.hostName.isEmpty()) {

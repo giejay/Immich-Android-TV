@@ -25,7 +25,9 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.android.gms.cast.tv.CastReceiverContext
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.USER_ID
 import timber.log.Timber
 import java.util.UUID
 
@@ -55,10 +57,10 @@ class ImmichApplication : Application() {
          */
         CastReceiverContext.initInstance((this))
         ProcessLifecycleOwner.get().lifecycle.addObserver(AppLifecycleObserver(ProcessLifecycleOwner.get().lifecycle))
-        var userId = PreferenceManager.getUserId()
+        var userId = PreferenceManager.get(USER_ID)
         if(userId.isBlank()){
             userId = UUID.randomUUID().toString()
-            PreferenceManager.setUserId(userId)
+            PreferenceManager.save(USER_ID, userId)
         }
         FirebaseCrashlytics.getInstance().setUserId(userId)
     }
@@ -88,7 +90,7 @@ class ImmichApplication : Application() {
         val instance = FirebaseCrashlytics.getInstance()
 
         override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
-            if (priority == Log.VERBOSE || (priority == Log.DEBUG && !PreferenceManager.debugEnabled())) {
+            if (priority == Log.VERBOSE || (priority == Log.DEBUG && !PreferenceManager.get(DEBUG_MODE))) {
                 return
             }
             instance.log("$tag : $message")

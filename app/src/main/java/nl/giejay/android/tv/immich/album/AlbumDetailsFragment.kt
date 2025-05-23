@@ -12,6 +12,7 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.LivePreference
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
+import nl.giejay.android.tv.immich.shared.prefs.PHOTOS_SORTING
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 
 
@@ -27,7 +28,7 @@ class AlbumDetailsFragment : GenericAssetFragment() {
         albumName = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumName
         super.onCreate(savedInstanceState)
         livePref = LiveSharedPreferences(PreferenceManager.sharedPreference)
-            .getString(PreferenceManager.keyAlbumsSorting(albumId), PreferenceManager.photosOrder().toString(), true)
+            .getString(PreferenceManager.keyAlbumsSorting(albumId), PHOTOS_SORTING.defaultValue.toString(), true)
         currentSort = livePref.value
     }
 

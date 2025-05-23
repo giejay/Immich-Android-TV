@@ -10,10 +10,10 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
 import nl.giejay.android.tv.immich.api.ApiClientFactory
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.KEY_DEBUG_MODE
 import java.io.InputStream
 
 
@@ -25,7 +25,7 @@ class CustomGlideModule : AppGlideModule() {
         LiveSharedPreferences(PreferenceManager.sharedPreference)
 
     init {
-        prefs.listenMultiple(listOf(API_KEY.key(), KEY_DEBUG_MODE, DISABLE_SSL_VERIFICATION.key()))
+        prefs.listenMultiple(listOf(API_KEY.key(), DEBUG_MODE.key(), DISABLE_SSL_VERIFICATION.key()))
             .observeForever {
                 reloadFactory(
                     it[API_KEY.key()] as String,

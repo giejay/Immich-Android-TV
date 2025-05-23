@@ -5,6 +5,7 @@ import android.view.View
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.USER_ID
 
 
 class DebugSettingsFragment : SettingsScreenFragment() {
@@ -20,7 +21,7 @@ class DebugInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFragment(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        findPreference<Preference>("user_id")?.summary = PreferenceManager.getUserId()
+        findPreference<Preference>("user_id")?.summary = PreferenceManager.get(USER_ID)
     }
 
     override fun handlePreferenceClick(preference: Preference?): Boolean {

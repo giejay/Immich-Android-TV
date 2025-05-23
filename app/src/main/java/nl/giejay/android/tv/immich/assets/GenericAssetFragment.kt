@@ -7,8 +7,19 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_CITY
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DATE
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DESCRIPTION
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.LoadMore
@@ -31,25 +42,25 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
 
     override fun onItemClicked(card: Card) {
         val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java)
-        if (PreferenceManager.sliderShowDescription()) {
+        if (PreferenceManager.get(SLIDER_SHOW_DESCRIPTION)) {
             displayOptions += DisplayOptions.TITLE
         }
-        if (PreferenceManager.sliderShowCity()) {
+        if (PreferenceManager.get(SLIDER_SHOW_CITY)) {
             displayOptions += DisplayOptions.SUBTITLE
         }
         if (showMediaCount()) {
             displayOptions += DisplayOptions.MEDIA_COUNT
         }
-        if (PreferenceManager.sliderShowDate()) {
+        if (PreferenceManager.get(SLIDER_SHOW_DATE)) {
             displayOptions += DisplayOptions.DATE
         }
         if (PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE)) {
             displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
         }
 
-        val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.sliderMergePortraitPhotos())
+        val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
         val loadMore: LoadMore = suspend {
-            loadAssets().toSliderItems(true, PreferenceManager.sliderMergePortraitPhotos())
+            loadAssets().toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
         }
 
         findNavController().navigate(
@@ -57,17 +68,17 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                 MediaSliderConfiguration(
                     displayOptions,
                     toSliderItems.indexOfFirst { it.ids().contains(card.id) },
-                    PreferenceManager.sliderInterval(),
-                    PreferenceManager.sliderOnlyUseThumbnails(),
+                    PreferenceManager.get(SLIDER_INTERVAL),
+                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
                     isVideoSoundEnable = true,
                     toSliderItems,
                     loadMore,
                     { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) },
-                    animationSpeedMillis = PreferenceManager.animationSpeedMillis(),
-                    maxCutOffHeight = PreferenceManager.maxCutOffHeight(),
-                    maxCutOffWidth = PreferenceManager.maxCutOffWidth(),
-                    transformation = PreferenceManager.glideTransformation(),
-                    debugEnabled = PreferenceManager.debugEnabled()
+                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
+                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+                    debugEnabled = PreferenceManager.get(DEBUG_MODE)
                 )
             )
         )

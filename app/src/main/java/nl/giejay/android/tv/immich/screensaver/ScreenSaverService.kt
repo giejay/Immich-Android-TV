@@ -19,6 +19,7 @@ import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -33,6 +34,11 @@ import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DATE
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DESCRIPTION
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_MEDIA_COUNT
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.LoadMore
 import nl.giejay.mediaslider.MediaSliderListener
@@ -60,7 +66,7 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
             PreferenceManager.get(HOST_NAME),
             apiKey,
             PreferenceManager.get(DISABLE_SSL_VERIFICATION),
-            PreferenceManager.debugEnabled()
+            PreferenceManager.get(DEBUG_MODE)
         )
         apiClient = ApiClient.getClient(config)
         mediaSliderView = MediaSliderView(this)
@@ -82,7 +88,7 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
                             currentPage += 1
                             val newAssets = loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().getOrElse { emptyList() }
                             doneLoading = newAssets.size < PAGE_COUNT
-                            newAssets.toSliderItems(false, PreferenceManager.sliderMergePortraitPhotos())
+                            newAssets.toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
                         }
                     })
                 }
@@ -200,15 +206,15 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
                     displayOptions,
                     0,
                     PreferenceManager.get(SCREENSAVER_INTERVAL),
-                    PreferenceManager.sliderOnlyUseThumbnails(),
+                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
                     PreferenceManager.get(SCREENSAVER_PLAY_SOUND),
-                    assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()),
+                    assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)),
                     loadMore,
-                    animationSpeedMillis = PreferenceManager.animationSpeedMillis(),
-                    maxCutOffHeight = PreferenceManager.maxCutOffHeight(),
-                    maxCutOffWidth = PreferenceManager.maxCutOffWidth(),
-                    transformation = PreferenceManager.glideTransformation(),
-                    debugEnabled = PreferenceManager.debugEnabled(),
+                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
                 )
             )
             mediaSliderView.toggleSlideshow(false)
@@ -216,7 +222,7 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
     }
 
     private suspend fun setAllAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
-        mediaSliderView.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.sliderMergePortraitPhotos()))
+        mediaSliderView.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)))
     }
 
     companion object ScreenSaverService {

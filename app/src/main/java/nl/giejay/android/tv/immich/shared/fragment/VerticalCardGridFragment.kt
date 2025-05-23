@@ -32,6 +32,7 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.card.CardPresenterSelector
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -87,7 +88,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                         PreferenceManager.get(HOST_NAME),
                         PreferenceManager.get(API_KEY),
                         PreferenceManager.get(DISABLE_SSL_VERIFICATION),
-                        PreferenceManager.debugEnabled()
+                        PreferenceManager.get(DEBUG_MODE)
                     )
                 )
         } else {

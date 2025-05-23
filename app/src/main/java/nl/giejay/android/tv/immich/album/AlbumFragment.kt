@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.prefs.ALBUMS_SORTING
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
@@ -20,7 +21,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         LiveSharedPreferences(PreferenceManager.sharedPreference)
-            .getString(PreferenceManager.KEY_ALBUMS_SORTING, PreferenceManager.albumsOrder().toString(), true)
+            .getString(PreferenceManager.get(ALBUMS_SORTING).toString(), ALBUMS_SORTING.defaultValue.toString(), true)
             .observe(viewLifecycleOwner) { _ ->
                 resortItems()
             }
@@ -28,15 +29,15 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
 
     override fun sortItems(items: List<Album>): List<Album> {
         return if (selectionMode) {
-            val sorted = items.sortedWith(PreferenceManager.albumsOrder().sort)
+            val sorted = items.sortedWith(PreferenceManager.get(ALBUMS_SORTING).sort)
             val selected = sorted.filter { PreferenceManager.get(SCREENSAVER_ALBUMS).contains(it.id) }
             val unselected = sorted.filter { !selected.contains(it) }
             selected + unselected
         } else {
             try {
-                items.sortedWith(PreferenceManager.albumsOrder().sort)
+                items.sortedWith(PreferenceManager.get(ALBUMS_SORTING).sort)
             } catch (e: IllegalArgumentException){
-                Timber.e(e, "Could not sort using sorting order: " + PreferenceManager.albumsOrder().toString())
+                Timber.e(e, "Could not sort using sorting order: " + PreferenceManager.get(ALBUMS_SORTING).toString())
                 items
             }
         }
