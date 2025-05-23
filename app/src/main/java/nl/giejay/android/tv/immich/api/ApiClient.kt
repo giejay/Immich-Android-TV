@@ -14,6 +14,7 @@ import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
 import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -129,9 +130,17 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     suspend fun getAssetsForBucket(albumId: String, bucket: String, order: PhotosOrder): Either<String, List<Asset>> {
-        return executeAPICall(200) {
-            service.getBucket(albumId = albumId, timeBucket = bucket, order = if (order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+        val response = executeAPICall(200) {
+            service.getBucketV2(albumId = albumId, timeBucket = bucket, order = if (order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+        }.map {
+            it.id.pmap { t -> service.getAsset(t).body()!! }.toList()
         }
+        if(response.isLeft()){
+            return executeAPICall(200) {
+                service.getBucket(albumId = albumId, timeBucket = bucket, order = if (order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
+            }
+        }
+        return response
     }
 
     suspend fun listFolders(): Either<String, Folder> {
