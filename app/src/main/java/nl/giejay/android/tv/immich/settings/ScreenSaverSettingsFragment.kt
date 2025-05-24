@@ -12,6 +12,7 @@ import androidx.preference.Preference
 import arrow.core.Either
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
+import nl.giejay.android.tv.immich.shared.prefs.ActionPref
 import nl.giejay.android.tv.immich.shared.prefs.PrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
@@ -32,29 +33,38 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
     }
 
     override fun handlePreferenceClick(preference: Preference?): Boolean {
-        when (preference?.key) {
-            "screensaver_set" -> {
-                if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS && PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Please set your albums to show first!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else {
-                    startScreenSaverIntent()
+        getLayout().map {
+            when (val pref = it.findByKey(preference!!.key)) {
+                is ActionPref -> {
+                    pref.onClick(requireContext(), findNavController())
                 }
-                return true
+                else -> {
+
+                }
             }
-
-
-            "screensaver_set_albums" ->
-                findNavController().navigate(
-                    ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
-                        true
-                    )
-                )
-
         }
+//        when (preference?.key) {
+//            "screensaver_set" -> {
+//                if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS && PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()) {
+//                    Toast.makeText(
+//                        requireContext(),
+//                        "Please set your albums to show first!",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+//                } else {
+//                    startScreenSaverIntent()
+//                }
+//                return true
+//            }
+//
+//            "screensaver_set_albums" ->
+//                findNavController().navigate(
+//                    ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
+//                        true
+//                    )
+//                )
+//
+//        }
         return false
     }
 

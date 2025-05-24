@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.shared.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.navigation.NavController
 import androidx.preference.CheckBoxPreference
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
@@ -10,8 +11,16 @@ import androidx.preference.SeekBarPreference
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager.sharedPreference
 
 
-data class PrefScreen(val name: String, val children: List<PrefCategory>)
-data class PrefCategory(val title: String, val children: List<Pref<*, *>>)
+data class PrefScreen(val name: String, val children: List<PrefCategory>){
+    fun findByKey(key: String): Pref<*, *> {
+        return children.map { it.findByKey(key) }.filterNotNull().first()
+    }
+}
+data class PrefCategory(val title: String, val children: List<Pref<*, *>>){
+    fun findByKey(key: String): Pref<*, *>? {
+        return children.find { it.key() == key }
+    }
+}
 
 sealed class Pref<T, PREF : Preference>(val defaultValue: T, val title: String, val summary: String) {
     open fun key() = javaClass.simpleName.lowercase()
@@ -32,7 +41,7 @@ sealed class Pref<T, PREF : Preference>(val defaultValue: T, val title: String, 
     abstract fun createPref(context: Context): PREF
 }
 
-sealed class ActionPref(title: String, summary: String, onClick: (Context) -> Unit): Pref<String, Preference>("", title, summary){
+sealed class ActionPref(title: String, summary: String, val onClick: (Context, NavController) -> Unit): Pref<String, Preference>("", title, summary){
     override fun save(sharedPreferences: SharedPreferences, value: String) {
 
     }

@@ -27,7 +27,10 @@ data object HOST_NAME : StringPref("", "Server URL", "Server URL") {
 
 // screensaver
 data object SCREENSAVER_SET: ActionPref("Set Immich as screensaver", "Set Immich as screensaver", {
-    // todo
+    context, navController -> {}
+})
+data object SCREENSAVER_SET_ALBUMS: ActionPref("Set albums to show in screensaver", "Set albums to show in screensaver", {
+        context, navController -> {}
 })
 
 data object SCREENSAVER_INTERVAL : IntListPref(3, "Interval", "Interval of the screensaver", R.array.interval_titles, R.array.interval_values)
