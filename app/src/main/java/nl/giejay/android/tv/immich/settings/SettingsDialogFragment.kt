@@ -16,11 +16,9 @@ import nl.giejay.android.tv.immich.R
 
 class SettingsDialogFragment : DialogFragment() {
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater,
+                              container: ViewGroup?,
+                              savedInstanceState: Bundle?): View {
         val args = SettingsDialogFragmentArgs.fromBundle(requireArguments())
         val settingsType = args.settingsType
         val fragment = when (settingsType) {

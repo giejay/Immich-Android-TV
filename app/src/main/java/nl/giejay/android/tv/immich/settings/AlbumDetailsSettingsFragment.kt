@@ -4,7 +4,11 @@ import android.os.Bundle
 import android.view.View
 import androidx.preference.ListPreference
 import androidx.preference.Preference
+import androidx.preference.PreferenceScreen
+import arrow.core.Either
+import arrow.core.left
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.shared.prefs.PrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 
 class AlbumDetailsSettingsFragment : SettingsScreenFragment(){
@@ -29,8 +33,8 @@ class AlbumDetailsInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFr
         }
     }
 
-    override fun getFragmentLayout(): Int {
-        return R.xml.preferences_album_details
+    override fun getLayout(): Either<Int, PrefScreen> {
+        return Either.Left(R.xml.preferences_album_details)
     }
 
     override fun handlePreferenceClick(preference: Preference?): Boolean {

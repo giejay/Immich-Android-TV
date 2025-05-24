@@ -25,6 +25,7 @@ import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
 import nl.giejay.android.tv.immich.people.PeopleFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
 import nl.giejay.android.tv.immich.shared.fragment.GridFragment
+import nl.giejay.android.tv.immich.shared.prefs.HIDDEN_HOME_ITEMS
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
 
@@ -59,11 +60,11 @@ class HomeFragment : BrowseSupportFragment() {
                     mRowsAdapter.addAll(0, rows.filter { it.headerItem.name != "Settings" })
                 } else {
                     mRowsAdapter.clear();
-                    mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.isHomeItemHidden(it.headerItem.name) })
+                    mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.itemInStringSet(it.headerItem.name, HIDDEN_HOME_ITEMS) })
                 }
                 adapter.notifyItemRangeChanged(0, mRowsAdapter.size());
             } else if(immichRowPresenter.editMode){
-                PreferenceManager.toggleHiddenHomeItem(row.headerItem.name)
+                PreferenceManager.toggleStringSetItem(row.headerItem.name, HIDDEN_HOME_ITEMS)
                 adapter.notifyItemRangeChanged(0, mRowsAdapter.size())
             } else{
                 if (!this.isInHeadersTransition) {
@@ -101,7 +102,7 @@ class HomeFragment : BrowseSupportFragment() {
         mRowsAdapter = ArrayObjectAdapter(ListRowPresenter())
         adapter = mRowsAdapter
         rows = createRows()
-        mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.isHomeItemHidden(it.headerItem.name) })
+        mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.itemInStringSet(it.headerItem.name, HIDDEN_HOME_ITEMS) })
     }
 
     private fun createRows(): List<PageRow> {

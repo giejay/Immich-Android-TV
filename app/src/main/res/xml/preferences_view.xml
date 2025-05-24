@@ -92,11 +92,6 @@
             android:entryValues="@array/interval_values"
             android:dialogTitle="Interval"/>
 
-        <CheckBoxPreference
-            android:key="screensaver_animate_asset_slide"
-            android:title="Slide the new asset in"
-            android:defaultValue="true"
-            android:summary="Slide the new asset in when transitioning"/>
 
         <ListPreference
             android:key="slider_animation_speed"
@@ -162,6 +157,12 @@
             android:defaultValue="5"
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/recent_assets_months_back"/>
+
+        <CheckBoxPreference
+            android:key="load_background_image"
+            android:title="Load selected item as background"
+            android:defaultValue="true"
+            android:summary="Load the currently selected image/album as the background"/>
 
     </PreferenceCategory>
 

@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.leanback.widget.Presenter
 import androidx.leanback.widget.Row
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.shared.prefs.HIDDEN_HOME_ITEMS
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 
 class ImmichRowPresenter : Presenter() {
@@ -29,7 +30,7 @@ class ImmichRowPresenter : Presenter() {
                 vh.tvTitle.text = "Done"
             } else {
                 vh.icon.visibility = View.VISIBLE
-                if (PreferenceManager.isHomeItemHidden(headerItem?.name)) {
+                if (PreferenceManager.itemInStringSet(headerItem?.name, HIDDEN_HOME_ITEMS)) {
                     vh.icon.setImageResource(R.drawable.closed_eye)
                 } else {
                     vh.icon.setImageResource(R.drawable.visible_eye)

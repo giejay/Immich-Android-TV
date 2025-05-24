@@ -35,6 +35,7 @@ import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
+import nl.giejay.android.tv.immich.shared.prefs.LOAD_BACKGROUND_IMAGE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.Debouncer
 import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
@@ -268,11 +269,13 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     private fun loadBackgroundDebounced(backgroundUrl: String?, onLoadFailed: () -> Unit){
-        Debouncer.debounce("background", { loadBackground(backgroundUrl, onLoadFailed)}, 1, TimeUnit.SECONDS)
+        if(PreferenceManager.get(LOAD_BACKGROUND_IMAGE)){
+            Debouncer.debounce("background", { loadBackground(backgroundUrl, onLoadFailed)}, 1, TimeUnit.SECONDS)
+        }
     }
 
     private fun loadBackground(backgroundUrl: String?, onLoadFailed: () -> Unit) {
-        if (!isAdded) {
+        if (!isAdded || !PreferenceManager.get(LOAD_BACKGROUND_IMAGE)) {
             return
         }
         if (backgroundUrl.isNullOrEmpty()) {

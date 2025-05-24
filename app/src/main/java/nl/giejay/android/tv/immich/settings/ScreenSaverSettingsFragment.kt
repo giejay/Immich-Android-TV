@@ -9,8 +9,10 @@ import android.view.View
 import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
+import arrow.core.Either
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
+import nl.giejay.android.tv.immich.shared.prefs.PrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
@@ -25,8 +27,8 @@ class ScreenSaverSettingsFragment : SettingsScreenFragment() {
 class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFragment() {
     private val SCREENSAVER_SETTINGS = "android.settings.DREAM_SETTINGS"
 
-    override fun getFragmentLayout(): Int {
-        return R.xml.preferences_screensaver
+    override fun getLayout(): Either<Int, PrefScreen> {
+        return Either.Left(R.xml.preferences_screensaver)
     }
 
     override fun handlePreferenceClick(preference: Preference?): Boolean {
@@ -73,7 +75,7 @@ class ScreenSaverInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFra
             );
             if (!intentAvailable(intent) || Build.MANUFACTURER == "Google") {
                 val layoutInflater =
-                    requireActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                    requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
                 val inflate: View = layoutInflater.inflate(R.layout.screensaver_adb, null)
                 val dialog = AlertDialog.Builder(requireContext())
                     .setTitle("Not possible to set screensaver")

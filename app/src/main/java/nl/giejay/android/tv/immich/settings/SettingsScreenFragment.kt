@@ -4,10 +4,15 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.leanback.preference.LeanbackPreferenceFragmentCompat
 import androidx.leanback.preference.LeanbackSettingsFragmentCompat
+import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
+import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceDialogFragmentCompat
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceScreen
+import arrow.core.Either
+import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.shared.prefs.PrefScreen
 
 
 abstract class SettingsScreenFragment : LeanbackSettingsFragmentCompat() {
@@ -53,13 +58,28 @@ abstract class SettingsScreenFragment : LeanbackSettingsFragmentCompat() {
     }
 
     abstract class SettingsInnerFragment : LeanbackPreferenceFragmentCompat() {
-        abstract fun getFragmentLayout(): Int
+        abstract fun getLayout(): Either<Int, PrefScreen>
 
         abstract fun handlePreferenceClick(preference: Preference?): Boolean
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             // Load the preferences from an XML resource
-            setPreferencesFromResource(getFragmentLayout(), rootKey)
+            setPreferencesFromResource(R.xml.preferences_empty, rootKey)
+            val layout = getLayout()
+            layout.fold(
+                { layoutId -> setPreferencesFromResource(layoutId, rootKey) },
+                { prefScreen ->
+                    preferenceScreen.title = prefScreen.name
+                    prefScreen.children.forEach {
+                        val preferenceCategory = PreferenceCategory(requireContext())
+                        preferenceScreen.addPreference(preferenceCategory)
+                        preferenceCategory.title = it.title
+                        it.children.forEach { child ->
+                            preferenceCategory.addPreference(child.createPreference(requireContext()))
+                        }
+                    }
+                })
         }
+
 
         override fun onPreferenceTreeClick(preference: Preference?): Boolean {
             val handled = handlePreferenceClick(preference!!)

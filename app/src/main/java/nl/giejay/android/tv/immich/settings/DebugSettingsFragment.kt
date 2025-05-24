@@ -3,7 +3,9 @@ package nl.giejay.android.tv.immich.settings
 import android.os.Bundle
 import android.view.View
 import androidx.preference.Preference
+import arrow.core.Either
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.shared.prefs.PrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.USER_ID
 
@@ -15,8 +17,8 @@ class DebugSettingsFragment : SettingsScreenFragment() {
 }
 class DebugInnerSettingsFragment : SettingsScreenFragment.SettingsInnerFragment() {
 
-    override fun getFragmentLayout(): Int {
-        return R.xml.preferences_debug
+    override fun getLayout(): Either<Int, PrefScreen> {
+        return Either.Left(R.xml.preferences_debug)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
