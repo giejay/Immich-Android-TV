@@ -238,7 +238,7 @@
 
     <fragment
         android:id="@+id/viewSettings"
-        android:name="nl.giejay.android.tv.immich.settings.ViewSettingsFragment"
+        android:name="nl.giejay.android.tv.immich.settings.PrefSettingsFragment"
         android:label="ViewSettings"></fragment>
 
     <fragment

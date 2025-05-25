@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.leanback.preference.LeanbackPreferenceFragmentCompat
 import androidx.leanback.preference.LeanbackSettingsFragmentCompat
-import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceDialogFragmentCompat
@@ -68,11 +67,13 @@ abstract class SettingsScreenFragment : LeanbackSettingsFragmentCompat() {
             layout.fold(
                 { layoutId -> setPreferencesFromResource(layoutId, rootKey) },
                 { prefScreen ->
-                    preferenceScreen.title = prefScreen.name
+                    preferenceScreen.title = prefScreen.title
                     prefScreen.children.forEach {
                         val preferenceCategory = PreferenceCategory(requireContext())
                         preferenceScreen.addPreference(preferenceCategory)
-                        preferenceCategory.title = it.title
+                        if(it.title.isNotBlank()){
+                            preferenceCategory.title = it.title
+                        }
                         it.children.forEach { child ->
                             preferenceCategory.addPreference(child.createPreference(requireContext()))
                         }

@@ -11,38 +11,6 @@ object PreferenceManager {
     private lateinit var liveSharedPreferences: LiveSharedPreferences
     private val liveContext: MutableMap<String, Any> = mutableMapOf()
 
-    val viewSettings = PrefScreen("View Settings",
-        listOf(
-            PrefCategory("Ordering",
-                listOf(
-                    ALBUMS_SORTING,
-                    PHOTOS_SORTING,
-                    ALL_ASSETS_SORTING)
-            ),
-            PrefCategory("Slideshow", listOf(SLIDER_ONLY_USE_THUMBNAILS,
-                SLIDER_MERGE_PORTRAIT_PHOTOS, SLIDER_SHOW_DESCRIPTION,
-                SLIDER_SHOW_MEDIA_COUNT, SLIDER_SHOW_DATE, SLIDER_SHOW_CITY,
-                SLIDER_INTERVAL, SLIDER_ANIMATION_SPEED, SLIDER_GLIDE_TRANSFORMATION,
-                SLIDER_MAX_CUT_OFF_WIDTH, SLIDER_MAX_CUT_OFF_HEIGHT)),
-            PrefCategory("Other", listOf(
-                SIMILAR_ASSETS_YEARS_BACK,
-                SIMILAR_ASSETS_PERIOD_DAYS,
-                RECENT_ASSETS_MONTHS_BACK,
-                LOAD_BACKGROUND_IMAGE))
-        )
-    )
-
-    val screenSaverSettings = PrefScreen("Screensaver Settings",
-        listOf(
-            PrefCategory("",
-                listOf(
-                    SCREENSAVER_TYPE,
-                    PHOTOS_SORTING,
-                    ALL_ASSETS_SORTING)
-            )
-        )
-    )
-
     fun <T : Any> subclasses(clazz: KClass<T>): List<KClass<out T>> {
         return clazz.sealedSubclasses.flatMap { subclasses(it) + it }
     }
@@ -91,8 +59,8 @@ object PreferenceManager {
 
     fun getSortingForAlbum(albumId: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(
-            getString(keyAlbumsSorting(albumId), PHOTOS_SORTING.defaultValue.toString()),
-            PHOTOS_SORTING.defaultValue
+            getString(keyAlbumsSorting(albumId), get(PHOTOS_SORTING).toString()),
+            get(PHOTOS_SORTING)
         )
     }
 

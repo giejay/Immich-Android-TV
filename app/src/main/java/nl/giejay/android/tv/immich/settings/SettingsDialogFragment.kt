@@ -22,15 +22,16 @@ class SettingsDialogFragment : DialogFragment() {
         val args = SettingsDialogFragmentArgs.fromBundle(requireArguments())
         val settingsType = args.settingsType
         val fragment = when (settingsType) {
-            "view" -> ViewSettingsFragment()
             "album_details" -> {
                 val frag = AlbumDetailsSettingsFragment()
                 frag.arguments = requireArguments()
                 frag
             }
-
-            "debug" -> DebugSettingsFragment()
-            else -> ScreenSaverSettingsFragment()
+            else -> {
+                val frag = PrefSettingsFragment()
+                frag.arguments = requireArguments()
+                frag
+            }
         }
         val v: View = inflater.inflate(R.layout.fragment_dialog, container, false)
         childFragmentManager.beginTransaction().add(R.id.fragment_settings_holder, fragment)

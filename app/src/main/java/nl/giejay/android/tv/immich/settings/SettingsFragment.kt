@@ -10,6 +10,9 @@ import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.donate.DonateService
+import nl.giejay.android.tv.immich.shared.prefs.DebugPrefScreen
+import nl.giejay.android.tv.immich.shared.prefs.ScreensaverPrefScreen
+import nl.giejay.android.tv.immich.shared.prefs.ViewPrefScreen
 
 
 class SettingsFragment : RowsSupportFragment() {
@@ -57,7 +60,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "icon_view"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalToSettingsDialog("view")
+                                HomeFragmentDirections.actionGlobalToSettingsDialog(ViewPrefScreen.key)
                             )
                         },
                         SettingsCard(
@@ -68,7 +71,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "ic_settings_settings"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalToSettingsDialog("screensaver")
+                                HomeFragmentDirections.actionGlobalToSettingsDialog(ScreensaverPrefScreen.key)
                             )
                         },
                         SettingsCard(
@@ -79,7 +82,7 @@ class SettingsFragment : RowsSupportFragment() {
                             "bug"
                         ) {
                             findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalToSettingsDialog("debug")
+                                HomeFragmentDirections.actionGlobalToSettingsDialog(DebugPrefScreen.key)
                             )
                         },
                         SettingsCard(
