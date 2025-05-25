@@ -55,7 +55,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_SMALL
     protected val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
-    protected val assetsStillToRender: MutableList<ITEM> = mutableListOf()
+    private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
     protected var currentPage: Int = startPage
     private var allPagesLoaded: Boolean = false
     private var currentLoadingJob: Job? = null
@@ -252,7 +252,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             setDataOnMain(assets)
         }
 
-    private suspend fun setDataOnMain(assets: List<ITEM>) = withContext(Dispatchers.Main) {
+    protected suspend fun setDataOnMain(assets: List<ITEM>) = withContext(Dispatchers.Main) {
         setData(assets)
     }
 

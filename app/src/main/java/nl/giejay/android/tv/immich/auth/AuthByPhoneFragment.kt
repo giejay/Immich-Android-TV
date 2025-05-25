@@ -120,7 +120,7 @@ class AuthByPhoneFragment : Fragment() {
                         .build()
                 )
             } else {
-                showErrorMessage("Invalid hostname or API key, try scanning again!")
+                showErrorMessage("Invalid Server URL or API key, try scanning again!")
                 rebootQRFlow(findNavController)
             }
         }

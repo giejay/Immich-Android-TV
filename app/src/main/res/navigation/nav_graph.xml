@@ -42,10 +42,6 @@
         app:destination="@id/albumFragment" />
 
     <action
-        android:id="@+id/action_folder_assets_fragment"
-        app:destination="@id/folderAssetsFragment" />
-
-    <action
         android:id="@+id/action_to_photo_slider"
         app:destination="@id/photoSlider" />
 
@@ -60,15 +56,6 @@
     <!--            android:id="@+id/action_playbackFragment_to_playbackErrorFragment"-->
     <!--            app:destination="@id/playbackErrorFragment" />-->
     <!--    </fragment>-->
-
-    <fragment
-        android:id="@+id/folderAssetsFragment"
-        android:name="nl.giejay.android.tv.immich.assets.FolderAssetsFragment"
-        android:label="FolderAssetsFragment">
-        <argument
-            android:name="path"
-            app:argType="string" />
-    </fragment>
 
     <fragment
         android:id="@+id/albumDetailsFragment"

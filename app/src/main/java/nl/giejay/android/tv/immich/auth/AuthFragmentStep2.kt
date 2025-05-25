@@ -50,7 +50,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
         addEditableAction(
             actions,
             ACTION_NAME,
-            "Hostname",
+            "Server URL (http[s]://...)",
             PreferenceManager.get(HOST_NAME),
             InputType.TYPE_CLASS_TEXT
         )
@@ -99,7 +99,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
                 val navControl = findNavController()
                 navControl.navigate(AuthFragmentStep2Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())
             } else if (entry.hostName.isEmpty()) {
-                Toast.makeText(activity, "Please enter a hostname", Toast.LENGTH_SHORT)
+                Toast.makeText(activity, "Please enter a server URL (https://...)", Toast.LENGTH_SHORT)
                     .show()
             } else if (entry.apiKey.isEmpty()) {
                 Toast.makeText(
@@ -108,7 +108,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
                     Toast.LENGTH_LONG
                 ).show()
             } else {
-                Toast.makeText(activity, "Please enter a valid hostname", Toast.LENGTH_SHORT)
+                Toast.makeText(activity, "Please enter a valid server URL (https://...)", Toast.LENGTH_SHORT)
                     .show()
             }
         }
