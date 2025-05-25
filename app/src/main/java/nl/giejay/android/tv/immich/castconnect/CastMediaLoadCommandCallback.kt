@@ -47,12 +47,12 @@ class CastMediaLoadCommandCallback(
         mediaLoadRequestData: MediaLoadRequestData
     ): Task<MediaLoadRequestData> {
         return Tasks.call {
-            var videoToPlay = Album("", "sdf", "sdf", "", Date(), Date())
-            if (videoToPlay != null) {
-                onLoaded(videoToPlay, mediaLoadRequestData)
-            } else {
-                Timber.w("Failed to convert cast load request to application-specific video")
-            }
+//            var videoToPlay = Album("", "sdf", "sdf", "", Date(), Date())
+//            if (videoToPlay != null) {
+//                onLoaded(videoToPlay, mediaLoadRequestData)
+//            } else {
+//                Timber.w("Failed to convert cast load request to application-specific video")
+//            }
 
             mediaLoadRequestData
         }

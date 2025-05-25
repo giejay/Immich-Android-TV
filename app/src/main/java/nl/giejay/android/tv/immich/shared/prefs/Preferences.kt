@@ -101,14 +101,16 @@ data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true, "Slide the new a
 data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to show in screensaver", "Set albums to show in screensaver")
 data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false, "Include videos", "Include videos in screensaver")
 data object SCREENSAVER_PLAY_SOUND : BooleanPref(false, "Play sound", "Play sound of videos during screensaver")
-data object SCREENSAVER_TYPE : EnumPref<ScreenSaverType>(ScreenSaverType.RECENT,
+data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.RECENT,
     "Screensaver type",
-    "What to show: albums, random, recent etc.",
-    R.array.screensaver_type_values,
-    R.array.screensaver_type_keys) {
+    "What to show: albums, random, recent etc.") {
 
     override fun fromPrefValue(prefValue: String): ScreenSaverType {
         return ScreenSaverType.valueOf(prefValue)
+    }
+
+    override fun getEnumEntries(): Array<ScreenSaverType> {
+        return ScreenSaverType.entries.toTypedArray()
     }
 }
 
@@ -153,29 +155,40 @@ data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTr
 
 
 // other
-data object ALBUMS_SORTING : EnumPref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
+data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
     "Albums",
-    "Set the order in which albums should appear",
-    R.array.albums_order,
-    R.array.albums_order_keys) {
+    "Set the order in which albums should appear") {
+    
     override fun fromPrefValue(prefValue: String): AlbumsOrder {
         return AlbumsOrder.valueOfSafe(prefValue, defaultValue)
     }
-}
 
-data object PHOTOS_SORTING : EnumPref<PhotosOrder>(PhotosOrder.OLDEST_NEWEST,
-    "Photos in albums",
-    "Set the order in which photos should appear inside albums", R.array.photos_order, R.array.photos_order_keys) {
-    override fun fromPrefValue(prefValue: String): PhotosOrder {
-        return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+    override fun getEnumEntries(): Array<AlbumsOrder> {
+        return AlbumsOrder.entries.toTypedArray();
     }
 }
 
-data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String) : EnumPref<PhotosOrder>(PreferenceManager.get(PHOTOS_SORTING),
-    "Photos in album $albumId",
-    "Set the order in which photos should appear inside $albumId", R.array.photos_order, R.array.photos_order_keys) {
+data object PHOTOS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.OLDEST_NEWEST,
+    "Photos in albums",
+    "Set the order in which photos should appear inside albums") {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+    }
+
+    override fun getEnumEntries(): Array<PhotosOrder> {
+        return PhotosOrder.entries.toTypedArray()
+    }
+}
+
+data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String) : EnumByTitlePref<PhotosOrder>(PreferenceManager.get(PHOTOS_SORTING),
+    "Photos in album $albumId",
+    "Set the order in which photos should appear inside $albumId") {
+    override fun fromPrefValue(prefValue: String): PhotosOrder {
+        return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+    }
+
+    override fun getEnumEntries(): Array<PhotosOrder> {
+        return PhotosOrder.entries.toTypedArray()
     }
 
     override fun key(): String {
@@ -183,11 +196,15 @@ data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String) : EnumPref<Pho
     }
 }
 
-data object ALL_ASSETS_SORTING : EnumPref<PhotosOrder>(PhotosOrder.NEWEST_OLDEST,
+data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST_OLDEST,
     "Photos",
-    "Set the order in which photos should appear in the Photos tab", R.array.all_assets_order, R.array.all_assets_order_keys) {
+    "Set the order in which photos should appear in the Photos tab") {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+    }
+
+    override fun getEnumEntries(): Array<PhotosOrder> {
+        return PhotosOrder.entries.toTypedArray()
     }
 }
 
