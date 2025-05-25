@@ -20,11 +20,9 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        LiveSharedPreferences(PreferenceManager.sharedPreference)
-            .getString(PreferenceManager.get(ALBUMS_SORTING).toString(), ALBUMS_SORTING.defaultValue.toString(), true)
-            .observe(viewLifecycleOwner) { _ ->
-                resortItems()
-            }
+        PreferenceManager.subscribe(ALBUMS_SORTING) {
+            resortItems()
+        }
     }
 
     override fun sortItems(items: List<Album>): List<Album> {
@@ -36,7 +34,7 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
         } else {
             try {
                 items.sortedWith(PreferenceManager.get(ALBUMS_SORTING).sort)
-            } catch (e: IllegalArgumentException){
+            } catch (e: IllegalArgumentException) {
                 Timber.e(e, "Could not sort using sorting order: " + PreferenceManager.get(ALBUMS_SORTING).toString())
                 items
             }

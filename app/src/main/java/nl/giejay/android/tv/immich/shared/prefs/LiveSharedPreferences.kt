@@ -23,9 +23,9 @@ class LiveSharedPreferences(private val preferences: SharedPreferences) {
         return LivePreference(updates, preferences, key, defaultValue, ignoreInitialValue)
     }
 
-    fun <T>subscribe(key: String, defaultValue: T, onChange: (T) -> Unit){
-        return LivePreference(updates, preferences, key, defaultValue).observeForever{value ->
-            onChange(value)
+    fun <T, PREFTYPE>subscribeTyped(key: Pref<T, *, PREFTYPE>, onChange: (T) -> Unit){
+        return LivePreference(updates, preferences, key.key(), key.toPrefValue(key.defaultValue)).observeForever{storedPrefType ->
+            onChange(key.fromPrefValue(storedPrefType))
         }
     }
 

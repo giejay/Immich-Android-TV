@@ -13,28 +13,26 @@ import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.LivePreference
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PHOTOS_SORTING
+import nl.giejay.android.tv.immich.shared.prefs.PHOTOS_SORTING_FOR_SPECIFIC_ALBUM
+import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
+import nl.giejay.android.tv.immich.shared.prefs.Pref
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+
 
 
 class AlbumDetailsFragment : GenericAssetFragment() {
     private lateinit var albumId: String
     private lateinit var albumName: String
-    private lateinit var livePref: LivePreference<String>
+    private var currentSort: PhotosOrder? = null
+    private lateinit var prefKey: PHOTOS_SORTING_FOR_SPECIFIC_ALBUM
     private var pageToBucket: Map<Int, String>? = null
-    private var currentSort: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
         albumName = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumName
-        super.onCreate(savedInstanceState)
-        livePref = LiveSharedPreferences(PreferenceManager.sharedPreference)
-            .getString(PreferenceManager.keyAlbumsSorting(albumId), PHOTOS_SORTING.defaultValue.toString(), true)
-        currentSort = livePref.value
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        livePref.observe(viewLifecycleOwner) { state ->
+        prefKey = PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId)
+        currentSort = PhotosOrder.valueOf(PreferenceManager.getString(prefKey.key(), prefKey.defaultValue.toString()))
+        PreferenceManager.subscribe(prefKey) { state ->
             if(state != currentSort){
                 // need to refetch everything because of the timeline buckets approach
                 clearState()
@@ -43,16 +41,17 @@ class AlbumDetailsFragment : GenericAssetFragment() {
                 fetchInitialItems()
             }
         }
+        super.onCreate(savedInstanceState)
     }
 
     override fun sortItems(items: List<Asset>): List<Asset> {
-        return items.sortedWith(PreferenceManager.getSortingForAlbum(albumId).sort)
+        return items.sortedWith(currentSort!!.sort)
     }
 
     override suspend fun loadData(): Either<String, List<Asset>> {
         if (pageToBucket == null) {
             // initial call, fetch the buckets
-            val listBuckets = apiClient.listBuckets(albumId, PreferenceManager.getSortingForAlbum(albumId))
+            val listBuckets = apiClient.listBuckets(albumId, currentSort!!)
             return listBuckets.map { list ->
                 pageToBucket = list.associateBy({ list.indexOf(it) + 1 }, { it.timeBucket })
                 return internalLoadData(emptyList())
@@ -78,7 +77,7 @@ class AlbumDetailsFragment : GenericAssetFragment() {
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
         val bucketForPage = pageToBucket!![page]
         return if (bucketForPage != null) {
-            apiClient.getAssetsForBucket(albumId, bucketForPage, PreferenceManager.getSortingForAlbum(albumId))
+            apiClient.getAssetsForBucket(albumId, bucketForPage, currentSort!!)
         } else {
             Either.Right(emptyList())
         }

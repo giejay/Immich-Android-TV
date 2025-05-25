@@ -10,7 +10,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
-import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragmentDirections
 import nl.giejay.mediaslider.transformations.GlideTransformations
@@ -107,8 +106,9 @@ data object SCREENSAVER_TYPE : EnumPref<ScreenSaverType>(ScreenSaverType.RECENT,
     "What to show: albums, random, recent etc.",
     R.array.screensaver_type_values,
     R.array.screensaver_type_keys) {
-    override fun parse(any: Any?): ScreenSaverType {
-        return ScreenSaverType.valueOf(any.toString())
+
+    override fun fromPrefValue(prefValue: String): ScreenSaverType {
+        return ScreenSaverType.valueOf(prefValue)
     }
 }
 
@@ -146,8 +146,8 @@ data object SLIDER_MAX_CUT_OFF_HEIGHT : IntSeekbarPref(20,
 data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTransformations.CENTER_INSIDE,
     "Photo transformation",
     "Photo transformation", R.array.glide_transformation_labels, R.array.glide_transformation_keys) {
-    override fun parse(any: Any?): GlideTransformations {
-        return GlideTransformations.valueOfSafe(any.toString(), defaultValue)
+    override fun fromPrefValue(prefValue: String): GlideTransformations {
+        return GlideTransformations.valueOfSafe(prefValue, defaultValue)
     }
 }
 
@@ -158,24 +158,36 @@ data object ALBUMS_SORTING : EnumPref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
     "Set the order in which albums should appear",
     R.array.albums_order,
     R.array.albums_order_keys) {
-    override fun parse(any: Any?): AlbumsOrder {
-        return AlbumsOrder.valueOfSafe(any.toString(), defaultValue)
+    override fun fromPrefValue(prefValue: String): AlbumsOrder {
+        return AlbumsOrder.valueOfSafe(prefValue, defaultValue)
     }
 }
 
 data object PHOTOS_SORTING : EnumPref<PhotosOrder>(PhotosOrder.OLDEST_NEWEST,
     "Photos in albums",
     "Set the order in which photos should appear inside albums", R.array.photos_order, R.array.photos_order_keys) {
-    override fun parse(any: Any?): PhotosOrder {
-        return PhotosOrder.valueOfSafe(any.toString(), defaultValue)
+    override fun fromPrefValue(prefValue: String): PhotosOrder {
+        return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+    }
+}
+
+data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String) : EnumPref<PhotosOrder>(PreferenceManager.get(PHOTOS_SORTING),
+    "Photos in album $albumId",
+    "Set the order in which photos should appear inside $albumId", R.array.photos_order, R.array.photos_order_keys) {
+    override fun fromPrefValue(prefValue: String): PhotosOrder {
+        return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+    }
+
+    override fun key(): String {
+        return "photos_sorting_${albumId}"
     }
 }
 
 data object ALL_ASSETS_SORTING : EnumPref<PhotosOrder>(PhotosOrder.NEWEST_OLDEST,
     "Photos",
     "Set the order in which photos should appear in the Photos tab", R.array.all_assets_order, R.array.all_assets_order_keys) {
-    override fun parse(any: Any?): PhotosOrder {
-        return PhotosOrder.valueOfSafe(any.toString(), defaultValue)
+    override fun fromPrefValue(prefValue: String): PhotosOrder {
+        return PhotosOrder.valueOfSafe(prefValue, defaultValue)
     }
 }
 
@@ -240,9 +252,7 @@ data object ScreensaverPrefScreen : PrefScreen("Screensaver Settings", "screensa
                 SCREENSAVER_INCLUDE_VIDEOS,
                 SCREENSAVER_PLAY_SOUND,
                 SCREENSAVER_SHOW_CLOCK,
-                SCREENSAVER_ANIMATE_ASSET_SLIDE,
-                PHOTOS_SORTING,
-                ALL_ASSETS_SORTING)
+                SCREENSAVER_ANIMATE_ASSET_SLIDE)
         )
     )
 )

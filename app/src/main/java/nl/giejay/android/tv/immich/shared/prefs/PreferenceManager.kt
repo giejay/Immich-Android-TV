@@ -9,7 +9,8 @@ import kotlin.reflect.KClass
 object PreferenceManager {
     lateinit var sharedPreference: SharedPreferences
     private lateinit var liveSharedPreferences: LiveSharedPreferences
-    private val liveContext: MutableMap<String, Any> = mutableMapOf()
+    // stores the typed values, not the internal PrefTypes (String, Int)
+    private val liveContext: MutableMap<String, Any?> = mutableMapOf()
 
     fun <T : Any> subclasses(clazz: KClass<T>): List<KClass<out T>> {
         return clazz.sealedSubclasses.flatMap { subclasses(it) + it }
@@ -19,25 +20,25 @@ object PreferenceManager {
         sharedPreference = PreferenceManager.getDefaultSharedPreferences(context)
         liveSharedPreferences = LiveSharedPreferences(sharedPreference)
         subclasses(Pref::class).filter { it.objectInstance != null }.forEach { pref ->
-            val prefInstance = pref.objectInstance!!
-            liveSharedPreferences.subscribe(prefInstance.key(), prefInstance.defaultValue as Any) { value ->
-                if (prefInstance.defaultValue is Int) {
-                    liveContext[prefInstance.key()] = value.toString().toInt()
-                } else {
-                    liveContext[prefInstance.key()] = value
-                }
+            val prefInstance = pref.objectInstance!! as Pref<Any, *, *>
+            liveSharedPreferences.subscribeTyped(prefInstance) { typeValue ->
+                liveContext[prefInstance.key()] = typeValue
             }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> get(key: Pref<T, *>): T {
-        return key.parse(liveContext[key.key()])
+    fun <T> get(key: Pref<T, *, *>): T {
+        return liveContext[key.key()] as T
     }
 
-    fun <T> save(key: Pref<T, *>, value: T) {
-        liveContext[key.key()] = value as Any
+    fun <T, PREFTYPE> save(key: Pref<T, *, PREFTYPE>, value: T) {
+        liveContext[key.key()] = value
         key.save(sharedPreference, value)
+    }
+
+    fun <T> subscribe(key: Pref<T, *, *>, onChange: (T) -> Unit){
+        liveSharedPreferences.subscribeTyped(key, onChange)
     }
 
     fun isLoggedId(): Boolean {
@@ -51,29 +52,6 @@ object PreferenceManager {
     fun removeApiSettings() {
         HOST_NAME.save(sharedPreference, "")
         API_KEY.save(sharedPreference, "")
-    }
-
-    fun saveSortingForAlbum(albumId: String, value: String) {
-        saveString(keyAlbumsSorting(albumId), value)
-    }
-
-    fun getSortingForAlbum(albumId: String): PhotosOrder {
-        return PhotosOrder.valueOfSafe(
-            getString(keyAlbumsSorting(albumId), get(PHOTOS_SORTING).toString()),
-            get(PHOTOS_SORTING)
-        )
-    }
-
-    private fun saveString(key: String, value: String) {
-        sharedPreference.edit().putString(key, value).apply()
-    }
-
-    private fun getString(key: String, default: String): String {
-        return sharedPreference.getString(key, default)!!
-    }
-
-    fun keyAlbumsSorting(albumId: String): String {
-        return "photos_sorting_${albumId}"
     }
 
     private fun removeStringSetItem(item: String, prefKey: StringSetPref) {
@@ -94,5 +72,9 @@ object PreferenceManager {
 
     fun itemInStringSet(name: String?, prefKey: StringSetPref): Boolean {
         return name?.let { get(prefKey).contains(it) } ?: false
+    }
+
+    fun getString(key: String, default: String): String {
+        return sharedPreference.getString(key, default)!!
     }
 }
