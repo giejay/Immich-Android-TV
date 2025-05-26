@@ -8,8 +8,10 @@ import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
+import androidx.navigation.NavController
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragmentDirections
 import nl.giejay.mediaslider.transformations.GlideTransformations
@@ -82,15 +84,6 @@ private fun intentAvailable(intent: Intent, context: Context): Boolean {
     return infos.isNotEmpty()
 }
 
-data object SCREENSAVER_SET_ALBUMS : ActionPref("Set albums to show in screensaver", "Set albums to show in screensaver", { context, navController ->
-    navController.navigate(
-        ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
-            true
-        )
-    )
-    true
-})
-
 data object SCREENSAVER_INTERVAL : IntListPref(3, "Interval", "Interval of the screensaver", R.array.interval_titles, R.array.interval_values)
 data object SCREENSAVER_SHOW_MEDIA_COUNT : BooleanPref(true, "Show media count", "Show the number of total items and currently selected item")
 data object SCREENSAVER_SHOW_DESCRIPTION : BooleanPref(true, "Show description", "Show description of asset in screensaver")
@@ -98,7 +91,17 @@ data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true, "Show album name", "
 data object SCREENSAVER_SHOW_DATE : BooleanPref(true, "Show date", "Show date of asset in screensaver")
 data object SCREENSAVER_SHOW_CLOCK : BooleanPref(true, "Show clock", "Show clock in screensaver")
 data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true, "Slide the new asset in", "Slide the new asset in when transitioning")
-data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to show in screensaver", "Set albums to show in screensaver")
+data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to show in screensaver", "Set albums to show in screensaver"){
+    override fun onClick(context: Context, controller: NavController): Boolean {
+        controller.navigate(
+            ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
+                true,
+                SelectionType.SET_SCREENSAVER.toString()
+            )
+        )
+        return true
+    }
+}
 data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false, "Include videos", "Include videos in screensaver")
 data object SCREENSAVER_PLAY_SOUND : BooleanPref(false, "Play sound", "Play sound of videos during screensaver")
 data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.RECENT,
@@ -212,6 +215,9 @@ data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST
 data object DEBUG_MODE : BooleanPref(false, "Enable debug mode", "Enable this if you are experiencing issues.")
 data object LOAD_BACKGROUND_IMAGE : BooleanPref(true, "Load selected item as background", "Load the currently selected image/album as the background")
 data object HIDDEN_HOME_ITEMS : StringSetPref(emptySet(), "", "")
+data object USER_ID : NotUserEditableStringPref("User ID", "Your user id, needed for debugging")
+
+// seasonal/random/recents
 data object SIMILAR_ASSETS_YEARS_BACK : IntListPref(10,
     "Seasonal photos years back",
     "How many years to go back when selecting seasonal photos",
@@ -230,7 +236,18 @@ data object RECENT_ASSETS_MONTHS_BACK : IntListPref(5,
     R.array.recent_assets_months_back,
     R.array.recent_assets_months_back)
 
-data object USER_ID : NotUserEditableStringPref("User ID", "Your user id, needed for debugging")
+data object EXCLUDE_ASSETS_IN_ALBUM: StringSetPref(emptySet(), "Excluded albums", "Exclude assets in specific albums for random/seasonal view"){
+    override fun onClick(context: Context, controller: NavController): Boolean {
+        controller.navigate(
+            ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
+                true,
+                SelectionType.EXCLUDED_ALBUMS.toString()
+
+            )
+        )
+        return true
+    }
+}
 
 // Building the view
 data object ViewPrefScreen : PrefScreen("View Settings", "view",
@@ -250,6 +267,7 @@ data object ViewPrefScreen : PrefScreen("View Settings", "view",
             SIMILAR_ASSETS_YEARS_BACK,
             SIMILAR_ASSETS_PERIOD_DAYS,
             RECENT_ASSETS_MONTHS_BACK,
+            EXCLUDE_ASSETS_IN_ALBUM,
             LOAD_BACKGROUND_IMAGE))
     )
 )
@@ -261,7 +279,7 @@ data object ScreensaverPrefScreen : PrefScreen("Screensaver Settings", "screensa
                 SCREENSAVER_SET,
                 SCREENSAVER_INTERVAL,
                 SCREENSAVER_TYPE,
-                SCREENSAVER_SET_ALBUMS,
+                SCREENSAVER_ALBUMS,
                 SCREENSAVER_SHOW_DESCRIPTION,
                 SCREENSAVER_SHOW_ALBUM_NAME,
                 SCREENSAVER_SHOW_DATE,

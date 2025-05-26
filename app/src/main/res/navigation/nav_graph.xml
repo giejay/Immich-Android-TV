@@ -172,6 +172,10 @@
         <argument
             android:name="selectionMode"
             app:argType="boolean" />
+
+        <argument
+            android:name="selectionType"
+            app:argType="string" />
     </fragment>
 
     <fragment

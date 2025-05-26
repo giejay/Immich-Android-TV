@@ -148,15 +148,15 @@ sealed class StringPref(defaultValue: String, title: String, summary: String) : 
     }
 }
 
-sealed class StringSetPref(defaultValue: Set<String>, title: String, summary: String) : Pref<Set<String>, ListPreference, Set<String>>(defaultValue,
+sealed class StringSetPref(defaultValue: Set<String>, title: String, summary: String) : Pref<Set<String>, Preference, Set<String>>(defaultValue,
     title,
     summary) {
     override fun save(sharedPreferences: SharedPreferences, value: Set<String>) {
         sharedPreference.edit().putStringSet(key(), value).apply()
     }
 
-    override fun createPref(context: Context): ListPreference {
-        return ListPreference(context)
+    override fun createPref(context: Context): Preference {
+        return Preference(context)
     }
 }
 

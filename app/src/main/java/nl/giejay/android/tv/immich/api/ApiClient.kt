@@ -12,6 +12,7 @@ import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
+import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.RECENT_ASSETS_MONTHS_BACK
@@ -119,7 +120,15 @@ class ApiClient(private val config: ApiClientConfig) {
             executeAPICall(200) { service.randomAssets(searchRequest) }
         } else {
             executeAPICall(200) { service.listAssets(searchRequest) }.map { res -> res.assets.items }
-        }).map { it.filter(excludeByTag()) }
+        }).map { it.filter(excludeByTag()) }.map {
+            val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
+            if(excludedAlbums.isNotEmpty()){
+                val excludedAssets = excludedAlbums.toList().flatMap { albumId -> listAssetsFromAlbum(albumId).getOrNull()?.assets ?: emptyList() }.map { it.id }
+                it.filterNot { asset -> excludedAssets.contains(asset.id) }
+            } else {
+                it
+            }
+        }
     }
 
     private fun excludeByTag() = { asset: Asset ->

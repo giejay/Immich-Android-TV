@@ -11,32 +11,51 @@ import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.ALBUMS_SORTING
-import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
+import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
+import nl.giejay.android.tv.immich.shared.prefs.StringSetPref
+import nl.giejay.android.tv.immich.shared.prefs.ViewPrefScreen
 import timber.log.Timber
 
+enum class SelectionType {
+    SET_SCREENSAVER,
+    EXCLUDED_ALBUMS,
+}
+
 class AlbumFragment : VerticalCardGridFragment<Album>() {
+    private lateinit var selectionTypeKey: StringSetPref
+    private val selectionType: SelectionType
+        get() = arguments?.getString("selectionType")?.let { SelectionType.valueOf(it) } ?: SelectionType.SET_SCREENSAVER
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        selectionTypeKey = when (selectionType) {
+            SelectionType.SET_SCREENSAVER -> {
+                SCREENSAVER_ALBUMS
+            }
+
+            SelectionType.EXCLUDED_ALBUMS -> {
+                EXCLUDE_ASSETS_IN_ALBUM
+            }
+        }
         PreferenceManager.subscribe(ALBUMS_SORTING) {
             resortItems()
         }
     }
 
     override fun sortItems(items: List<Album>): List<Album> {
-        return if (selectionMode) {
+        if(selectionMode) {
             val sorted = items.sortedWith(PreferenceManager.get(ALBUMS_SORTING).sort)
-            val selected = sorted.filter { PreferenceManager.get(SCREENSAVER_ALBUMS).contains(it.id) }
+            val selected = sorted.filter { PreferenceManager.get(selectionTypeKey).contains(it.id) }
             val unselected = sorted.filter { !selected.contains(it) }
-            selected + unselected
+            return selected + unselected
         } else {
             try {
-                items.sortedWith(PreferenceManager.get(ALBUMS_SORTING).sort)
+                return items.sortedWith(PreferenceManager.get(ALBUMS_SORTING).sort)
             } catch (e: IllegalArgumentException) {
                 Timber.e(e, "Could not sort using sorting order: " + PreferenceManager.get(ALBUMS_SORTING).toString())
-                items
+                return items
             }
         }
     }
@@ -54,11 +73,11 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
     }
 
     override fun onItemSelected(card: Card, indexOf: Int) {
-        val currentAlbums = PreferenceManager.get(SCREENSAVER_ALBUMS)
+        val currentAlbums = PreferenceManager.get(selectionTypeKey)
         if (card.selected) {
-            PreferenceManager.save(SCREENSAVER_ALBUMS, currentAlbums + card.id)
+            PreferenceManager.save(selectionTypeKey, currentAlbums + card.id)
         } else {
-            PreferenceManager.save(SCREENSAVER_ALBUMS, currentAlbums - card.id)
+            PreferenceManager.save(selectionTypeKey, currentAlbums - card.id)
         }
     }
 
@@ -88,7 +107,16 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
             a.id,
             ApiUtil.getThumbnailUrl(a.albumThumbnailAssetId, "thumbnail"),
             ApiUtil.getFileUrl(a.albumThumbnailAssetId, "IMAGE"),
-            if (selectionMode) PreferenceManager.get(SCREENSAVER_ALBUMS).contains(a.id) else false
+            if (selectionMode) PreferenceManager.get(selectionTypeKey).contains(a.id) else false
         )
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        if(this.selectionMode){
+            findNavController().navigate(
+                HomeFragmentDirections.actionGlobalToSettingsDialog(ViewPrefScreen.key)
+            )
+        }
     }
 }
