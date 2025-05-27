@@ -45,7 +45,7 @@
         android:usesCleartextTraffic="true"
         android:largeHeap="true"
         android:hardwareAccelerated="true"
-        android:banner="@mipmap/icon_banner"
+        android:banner="@mipmap/icon_banner_v2"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
