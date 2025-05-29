@@ -13,7 +13,6 @@ import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
-import nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragment
 import nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragmentDirections
 import nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragmentDirections
 import nl.giejay.mediaslider.transformations.GlideTransformations
@@ -258,11 +257,19 @@ data object ViewPrefScreen : PrefScreen("View Settings", "view",
                 PHOTOS_SORTING,
                 ALL_ASSETS_SORTING)
         ),
-        PrefCategory("Slideshow", listOf(SLIDER_ONLY_USE_THUMBNAILS,
-            SLIDER_MERGE_PORTRAIT_PHOTOS, SLIDER_SHOW_DESCRIPTION,
-            SLIDER_SHOW_MEDIA_COUNT, SLIDER_SHOW_DATE, SLIDER_SHOW_CITY, METADATA_CUSTOMIZER,
-            SLIDER_INTERVAL, SLIDER_ANIMATION_SPEED, SLIDER_GLIDE_TRANSFORMATION,
-            SLIDER_MAX_CUT_OFF_WIDTH, SLIDER_MAX_CUT_OFF_HEIGHT)),
+        PrefCategory("Slideshow", listOf(
+            SLIDER_ONLY_USE_THUMBNAILS,
+            SLIDER_MERGE_PORTRAIT_PHOTOS,
+            SLIDER_SHOW_DESCRIPTION,
+            SLIDER_SHOW_MEDIA_COUNT,
+            SLIDER_SHOW_DATE,
+            SLIDER_SHOW_CITY,
+//            METADATA_CUSTOMIZER,
+            SLIDER_INTERVAL,
+            SLIDER_ANIMATION_SPEED,
+            SLIDER_GLIDE_TRANSFORMATION,
+            SLIDER_MAX_CUT_OFF_WIDTH,
+            SLIDER_MAX_CUT_OFF_HEIGHT)),
         PrefCategory("Other", listOf(
             SIMILAR_ASSETS_YEARS_BACK,
             SIMILAR_ASSETS_PERIOD_DAYS,
