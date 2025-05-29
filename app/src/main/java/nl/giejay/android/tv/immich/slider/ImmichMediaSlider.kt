@@ -6,7 +6,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
-import com.zeuskartik.mediaslider.MediaSliderFragment
+import nl.giejay.mediaslider.view.MediaSliderFragment
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber

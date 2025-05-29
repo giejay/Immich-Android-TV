@@ -1,7 +1,7 @@
 package nl.giejay.android.tv.immich.assets
 
 import androidx.navigation.fragment.findNavController
-import com.zeuskartik.mediaslider.DisplayOptions
+import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.util.ApiUtil
@@ -22,8 +22,8 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DATE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DESCRIPTION
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
-import nl.giejay.mediaslider.LoadMore
-import nl.giejay.mediaslider.MediaSliderConfiguration
+import nl.giejay.mediaslider.util.LoadMore
+import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import java.util.EnumSet
 
 abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
@@ -41,23 +41,6 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     }
 
     override fun onItemClicked(card: Card) {
-        val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java)
-        if (PreferenceManager.get(SLIDER_SHOW_DESCRIPTION)) {
-            displayOptions += DisplayOptions.TITLE
-        }
-        if (PreferenceManager.get(SLIDER_SHOW_CITY)) {
-            displayOptions += DisplayOptions.SUBTITLE
-        }
-        if (showMediaCount()) {
-            displayOptions += DisplayOptions.MEDIA_COUNT
-        }
-        if (PreferenceManager.get(SLIDER_SHOW_DATE)) {
-            displayOptions += DisplayOptions.DATE
-        }
-        if (PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE)) {
-            displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
-        }
-
         val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
         val loadMore: LoadMore = suspend {
             loadAssets().toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
@@ -66,7 +49,6 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
         findNavController().navigate(
             AlbumDetailsFragmentDirections.actionToPhotoSlider(
                 MediaSliderConfiguration(
-                    displayOptions,
                     toSliderItems.indexOfFirst { it.ids().contains(card.id) },
                     PreferenceManager.get(SLIDER_INTERVAL),
                     PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
@@ -78,7 +60,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                     maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
                     transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                    debugEnabled = PreferenceManager.get(DEBUG_MODE)
+                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
+                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+                    gradiantOverlay = false,
+                    metaDataConfig = PreferenceManager.getViewMetaData()
                 )
             )
         )

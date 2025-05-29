@@ -1,15 +1,20 @@
 package nl.giejay.android.tv.immich.shared.util
 
-import com.zeuskartik.mediaslider.SliderItem
-import com.zeuskartik.mediaslider.SliderItemType
-import com.zeuskartik.mediaslider.SliderItemViewHolder
+import nl.giejay.mediaslider.model.SliderItem
+import nl.giejay.mediaslider.model.SliderItemType
+import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
+import nl.giejay.mediaslider.model.MetaDataType
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<SliderItemViewHolder> {
     if(!mergePortrait){
-        return this.map{SliderItemViewHolder(it.toSliderItem())}
+        return this.map{ SliderItemViewHolder(it.toSliderItem()) }
     }
     if (!keepOrder) {
         val portraitItems = this.filter { it.isPortraitImage() }.sortedWith(compareBy<Asset> { it.people?.firstOrNull()?.id }.thenBy { it.people?.size }.thenBy { it.exifInfo?.city})
@@ -40,11 +45,29 @@ fun Asset.toSliderItem(): SliderItem {
         this.id,
         ApiUtil.getFileUrl(this.id, this.type),
         SliderItemType.valueOf(this.type.uppercase()),
-        if (this.exifInfo?.description?.isNotBlank() == true) this.exifInfo.description else this.exifInfo?.country,
-        (this.albumName?.let { if(this.exifInfo?.city != null) "$it - " else it } ?: "") + (this.exifInfo?.city ?: ""),
-        this.exifInfo?.dateTimeOriginal,
+        mapOf(
+            MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let{formatDate(it)},
+            MetaDataType.CITY to this.exifInfo?.city,
+            MetaDataType.COUNTRY to this.exifInfo?.country,
+            MetaDataType.ALBUM_NAME to this.albumName,
+            MetaDataType.DESCRIPTION to this.exifInfo?.description,
+        ),
         ApiUtil.getThumbnailUrl(this.id, "preview")
     )
+}
+
+private fun formatDate(date: Date): String {
+    val calendar = Calendar.getInstance()
+    calendar.time = date
+    val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val day = calendar[Calendar.DATE]
+    val formatString = when (day) {
+        1, 21, 31 -> "EEEE',' d'ˢᵗ' MMMM yyyy"
+        2, 22 -> "EEEE',' d'ⁿᵈ' MMMM yyyy"
+        3, 23 -> "EEEE',' d'ʳᵈ' MMMM yyyy"
+        else -> "EEEE',' d'ᵗʰ' MMMM yyyy"
+    }
+    return SimpleDateFormat(formatString, locale).format(date)
 }
 
 fun Asset.isPortraitImage(): Boolean {

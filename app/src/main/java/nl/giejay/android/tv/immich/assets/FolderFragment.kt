@@ -3,14 +3,13 @@ package nl.giejay.android.tv.immich.assets
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.getOrElse
-import com.zeuskartik.mediaslider.DisplayOptions
+import nl.giejay.mediaslider.model.MetaDataType
 import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.card.Card
-import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -22,14 +21,9 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_CITY
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DATE
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DESCRIPTION
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_MEDIA_COUNT
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
-import nl.giejay.mediaslider.LoadMore
-import nl.giejay.mediaslider.MediaSliderConfiguration
+import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import java.util.EnumSet
 
 data class Item(val item: Any) {
@@ -88,30 +82,11 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                 updateState(clickedChild!!)
             }
         } else {
-            // asset
-            val displayOptions: EnumSet<DisplayOptions> = EnumSet.noneOf(DisplayOptions::class.java)
-            if (PreferenceManager.get(SLIDER_SHOW_DESCRIPTION)) {
-                displayOptions += DisplayOptions.TITLE
-            }
-            if (PreferenceManager.get(SLIDER_SHOW_CITY)) {
-                displayOptions += DisplayOptions.SUBTITLE
-            }
-            if (PreferenceManager.get(SLIDER_SHOW_MEDIA_COUNT)) {
-                displayOptions += DisplayOptions.MEDIA_COUNT
-            }
-            if (PreferenceManager.get(SLIDER_SHOW_DATE)) {
-                displayOptions += DisplayOptions.DATE
-            }
-            if (PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE)) {
-                displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
-            }
-
             val findAllAssets = this.assets.filter { it.item is Asset }.map { it.item as Asset }
             val sliderItems = findAllAssets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
             findNavController().navigate(
                 AlbumDetailsFragmentDirections.actionToPhotoSlider(
                     MediaSliderConfiguration(
-                        displayOptions,
                         sliderItems.indexOfFirst { it.ids().contains(card.id) },
                         PreferenceManager.get(SLIDER_INTERVAL),
                         PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
@@ -123,7 +98,10 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                         maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                         maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
                         transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                        debugEnabled = PreferenceManager.get(DEBUG_MODE)
+                        debugEnabled = PreferenceManager.get(DEBUG_MODE),
+                        enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+                        gradiantOverlay = false,
+                        metaDataConfig = PreferenceManager.getViewMetaData()
                     )
                 )
             )

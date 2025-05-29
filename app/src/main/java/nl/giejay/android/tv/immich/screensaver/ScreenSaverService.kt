@@ -7,8 +7,8 @@ import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import arrow.core.Either
 import arrow.core.getOrElse
-import com.zeuskartik.mediaslider.DisplayOptions
-import nl.giejay.mediaslider.MediaSliderConfiguration
+import nl.giejay.mediaslider.model.MetaDataType
+import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,13 +40,13 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
-import nl.giejay.mediaslider.LoadMore
-import nl.giejay.mediaslider.MediaSliderListener
-import nl.giejay.mediaslider.MediaSliderView
+import nl.giejay.mediaslider.util.LoadMore
+import nl.giejay.mediaslider.util.MediaSliderListener
+import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
 import java.util.EnumSet
 
-class ScreenSaverService : DreamService(),MediaSliderListener {
+class ScreenSaverService : DreamService(), MediaSliderListener {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
     private lateinit var mediaSliderView: MediaSliderView
@@ -181,29 +181,8 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
                 "No assets to show for screensaver. Please configure a different screensaver type in the settings.",
                 Toast.LENGTH_LONG).show()
         } else {
-            val displayOptions: EnumSet<DisplayOptions> = EnumSet.of(DisplayOptions.GRADIENT_OVERLAY);
-            if (PreferenceManager.get(SCREENSAVER_SHOW_CLOCK)) {
-                displayOptions += DisplayOptions.CLOCK
-            }
-            if (PreferenceManager.get(SCREENSAVER_SHOW_DESCRIPTION)) {
-                displayOptions += DisplayOptions.TITLE
-            }
-            if (PreferenceManager.get(SCREENSAVER_SHOW_ALBUM_NAME)) {
-                displayOptions += DisplayOptions.SUBTITLE
-            }
-            if (PreferenceManager.get(SCREENSAVER_SHOW_DATE)) {
-                displayOptions += DisplayOptions.DATE
-            }
-            if (showMediaCount) {
-                displayOptions += DisplayOptions.MEDIA_COUNT
-            }
-            if (PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE)) {
-                displayOptions += DisplayOptions.ANIMATE_ASST_SLIDE
-            }
-
             mediaSliderView.loadMediaSliderView(
                 MediaSliderConfiguration(
-                    displayOptions,
                     0,
                     PreferenceManager.get(SCREENSAVER_INTERVAL),
                     PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
@@ -215,6 +194,9 @@ class ScreenSaverService : DreamService(),MediaSliderListener {
                     maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                     transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
+                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+                    gradiantOverlay = true,
+                    metaDataConfig = PreferenceManager.getScreenSaverMetaData()
                 )
             )
             mediaSliderView.toggleSlideshow(false)
