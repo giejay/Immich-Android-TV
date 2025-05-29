@@ -13,6 +13,8 @@ import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
+import nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragment
+import nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragmentDirections
 import nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragmentDirections
 import nl.giejay.mediaslider.transformations.GlideTransformations
 
@@ -130,11 +132,9 @@ data object SLIDER_SHOW_MEDIA_COUNT : BooleanPref(true, "Show media count", "Sho
 data object SLIDER_SHOW_DATE : BooleanPref(false, "Show date", "Show date of asset in slideshow")
 data object SLIDER_SHOW_CITY : BooleanPref(true, "Show city", "Show city of asset in slideshow")
 data object METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Configure what to show in viewer/screensaver", { context, navController ->
-    // todo
-    Toast.makeText(context, "Work in progress!", Toast.LENGTH_SHORT).show()
-//    navController.navigate(
-//        HomeFragmentDirections.actionGlobalToSettingsDialog("metadata_customizer")
-//    )
+    navController.navigate(
+        MetaDataCustomizerFragmentDirections.actionToMetadataFragment()
+    )
     true
 })
 

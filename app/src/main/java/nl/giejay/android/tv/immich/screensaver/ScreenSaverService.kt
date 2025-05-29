@@ -212,7 +212,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     }
 
     override fun onButtonPressed(event: KeyEvent): Boolean {
-        if(event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER && !mediaSliderView.isControllerVisible()){
+        if((event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER) && !mediaSliderView.isControllerVisible()){
             finish()
             return true
         }

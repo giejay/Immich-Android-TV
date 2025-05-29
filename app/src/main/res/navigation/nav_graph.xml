@@ -45,6 +45,10 @@
         android:id="@+id/action_to_photo_slider"
         app:destination="@id/photoSlider" />
 
+    <action
+        android:id="@+id/action_to_metadata_fragment"
+        app:destination="@id/metaDataCustomizer" />
+
     <!--    <fragment-->
     <!--        android:id="@+id/playbackFragment"-->
     <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
@@ -72,7 +76,6 @@
             app:destination="@id/albumFragment" />
     </fragment>
 
-
     <fragment
         android:id="@+id/personAssetsFragment"
         android:name="nl.giejay.android.tv.immich.people.PersonAssetsFragment"
@@ -92,6 +95,12 @@
         android:id="@+id/peopleFragment"
         android:name="nl.giejay.android.tv.immich.people.PeopleFragment"
         android:label="PeopleFragment">
+    </fragment>
+
+    <fragment
+        android:id="@+id/metaDataCustomizer"
+        android:name="nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragment"
+        android:label="MetaDataFragment">
     </fragment>
 
     <fragment

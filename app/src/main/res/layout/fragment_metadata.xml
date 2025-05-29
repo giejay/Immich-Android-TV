@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2020 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="nl.giejay.mediaslider.view.MediaSliderFragment">
+
+    <LinearLayout
+        android:id="@+id/meta_data_holder"
+        android:layout_width="wrap_content"
+        android:layout_height="250dp"
+        android:baselineAligned="false"
+        android:layout_marginBottom="70dp"
+        android:elevation="10dp"
+        android:paddingStart="40dp"
+        android:paddingEnd="40dp"
+        android:gravity="bottom"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ListView
+            android:id="@+id/metadata_customizer_view_left"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"></ListView>
+
+        <ListView
+            android:id="@+id/metadata_customizer_view_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"></ListView>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/meta_data_holder_add_buttons"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:baselineAligned="false"
+        android:elevation="10dp"
+        android:gravity="bottom"
+        android:orientation="horizontal"
+        android:paddingBottom="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:paddingStart="40dp"
+            android:layout_height="match_parent">
+            <ImageButton
+                android:layout_width="40dp"
+                android:id="@+id/meta_data_add_left"
+                android:src="@drawable/plus"
+               android:scaleType="centerCrop"
+                android:layout_height="40dp">
+            </ImageButton>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:layout_height="match_parent">
+            <ImageButton
+                android:layout_width="40dp"
+                android:id="@+id/meta_data_save"
+                android:src="@drawable/save"
+                android:scaleType="centerCrop"
+                android:layout_height="40dp">
+            </ImageButton>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:paddingEnd="40dp"
+            android:layout_gravity="end"
+            android:layout_height="match_parent">
+            <ImageButton
+                android:layout_width="40dp"
+                android:id="@+id/meta_data_add_right"
+                android:src="@drawable/plus"
+                android:scaleType="fitCenter"
+                android:layout_height="40dp">
+            </ImageButton>
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
