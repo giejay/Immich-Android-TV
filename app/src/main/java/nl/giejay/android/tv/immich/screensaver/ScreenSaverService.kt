@@ -81,7 +81,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                 loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS))
             } else {
                 loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().map {
-                    setInitialAssets(it, false, suspend {
+                    setInitialAssets(it, suspend {
                         if (doneLoading) {
                             emptyList()
                         } else {
@@ -132,7 +132,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                 // todo use timeline buckets to speed up loading
                 apiClient.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
                     val randomAssets = getAssets(listOf(album))
-                    setInitialAssets(randomAssets, PreferenceManager.get(SCREENSAVER_SHOW_MEDIA_COUNT), null)
+                    setInitialAssets(randomAssets, null)
                     if (shuffledAlbums.size > 1) {
                         // load next ones
                         val nextAlbums = shuffledAlbums.drop(1).map { apiClient.listAssetsFromAlbum(it) }
@@ -175,7 +175,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         assets.filter { it.type != "VIDEO" }.shuffled()
     }
 
-    private suspend fun setInitialAssets(assets: List<Asset>, showMediaCount: Boolean, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
+    private suspend fun setInitialAssets(assets: List<Asset>, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
         if (assets.isEmpty()) {
             Toast.makeText(this@ScreenSaverService,
                 "No assets to show for screensaver. Please configure a different screensaver type in the settings.",

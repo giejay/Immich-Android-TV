@@ -227,13 +227,9 @@
             android:defaultValue=""
             app:argType="string" />
         <argument
-            android:name="index"
-            android:defaultValue="0"
-            app:argType="integer" />
-        <argument
-            android:name="item_count"
-            android:defaultValue="0"
-            app:argType="integer" />
+            android:name="meta_data_items"
+            android:defaultValue=""
+            app:argType="string" />
     </dialog>
 
     <fragment

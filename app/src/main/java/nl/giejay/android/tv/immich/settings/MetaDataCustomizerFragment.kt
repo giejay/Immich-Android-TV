@@ -8,6 +8,7 @@ import android.widget.AdapterView
 import android.widget.ListView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.google.gson.reflect.TypeToken
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -46,7 +47,7 @@ class MetaDataCustomizerFragment : Fragment() {
             HomeFragmentDirections.actionGlobalToSettingsDialog("meta_data_item",
                 "",
                 "",
-                gson.toJson(metaData[position], MetaDataItem::class.java), position, metaData.size)
+                gson.toJson(metaData[position], MetaDataItem::class.java), gson.toJson(metaData, object : TypeToken<ArrayList<MetaDataItem?>?>() {}.type))
         )
     }
 

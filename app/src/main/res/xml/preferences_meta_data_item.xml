@@ -16,14 +16,14 @@
         android:title="Order of metadata"
         app:useSimpleSummaryProvider="true" />
 
-    <ListPreference
-        android:dialogTitle="Align"
-        android:key="meta_data_item_align"
-        android:summary="Alignment of metadata"
-        android:entries="@array/meta_data_alignment_labels"
-        android:entryValues="@array/meta_data_alignment_keys"
-        android:title="Alignment of metadata"
-        app:useSimpleSummaryProvider="true" />
+<!--    <ListPreference-->
+<!--        android:dialogTitle="Align"-->
+<!--        android:key="meta_data_item_align"-->
+<!--        android:summary="Alignment of metadata"-->
+<!--        android:entries="@array/meta_data_alignment_labels"-->
+<!--        android:entryValues="@array/meta_data_alignment_keys"-->
+<!--        android:title="Alignment of metadata"-->
+<!--        app:useSimpleSummaryProvider="true" />-->
 
     <Preference android:key="meta_data_delete"
         android:summary="Delete item"/>

@@ -88,13 +88,13 @@ object PreferenceManager {
         val metaData: MutableList<MetaDataItem> = mutableListOf()
         if (get(SLIDER_SHOW_DESCRIPTION)) {
             metaData.add(MetaDataSliderItem(MetaDataType.DESCRIPTION, AlignOption.RIGHT))
+//            metaData.add(MetaDataSliderItem(MetaDataType.ALBUM_NAME, AlignOption.RIGHT))
         }
         if (get(SLIDER_SHOW_CITY)) {
             metaData.add(MetaDataSliderItem(MetaDataType.CITY, AlignOption.RIGHT))
+            metaData.add(MetaDataSliderItem(MetaDataType.COUNTRY, AlignOption.RIGHT))
         }
         // todo add toggles
-//        metaData.add(MetaDataSliderItem(MetaDataType.COUNTRY, AlignOption.RIGHT))
-//        metaData.add(MetaDataSliderItem(MetaDataType.ALBUM_NAME, AlignOption.RIGHT))
 
         if (get(SLIDER_SHOW_DATE)) {
             metaData.add(MetaDataSliderItem(MetaDataType.DATE, AlignOption.RIGHT))

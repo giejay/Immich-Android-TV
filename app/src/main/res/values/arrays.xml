@@ -19,6 +19,15 @@
         <item>60</item>
     </string-array>
 
+    <array name="meta_data_alignment_labels">
+        <item>Left</item>
+        <item>Right</item>
+    </array>
+
+    <array name="meta_data_alignment_keys">
+        <item>LEFT</item>
+        <item>RIGHT</item>
+    </array>
     <string-array name="animation_speed_ms">
         <item>0</item>
         <item>100</item>
