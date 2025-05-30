@@ -11,10 +11,10 @@ import android.widget.Toast
 import androidx.navigation.NavController
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragmentDirections
-import nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragmentDirections
 import nl.giejay.mediaslider.transformations.GlideTransformations
 
 // general
@@ -95,7 +95,7 @@ data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true, "Slide the new a
 data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to show in screensaver", "Set albums to show in screensaver"){
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
-            ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
+            AlbumFragmentDirections.actionGlobalAlbumFragment(
                 true,
                 SelectionType.SET_SCREENSAVER.toString()
             )
@@ -238,7 +238,7 @@ data object RECENT_ASSETS_MONTHS_BACK : IntListPref(5,
 data object EXCLUDE_ASSETS_IN_ALBUM: StringSetPref(emptySet(), "Excluded albums", "Exclude assets in specific albums for random/seasonal view"){
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
-            ScreenSaverSettingsFragmentDirections.actionGlobalAlbumFragment(
+            AlbumFragmentDirections.actionGlobalAlbumFragment(
                 true,
                 SelectionType.EXCLUDED_ALBUMS.toString()
 
@@ -264,7 +264,7 @@ data object ViewPrefScreen : PrefScreen("View Settings", "view",
             SLIDER_SHOW_MEDIA_COUNT,
             SLIDER_SHOW_DATE,
             SLIDER_SHOW_CITY,
-//            METADATA_CUSTOMIZER,
+            METADATA_CUSTOMIZER,
             SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,
             SLIDER_GLIDE_TRANSFORMATION,

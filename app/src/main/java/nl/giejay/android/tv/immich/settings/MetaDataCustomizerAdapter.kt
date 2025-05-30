@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import nl.giejay.android.tv.immich.R
@@ -15,7 +14,6 @@ import nl.giejay.mediaslider.adapter.MetaDataClock
 import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.adapter.MetaDataSliderItem
-import java.util.Collections
 
 class MetaDataCustomizerAdapter(val context: Context, val metaData: MutableList<MetaDataItem>) : BaseAdapter() {
     private val layoutInflater: LayoutInflater = LayoutInflater.from(context)
@@ -26,14 +24,6 @@ class MetaDataCustomizerAdapter(val context: Context, val metaData: MutableList<
 
     override fun getItem(p0: Int): Any {
         return metaData[p0]
-    }
-
-    override fun isEnabled(position: Int): Boolean {
-        return false
-    }
-
-    override fun areAllItemsEnabled(): Boolean {
-        return false
     }
 
     override fun getItemId(p0: Int): Long {
@@ -51,25 +41,25 @@ class MetaDataCustomizerAdapter(val context: Context, val metaData: MutableList<
             item.layoutParams = layoutParams
         }
 
-        item.findViewById<ImageButton>(R.id.delete_meta_data).setOnClickListener{
-            this.metaData.remove(metaDataItem)
-            notifyDataSetChanged()
-        }
-
-        item.findViewById<ImageButton>(R.id.down_meta_data).setOnClickListener{
-            val index = this.metaData.indexOf(metaDataItem)
-            if(index + 1 < this.metaData.size){
-                Collections.swap(this.metaData, index, index + 1)
-            }
-            notifyDataSetChanged()
-        }
-        item.findViewById<ImageButton>(R.id.up_meta_data).setOnClickListener{
-            val index = this.metaData.indexOf(metaDataItem)
-            if(index != 0){
-                Collections.swap(this.metaData, index, index - 1)
-            }
-            notifyDataSetChanged()
-        }
+//        item.findViewById<ImageButton>(R.id.delete_meta_data).setOnClickListener{
+//            this.metaData.remove(metaDataItem)
+//            notifyDataSetChanged()
+//        }
+//
+//        item.findViewById<ImageButton>(R.id.down_meta_data).setOnClickListener{
+//            val index = this.metaData.indexOf(metaDataItem)
+//            if(index + 1 < this.metaData.size){
+//                Collections.swap(this.metaData, index, index + 1)
+//            }
+//            notifyDataSetChanged()
+//        }
+//        item.findViewById<ImageButton>(R.id.up_meta_data).setOnClickListener{
+//            val index = this.metaData.indexOf(metaDataItem)
+//            if(index != 0){
+//                Collections.swap(this.metaData, index, index - 1)
+//            }
+//            notifyDataSetChanged()
+//        }
 
         textView.text = when(metaDataItem){
             is MetaDataClock -> "Clock"

@@ -198,14 +198,8 @@
             android:id="@+id/action_homeFragment_to_personAssetsFragment"
             app:destination="@id/personAssetsFragment" />
         <action
-            android:id="@+id/action_homeFragment_to_screensaver_settings"
-            app:destination="@id/screenSaverSettings" />
-        <action
             android:id="@+id/action_homeFragment_to_view_settings"
             app:destination="@id/viewSettings" />
-        <action
-            android:id="@+id/action_homeFragment_to_debug_settings"
-            app:destination="@id/debugSettings" />
         <action
             android:id="@+id/action_homeFragment_to_photo_slider"
             app:destination="@id/photoSlider" />
@@ -228,23 +222,24 @@
             android:name="albumName"
             android:defaultValue=""
             app:argType="string" />
+        <argument
+            android:name="meta_data_item"
+            android:defaultValue=""
+            app:argType="string" />
+        <argument
+            android:name="index"
+            android:defaultValue="0"
+            app:argType="integer" />
+        <argument
+            android:name="item_count"
+            android:defaultValue="0"
+            app:argType="integer" />
     </dialog>
-
-    <fragment
-        android:id="@+id/screenSaverSettings"
-        android:name="nl.giejay.android.tv.immich.settings.ScreenSaverSettingsFragment"
-        android:label="ScreenSaverSettings">
-    </fragment>
 
     <fragment
         android:id="@+id/viewSettings"
         android:name="nl.giejay.android.tv.immich.settings.PrefSettingsFragment"
         android:label="ViewSettings"></fragment>
-
-    <fragment
-        android:id="@+id/debugSettings"
-        android:name="nl.giejay.android.tv.immich.settings.DebugSettingsFragment"
-        android:label="DebugSettings"></fragment>
 
     <fragment
         android:id="@+id/noFirebaseFragment"

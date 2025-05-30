@@ -1,0 +1,32 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:title="Edit metadata">
+
+    <ListPreference
+        android:dialogTitle="Type"
+        android:key="meta_data_item_type"
+        android:summary="Type of metadata"
+        android:title="Type of metadata"
+        app:useSimpleSummaryProvider="true" />
+
+    <ListPreference
+        android:dialogTitle="Order"
+        android:key="meta_data_item_order"
+        android:summary="Order of metadata"
+        android:title="Order of metadata"
+        app:useSimpleSummaryProvider="true" />
+
+    <ListPreference
+        android:dialogTitle="Align"
+        android:key="meta_data_item_align"
+        android:summary="Alignment of metadata"
+        android:entries="@array/meta_data_alignment_labels"
+        android:entryValues="@array/meta_data_alignment_keys"
+        android:title="Alignment of metadata"
+        app:useSimpleSummaryProvider="true" />
+
+    <Preference android:key="meta_data_delete"
+        android:summary="Delete item"/>
+    <Preference android:key="meta_data_save"
+        android:summary="Save item"/>
+</PreferenceScreen>

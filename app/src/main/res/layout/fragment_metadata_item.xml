@@ -29,33 +29,33 @@
         android:gravity="center_vertical"
         android:text="Metadata"></TextView>
 
-    <ImageButton
-        android:id="@+id/up_meta_data"
-        android:layout_width="40dp"
-        android:scaleType="fitCenter"
-        android:layout_marginEnd="10dp"
-        android:layout_height="40dp"
-        android:src="@drawable/up">
+<!--    <ImageButton-->
+<!--        android:id="@+id/up_meta_data"-->
+<!--        android:layout_width="40dp"-->
+<!--        android:scaleType="fitCenter"-->
+<!--        android:layout_marginEnd="10dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:src="@drawable/up">-->
 
-    </ImageButton>
+<!--    </ImageButton>-->
 
-    <ImageButton
-        android:id="@+id/down_meta_data"
-        android:layout_width="40dp"
-        android:layout_marginEnd="10dp"
-        android:scaleType="fitCenter"
-        android:layout_height="40dp"
-        android:src="@drawable/down">
+<!--    <ImageButton-->
+<!--        android:id="@+id/down_meta_data"-->
+<!--        android:layout_width="40dp"-->
+<!--        android:layout_marginEnd="10dp"-->
+<!--        android:scaleType="fitCenter"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:src="@drawable/down">-->
 
-    </ImageButton>
+<!--    </ImageButton>-->
 
-    <ImageButton
-        android:id="@+id/delete_meta_data"
-        android:scaleType="fitCenter"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@drawable/remove">
+<!--    <ImageButton-->
+<!--        android:id="@+id/delete_meta_data"-->
+<!--        android:scaleType="fitCenter"-->
+<!--        android:layout_width="40dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:src="@drawable/remove">-->
 
-    </ImageButton>
+<!--    </ImageButton>-->
 
 </LinearLayout>
