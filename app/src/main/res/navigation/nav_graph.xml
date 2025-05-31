@@ -101,6 +101,9 @@
         android:id="@+id/metaDataCustomizer"
         android:name="nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragment"
         android:label="MetaDataFragment">
+        <argument
+            android:name="screen"
+            app:argType="nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen" />
     </fragment>
 
     <fragment
@@ -230,6 +233,10 @@
             android:name="meta_data_items"
             android:defaultValue=""
             app:argType="string" />
+        <argument
+            android:name="screen"
+            android:defaultValue="VIEWER"
+            app:argType="nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen" />
     </dialog>
 
     <fragment

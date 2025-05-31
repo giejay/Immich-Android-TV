@@ -25,8 +25,10 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.fragment.NavHostFragment
 import nl.giejay.android.tv.immich.castconnect.CastHelper
+import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
+import nl.giejay.mediaslider.adapter.AlignOption
 import timber.log.Timber
 
 
@@ -61,6 +63,14 @@ class MainActivity : FragmentActivity() {
         )
         if (castHelper.validateAndProcessCastIntent(intent)) {
             return
+        }
+
+        if(!PreferenceManager.hasMetaDataForScreen(MetaDataScreen.VIEWER, AlignOption.RIGHT) || !PreferenceManager.hasMetaDataForScreen(MetaDataScreen.SCREENSAVER, AlignOption.RIGHT)){
+            // first time using the customizer, do a migration
+            val viewMetaDataFromOldPrefs = PreferenceManager.getViewMetaDataFromOldPrefs()
+            val screenSaverMetaDataFromOldPrefs = PreferenceManager.getScreenSaverMetaDataFromOldPrefs()
+            PreferenceManager.saveMetaData(AlignOption.RIGHT, MetaDataScreen.VIEWER, viewMetaDataFromOldPrefs)
+            PreferenceManager.saveMetaData(AlignOption.RIGHT, MetaDataScreen.SCREENSAVER, screenSaverMetaDataFromOldPrefs)
         }
 
         loadDeepLinkOrStartingPage(intent.data)

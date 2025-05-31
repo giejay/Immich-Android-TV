@@ -103,6 +103,12 @@ data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to sh
         return true
     }
 }
+data object SCREENSAVER_METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Configure what to show in screensaver", { _, navController ->
+    navController.navigate(
+        MetaDataCustomizerFragmentDirections.actionToMetadataFragment(MetaDataScreen.SCREENSAVER)
+    )
+    true
+})
 data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false, "Include videos", "Include videos in screensaver")
 data object SCREENSAVER_PLAY_SOUND : BooleanPref(false, "Play sound", "Play sound of videos during screensaver")
 data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.RECENT,
@@ -130,9 +136,9 @@ data object SLIDER_SHOW_DESCRIPTION : BooleanPref(true, "Show description", "Sho
 data object SLIDER_SHOW_MEDIA_COUNT : BooleanPref(true, "Show media count", "Show the number of total items and currently selected item")
 data object SLIDER_SHOW_DATE : BooleanPref(false, "Show date", "Show date of asset in slideshow")
 data object SLIDER_SHOW_CITY : BooleanPref(true, "Show city", "Show city of asset in slideshow")
-data object METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Configure what to show in viewer/screensaver", { context, navController ->
+data object SLIDER_METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Configure what to show in viewer", { _, navController ->
     navController.navigate(
-        MetaDataCustomizerFragmentDirections.actionToMetadataFragment()
+        MetaDataCustomizerFragmentDirections.actionToMetadataFragment(MetaDataScreen.VIEWER)
     )
     true
 })
@@ -260,11 +266,7 @@ data object ViewPrefScreen : PrefScreen("View Settings", "view",
         PrefCategory("Slideshow", listOf(
             SLIDER_ONLY_USE_THUMBNAILS,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
-            SLIDER_SHOW_DESCRIPTION,
-            SLIDER_SHOW_MEDIA_COUNT,
-            SLIDER_SHOW_DATE,
-            SLIDER_SHOW_CITY,
-            METADATA_CUSTOMIZER,
+            SLIDER_METADATA_CUSTOMIZER,
             SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,
             SLIDER_GLIDE_TRANSFORMATION,
@@ -287,13 +289,9 @@ data object ScreensaverPrefScreen : PrefScreen("Screensaver Settings", "screensa
                 SCREENSAVER_INTERVAL,
                 SCREENSAVER_TYPE,
                 SCREENSAVER_ALBUMS,
-                SCREENSAVER_SHOW_DESCRIPTION,
-                SCREENSAVER_SHOW_ALBUM_NAME,
-                SCREENSAVER_SHOW_DATE,
-                SCREENSAVER_SHOW_MEDIA_COUNT,
+                SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,
                 SCREENSAVER_PLAY_SOUND,
-                SCREENSAVER_SHOW_CLOCK,
                 SCREENSAVER_ANIMATE_ASSET_SLIDE)
         )
     )

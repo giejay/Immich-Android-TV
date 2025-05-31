@@ -20,13 +20,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/gray_dark"
     android:orientation="vertical"
     tools:context="nl.giejay.mediaslider.view.MediaSliderFragment">
 
     <LinearLayout
         android:id="@+id/meta_data_holder"
         android:layout_width="wrap_content"
-        android:layout_height="250dp"
+        android:layout_height="wrap_content"
         android:baselineAligned="false"
         android:layout_marginBottom="70dp"
         android:elevation="10dp"
@@ -78,20 +79,20 @@
             </ImageButton>
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:layout_gravity="center"
-            android:layout_height="match_parent">
-            <ImageButton
-                android:layout_width="40dp"
-                android:id="@+id/meta_data_save"
-                android:src="@drawable/save"
-                android:scaleType="centerCrop"
-                android:layout_height="40dp">
-            </ImageButton>
-        </LinearLayout>
+<!--        <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_weight="1"-->
+<!--            android:gravity="center"-->
+<!--            android:layout_gravity="center"-->
+<!--            android:layout_height="match_parent">-->
+<!--            <ImageButton-->
+<!--                android:layout_width="40dp"-->
+<!--                android:id="@+id/meta_data_save"-->
+<!--                android:src="@drawable/save"-->
+<!--                android:scaleType="centerCrop"-->
+<!--                android:layout_height="40dp">-->
+<!--            </ImageButton>-->
+<!--        </LinearLayout>-->
 
         <LinearLayout
             android:layout_width="match_parent"

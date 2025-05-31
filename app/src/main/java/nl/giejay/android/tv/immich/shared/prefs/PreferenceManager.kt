@@ -9,12 +9,18 @@ import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.adapter.MetaDataSliderItem
 import nl.giejay.mediaslider.model.MetaDataType
+import nl.giejay.mediaslider.util.MetaDataConverter
 import okhttp3.HttpUrl
 import kotlin.reflect.KClass
+
+enum class MetaDataScreen {
+    SCREENSAVER, VIEWER
+}
 
 object PreferenceManager {
     lateinit var sharedPreference: SharedPreferences
     private lateinit var liveSharedPreferences: LiveSharedPreferences
+
     // stores the typed values, not the internal PrefTypes (String, Int)
     private val liveContext: MutableMap<String, Any?> = mutableMapOf()
 
@@ -43,7 +49,7 @@ object PreferenceManager {
         key.save(sharedPreference, value)
     }
 
-    fun <T> subscribe(key: Pref<T, *, *>, onChange: (T) -> Unit){
+    fun <T> subscribe(key: Pref<T, *, *>, onChange: (T) -> Unit) {
         liveSharedPreferences.subscribeTyped(key, onChange)
     }
 
@@ -84,7 +90,7 @@ object PreferenceManager {
         return sharedPreference.getString(key, default)!!
     }
 
-    fun getViewMetaData(): List<MetaDataItem> {
+    fun getViewMetaDataFromOldPrefs(): List<MetaDataItem> {
         val metaData: MutableList<MetaDataItem> = mutableListOf()
         if (get(SLIDER_SHOW_DESCRIPTION)) {
             metaData.add(MetaDataSliderItem(MetaDataType.DESCRIPTION, AlignOption.RIGHT))
@@ -106,9 +112,9 @@ object PreferenceManager {
         return metaData
     }
 
-    fun getScreenSaverMetaData(): List<MetaDataItem> {
+    fun getScreenSaverMetaDataFromOldPrefs(): List<MetaDataItem> {
         val metaData: MutableList<MetaDataItem> = mutableListOf()
-        if(get(SCREENSAVER_SHOW_CLOCK)){
+        if (get(SCREENSAVER_SHOW_CLOCK)) {
             metaData.add(MetaDataClock(AlignOption.RIGHT))
         }
         if (get(SCREENSAVER_SHOW_DESCRIPTION)) {
@@ -117,7 +123,7 @@ object PreferenceManager {
             metaData.add(MetaDataSliderItem(MetaDataType.COUNTRY, AlignOption.RIGHT))
         }
 
-        if(get(SCREENSAVER_SHOW_ALBUM_NAME)){
+        if (get(SCREENSAVER_SHOW_ALBUM_NAME)) {
             metaData.add(MetaDataSliderItem(MetaDataType.ALBUM_NAME, AlignOption.RIGHT))
         }
         if (get(SCREENSAVER_SHOW_DATE)) {
@@ -128,5 +134,23 @@ object PreferenceManager {
         }
 
         return metaData
+    }
+
+    fun saveMetaData(align: AlignOption, metaDataScreen: MetaDataScreen, metaData: List<MetaDataItem>) {
+        sharedPreference.edit().putString(createKey(metaDataScreen, align), MetaDataConverter.metaDataListToJson(metaData)).apply()
+    }
+
+    private fun createKey(metaDataScreen: MetaDataScreen, align: AlignOption) = "meta_data_${metaDataScreen}_${align}"
+
+    fun getMetaData(align: AlignOption, metaDataScreen: MetaDataScreen): List<MetaDataItem> {
+        return MetaDataConverter.metaDataListFromJson(sharedPreference.getString(createKey(metaDataScreen, align), "[]")!!)
+    }
+
+    fun getAllMetaData(metaDataScreen: MetaDataScreen): List<MetaDataItem> {
+        return getMetaData(AlignOption.RIGHT, metaDataScreen) + getMetaData(AlignOption.LEFT, metaDataScreen)
+    }
+
+    fun hasMetaDataForScreen(metaDataScreen: MetaDataScreen, align: AlignOption): Boolean {
+        return sharedPreference.contains(createKey(metaDataScreen, align))
     }
 }

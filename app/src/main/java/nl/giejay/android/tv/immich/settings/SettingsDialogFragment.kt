@@ -28,6 +28,7 @@ class SettingsDialogFragment : DialogFragment() {
                 frag
             }
             "meta_data_item" -> {
+                // todo refactor this, make MetaDataItemCustomizerFragment a child of SettingsDialogFragment and include it in the navGraph
                 val frag = MetaDataItemCustomizerFragment()
                 frag.arguments = requireArguments()
                 frag
