@@ -10,11 +10,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import nl.giejay.android.tv.immich.R
 import nl.giejay.mediaslider.adapter.AlignOption
-import nl.giejay.mediaslider.adapter.MetaDataClock
 import nl.giejay.mediaslider.adapter.MetaDataItem
-import nl.giejay.mediaslider.adapter.MetaDataMediaCount
-import nl.giejay.mediaslider.adapter.MetaDataSliderItem
-import nl.giejay.mediaslider.model.MetaDataType
 
 class MetaDataCustomizerAdapter(val context: Context, val metaData: MutableList<MetaDataItem>) : BaseAdapter() {
     private val layoutInflater: LayoutInflater = LayoutInflater.from(context)
@@ -62,15 +58,7 @@ class MetaDataCustomizerAdapter(val context: Context, val metaData: MutableList<
 //            notifyDataSetChanged()
 //        }
 
-        textView.text = when (metaDataItem) {
-            is MetaDataClock -> "Clock"
-            is MetaDataMediaCount -> "Media Count"
-            is MetaDataSliderItem -> {
-                if (metaDataItem.metaDataType == MetaDataType.ALBUM_NAME) {
-                    "Album Name"
-                } else metaDataItem.metaDataType.toString().lowercase().capitalize()
-            }
-        }
+        textView.text = metaDataItem.getTitle()
         return item
     }
 }

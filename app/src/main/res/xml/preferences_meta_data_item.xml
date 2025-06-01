@@ -16,6 +16,28 @@
         android:title="Order of metadata"
         app:useSimpleSummaryProvider="true" />
 
+    <SeekBarPreference
+        android:key="meta_data_item_font_size"
+        android:title="Font size"
+        android:max="50"
+        android:min="12"
+        app:useSimpleSummaryProvider="true"
+        android:defaultValue="18"
+        android:dialogTitle="Font size"
+        >
+    </SeekBarPreference>
+
+    <SeekBarPreference
+        android:key="meta_data_item_padding"
+        android:title="Padding"
+        android:max="50"
+        android:min="0"
+        app:useSimpleSummaryProvider="true"
+        android:defaultValue="0"
+        android:dialogTitle="Padding above and below the item"
+        >
+    </SeekBarPreference>
+
 <!--    <ListPreference-->
 <!--        android:dialogTitle="Align"-->
 <!--        android:key="meta_data_item_align"-->

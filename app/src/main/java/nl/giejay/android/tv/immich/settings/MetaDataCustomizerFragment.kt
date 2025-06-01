@@ -59,7 +59,7 @@ class MetaDataCustomizerFragment : Fragment() {
         if (findFirstNotAddedMetaDataType.isEmpty()) {
             Toast.makeText(requireContext(), "You already added every possible meta data", Toast.LENGTH_SHORT).show()
         } else {
-            val newItem = MetaDataItem.create(findFirstNotAddedMetaDataType.first(), align)
+            val newItem = MetaDataItem.create(findFirstNotAddedMetaDataType.first(), align, MetaDataItem.DEFAULT_PADDING, findFirstNotAddedMetaDataType.first().defaultFontSize)
             allMetaData.add(newItem)
             findNavController().navigate(HomeFragmentDirections.actionGlobalToSettingsDialog("meta_data_item",
                 "",

@@ -4,11 +4,13 @@ import android.os.Bundle
 import androidx.navigation.fragment.findNavController
 import androidx.preference.ListPreference
 import androidx.preference.Preference
+import androidx.preference.SeekBarPreference
 import arrow.core.Either
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.mediaslider.adapter.MetaDataClock
 import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.MetaDataConverter
@@ -36,17 +38,28 @@ class MetaDataItemInnerCustomizerFragment : SettingsScreenFragment.SettingsInner
         val currentIndex = allItems.indexOf(metaDataItem)
         metaDataItemOrder.setDefaultValue((currentIndex + 1).toString())
         metaDataItemOrder.value = (currentIndex + 1).toString()
-       
+
+        val fontSize = findPreference<SeekBarPreference>("meta_data_item_font_size")
+        fontSize!!.value = metaDataItem.fontSize
+
         // set types
         val type = findPreference<ListPreference>("meta_data_item_type")!!
-        type.entryValues = MetaDataType.entries.filterNot{e -> e != metaDataItem.type && allItems.any { it.type == e }}.map { it.toString() }.toTypedArray()
-        type.entries = type.entryValues.map { it.toString().lowercase().capitalize() }.toTypedArray()
+        type.setOnPreferenceChangeListener {
+            _, newVal -> fontSize.value = MetaDataType.valueOf(newVal as String).defaultFontSize
+            true
+        }
+        val filteredTypes = MetaDataType.entries.filterNot { e -> e != metaDataItem.type && allItems.any { it.type == e } }
+        type.entryValues = filteredTypes.map { it.toString() }.toTypedArray()
+        type.entries = filteredTypes.map { it.title }.toTypedArray()
         type.value = metaDataItem.type.toString()
 
-        findPreference<Preference>("meta_data_save")!!.setOnPreferenceClickListener { 
+        val padding = findPreference<SeekBarPreference>("meta_data_item_padding")
+        padding!!.value = metaDataItem.padding
+
+        findPreference<Preference>("meta_data_save")!!.setOnPreferenceClickListener {
             val updatedList = allItems.toMutableList()
             updatedList.remove(metaDataItem)
-            updatedList.add(metaDataItemOrder.value.toInt() - 1, MetaDataItem.create(MetaDataType.valueOf(type.value.toString()), metaDataItem.align))
+            updatedList.add(metaDataItemOrder.value.toInt() - 1, MetaDataItem.create(MetaDataType.valueOf(type.value.toString()), metaDataItem.align, padding.value, fontSize.value))
             PreferenceManager.saveMetaData(metaDataItem.align, screen, updatedList.toList())
             findNavController().popBackStack()
             false
