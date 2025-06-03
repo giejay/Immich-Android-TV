@@ -77,7 +77,7 @@ class AlbumDetailsFragment : GenericAssetFragment() {
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
         val bucketForPage = pageToBucket!![page]
         return if (bucketForPage != null) {
-            apiClient.getAssetsForBucket(albumId, bucketForPage, currentSort!!)
+            apiClient.getAssetsForBucket(albumId, bucketForPage, currentSort!!).map { it.map { a -> a.copy(albumName = albumName) } }
         } else {
             Either.Right(emptyList())
         }
