@@ -23,8 +23,8 @@ class LiveSharedPreferences(private val preferences: SharedPreferences) {
         return LivePreference(updates, preferences, key, defaultValue, ignoreInitialValue)
     }
 
-    fun <T, PREFTYPE>subscribeTyped(key: Pref<T, *, PREFTYPE>, onChange: (T) -> Unit){
-        return LivePreference(updates, preferences, key.key(), key.toPrefValue(key.defaultValue)).observeForever{storedPrefType ->
+    fun <T, PREFTYPE> subscribeTyped(key: Pref<T, *, PREFTYPE>, onChange: (T) -> Unit) {
+        return LivePreference(updates, preferences, key.key(), key.toPrefValue(key.defaultValue)).observeForever { storedPrefType ->
             onChange(key.fromPrefValue(storedPrefType))
         }
     }
@@ -51,6 +51,15 @@ class LiveSharedPreferences(private val preferences: SharedPreferences) {
 
     fun listenMultiple(keys: List<String>): MultiPreference {
         return MultiPreference(updates, preferences, keys)
+    }
+
+    fun subscribeMultiple(keys: List<Pref<*, *, *>>, onChange: (Map<String, Any?>) -> Unit) {
+        return MultiPreference(updates, preferences, keys.map { it.key() }).observeForever { prefType ->
+            onChange(prefType.mapValues { entry ->
+                val find: Pref<*, *, Any> = keys.find { it.key() == entry.key } as Pref<*, *, Any>
+                entry.value?.let{ find.fromPrefValue(it)} ?: find.defaultValue
+            })
+        }
     }
 
 }

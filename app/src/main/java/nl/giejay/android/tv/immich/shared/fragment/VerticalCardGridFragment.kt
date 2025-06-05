@@ -57,7 +57,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
     protected var currentPage: Int = startPage
-    private var allPagesLoaded: Boolean = false
+    protected var allPagesLoaded: Boolean = false
     private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
@@ -107,7 +107,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 keyEvents.state.collect {
                     // open popup menu on the right side if its the last photo in the row and user presses right button
-                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size())) {
+                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ((adapter.size() == 0 && allPagesLoaded) ||  currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size()))) {
                         openPopUpMenu()
                     }
                 }
@@ -149,7 +149,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         ioScope.launch {
             loadData().fold(
                 { itLeft -> showErrorMessage(itLeft) },
-                { itRight -> setupViews(itRight) }
+                { itRight ->
+                    val assets = filterItems(itRight)
+                    setupViews(assets)
+                    if(assets.size < FETCH_COUNT){
+                        // immediately load next assets
+                        currentLoadingJob = fetchNextItems()
+                    }
+                }
             )
         }
     }
@@ -174,7 +181,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     protected open fun clearState(){
-        currentPage = 0
+        currentPage = startPage
         assets = emptyList()
         assetsStillToRender.clear()
         adapter.clear()
@@ -186,11 +193,13 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     private fun fetchNextItems(): Job {
         return ioScope.launch {
-            loadAssets()
+            loadMoreAssets()
         }
     }
 
-    protected suspend fun loadAssets(): List<ITEM> {
+    protected open fun filterItems(items: List<ITEM>): List<ITEM> = items
+
+    protected open suspend fun loadMoreAssets(): List<ITEM> {
         if(allPagesLoaded){
             return emptyList()
         }
@@ -201,11 +210,15 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             },
             { items ->
                 Timber.i("Loading next items, ${items.size}")
-                if (items.isNotEmpty()) {
-                    setDataOnMain(items)
+                val filteredItems = filterItems(items)
+                if (filteredItems.isNotEmpty()) {
+                    setDataOnMain(filteredItems)
                 }
                 allPagesLoaded = allPagesLoaded(items)
-                items
+                if(filteredItems.size < FETCH_COUNT){
+                    return filteredItems + loadMoreAssets()
+                }
+                return filteredItems
             }
         )
     }

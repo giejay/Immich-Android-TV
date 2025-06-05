@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
 import androidx.navigation.NavController
+import androidx.preference.ListPreference
 import androidx.preference.Preference
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
@@ -92,7 +93,7 @@ data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true, "Show album name", "
 data object SCREENSAVER_SHOW_DATE : BooleanPref(true, "Show date", "Show date of asset in screensaver")
 data object SCREENSAVER_SHOW_CLOCK : BooleanPref(true, "Show clock", "Show clock in screensaver")
 data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true, "Slide the new asset in", "Slide the new asset in when transitioning")
-data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to show in screensaver", "Set albums to show in screensaver"){
+data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to show in screensaver", "Set albums to show in screensaver") {
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
             AlbumFragmentDirections.actionGlobalAlbumFragment(
@@ -103,12 +104,14 @@ data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to sh
         return true
     }
 }
+
 data object SCREENSAVER_METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Configure what to show in screensaver", { _, navController ->
     navController.navigate(
         MetaDataCustomizerFragmentDirections.actionToMetadataFragment(MetaDataScreen.SCREENSAVER)
     )
     true
 })
+
 data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false, "Include videos", "Include videos in screensaver")
 data object SCREENSAVER_PLAY_SOUND : BooleanPref(false, "Play sound", "Play sound of videos during screensaver")
 data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.RECENT,
@@ -166,7 +169,7 @@ data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTr
 data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
     "Albums",
     "Set the order in which albums should appear") {
-    
+
     override fun fromPrefValue(prefValue: String): AlbumsOrder {
         return AlbumsOrder.valueOfSafe(prefValue, defaultValue)
     }
@@ -188,9 +191,10 @@ data object PHOTOS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.OLDEST_NEW
     }
 }
 
-data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String) : EnumByTitlePref<PhotosOrder>(PreferenceManager.get(PHOTOS_SORTING),
-    "Photos in album $albumId",
-    "Set the order in which photos should appear inside $albumId") {
+data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String, val albumName: String) : EnumByTitlePref<PhotosOrder>(PreferenceManager.get(
+    PHOTOS_SORTING),
+    "Order",
+    "Set the order in which photos should appear") {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(prefValue, defaultValue)
     }
@@ -202,11 +206,64 @@ data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String) : EnumByTitleP
     override fun key(): String {
         return "photos_sorting_${albumId}"
     }
+
+    override fun createPreference(context: Context): ListPreference {
+        val createPref = super.createPreference(context)
+        createPref.summary = PreferenceManager.get(this).getTitle()
+        return createPref
+    }
 }
 
+data class FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(val albumId: String, val albumName: String) : EnumByTitlePref<ContentType>(ContentType.ALL,
+    "Content type",
+    "Filter by content type") {
+
+    override fun fromPrefValue(prefValue: String): ContentType {
+        return ContentType.valueOf(prefValue)
+    }
+
+    override fun getEnumEntries(): Array<ContentType> {
+        return ContentType.entries.toTypedArray()
+    }
+
+    override fun key(): String {
+        return "filter_content_type_${albumId}"
+    }
+
+    override fun createPreference(context: Context): ListPreference {
+        val createPref = super.createPreference(context)
+        createPref.summary = PreferenceManager.get(this).getTitle()
+        return createPref
+    }
+}
+
+object FILTER_CONTENT_TYPE : EnumByTitlePref<ContentType>(ContentType.ALL,
+    "Content type",
+    "Filter by content type") {
+
+    override fun fromPrefValue(prefValue: String): ContentType {
+        return ContentType.valueOf(prefValue)
+    }
+
+    override fun getEnumEntries(): Array<ContentType> {
+        return ContentType.entries.toTypedArray()
+    }
+
+    override fun key(): String {
+        return "filter_content_type"
+    }
+
+    override fun createPreference(context: Context): ListPreference {
+        val createPref = super.createPreference(context)
+        createPref.summary = PreferenceManager.get(this).getTitle()
+        return createPref
+    }
+}
+
+
 data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST_OLDEST,
-    "Photos",
-    "Set the order in which photos should appear in the Photos tab") {
+    "Assets outside albums",
+    "Set the order in which assets should appear outside Albums") {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(prefValue, defaultValue)
     }
@@ -241,7 +298,7 @@ data object RECENT_ASSETS_MONTHS_BACK : IntListPref(5,
     R.array.recent_assets_months_back,
     R.array.recent_assets_months_back)
 
-data object EXCLUDE_ASSETS_IN_ALBUM: StringSetPref(emptySet(), "Excluded albums", "Exclude assets in specific albums for random/seasonal view"){
+data object EXCLUDE_ASSETS_IN_ALBUM : StringSetPref(emptySet(), "Excluded albums", "Exclude assets in specific albums for random/seasonal view") {
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
             AlbumFragmentDirections.actionGlobalAlbumFragment(
@@ -300,3 +357,19 @@ data object ScreensaverPrefScreen : PrefScreen("Screensaver Settings", "screensa
 data object DebugPrefScreen : PrefScreen("Debug Settings", "debug", listOf(PrefCategory("", listOf(DEBUG_MODE, USER_ID))), { prefManager ->
     prefManager.findPreference<Preference>(USER_ID.key())?.summary = PreferenceManager.get(USER_ID)
 })
+
+data class AlbumDetailsSettingsScreen(val albumId: String, val albumName: String) : PrefScreen("Settings for $albumName",
+    "album_settings_${albumId}",
+    listOf(
+        PrefCategory("Ordering", listOf(PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId, albumName))),
+        PrefCategory("Filtering", listOf(FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(albumId, albumName)))
+    )
+)
+
+data object GenericAssetsSettingsScreen : PrefScreen("Settings",
+    "generic_assets_settings",
+    listOf(
+        PrefCategory("Ordering", listOf(ALL_ASSETS_SORTING)),
+        PrefCategory("Filtering", listOf(FILTER_CONTENT_TYPE))
+    )
+)

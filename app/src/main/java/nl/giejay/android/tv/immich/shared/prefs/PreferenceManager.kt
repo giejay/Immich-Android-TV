@@ -41,7 +41,7 @@ object PreferenceManager {
 
     @Suppress("UNCHECKED_CAST")
     fun <T> get(key: Pref<T, *, *>): T {
-        return liveContext[key.key()] as T
+        return liveContext[key.key()] as T ?: key.getValue(sharedPreference)
     }
 
     fun <T, PREFTYPE> save(key: Pref<T, *, PREFTYPE>, value: T) {
@@ -51,6 +51,10 @@ object PreferenceManager {
 
     fun <T> subscribe(key: Pref<T, *, *>, onChange: (T) -> Unit) {
         liveSharedPreferences.subscribeTyped(key, onChange)
+    }
+
+    fun subscribeMultiple(keys: List<Pref<*, *, *>>, onChange: (Map<String, Any?>) -> Unit) {
+        liveSharedPreferences.subscribeMultiple(keys, onChange)
     }
 
     fun isLoggedId(): Boolean {

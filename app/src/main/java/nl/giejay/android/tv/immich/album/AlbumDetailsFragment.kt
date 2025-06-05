@@ -1,7 +1,5 @@
 package nl.giejay.android.tv.immich.album
 
-import android.os.Bundle
-import android.view.View
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.flatMap
@@ -10,48 +8,39 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.assets.GenericAssetFragment
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
-import nl.giejay.android.tv.immich.shared.prefs.LivePreference
-import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
-import nl.giejay.android.tv.immich.shared.prefs.PHOTOS_SORTING
+import nl.giejay.android.tv.immich.shared.prefs.ContentType
+import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
+import nl.giejay.android.tv.immich.shared.prefs.FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PHOTOS_SORTING_FOR_SPECIFIC_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
-import nl.giejay.android.tv.immich.shared.prefs.Pref
-import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-
 
 
 class AlbumDetailsFragment : GenericAssetFragment() {
     private lateinit var albumId: String
     private lateinit var albumName: String
-    private var currentSort: PhotosOrder? = null
-    private lateinit var prefKey: PHOTOS_SORTING_FOR_SPECIFIC_ALBUM
     private var pageToBucket: Map<Int, String>? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun getFilterKey(): EnumByTitlePref<ContentType> {
         albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
         albumName = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumName
-        prefKey = PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId)
-        currentSort = PhotosOrder.valueOf(PreferenceManager.getString(prefKey.key(), prefKey.defaultValue.toString()))
-        PreferenceManager.subscribe(prefKey) { state ->
-            if(state != currentSort){
-                // need to refetch everything because of the timeline buckets approach
-                clearState()
-                pageToBucket = null
-                currentSort = state
-                fetchInitialItems()
-            }
-        }
-        super.onCreate(savedInstanceState)
+        return FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(albumId, albumName)
     }
 
-    override fun sortItems(items: List<Asset>): List<Asset> {
-        return items.sortedWith(currentSort!!.sort)
+    override fun getSortingKey(): EnumByTitlePref<PhotosOrder> {
+        albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
+        albumName = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumName
+        return PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId, albumName)
+    }
+
+    override fun clearState() {
+        super.clearState()
+        pageToBucket = null
     }
 
     override suspend fun loadData(): Either<String, List<Asset>> {
         if (pageToBucket == null) {
             // initial call, fetch the buckets
-            val listBuckets = apiClient.listBuckets(albumId, currentSort!!)
+            val listBuckets = apiClient.listBuckets(albumId, currentSort)
             return listBuckets.map { list ->
                 pageToBucket = list.associateBy({ list.indexOf(it) + 1 }, { it.timeBucket })
                 return internalLoadData(emptyList())
@@ -63,8 +52,10 @@ class AlbumDetailsFragment : GenericAssetFragment() {
 
     private suspend fun internalLoadData(prevAssets: List<Asset>): Either<String, List<Asset>> {
         return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT).flatMap {
-            val combined = it + prevAssets
-            if (combined.size <= FETCH_COUNT && !allPagesLoaded(it)) {
+            val filteredItems = it.filter { asset -> currentFilter == ContentType.ALL || asset.type.lowercase() == currentFilter.toString().lowercase() }
+            val combined = filteredItems + prevAssets
+            allPagesLoaded = allPagesLoaded(it)
+            if (combined.size <= FETCH_COUNT && !allPagesLoaded) {
                 // immediately load next bucket
                 currentPage += 1
                 internalLoadData(combined)
@@ -77,7 +68,7 @@ class AlbumDetailsFragment : GenericAssetFragment() {
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
         val bucketForPage = pageToBucket!![page]
         return if (bucketForPage != null) {
-            apiClient.getAssetsForBucket(albumId, bucketForPage, currentSort!!).map { it.map { a -> a.copy(albumName = albumName) } }
+            apiClient.getAssetsForBucket(albumId, bucketForPage, currentSort).map { it.map { a -> a.copy(albumName = albumName) } }
         } else {
             Either.Right(emptyList())
         }

@@ -9,7 +9,9 @@ data class AssetExifInfo(
     val exifImageHeight: Int?,
     val city: String?,
     val country: String?,
-    val dateTimeOriginal: Date?
+    val dateTimeOriginal: Date?,
+    val make: String?,
+    val model: String?
 )
 
 data class Tag(
@@ -27,5 +29,7 @@ data class Asset(
     val fileModifiedAt: Date?,
     val albumName: String?,
     val people: List<Person>?,
-    val tags: List<Tag>?
+    val tags: List<Tag>?,
+    val originalPath: String?,
+    val originalFileName: String?
 )

@@ -70,10 +70,8 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) {
             val response = service.listAssetsFromAlbum(albumId)
             val album = response.body()
-            val assets = album!!.assets.filter(excludeByTag())
-                .map { Asset(it.id, it.type, it.deviceAssetId, it.exifInfo, it.fileModifiedAt, album.albumName, it.people, it.tags) }
-            val updatedAlbum = AlbumDetails(album.albumName, album.description, album.id, album.albumThumbnailAssetId, assets)
-            Response.success(updatedAlbum)
+            val assets = album!!.assets.filter(excludeByTag()).map { it.copy(albumName = album.albumName) }
+            Response.success(album.copy(assets = assets))
         }
     }
 
@@ -122,8 +120,9 @@ class ApiClient(private val config: ApiClientConfig) {
             executeAPICall(200) { service.listAssets(searchRequest) }.map { res -> res.assets.items }
         }).map { it.filter(excludeByTag()) }.map {
             val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
-            if(excludedAlbums.isNotEmpty()){
-                val excludedAssets = excludedAlbums.toList().flatMap { albumId -> listAssetsFromAlbum(albumId).getOrNull()?.assets ?: emptyList() }.map { it.id }
+            if (excludedAlbums.isNotEmpty()) {
+                val excludedAssets =
+                    excludedAlbums.toList().flatMap { albumId -> listAssetsFromAlbum(albumId).getOrNull()?.assets ?: emptyList() }.map { it.id }
                 it.filterNot { asset -> excludedAssets.contains(asset.id) }
             } else {
                 it
@@ -147,7 +146,7 @@ class ApiClient(private val config: ApiClientConfig) {
         }.map {
             it.id.pmap { t -> service.getAsset(t).body()!! }.toList()
         }
-        if(response.isLeft()){
+        if (response.isLeft()) {
             return executeAPICall(200) {
                 service.getBucket(albumId = albumId, timeBucket = bucket, order = if (order == PhotosOrder.OLDEST_NEWEST) "asc" else "desc")
             }

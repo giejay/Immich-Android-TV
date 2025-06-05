@@ -73,6 +73,18 @@
         <item>Alphabetically (Z-A)</item>
     </string-array>
 
+    <string-array name="content_type">
+        <item>All</item>
+        <item>Image</item>
+        <item>Video</item>
+    </string-array>
+
+    <string-array name="content_type_keys">
+        <item>ALL</item>
+        <item>IMAGE</item>
+        <item>VIDEO</item>
+    </string-array>
+
     <string-array name="photos_order_keys">
         <item>NEWEST_OLDEST</item>
         <item>OLDEST_NEWEST</item>

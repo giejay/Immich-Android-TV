@@ -25,6 +25,8 @@ data class PrefCategory(val title: String, val children: List<Pref<*, *, *>>) {
 }
 
 sealed class Pref<T, PREF : Preference, PREFTYPE>(val defaultValue: T, val title: String, val summary: String) {
+    abstract fun getValue(sharedPreferences: SharedPreferences): T
+
     open fun key() = javaClass.simpleName.lowercase()
     abstract fun save(sharedPreferences: SharedPreferences, value: T)
     open fun fromPrefValue(prefValue: PREFTYPE): T {
@@ -40,7 +42,7 @@ sealed class Pref<T, PREF : Preference, PREFTYPE>(val defaultValue: T, val title
 
     open fun toPrefValue(value: T): PREFTYPE = value as PREFTYPE
 
-    fun createPreference(context: Context): PREF {
+    open fun createPreference(context: Context): PREF {
         val createPref = createPref(context)
         createPref.key = key()
         createPref.title = title
@@ -60,6 +62,10 @@ sealed class NotUserEditableStringPref(title: String, summary: String) : Pref<St
     override fun createPref(context: Context): Preference {
         return Preference(context)
     }
+
+    override fun getValue(sharedPreferences: SharedPreferences): String {
+        return ""
+    }
 }
 
 sealed class ActionPref(title: String, summary: String, val onClick: (Context, NavController) -> Boolean) : Pref<String, Preference, String>("",
@@ -67,6 +73,10 @@ sealed class ActionPref(title: String, summary: String, val onClick: (Context, N
     summary) {
     override fun save(sharedPreferences: SharedPreferences, value: String) {
 
+    }
+
+    override fun getValue(sharedPreferences: SharedPreferences): String {
+        return ""
     }
 
     override fun onClick(context: Context, controller: NavController): Boolean {
@@ -91,6 +101,10 @@ sealed class EnumPref<T>(defaultValue: T, title: String, summary: String,
         return value.toString()
     }
 
+    override fun getValue(sharedPreferences: SharedPreferences): T {
+        return fromPrefValue(sharedPreferences.getString(key(), toPrefValue(defaultValue))!!)
+    }
+
     abstract override fun fromPrefValue(prefValue: String): T
 
     override fun createPref(context: Context): ListPreference {
@@ -113,6 +127,10 @@ sealed class EnumByTitlePref<T>(defaultValue: T, title: String, summary: String)
 
     abstract override fun fromPrefValue(prefValue: String): T
 
+    override fun getValue(sharedPreferences: SharedPreferences): T {
+        return fromPrefValue(sharedPreferences.getString(key(), toPrefValue(defaultValue))!!)
+    }
+
     abstract fun getEnumEntries(): Array<T>
 
     override fun createPref(context: Context): ListPreference {
@@ -134,6 +152,10 @@ sealed class BooleanPref(defaultValue: Boolean, title: String, summary: String) 
     override fun createPref(context: Context): CheckBoxPreference {
         return CheckBoxPreference(context)
     }
+
+    override fun getValue(sharedPreferences: SharedPreferences): Boolean {
+        return sharedPreferences.getBoolean(key(), defaultValue)
+    }
 }
 
 sealed class StringPref(defaultValue: String, title: String, summary: String) : Pref<String, EditTextPreference, String>(defaultValue,
@@ -145,6 +167,10 @@ sealed class StringPref(defaultValue: String, title: String, summary: String) : 
 
     override fun createPref(context: Context): EditTextPreference {
         return EditTextPreference(context)
+    }
+
+    override fun getValue(sharedPreferences: SharedPreferences): String {
+        return sharedPreferences.getString(key(), defaultValue)!!
     }
 }
 
@@ -158,6 +184,10 @@ sealed class StringSetPref(defaultValue: Set<String>, title: String, summary: St
     override fun createPref(context: Context): Preference {
         return Preference(context)
     }
+
+    override fun getValue(sharedPreferences: SharedPreferences): Set<String> {
+        return sharedPreferences.getStringSet(key(), defaultValue)!!
+    }
 }
 
 sealed class IntSeekbarPref(defaultValue: Int, title: String, summary: String) : Pref<Int, SeekBarPreference, Int>(defaultValue, title, summary) {
@@ -167,6 +197,10 @@ sealed class IntSeekbarPref(defaultValue: Int, title: String, summary: String) :
 
     override fun createPref(context: Context): SeekBarPreference {
         return SeekBarPreference(context)
+    }
+
+    override fun getValue(sharedPreferences: SharedPreferences): Int {
+        return sharedPreferences.getInt(key(), defaultValue)
     }
 }
 
@@ -190,5 +224,9 @@ sealed class IntListPref(defaultValue: Int, title: String, summary: String,
         listPreference.dialogTitle = summary
         listPreference.setEntryValues(valuesResourceId)
         return listPreference
+    }
+
+    override fun getValue(sharedPreferences: SharedPreferences): Int {
+        return sharedPreferences.getString(key(), defaultValue.toString())!!.toInt()
     }
 }

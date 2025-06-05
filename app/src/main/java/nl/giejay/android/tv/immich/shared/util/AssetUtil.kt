@@ -51,6 +51,9 @@ fun Asset.toSliderItem(): SliderItem {
             MetaDataType.COUNTRY to this.exifInfo?.country,
             MetaDataType.ALBUM_NAME to this.albumName,
             MetaDataType.DESCRIPTION to this.exifInfo?.description,
+            MetaDataType.FILENAME to this.originalFileName,
+            MetaDataType.FILEPATH to this.originalPath,
+            MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" ")
         ),
         ApiUtil.getThumbnailUrl(this.id, "preview")
     )
