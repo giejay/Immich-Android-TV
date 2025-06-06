@@ -107,8 +107,12 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 keyEvents.state.collect {
                     // open popup menu on the right side if its the last photo in the row and user presses right button
-                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ((adapter.size() == 0 && allPagesLoaded) ||  currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size()))) {
+                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ((adapter.size() == 0 && allPagesLoaded) || currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size()))) {
                         openPopUpMenu()
+                    } else if (it?.keyCode == KeyEvent.KEYCODE_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) {
+                        updateManualPositionHandler(adapter.size() - 1)
+                    } else if (it?.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD) {
+                        updateManualPositionHandler((currentSelectedIndex - FETCH_PAGE_COUNT).coerceAtLeast(0))
                     }
                 }
             }
@@ -152,7 +156,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                 { itRight ->
                     val assets = filterItems(itRight)
                     setupViews(assets)
-                    if(assets.size < FETCH_COUNT){
+                    if (assets.size < FETCH_COUNT) {
                         // immediately load next assets
                         currentLoadingJob = fetchNextItems()
                     }
@@ -174,13 +178,13 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         }
     }
 
-    protected open fun resortItems(){
+    protected open fun resortItems() {
         assets = sortItems(assets)
         adapter.clear()
         adapter.addAll(0, assets.map { createCard(it) })
     }
 
-    protected open fun clearState(){
+    protected open fun clearState() {
         currentPage = startPage
         assets = emptyList()
         assetsStillToRender.clear()
@@ -200,7 +204,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     protected open fun filterItems(items: List<ITEM>): List<ITEM> = items
 
     protected open suspend fun loadMoreAssets(): List<ITEM> {
-        if(allPagesLoaded){
+        if (allPagesLoaded) {
             return emptyList()
         }
         return loadData().fold(
@@ -215,7 +219,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                     setDataOnMain(filteredItems)
                 }
                 allPagesLoaded = allPagesLoaded(items)
-                if(filteredItems.size < FETCH_COUNT){
+                if (filteredItems.size < FETCH_COUNT) {
                     return filteredItems + loadMoreAssets()
                 }
                 return filteredItems
@@ -281,9 +285,9 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         return loadItems(apiClient, currentPage, FETCH_PAGE_COUNT)
     }
 
-    private fun loadBackgroundDebounced(backgroundUrl: String?, onLoadFailed: () -> Unit){
-        if(PreferenceManager.get(LOAD_BACKGROUND_IMAGE)){
-            Debouncer.debounce("background", { loadBackground(backgroundUrl, onLoadFailed)}, 1, TimeUnit.SECONDS)
+    private fun loadBackgroundDebounced(backgroundUrl: String?, onLoadFailed: () -> Unit) {
+        if (PreferenceManager.get(LOAD_BACKGROUND_IMAGE)) {
+            Debouncer.debounce("background", { loadBackground(backgroundUrl, onLoadFailed) }, 1, TimeUnit.SECONDS)
         }
     }
 
@@ -308,7 +312,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                     ) {
                         try {
                             mBackgroundManager?.drawable = resource
-                        } catch (e: Exception){
+                        } catch (e: Exception) {
                             Timber.e(e, "Could not set background")
                         }
                     }
@@ -340,7 +344,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     companion object {
         const val COLUMNS = 4
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
-        const val FETCH_COUNT = COLUMNS * 3
-        const val FETCH_PAGE_COUNT = 50
+        const val FETCH_COUNT = 50
+        const val FETCH_PAGE_COUNT = FETCH_COUNT
     }
 }
