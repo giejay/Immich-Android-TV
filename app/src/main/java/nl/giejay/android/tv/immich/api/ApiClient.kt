@@ -12,6 +12,7 @@ import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
+import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -75,23 +76,23 @@ class ApiClient(private val config: ApiClientConfig) {
         }
     }
 
-    suspend fun recentAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
+    suspend fun recentAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
         return listAssets(page, pageCount, true, "desc",
-            includeVideos = includeVideos, fromDate = now.minusMonths(PreferenceManager.get(RECENT_ASSETS_MONTHS_BACK).toLong()), endDate = now)
+            contentType = contentType, fromDate = now.minusMonths(PreferenceManager.get(RECENT_ASSETS_MONTHS_BACK).toLong()), endDate = now)
             .map { it.shuffled() }
     }
 
-    suspend fun similarAssets(page: Int, pageCount: Int, includeVideos: Boolean): Either<String, List<Asset>> {
+    suspend fun similarAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, List<Asset>> {
         val now = LocalDateTime.now()
         val map: List<Either<String, List<Asset>>> = (0 until PreferenceManager.get(SIMILAR_ASSETS_YEARS_BACK)).toList().map {
             listAssets(page,
                 pageCount,
                 true,
                 "desc",
-                includeVideos = includeVideos,
                 fromDate = now.minusDays((PreferenceManager.get(SIMILAR_ASSETS_PERIOD_DAYS) / 2).toLong()).minusYears(it.toLong()),
-                endDate = now.plusDays((PreferenceManager.get(SIMILAR_ASSETS_PERIOD_DAYS) / 2).toLong()).minusYears(it.toLong()))
+                endDate = now.plusDays((PreferenceManager.get(SIMILAR_ASSETS_PERIOD_DAYS) / 2).toLong()).minusYears(it.toLong()),
+                contentType = contentType)
         }
         if (map.all { it.isLeft() }) {
             return map.first()
@@ -104,13 +105,14 @@ class ApiClient(private val config: ApiClientConfig) {
                            random: Boolean = false,
                            order: String = "desc",
                            personIds: List<UUID> = emptyList(),
-                           includeVideos: Boolean = true,
                            fromDate: LocalDateTime? = null,
-                           endDate: LocalDateTime? = null): Either<String, List<Asset>> {
+                           endDate: LocalDateTime? = null,
+                           contentType: ContentType): Either<String, List<Asset>> {
         val searchRequest = SearchRequest(page,
             pageCount,
             order,
-            if (includeVideos) null else "IMAGE",
+            // null for all content
+            if (contentType == ContentType.ALL) null else contentType.toString(),
             personIds,
             endDate?.format(dateTimeFormatter),
             fromDate?.format(dateTimeFormatter))

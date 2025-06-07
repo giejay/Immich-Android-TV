@@ -19,6 +19,7 @@ import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
@@ -103,23 +104,24 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     }
 
     private fun loadRandomImages(screenSaverType: ScreenSaverType): suspend () -> Either<String, List<Asset>> {
+        val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
         when (screenSaverType) {
             ScreenSaverType.RECENT -> {
                 return suspend {
-                    apiClient.recentAssets(currentPage, PAGE_COUNT, PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS))
+                    apiClient.recentAssets(currentPage, PAGE_COUNT, contentType = contentType)
                 }
             }
 
             ScreenSaverType.SIMILAR_TIME_PERIOD -> {
                 return suspend {
-                    apiClient.similarAssets(currentPage, PAGE_COUNT, PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS))
+                    apiClient.similarAssets(currentPage, PAGE_COUNT, contentType = contentType)
                 }
             }
 
             else -> {
                 // random
                 return suspend {
-                    apiClient.listAssets(currentPage, PAGE_COUNT, true, includeVideos = PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS))
+                    apiClient.listAssets(currentPage, PAGE_COUNT, true, contentType = contentType)
                 }
             }
         }

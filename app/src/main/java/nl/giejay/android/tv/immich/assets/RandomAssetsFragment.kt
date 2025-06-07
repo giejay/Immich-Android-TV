@@ -13,6 +13,7 @@ class RandomAssetsFragment : GenericAssetFragment() {
     ): Either<String, List<Asset>> {
         return apiClient.listAssets(page,
             pageCount,
-            random = true)
+            random = true,
+            contentType = currentFilter)
     }
 }

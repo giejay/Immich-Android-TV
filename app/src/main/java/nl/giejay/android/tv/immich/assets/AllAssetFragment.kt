@@ -17,7 +17,8 @@ class AllAssetFragment : GenericAssetFragment() {
         return apiClient.listAssets(page,
             pageCount,
             false,
-            if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc")
+            if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc",
+            contentType = currentFilter)
     }
 
     override fun showMediaCount(): Boolean {

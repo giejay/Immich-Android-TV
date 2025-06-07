@@ -26,7 +26,7 @@ class PersonAssetsFragment : GenericAssetFragment() {
             pageCount,
             random = true,
             order = "desc",
-            includeVideos = true,
+            contentType = currentFilter,
             personIds = listOf(UUID.fromString(personId))).map { it.shuffled() }
     }
 

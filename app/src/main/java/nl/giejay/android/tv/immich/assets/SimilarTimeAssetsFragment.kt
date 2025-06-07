@@ -11,6 +11,6 @@ class SimilarTimeAssetsFragment : GenericAssetFragment() {
         page: Int,
         pageCount: Int
     ): Either<String, List<Asset>> {
-        return apiClient.similarAssets(page, pageCount, true)
+        return apiClient.similarAssets(page, pageCount, currentFilter)
     }
 }

@@ -220,6 +220,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                 }
                 allPagesLoaded = allPagesLoaded(items)
                 if (filteredItems.size < FETCH_COUNT) {
+                    currentPage += 1
                     return filteredItems + loadMoreAssets()
                 }
                 return filteredItems

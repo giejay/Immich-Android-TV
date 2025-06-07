@@ -11,6 +11,6 @@ class RecentAssetsFragment : GenericAssetFragment() {
         page: Int,
         pageCount: Int
     ): Either<String, List<Asset>> {
-        return apiClient.recentAssets(page, pageCount,true)
+        return apiClient.recentAssets(page, pageCount, currentFilter)
     }
 }
