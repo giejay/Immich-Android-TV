@@ -197,7 +197,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     private fun fetchNextItems(): Job {
         return ioScope.launch {
-            loadMoreAssets()
+            val nextAssets = loadMoreAssets()
+            setDataOnMain(nextAssets)
         }
     }
 
@@ -207,6 +208,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         if (allPagesLoaded) {
             return emptyList()
         }
+        currentPage += 1
         return loadData().fold(
             { errorMessage ->
                 showErrorMessage(errorMessage)
@@ -215,15 +217,12 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             { items ->
                 Timber.i("Loading next items, ${items.size}")
                 val filteredItems = filterItems(items)
-                if (filteredItems.isNotEmpty()) {
-                    setDataOnMain(filteredItems)
-                }
                 allPagesLoaded = allPagesLoaded(items)
                 if (filteredItems.size < FETCH_COUNT) {
-                    currentPage += 1
                     return filteredItems + loadMoreAssets()
+                } else  {
+                    return filteredItems
                 }
-                return filteredItems
             }
         )
     }
@@ -279,7 +278,6 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         this@VerticalCardGridFragment.assets += sortedItems
         assetsStillToRender.addAll(sortedItems)
         addAssetsPaginated()
-        currentPage += 1
     }
 
     protected open suspend fun loadData(): Either<String, List<ITEM>> {

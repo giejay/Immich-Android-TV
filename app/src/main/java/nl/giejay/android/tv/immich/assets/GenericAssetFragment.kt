@@ -82,7 +82,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     override fun onItemClicked(card: Card) {
         val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
         val loadMore: LoadMore = suspend {
-            loadMoreAssets().toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+            val moreAssets = loadMoreAssets()
+            // also load the data in the overview
+            setDataOnMain(moreAssets)
+            moreAssets.toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
         }
 
         findNavController().navigate(
