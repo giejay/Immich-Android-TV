@@ -58,9 +58,9 @@ jobs:
       - name: Set release notes
         id: set_release_notes
         run: |
-          RELEASE_NOTES=$(awk '{printf "%s%%0A", $0}' commits.txt)
-          RELEASE_NOTES="${RELEASE_NOTES%\\%0A}"
+          RELEASE_NOTES=$(cat commits.txt)
           RELEASE_NOTES="${RELEASE_NOTES//'%'/'%25'}"
+          RELEASE_NOTES="${RELEASE_NOTES//$'\n'/'%0A'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\r'/'%0D'}"
           echo "release_notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
           echo "Release Notes: $RELEASE_NOTES"
