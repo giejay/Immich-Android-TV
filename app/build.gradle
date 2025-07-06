@@ -30,8 +30,8 @@ android {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
         targetSdkVersion 35
-        versionCode 99
-        versionName "3.9.2"
+        versionCode 100
+        versionName "3.9.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
