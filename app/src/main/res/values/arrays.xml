@@ -8,6 +8,9 @@
         <item>20 seconds</item>
         <item>30 seconds</item>
         <item>1 minute</item>
+        <item>3 minutes</item>
+        <item>5 minutes</item>
+        <item>10 minutes</item>
     </array>
     <string-array name="interval_values">
         <item>1</item>
@@ -17,6 +20,9 @@
         <item>20</item>
         <item>30</item>
         <item>60</item>
+        <item>180</item>
+        <item>300</item>
+        <item>600</item>
     </string-array>
 
     <array name="meta_data_alignment_labels">
