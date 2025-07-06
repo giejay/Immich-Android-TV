@@ -62,7 +62,7 @@ jobs:
           RELEASE_NOTES="${RELEASE_NOTES//'%'/'%25'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\n'/'%0A'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\r'/'%0D'}"
-          echo "release_notes=$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "::set-output name=value::$RELEASE_NOTES"
           echo "Release Notes: $RELEASE_NOTES"
 
       - name: Create Release
@@ -73,7 +73,8 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
-          body: ${{ steps.set_release_notes.outputs.release_notes }}
+          body: |
+            ${{ steps.set_release_notes.outputs.value }}
           draft: false
           prerelease: false
 
