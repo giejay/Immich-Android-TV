@@ -31,10 +31,23 @@ jobs:
       run: |
          echo $GOOGLE_SERVICES_BASE64 | base64 --decode > ./app/google-services.json
          echo $STRINGS_OTHER_BASE64 | base64 --decode > ./app/src/main/res/values/strings_other.xml
-    - name: Build with Gradle
+
+    - name: Decode Keystore
+      env:
+        KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+      run: |
+        echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
+
+    - name: Build signed APK
+      env:
+        RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
+        RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+        RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       run: ./gradlew assembleRelease
+
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-          name: immich-tv-release-unsigned.apk
-          path: ./app/build/outputs/apk/release/app-release-unsigned.apk
+          name: immich-tv-beta.apk
+          path: ./app/build/outputs/apk/release/*.apk
