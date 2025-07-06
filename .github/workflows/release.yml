@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -45,6 +46,7 @@ jobs:
         id: get_commits
         run: |
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "Last tag: $LAST_TAG"
           if [ -z "$LAST_TAG" ]; then
             echo "No previous tag found. Getting all commits."
             git log --pretty=format:'%h %s' > commits.txt
@@ -74,12 +76,22 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Set APK asset path without 'v' prefix
+        id: set_apk_path
+        run: |
+          APK_NAME="ImmichTV-${GITHUB_REF_NAME#v}.apk"
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "apk_path=app/build/outputs/apk/release/$APK_NAME" >> $GITHUB_OUTPUT
+          echo "APK Name: $APK_NAME"
+          echo "APK Path: app/build/outputs/apk/release/$APK_NAME"
+          ls -l app/build/outputs/apk/release/
+
       - name: Upload APK Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: app/build/outputs/apk/release/ImmichTV-${{ github.ref_name }}.apk
-          asset_name: ImmichTV-${{ github.ref_name }}.apk
+          asset_path: ${{ steps.set_apk_path.outputs.apk_path }}
+          asset_name: ${{ steps.set_apk_path.outputs.apk_name }}
           asset_content_type: application/vnd.android.package-archive
