@@ -63,12 +63,19 @@ private fun formatDate(date: Date): String {
     val calendar = Calendar.getInstance()
     calendar.time = date
     val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val isEnglish = locale.language == "en"
     val day = calendar[Calendar.DATE]
-    val formatString = when (day) {
-        1, 21, 31 -> "EEEE',' d'ˢᵗ' MMMM yyyy"
-        2, 22 -> "EEEE',' d'ⁿᵈ' MMMM yyyy"
-        3, 23 -> "EEEE',' d'ʳᵈ' MMMM yyyy"
-        else -> "EEEE',' d'ᵗʰ' MMMM yyyy"
+    val formatString = if (isEnglish) {
+        // English: Friday, 7th April 2006
+        when (day) {
+            1, 21, 31 -> "EEEE, d'st' MMMM yyyy"
+            2, 22 -> "EEEE, d'nd' MMMM yyyy"
+            3, 23 -> "EEEE, d'rd' MMMM yyyy"
+            else -> "EEEE, d'th' MMMM yyyy"
+        }
+    } else {
+        // All other locales: Freitag, 7. April 2006
+        "EEEE, d. MMMM yyyy"
     }
     return SimpleDateFormat(formatString, locale).format(date)
 }
@@ -92,4 +99,3 @@ fun Asset.toCard(): Card {
         ApiUtil.getThumbnailUrl(this.id, "preview")
     )
 }
-

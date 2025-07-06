@@ -8,6 +8,7 @@ import okhttp3.ResponseBody
 import okio.BufferedSource
 import okio.GzipSource
 import okio.Okio
+import okio.buffer
 import timber.log.Timber
 
 // https://gist.github.com/erickok/e371a9e0b9e702ed441d
@@ -20,7 +21,7 @@ class ResponseLoggingInterceptor : Interceptor {
             val contentType: MediaType? = it.contentType()
             val contentEncoding: String? = response.header(CONTENT_ENCODING)
             if ("gzip" == contentEncoding) {
-                val buffer: BufferedSource = Okio.buffer(GzipSource(it.source()))
+                val buffer: BufferedSource = GzipSource(it.source()).buffer()
                 content = buffer.readUtf8()
                 val wrappedBody: ResponseBody = ResponseBody.create(contentType, content)
                 response =

@@ -16,8 +16,8 @@ import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 
 
 class AlbumDetailsFragment : GenericAssetFragment() {
-    private lateinit var albumId: String
-    private lateinit var albumName: String
+    lateinit var albumId: String
+    lateinit var albumName: String
     private var pageToBucket: Map<Int, String>? = null
 
     override fun getFilterKey(): EnumByTitlePref<ContentType> {

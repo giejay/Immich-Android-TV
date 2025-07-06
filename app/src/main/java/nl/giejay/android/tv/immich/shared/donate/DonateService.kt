@@ -8,6 +8,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -26,7 +27,8 @@ class DonateService(private val context: Context) : PurchasesUpdatedListener {
 
     fun setupBilling(callback: (Boolean) -> Unit) {
         mBillingClient =
-            BillingClient.newBuilder(context).setListener(this).enablePendingPurchases().build()
+            BillingClient.newBuilder(context).setListener(this).enablePendingPurchases(PendingPurchasesParams.
+            newBuilder().enablePrepaidPlans().enableOneTimeProducts().build()).build()
         mBillingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
@@ -55,7 +57,7 @@ class DonateService(private val context: Context) : PurchasesUpdatedListener {
                 })
                 mBillingClient.queryProductDetailsAsync(params.build()) { billingResult, list ->
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        callback(list)
+                        callback(list.productDetailsList)
                     } else {
                         Timber.e(billingResult.debugMessage)
                         callback(emptyList())

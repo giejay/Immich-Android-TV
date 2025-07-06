@@ -17,19 +17,15 @@ package nl.giejay.android.tv.immich
 
 import android.app.Application
 import android.content.Context
-import android.os.StrictMode
 import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.google.android.gms.cast.tv.CastReceiverContext
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.USER_ID
-import nl.giejay.mediaslider.adapter.MetaDataItem
-import nl.giejay.mediaslider.adapter.MetaDataSerializer
 import timber.log.Timber
 import java.util.UUID
 
@@ -51,37 +47,12 @@ class ImmichApplication : Application() {
             Timber.plant(CrashReportingTree())
         }
 
-        /**
-         * This initialises an instance of the CastReceiverContext object which is needed to
-         * interact with Cast while in the TV app. This object allows for passing media signals
-         * and the data load and so needs to exist while the app is in the foreground so that all
-         * cast commands can be picked up by the TV App.
-         */
-        CastReceiverContext.initInstance((this))
-        ProcessLifecycleOwner.get().lifecycle.addObserver(AppLifecycleObserver(ProcessLifecycleOwner.get().lifecycle))
         var userId = PreferenceManager.get(USER_ID)
         if(userId.isBlank()){
             userId = UUID.randomUUID().toString()
             PreferenceManager.save(USER_ID, userId)
         }
         FirebaseCrashlytics.getInstance().setUserId(userId)
-    }
-
-    /**
-     * TVs only have at most one app in the foreground so we can use onResume/onPause.
-     * For other form factors, this registration may vary.
-     */
-    class AppLifecycleObserver(val lifecycle: Lifecycle) : LifecycleObserver {
-
-        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        fun onResume() {
-            CastReceiverContext.getInstance().start()
-        }
-
-        @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        fun onPause() {
-            CastReceiverContext.getInstance().stop()
-        }
     }
 
     companion object {

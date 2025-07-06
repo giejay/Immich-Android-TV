@@ -24,7 +24,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.fragment.NavHostFragment
-import nl.giejay.android.tv.immich.castconnect.CastHelper
 import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
@@ -39,7 +38,6 @@ class MainActivity : FragmentActivity() {
     private lateinit var keyEventsModel: KeyEventsViewModel
     private lateinit var navGraph: NavGraph
     private lateinit var navController: NavController
-    private lateinit var castHelper: CastHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,16 +52,6 @@ class MainActivity : FragmentActivity() {
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
         navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
-
-        castHelper = CastHelper(
-            { videoToCast ->
-//                loadPlaybackFragment(videoToCast)
-            },
-            application
-        )
-        if (castHelper.validateAndProcessCastIntent(intent)) {
-            return
-        }
 
         if(!PreferenceManager.hasMetaDataForScreen(MetaDataScreen.VIEWER, AlignOption.RIGHT) || !PreferenceManager.hasMetaDataForScreen(MetaDataScreen.SCREENSAVER, AlignOption.RIGHT)){
             // first time using the customizer, do a migration
@@ -115,30 +103,4 @@ class MainActivity : FragmentActivity() {
         super.onDestroy()
         Timber.i("Main activity got destroyed")
     }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-
-        if (intent == null) {
-            return
-        }
-
-        // Return early if intent is a valid Cast intent and is processed by the Cast SDK.
-        if (castHelper.validateAndProcessCastIntent(intent)) {
-            return
-        }
-
-        // Include logic to process other types of intents here, if any.
-    }
-
-//    private fun loadPlaybackFragment(video: Video) {
-//        // Set the default graph and go to playback for the loaded Video
-//        navController.graph = navGraph
-//        navController.navigate(
-//            BrowseFragmentDirections.actionBrowseFragmentToPlaybackFragment(
-//                video
-//            )
-//        )
-//    }
 }

@@ -20,7 +20,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
-import nl.giejay.android.tv.immich.castconnect.CastHelper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
