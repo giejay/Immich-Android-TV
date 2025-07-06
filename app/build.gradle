@@ -30,18 +30,32 @@ android {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
         targetSdkVersion 35
-        versionCode 96
-        versionName "3.8.3"
+        versionCode 97
+        versionName "3.9.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("RELEASE_KEYSTORE_PATH") ?: "keystore")
+            storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: "dummy"
+            keyAlias System.getenv("RELEASE_KEY_ALIAS") ?: "dummy"
+            keyPassword System.getenv("RELEASE_KEY_PASSWORD") ?: "dummy"
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
+    }
+
+    lint {
+        disable "NullSafeMutableLiveData"
     }
 
     buildFeatures {
@@ -56,6 +70,14 @@ android {
         // Exoplayer requires targeting Java 8
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def appName = "ImmichTV" // Change if needed
+            def versionName = variant.versionName
+            outputFileName = "${appName}-${versionName}.apk"
+        }
     }
 
     kotlinOptions {
