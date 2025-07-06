@@ -327,4 +327,8 @@
         <item name="android:popupBackground">#0F213F</item>
         <item name="android:disabledAlpha">0.5</item>
     </style>
+
+    <style name="ProgressBar" parent="AppTheme">
+        <item name="colorAccent">@color/progressbarColor</item>
+    </style>
 </resources>
