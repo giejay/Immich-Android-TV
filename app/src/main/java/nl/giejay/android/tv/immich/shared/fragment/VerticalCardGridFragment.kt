@@ -334,7 +334,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     private suspend fun showErrorMessage(message: String) = withContext(Dispatchers.Main) {
         if (isAdded) {
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT)
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG)
                 .show()
         }
         Timber.e(message)

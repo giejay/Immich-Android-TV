@@ -48,6 +48,13 @@ object ApiUtil {
                         ?: Either.Left("Did not receive a input from the server")
                 }
 
+                403 -> {
+                    if(res.errorBody()?.string()?.contains("required permission: all") == true){
+                        Either.Left("API key is missing the permission \"all\". Please adapt your permissions in the Immich web interface.")
+                    } else {
+                        Either.Left("API key permissions are invalid: ${res.errorBody()?.string() ?: "Unknown error"}")
+                    }
+                }
                 else -> {
                     Either.Left("Invalid status code from API: $code, make sure you are using the latest Immich server release.")
                 }
