@@ -146,7 +146,7 @@ data object SLIDER_METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Confi
     true
 })
 
-data object SLIDER_ONLY_USE_THUMBNAILS : BooleanPref(true, "Play sound", "Play sound of videos")
+data object SLIDER_ONLY_USE_THUMBNAILS : BooleanPref(true, "Use high resolution thumbnails", "Use high resolution thumbnails instead of native/full images. Will dramatically speed up loading.")
 data object SLIDER_MERGE_PORTRAIT_PHOTOS : BooleanPref(true, "Merge portrait photos", "Show two portrait photos next to each other")
 data object SLIDER_MAX_CUT_OFF_WIDTH : IntSeekbarPref(20,
     "Safe Center Crop max cutoff height %",
