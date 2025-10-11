@@ -165,4 +165,10 @@ dependencies {
     testImplementation "org.mockito:mockito-core:4.4.0"
     testImplementation 'org.mockito:mockito-inline:4.4.0'
     testImplementation 'org.robolectric:robolectric:4.7.3'
+
+    testImplementation 'com.google.apis:google-api-services-androidpublisher:v3-rev20230815-2.0.0'
+    testImplementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
+    testImplementation 'com.google.auth:google-auth-library-oauth2-http:1.22.0'
+    testImplementation 'com.google.api-client:google-api-client:2.2.0'
+
 }
