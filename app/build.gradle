@@ -30,7 +30,7 @@ android {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
         targetSdkVersion 35
-        versionCode 113
+        versionCode 114
         versionName "3.14"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -41,7 +41,7 @@ android {
         release {
             storeFile file(System.getenv("RELEASE_KEYSTORE_PATH") ?: "keystore")
             storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: "dummy"
-            keyAlias System.getenv("RELEASE_KEY_ALIAS") ?: "dummy"
+            keyAlias System.getenv("RELEASE_KEY_ALIAS") ?: "immich"
             keyPassword System.getenv("RELEASE_KEY_PASSWORD") ?: "dummy"
         }
     }
