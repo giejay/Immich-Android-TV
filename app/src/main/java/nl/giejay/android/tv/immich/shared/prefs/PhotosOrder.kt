@@ -25,16 +25,6 @@ enum class PhotosOrder(val sort: Comparator<Asset>): EnumWithTitle {
         override fun getTitle(): String {
             return "Oldest - Newest"
         }
-    },
-    ALPHABETICALLY_A_Z({ a1, a2 -> a1.deviceAssetId?.compareToNullSafe(a2.deviceAssetId) ?: 1 }) {
-        override fun getTitle(): String {
-            return "Alphabetically (A-Z)"
-        }
-    },
-    ALPHABETICALLY_Z_A({ a2, a1 -> a1.deviceAssetId?.compareToNullSafe(a2.deviceAssetId) ?: 1 }) {
-        override fun getTitle(): String {
-            return "Alphabetically (Z-A)"
-        }
     };
 
     companion object {
