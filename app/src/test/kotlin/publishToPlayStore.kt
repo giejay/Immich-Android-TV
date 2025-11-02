@@ -37,6 +37,72 @@ object PlayStorePublisher {
             }
         }
 
+        // Authenticate with Google Play API
+        val credentials = GoogleCredentials.fromStream(File(serviceAccountPath).inputStream())
+            .createScoped(listOf("https://www.googleapis.com/auth/androidpublisher"))
+        val baseInitializer = HttpCredentialsAdapter(credentials)
+        val requestInitializer = HttpRequestInitializer { request: HttpRequest ->
+            baseInitializer.initialize(request)
+            request.connectTimeout = 600_000 // 10 minutes
+            request.readTimeout = 600_000 // 10 minutes
+        }
+        val transport = GoogleNetHttpTransport.newTrustedTransport()
+        val jsonFactory = GsonFactory.getDefaultInstance()
+        val publisher = AndroidPublisher.Builder(transport, jsonFactory, requestInitializer)
+            .setApplicationName("Immich TV (Unofficial)")
+            .build()
+
+        val packageName = "nl.giejay.android.tv.immich"
+        val promote = args.size > 2 && args[2].equals("promote", ignoreCase = true)
+
+        if (promote) {
+            try {
+                val edit = publisher.edits().insert(packageName, null).execute()
+                val editId = edit.id
+                val internalTrack = publisher.edits().tracks().get(packageName, editId, "internal").execute()
+                val latestRelease = internalTrack.releases?.maxByOrNull { it.versionCodes?.maxOrNull() ?: 0L }
+                if (latestRelease == null || latestRelease.versionCodes.isNullOrEmpty()) {
+                    println("No internal release found to promote.")
+                    return
+                }
+                val prodRelease = TrackRelease()
+                    .setName(latestRelease.name)
+                    .setVersionCodes(latestRelease.versionCodes)
+                    .setStatus("completed")
+                    .setReleaseNotes(latestRelease.releaseNotes)
+                val prodTrack = Track().setReleases(listOf(prodRelease))
+                publisher.edits().tracks().update(packageName, editId, "production", prodTrack).execute()
+                publisher.edits().commit(packageName, editId).execute()
+                println("Promoted internal release to production: versionCodes=${latestRelease.versionCodes}")
+            } catch (e: Exception) {
+                println("Error during promotion: ${e.message}")
+                e.printStackTrace()
+            }
+            return
+        }
+
+        // Prompt for keystore password
+        print("Enter keystore password: ")
+        val password = System.console()?.readPassword()?.concatToString()
+            ?: readLine() // fallback if not running in a console
+
+        // Build the AAB using Gradle, passing the password as an env variable
+        println("Building the Android App Bundle (AAB)...")
+        val gradleProcess = ProcessBuilder("./gradlew", "bundleRelease")
+            .inheritIO()
+            .apply {
+                environment()["RELEASE_KEYSTORE_PASSWORD"] = password ?: ""
+                environment()["RELEASE_KEY_PASSWORD"] = password ?: ""
+            }
+            .start()
+
+        val exitCode = gradleProcess.waitFor()
+        if (exitCode != 0) {
+            println("Gradle build failed with exit code $exitCode")
+            return
+        }
+        println("AAB build completed.")
+
         val repo = FileRepositoryBuilder()
             .setGitDir(File(".git"))
             .readEnvironment()
@@ -72,54 +138,10 @@ object PlayStorePublisher {
         println("Changelog between $prevTag and $lastTag:")
         println(changelog)
 
-        val packageName = "nl.giejay.android.tv.immich"
-        val aabPath = "app/release/app-release.aab"
+        val aabPath = "app/build/outputs/bundle/release/app-release.aab"
         val aabFile = File(aabPath)
         if (!aabFile.exists()) {
             println("AAB file not found at $aabPath")
-            return
-        }
-
-        // Authenticate with Google Play API
-        val credentials = GoogleCredentials.fromStream(File(serviceAccountPath).inputStream())
-            .createScoped(listOf("https://www.googleapis.com/auth/androidpublisher"))
-        val baseInitializer = HttpCredentialsAdapter(credentials)
-        val requestInitializer = HttpRequestInitializer { request: HttpRequest ->
-            baseInitializer.initialize(request)
-            request.connectTimeout = 600_000 // 10 minutes
-            request.readTimeout = 600_000 // 10 minutes
-        }
-        val transport = GoogleNetHttpTransport.newTrustedTransport()
-        val jsonFactory = GsonFactory.getDefaultInstance()
-        val publisher = AndroidPublisher.Builder(transport, jsonFactory, requestInitializer)
-            .setApplicationName("Immich TV (Unofficial)")
-            .build()
-
-        val promote = args.size > 2 && args[2].equals("promote", ignoreCase = true)
-
-        if (promote) {
-            try {
-                val edit = publisher.edits().insert(packageName, null).execute()
-                val editId = edit.id
-                val internalTrack = publisher.edits().tracks().get(packageName, editId, "internal").execute()
-                val latestRelease = internalTrack.releases?.maxByOrNull { it.versionCodes?.maxOrNull() ?: 0L }
-                if (latestRelease == null || latestRelease.versionCodes.isNullOrEmpty()) {
-                    println("No internal release found to promote.")
-                    return
-                }
-                val prodRelease = TrackRelease()
-                    .setName(latestRelease.name)
-                    .setVersionCodes(latestRelease.versionCodes)
-                    .setStatus("completed")
-                    .setReleaseNotes(latestRelease.releaseNotes)
-                val prodTrack = Track().setReleases(listOf(prodRelease))
-                publisher.edits().tracks().update(packageName, editId, "production", prodTrack).execute()
-                publisher.edits().commit(packageName, editId).execute()
-                println("Promoted internal release to production: versionCodes=${latestRelease.versionCodes}")
-            } catch (e: Exception) {
-                println("Error during promotion: ${e.message}")
-                e.printStackTrace()
-            }
             return
         }
 
