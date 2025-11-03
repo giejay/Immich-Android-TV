@@ -13,16 +13,50 @@ import java.util.Date
 import java.util.Locale
 
 fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<SliderItemViewHolder> {
-    if(!mergePortrait){
-        return this.map{ SliderItemViewHolder(it.toSliderItem()) }
+    if (!mergePortrait) {
+        return this.map { SliderItemViewHolder(it.toSliderItem()) }
     }
     if (!keepOrder) {
-        val portraitItems = this.filter { it.isPortraitImage() }.sortedWith(compareBy<Asset> { it.people?.firstOrNull()?.id }.thenBy { it.people?.size }.thenBy { it.exifInfo?.city})
-        val landscapeItems = this.minus(portraitItems.toSet())
+        val portraits = this.filter { it.isPortraitImage() }
+        val queue = portraits.toMutableList()
+        val portraitSliders = mutableListOf<SliderItemViewHolder>()
 
-        val portraitSliders = portraitItems.chunked(2).map { SliderItemViewHolder(it.first().toSliderItem(), it.getOrNull(1)?.toSliderItem()) }
+        while (queue.isNotEmpty()) {
+            val first = queue.removeAt(0)
+            val firstDate = first.fileModifiedAt?.time
+
+            // pick the second portrait image that is most furthest away in time to the first one
+            val second = if (first.people?.isNotEmpty() == true && firstDate != null) {
+                // Try strict match: same people size and city
+                queue.filter { candidate ->
+                    candidate.people?.size == first.people.size &&
+                            candidate.people.firstOrNull()?.id == first.people.first().id &&
+                            candidate.exifInfo?.city != null && first.exifInfo?.city != null &&
+                            candidate.exifInfo.city == first.exifInfo.city &&
+                            candidate.exifInfo.dateTimeOriginal != null
+                }.maxByOrNull { candidate ->
+                    kotlin.math.abs(candidate.exifInfo!!.dateTimeOriginal!!.time - firstDate)
+                } ?: // Fallback: only same people id
+                queue.filter { candidate ->
+                    candidate.people?.firstOrNull()?.id == first.people.first().id &&
+                            candidate.exifInfo?.dateTimeOriginal != null
+                }.maxByOrNull { candidate ->
+                    kotlin.math.abs(candidate.exifInfo!!.dateTimeOriginal!!.time - firstDate)
+                }
+            } else null // no people or date info, or simply no match with the first, just add a random one next to it
+
+            if (second != null) {
+                portraitSliders.add(SliderItemViewHolder(first.toSliderItem(), second.toSliderItem()))
+                queue.remove(second)
+            } else {
+                portraitSliders.add(SliderItemViewHolder(first.toSliderItem(), queue.removeFirstOrNull()?.toSliderItem()))
+            }
+        }
+
+        val landscapeItems = this - portraits.toSet()
         return (landscapeItems.map { SliderItemViewHolder(it.toSliderItem()) } + portraitSliders).shuffled()
     }
+
     val queue = this.toMutableList()
     val items = mutableListOf<SliderItemViewHolder>()
 
@@ -41,22 +75,19 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 }
 
 fun Asset.toSliderItem(): SliderItem {
-    return SliderItem(
-        this.id,
+    return SliderItem(this.id,
         ApiUtil.getFileUrl(this.id, this.type),
         SliderItemType.valueOf(this.type.uppercase()),
-        mapOf(
-            MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let{formatDate(it)},
+        mapOf(MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let { formatDate(it) },
             MetaDataType.CITY to this.exifInfo?.city,
             MetaDataType.COUNTRY to this.exifInfo?.country,
             MetaDataType.ALBUM_NAME to this.albumName,
             MetaDataType.DESCRIPTION to this.exifInfo?.description,
             MetaDataType.FILENAME to this.originalFileName,
+            MetaDataType.PEOPLE to this.people?.map { it.name }?.filter { it?.isNotBlank() == true }?.joinToString(", "),
             MetaDataType.FILEPATH to this.originalPath,
-            MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" ")
-        ),
-        ApiUtil.getThumbnailUrl(this.id, "preview")
-    )
+            MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" ")),
+        ApiUtil.getThumbnailUrl(this.id, "preview"))
 }
 
 private fun formatDate(date: Date): String {
@@ -91,11 +122,9 @@ fun List<Asset>.toCards(): List<Card> {
 }
 
 fun Asset.toCard(): Card {
-    return Card(
-        this.deviceAssetId ?: "",
+    return Card(this.deviceAssetId ?: "",
         this.exifInfo?.description ?: "",
         this.id,
         ApiUtil.getThumbnailUrl(this.id, "thumbnail"),
-        ApiUtil.getThumbnailUrl(this.id, "preview")
-    )
+        ApiUtil.getThumbnailUrl(this.id, "preview"))
 }
