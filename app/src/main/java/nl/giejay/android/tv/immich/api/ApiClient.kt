@@ -1,8 +1,6 @@
 package nl.giejay.android.tv.immich.api
 
 import arrow.core.Either
-import arrow.core.None
-import arrow.core.Option
 import arrow.core.flatMap
 import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
@@ -57,9 +55,9 @@ class ApiClient(private val config: ApiClientConfig) {
 
     private val service: ApiService = retrofit.create(ApiService::class.java)
 
-    suspend fun listAlbums(assetId: Option<String> = None): Either<String, List<Album>> {
-        return executeAPICall(200) { service.listAlbums(false, assetId.getOrNull()) }.flatMap { albums ->
-            return executeAPICall(200) { service.listAlbums(true, assetId.getOrNull()) }.map { sharedAlbums ->
+    suspend fun listAlbums(): Either<String, List<Album>> {
+        return executeAPICall(200) { service.listAlbums() }.flatMap { albums ->
+            return executeAPICall(200) { service.listAlbums(true) }.map { sharedAlbums ->
                 albums + sharedAlbums
             }
         }

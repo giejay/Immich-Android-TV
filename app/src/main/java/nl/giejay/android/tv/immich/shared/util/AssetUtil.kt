@@ -1,6 +1,5 @@
 package nl.giejay.android.tv.immich.shared.util
 
-import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
@@ -8,7 +7,6 @@ import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.mediaslider.model.MetaDataType
-import nl.giejay.mediaslider.model.StaticMetaDataProvider
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -83,13 +81,12 @@ fun Asset.toSliderItem(): SliderItem {
         mapOf(MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let { formatDate(it) },
             MetaDataType.CITY to this.exifInfo?.city,
             MetaDataType.COUNTRY to this.exifInfo?.country,
+            MetaDataType.ALBUM_NAME to this.albumName,
             MetaDataType.DESCRIPTION to this.exifInfo?.description,
             MetaDataType.FILENAME to this.originalFileName,
             MetaDataType.PEOPLE to this.people?.map { it.name }?.filter { it?.isNotBlank() == true }?.joinToString(", "),
             MetaDataType.FILEPATH to this.originalPath,
-            MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" "))
-            .mapValues { StaticMetaDataProvider(it.value) } +
-                mapOf(MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)),
+            MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" ")),
         ApiUtil.getThumbnailUrl(this.id, "preview"))
 }
 
