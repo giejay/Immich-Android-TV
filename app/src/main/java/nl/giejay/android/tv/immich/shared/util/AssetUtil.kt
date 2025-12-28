@@ -80,6 +80,7 @@ fun Asset.toSliderItem(): SliderItem {
     return SliderItem(this.id,
         ApiUtil.getFileUrl(this.id, this.type),
         SliderItemType.valueOf(this.type.uppercase()),
+        this.exifInfo?.orientation ?: 1,
         mapOf(MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let { formatDate(it) },
             MetaDataType.CITY to this.exifInfo?.city,
             MetaDataType.COUNTRY to this.exifInfo?.country,
