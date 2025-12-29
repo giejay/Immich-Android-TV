@@ -131,8 +131,10 @@ object PlayStorePublisher {
             .not(repo.resolve(prevTag))
             .call()
         val changelog = log
-            .filter { !it.shortMessage.contains("Create new release", ignoreCase = true) }
-            .map { "- ${it.shortMessage}" }
+            .filter { !it.fullMessage.contains("Create new release", ignoreCase = true) }
+            .flatMap { commit ->
+                commit.fullMessage.lines().filter { it.isNotBlank() }.map { "- $it" }
+            }
             .joinToString("\n")
 
         println("Changelog between $prevTag and $lastTag:")
