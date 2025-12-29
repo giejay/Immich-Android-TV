@@ -164,6 +164,7 @@ data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTr
     }
 }
 
+data object SLIDER_FORCE_ORIGINAL_VIDEO : BooleanPref(false, "Force original video", "Play original video, even when transcode is available")
 
 // other
 data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
@@ -322,6 +323,7 @@ data object ViewPrefScreen : PrefScreen("View Settings", "view",
         ),
         PrefCategory("Slideshow", listOf(
             SLIDER_ONLY_USE_THUMBNAILS,
+            SLIDER_FORCE_ORIGINAL_VIDEO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
             SLIDER_METADATA_CUSTOMIZER,
             SLIDER_INTERVAL,

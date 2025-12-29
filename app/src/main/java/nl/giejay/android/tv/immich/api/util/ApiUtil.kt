@@ -20,7 +20,12 @@ object ApiUtil {
         return PreferenceManager.get(HOST_NAME)
     }
 
-    fun getFileUrl(assetId: String?, type: String): String? {
+    fun getFileUrl(assetId: String?, type: String, forceOriginal: Boolean = false): String? {
+        if(forceOriginal){
+            return assetId?.let {
+                "${hostName().lowercase()}/api/assets/${it}/original"
+            }
+        }
         return when (type) {
             "VIDEO" ->
                 assetId?.let {
