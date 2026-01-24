@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.ImmichApplication
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.guidedstep.GuidedStepUtil.addCheckedAction
 import timber.log.Timber
 import java.lang.IllegalStateException
@@ -28,8 +29,8 @@ class DonateFragment : GuidedStepSupportFragment() {
         val icon: Drawable =
             requireContext().getDrawable(nl.giejay.android.tv.immich.R.drawable.icon)!!
         return GuidanceStylist.Guidance(
-            "Donation",
-            "Developing this app takes a lot of effort, if you would like to show your appreciation, you can donate using the following options.",
+            getString(R.string.donation_title),
+            getString(R.string.donation_subtitle),
             "",
             icon
         )
@@ -45,7 +46,7 @@ class DonateFragment : GuidedStepSupportFragment() {
             if (it) {
                 donateService.getProducts { products ->
                     if (products.isEmpty()) {
-                        showToastAndFinish("You have exhausted your donate options, thanks!")
+                        showToastAndFinish(getString(R.string.donation_exhausted))
                         return@getProducts
                     }
                     this.products = products
@@ -65,7 +66,7 @@ class DonateFragment : GuidedStepSupportFragment() {
                     setActions(actions)
                 }
             } else {
-                showToastAndFinish("Could not initialize donation service, sorry!")
+                showToastAndFinish(getString(R.string.donation_init_failed))
             }
         }
     }

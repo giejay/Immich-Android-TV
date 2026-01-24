@@ -1,0 +1,251 @@
+<!--
+  ~ Copyright 2020 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<resources>
+
+
+    <!-- Strings for the "No Firebase" screen -->
+    <string name="no_firebase_title">Firebase не настроен</string>
+    <string name="no_firebase_body">Firebase не настроен для этого приложения. Это означает, что функции, зависящие от аккаунта, недоступны, а прогресс просмотра сохраняется локально. Чтобы включить функции Firebase, обратитесь к файлу readme.</string>
+    <string name="continue_text">Продолжить</string>
+
+    <!-- Menus -->
+    <string name="menu_identity">Идентификация</string>
+
+    <!-- Authentication and identity -->
+    <string name="email">Адрес электронной почты</string>
+    <string name="password">Пароль</string>
+    <string name="sign_in">Войти</string>
+    <string name="sign_out">Выйти</string>
+    <string name="not_signed_in">Не выполнен вход</string>
+    <string name="sign_in_error">Ошибка входа: %1$s</string>
+    <string name="empty_username_or_password">Необходимо указать и имя пользователя, и пароль</string>
+    <string name="invalid_credentials">Неверные учетные данные</string>
+    <string name="onetap_error">One Tap вернул ошибку</string>
+    <string name="server_error">Ошибка сервера</string>
+    <string name="unknown_error">Неизвестная ошибка</string>
+    <string name="sign_in_intro">Без изменений это приложение использует локальную авторизацию (MockAuthClient). Вы можете войти, используя «%1$s» в качестве e-mail и любую непустую строку в качестве пароля. Чтобы использовать удаленную авторизацию, смотрите класс RemoteAuthClient.</string>
+
+    <!-- Channel strings -->
+    <string name="default_home_screen_channel_name">Пример канала</string>
+    <string name="default_home_screen_channel_description">Пример канала домашнего экрана по умолчанию</string>
+
+    <!-- Content types -->
+    <string name="content_type_season_episode">Сезон %s Серия %s</string>
+    <string name="content_type_movie">Фильм</string>
+    <string name="content_type_clip">Клип</string>
+
+    <!-- Playback error actions -->
+    <string name="retry">Повторить</string>
+    <string name="go_back">Вернуться к просмотру</string>
+    <string name="error_title_with_video">Произошла ошибка с %s</string>
+
+    <!-- Watch Next -->
+    <string name="season">%1$s сезон %2$s</string>
+
+    <!-- Home Menu -->
+    <string name="seasonal">Сезонное</string>
+    <string name="folders">Папки</string>
+    <string name="settings">Настройки</string>
+    <string name="edit">Редактировать</string>
+    <string name="photos">Фото</string>
+    <string name="random">Случайные</string>
+    <string name="people">Люди</string>
+    <string name="recent">Недавние</string>
+    <string name="albums">Альбомы</string>
+    <string name="server">Сервер</string>
+    <string name="screensaver">Заставка\n</string>
+    <string name="debug">Отладка</string>
+    <string name="donate">Пожертвовать</string>
+    <string name="use_hd_thumbnails">Использовать миниатюры высокого разрешения</string>
+    <string name="use_hd_thumbnails_text">Использовать миниатюры высокого разрешения вместо полноразмерных изображений. Это значительно ускорит загрузку.</string>
+    <string name="albums_sorting_text">Задайте порядок отображения альбомов</string>
+    <string name="order">Порядок</string>
+    <string name="photos_sorting_text">Задайте порядок отображения фотографий</string>
+    <string name="disable_ssl">Отключить проверку SSL</string>
+    <string name="disable_ssl_text">Используйте это только при проблемах с самоподписанными сертификатами!</string>
+    <string name="api_key_text">API ключ</string>
+    <string name="server_url_text">URL сервера</string>
+    <string name="done">Готово</string>
+
+    <!-- Auth by phone -->
+    <string name="scan_qr_below">Сканируйте QR-код ниже</string>
+    <string name="or_enter_code_on_site">Или введите код на https://immich.giejay.nl</string>
+
+    <!-- Metadata -->
+    <string name="metadata">Метаданные</string>
+
+    <!-- Screensaver dialogs and preferences -->
+    <string name="screensaver_set">Установить Immich как заставку</string>
+    <string name="screensaver_set_select_albums_first">Сначала выберите альбомы для отображения!</string>
+    <string name="screensaver_not_possible_title">Невозможно установить заставку</string>
+    <string name="screensaver_not_possible">Не удалось запустить заставку для Immich из-за недействительного имени хоста/ключа API.</string>
+    <string name="close">Закрыть</string>
+    <string name="interval">Интервал</string>
+    <string name="screensaver_interval_desc">Интервал заставки</string>
+    <string name="show_media_count">Показывать количество медиа</string>
+    <string name="show_media_count_desc_screensaver">Показывать общее количество и текущий элемент</string>
+    <string name="show_description">Показывать описание</string>
+    <string name="show_description_screensaver">Показывать описание элемента в заставке</string>
+    <string name="show_album_name">Показывать название альбома</string>
+    <string name="show_album_name_desc">Показывать название альбома элемента в заставке</string>
+    <string name="show_date">Показывать дату</string>
+    <string name="show_date_screensaver">Показывать дату элемента в заставке</string>
+    <string name="show_clock">Показывать часы</string>
+    <string name="show_clock_screensaver">Показывать часы в заставке</string>
+    <string name="slide_new_asset_in">Сдвигать новый элемент</string>
+    <string name="slide_new_asset_in_desc">Сдвигать новый элемент при переходе</string>
+    <string name="set_albums_screensaver">Выбрать альбомы для заставки</string>
+    <string name="set_albums_screensaver_desc">Выбрать альбомы для отображения в заставке</string>
+    <string name="customize_metadata">Настроить метаданные</string>
+    <string name="configure_metadata_screensaver">Настроить, что показывать в заставке</string>
+    <string name="include_videos">Включать видео</string>
+    <string name="include_videos_screensaver">Включать видео в заставке</string>
+    <string name="play_sound">Проигрывать звук</string>
+    <string name="play_sound_screensaver">Проигрывать звук видео в заставке</string>
+    <string name="screensaver_brightness_desc">Установите яркость экрана при показе заставки</string>
+    <string name="screensaver_type">Тип заставки</string>
+    <string name="screensaver_type_desc">Что показывать: альбомы, случайные, недавние и т.д.</string>
+
+    <!-- Slider/viewer preferences -->
+    <string name="interval_slideshow">Интервал</string>
+    <string name="interval_slideshow_desc">Интервал слайд-шоу</string>
+    <string name="slide_animation_speed_ms">Скорость анимации слайда (мс)</string>
+    <string name="slide_animation_speed_desc">Скорость анимации в миллисекундах</string>
+    <string name="show_description_slideshow">Показывать описание</string>
+    <string name="show_description_slideshow_desc">Показывать описание элемента в слайд-шоу</string>
+    <string name="show_media_count_slideshow">Показывать количество медиа</string>
+    <string name="show_media_count_slideshow_desc">Показывать общее количество и текущий элемент</string>
+    <string name="show_date_slideshow">Показывать дату</string>
+    <string name="show_date_slideshow_desc">Показывать дату элемента в слайд-шоу</string>
+    <string name="show_city">Показывать город</string>
+    <string name="show_city_desc">Показывать город элемента в слайд-шоу</string>
+    <string name="customize_metadata_viewer">Настроить метаданные</string>
+    <string name="configure_metadata_viewer">Настроить, что показывать в просмотрщике</string>
+    <string name="merge_portrait_photos">Объединять портретные фото</string>
+    <string name="merge_portrait_photos_desc">Показывать два портретных фото рядом</string>
+    <string name="safe_center_crop_max_cutoff_height">Safe Center Crop: макс. обрезка по высоте, %</string>
+    <string name="safe_center_crop_max_cutoff_height_desc">Максимальный процент обрезки высоты изображения при использовании SafeCenterCrop</string>
+    <string name="safe_center_crop_max_cutoff_width">Safe Center Crop: макс. обрезка по ширине, %</string>
+    <string name="safe_center_crop_max_cutoff_width_desc">Максимальный процент обрезки ширины изображения при использовании SafeCenterCrop</string>
+    <string name="photo_transformation">Преобразование фото</string>
+    <string name="photo_transformation_desc">Преобразование фото</string>
+    <string name="force_original_video">Принудительно оригинальное видео</string>
+    <string name="force_original_video_desc">Воспроизводить оригинальное видео, даже если доступна транскодированная версия</string>
+
+    <!-- Other preferences -->
+    <string name="photos_in_albums">Фото в альбомах</string>
+    <string name="photos_in_albums_desc_inside">Задайте порядок отображения фото внутри альбомов</string>
+    <string name="content_type">Тип контента</string>
+    <string name="filter_by_content_type">Фильтровать по типу контента</string>
+    <string name="assets_outside_albums">Элементы вне альбомов</string>
+    <string name="assets_outside_albums_desc">Задайте порядок отображения элементов вне альбомов</string>
+    <string name="enable_debug_mode">Включить режим отладки</string>
+    <string name="enable_debug_mode_desc">Включайте при возникновении проблем.</string>
+    <string name="load_selected_item_as_background">Загружать выбранный элемент как фон</string>
+    <string name="load_selected_item_as_background_desc">Загружать текущую выбранную картинку/альбом как фон</string>
+    <string name="user_id">ID пользователя</string>
+    <string name="user_id_desc">Ваш ID пользователя, нужен для отладки</string>
+    <string name="seasonal_photos_years_back">Сезонные фото: лет назад</string>
+    <string name="seasonal_photos_years_back_desc">Сколько лет назад учитывать при показе сезонных фото</string>
+    <string name="seasonal_photos_period_days">Сезонные фото: период в днях</string>
+    <string name="recent_photos_months_back">Недавние фото: месяцев назад</string>
+    <string name="excluded_albums">Исключенные альбомы</string>
+    <string name="excluded_albums_desc">Исключать элементы из конкретных альбомов для случайного/сезонного вида</string>
+
+    <!-- Preference screens and categories -->
+    <string name="view_settings">Настройки просмотра</string>
+    <string name="ordering">Сортировка</string>
+    <string name="slideshow">Слайд-шоу</string>
+    <string name="other">Другое</string>
+    <string name="screensaver_settings">Настройки заставки</string>
+    <string name="debug_settings">Настройки отладки</string>
+    <string name="settings_for">Настройки для %1$s</string>
+    <string name="filtering">Фильтрация</string>
+
+    <!-- Auth step 1 -->
+    <string name="auth_sign_in_by_api_key">Войти по API-ключу</string>
+    <string name="auth_sign_in_by_api_key_desc">Войдите в ваш экземпляр Immich, введя API-ключ.</string>
+    <string name="auth_sign_in_by_phone">Войти по телефону</string>
+    <string name="auth_sign_in_by_phone_desc">Войдите в ваш экземпляр Immich по телефону.</string>
+    <string name="auth_demo_mode">Демо-режим</string>
+    <string name="auth_demo_mode_desc">Войти в демонстрационный экземпляр Immich.</string>
+
+    <!-- Auth step 2 (GuidedStep) -->
+    <string name="login_immich_description">Войдите на ваш сервер Immich или попробуйте демо.</string>
+    <string name="server_url_hint">URL сервера (http[s]://...)</string>
+    <string name="disable_ssl_verification">Отключить проверку SSL</string>
+    <string name="disable_ssl_verification_desc">Используйте это только при проблемах с самоподписанными сертификатами!</string>
+    <string name="debug_mode">Режим отладки</string>
+    <string name="debug_mode_desc">Включите это, если у вас возникают проблемы с получением данных Immich.</string>
+    <string name="submit">Отправить</string>
+    <string name="enter_server_url">Введите URL сервера (https://...)</string>
+    <string name="enter_api_key">Введите API-ключ; если уже ввели, попробуйте снова выделить его и нажать Enter/OK, а не Назад</string>
+    <string name="enter_valid_server_url">Введите корректный URL сервера (https://...)</string>
+
+    <!-- Auth by phone errors and messages -->
+    <string name="or_enter_code_on_auth_url">Или введите код %1$s на %2$s</string>
+    <string name="auth_timeout_recreating_qr">Не удалось выполнить аутентификацию за отведенное время, создаю QR-код заново.</string>
+    <string name="invalid_server_url_or_api_key">Неверный URL сервера или API-ключ, попробуйте отсканировать снова!</string>
+    <string name="could_not_fetch_qr">Не удалось получить QR-код: %1$s</string>
+    <string name="could_not_fetch_qr_short">Не удалось получить QR-код</string>
+
+    <!-- Albums ordering -->
+
+    <string name="could_not_load_assets">Не удалось загрузить элементы из Immich</string>
+    <string name="albums_order_asset_count">Количество элементов</string>
+
+    <!-- Donate -->
+    <string name="donation_title">Пожертвование</string>
+    <string name="donation_subtitle">Разработка этого приложения требует больших усилий. Если хотите выразить признательность, вы можете пожертвовать, используя следующие варианты.</string>
+    <string name="donation_exhausted">Вы исчерпали варианты пожертвований, спасибо!</string>
+    <string name="donation_init_failed">Не удалось инициализировать сервис пожертвований</string>
+
+    <!-- Ordering -->
+    <string name="order_alphabetically_az">По алфавиту (А–Я)</string>
+    <string name="order_alphabetically_za">По алфавиту (Я–А)</string>
+    <string name="order_newest_oldest">Новые — Старые</string>
+    <string name="order_oldest_newest">Старые — Новые</string>
+    <string name="order_last_updated">Сначала новые</string>
+    <string name="order_least_updated">Сначала старые</string>
+
+    <!-- Interval titles -->
+    <string name="interval_1_second">1 секунда</string>
+    <string name="interval_3_seconds">3 секунды</string>
+    <string name="interval_5_seconds">5 секунд</string>
+    <string name="interval_10_seconds">10 секунд</string>
+    <string name="interval_20_seconds">20 секунд</string>
+    <string name="interval_30_seconds">30 секунд</string>
+    <string name="interval_1_minute">1 минута</string>
+    <string name="interval_3_minutes">3 минуты</string>
+    <string name="interval_5_minutes">5 минут</string>
+    <string name="interval_10_minutes">10 минут</string>
+
+    <!-- Content type filter -->
+    <string name="content_type_all">Все</string>
+    <string name="content_type_image">Изображение</string>
+    <string name="content_type_video">Видео</string>
+
+    <!-- Metadata alignment -->
+    <string name="left">Слева</string>
+    <string name="right">Справа</string>
+
+
+    <string name="already_added_metadata">Все возможные метаданные уже добавлены</string>
+    <string name="no_items_to_play">Нет элементов для воспроизвдения</string>
+    <string name="no_assets_for_screensaver">Нет элементов для отображения заставки. Пожалуйста, настройте другой тип заставки в параметрах.</string>
+    <string name="screensaver_brightness">Яркость заставки</string>
+</resources>

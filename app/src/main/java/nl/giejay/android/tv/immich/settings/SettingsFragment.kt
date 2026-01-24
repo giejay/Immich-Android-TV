@@ -8,6 +8,8 @@ import androidx.leanback.widget.ListRow
 import androidx.leanback.widget.ListRowPresenter
 import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.navigation.fragment.findNavController
+import nl.giejay.android.tv.immich.ImmichApplication
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.donate.DonateService
 import nl.giejay.android.tv.immich.shared.prefs.DebugPrefScreen
@@ -42,7 +44,7 @@ class SettingsFragment : RowsSupportFragment() {
                 createCardRow(
                     listOf(
                         SettingsCard(
-                            "Server",
+                            ImmichApplication.appContext!!.getString(R.string.server),
                             null,
                             "server",
                             "ic_settings_settings",
@@ -53,7 +55,7 @@ class SettingsFragment : RowsSupportFragment() {
                             )
                         },
                         SettingsCard(
-                            "View settings",
+                            ImmichApplication.appContext!!.getString(R.string.view_settings),
                             null,
                             "view_settings",
                             "icon_view",
@@ -64,7 +66,7 @@ class SettingsFragment : RowsSupportFragment() {
                             )
                         },
                         SettingsCard(
-                            "Screensaver",
+                            ImmichApplication.appContext!!.getString(R.string.screensaver),
                             null,
                             "screensaver",
                             "screensaver",
@@ -75,7 +77,7 @@ class SettingsFragment : RowsSupportFragment() {
                             )
                         },
                         SettingsCard(
-                            "Debug",
+                            ImmichApplication.appContext!!.getString(R.string.debug),
                             null,
                             "debug",
                             "bug",
@@ -86,7 +88,7 @@ class SettingsFragment : RowsSupportFragment() {
                             )
                         },
                         SettingsCard(
-                            "Donate",
+                            ImmichApplication.appContext!!.getString(R.string.donate),
                             null,
                             "donate",
                             "donate",
@@ -110,7 +112,7 @@ class SettingsFragment : RowsSupportFragment() {
         val iconCardPresenter = SettingsIconPresenter(requireContext())
         val adapter = ArrayObjectAdapter(iconCardPresenter)
         adapter.addAll(0, cards.filter { it.visible })
-        val headerItem = HeaderItem("Settings")
+        val headerItem = HeaderItem(ImmichApplication.appContext!!.getString(R.string.settings))
         return ListRow(headerItem, adapter)
     }
 }

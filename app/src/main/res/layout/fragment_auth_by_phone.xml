@@ -29,7 +29,7 @@
         android:layoutDirection="inherit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Scan the QR code below" />
+        android:text="@string/scan_qr_below" />
 
     <ImageView
         android:layout_width="match_parent"
@@ -58,5 +58,5 @@
         android:textColor="@color/screen_black"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Or enter the code on https://immich.giejay.nl" />
+        android:text="@string/or_enter_code_on_site" />
 </FrameLayout>

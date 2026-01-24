@@ -72,7 +72,7 @@ class AuthByPhoneFragment : Fragment() {
                 binding.qr.setImageDrawable(drawable)
                 binding.qr.visibility = View.VISIBLE
                 binding.qrProgressBar.visibility = View.GONE
-                binding.qrText.text = "Or enter the code $code on $authUrl"
+                binding.qrText.text = getString(R.string.or_enter_code_on_auth_url, code, authUrl)
                 job = ioScope.launch {
                     pollConfig(code)
                 }
@@ -87,7 +87,7 @@ class AuthByPhoneFragment : Fragment() {
             .asFlow()
             .onEach { delay(3_000) } // specify delay
             .onCompletion {
-                showErrorMessage("Did not authenticate within the timeout, recreating QR code.")
+                showErrorMessage(getString(R.string.auth_timeout_recreating_qr))
                 rebootQRFlow(findNavController())
             }
         timer.collect {
@@ -120,7 +120,7 @@ class AuthByPhoneFragment : Fragment() {
                         .build()
                 )
             } else {
-                showErrorMessage("Invalid Server URL or API key, try scanning again!")
+                showErrorMessage(getString(R.string.invalid_server_url_or_api_key))
                 rebootQRFlow(findNavController)
             }
         }
@@ -143,7 +143,7 @@ class AuthByPhoneFragment : Fragment() {
             }
         } catch (e: Exception) {
             Timber.e("Could not fetch qr", e)
-            showErrorMessage("Could not fetch QR code: ${e.message}")
+            showErrorMessage(getString(R.string.could_not_fetch_qr, e.message))
         }
     }
 

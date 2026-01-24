@@ -16,6 +16,8 @@ import androidx.leanback.widget.PresenterSelector
 import androidx.leanback.widget.Row
 import androidx.leanback.widget.RowHeaderPresenter
 import androidx.leanback.widget.SectionRow
+import nl.giejay.android.tv.immich.ImmichApplication
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragment
 import nl.giejay.android.tv.immich.assets.AllAssetFragment
 import nl.giejay.android.tv.immich.assets.FolderFragment
@@ -53,11 +55,11 @@ class HomeFragment : BrowseSupportFragment() {
         }
 
         headersSupportFragment.setOnHeaderClickedListener { _, row ->
-            if (row.headerItem.name == "Edit") {
+            if (row.headerItem.name == getString(R.string.edit)) {
                 immichRowPresenter.editMode = !immichRowPresenter.editMode
                 if(immichRowPresenter.editMode){
                     mRowsAdapter.clear()
-                    mRowsAdapter.addAll(0, rows.filter { it.headerItem.name != "Settings" })
+                    mRowsAdapter.addAll(0, rows.filter { it.headerItem.name != getString(R.string.settings) })
                 } else {
                     mRowsAdapter.clear();
                     mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.itemInStringSet(it.headerItem.name, HIDDEN_HOME_ITEMS) })
@@ -79,7 +81,7 @@ class HomeFragment : BrowseSupportFragment() {
         headersState = HEADERS_ENABLED
         isHeadersTransitionOnBackEnabled = true
         brandColor = resources.getColor(android.R.color.black)
-        title = "Albums"
+        title = getString(R.string.albums)
 //        setOnSearchClickedListener {
 //            Toast.makeText(
 //                activity, "Search!", Toast.LENGTH_SHORT
@@ -119,19 +121,19 @@ class HomeFragment : BrowseSupportFragment() {
 
     companion object {
         private val HEADERS: List<Header> = listOf(
-            Header("Albums") {
+            Header(ImmichApplication.appContext!!.getString(R.string.albums)) {
                 AlbumFragment().apply {
                     arguments = bundleOf("selectionMode" to false)
                 }
             },
-            Header("Photos") { AllAssetFragment() },
-            Header("Random") { RandomAssetsFragment() },
-            Header("People") { PeopleFragment() },
-            Header("Recent") { RecentAssetsFragment() },
-            Header("Seasonal") { SimilarTimeAssetsFragment() },
-            Header("Folders") { FolderFragment() },
-            Header("Edit") { GridFragment(hideProgressBar = true) },
-            Header("Settings") { SettingsFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.photos)) { AllAssetFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.random)) { RandomAssetsFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.people)) { PeopleFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.recent)) { RecentAssetsFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.seasonal)) { SimilarTimeAssetsFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.folders)) { FolderFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.edit)) { GridFragment(hideProgressBar = true) },
+            Header(ImmichApplication.appContext!!.getString(R.string.settings)) { SettingsFragment() },
         )
     }
 }

@@ -35,6 +35,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_CLOCK
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DATE
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DESCRIPTION
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_MEDIA_COUNT
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_BRIGHTNESS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
@@ -46,6 +47,7 @@ import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
+import nl.giejay.android.tv.immich.R
 import java.util.EnumSet
 
 class ScreenSaverService : DreamService(), MediaSliderListener {
@@ -59,7 +61,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     override fun onDreamingStarted() {
         Timber.i("Starting screensaver")
         if (!PreferenceManager.isLoggedId()) {
-            showErrorMessage("Could not start screensaver for Immich because of invalid Hostname/API key")
+            showErrorMessage(getString(R.string.screensaver_not_possible))
             finish()
             return
         }
@@ -78,6 +80,11 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         )
         setContentView(mediaSliderView)
         isInteractive = true
+
+        // set brightness
+        val brightnessValue: Int = PreferenceManager.get(SCREENSAVER_BRIGHTNESS)
+        mediaSliderView.alpha = brightnessValue.toFloat() / 100
+
         ioScope.launch {
             if (ScreenSaverType.ALBUMS == PreferenceManager.get(SCREENSAVER_TYPE)) {
                 loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS))
@@ -144,12 +151,12 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     }
                 }
             } else {
-                showErrorMessageMainScope("Set the Immich albums to show in the screensaver settings")
+                showErrorMessageMainScope(getString(R.string.set_albums_screensaver))
                 finish()
             }
         } catch (e: Exception) {
             Timber.e(e, "Could not fetch assets from Immich for Screensaver")
-            showErrorMessageMainScope("Could not load assets from Immich")
+            showErrorMessageMainScope(getString(R.string.could_not_load_assets))
             finish()
         }
     }
@@ -181,7 +188,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     private suspend fun setInitialAssets(assets: List<Asset>, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
         if (assets.isEmpty()) {
             Toast.makeText(this@ScreenSaverService,
-                "No assets to show for screensaver. Please configure a different screensaver type in the settings.",
+                getString(R.string.no_assets_for_screensaver),
                 Toast.LENGTH_LONG).show()
         } else {
             mediaSliderView.loadMediaSliderView(

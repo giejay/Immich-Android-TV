@@ -27,7 +27,7 @@
         android:layout_height="match_parent"
         android:layout_marginEnd="10dp"
         android:gravity="center_vertical"
-        android:text="Metadata"></TextView>
+        android:text="@string/metadata"></TextView>
 
 <!--    <ImageButton-->
 <!--        android:id="@+id/up_meta_data"-->
