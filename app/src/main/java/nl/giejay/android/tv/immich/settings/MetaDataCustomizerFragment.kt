@@ -57,7 +57,7 @@ class MetaDataCustomizerFragment : Fragment() {
     private fun addItem(align: AlignOption, allMetaData: MutableList<MetaDataItem>) {
         val findFirstNotAddedMetaDataType = MetaDataType.entries.filterNot { e -> allMetaData.any { it.type == e } }
         if (findFirstNotAddedMetaDataType.isEmpty()) {
-            Toast.makeText(requireContext(), "You already added every possible meta data", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.already_added_metadata), Toast.LENGTH_SHORT).show()
         } else {
             val newItem = MetaDataItem.create(findFirstNotAddedMetaDataType.first(), align, MetaDataItem.DEFAULT_PADDING, findFirstNotAddedMetaDataType.first().defaultFontSize)
             allMetaData.add(newItem)

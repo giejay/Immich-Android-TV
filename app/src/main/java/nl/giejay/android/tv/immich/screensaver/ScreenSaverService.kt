@@ -46,6 +46,7 @@ import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
+import nl.giejay.android.tv.immich.R
 import java.util.EnumSet
 
 class ScreenSaverService : DreamService(), MediaSliderListener {
@@ -59,7 +60,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     override fun onDreamingStarted() {
         Timber.i("Starting screensaver")
         if (!PreferenceManager.isLoggedId()) {
-            showErrorMessage("Could not start screensaver for Immich because of invalid Hostname/API key")
+            showErrorMessage(getString(R.string.screensaver_not_possible))
             finish()
             return
         }
@@ -144,12 +145,12 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     }
                 }
             } else {
-                showErrorMessageMainScope("Set the Immich albums to show in the screensaver settings")
+                showErrorMessageMainScope(getString(R.string.set_albums_screensaver_error))
                 finish()
             }
         } catch (e: Exception) {
             Timber.e(e, "Could not fetch assets from Immich for Screensaver")
-            showErrorMessageMainScope("Could not load assets from Immich")
+            showErrorMessageMainScope(getString(R.string.could_not_load_assets))
             finish()
         }
     }
@@ -181,7 +182,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     private suspend fun setInitialAssets(assets: List<Asset>, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
         if (assets.isEmpty()) {
             Toast.makeText(this@ScreenSaverService,
-                "No assets to show for screensaver. Please configure a different screensaver type in the settings.",
+                getString(R.string.no_assets_for_screensaver),
                 Toast.LENGTH_LONG).show()
         } else {
             mediaSliderView.loadMediaSliderView(

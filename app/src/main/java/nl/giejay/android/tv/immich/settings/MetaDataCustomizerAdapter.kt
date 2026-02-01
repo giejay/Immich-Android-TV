@@ -58,7 +58,7 @@ class MetaDataCustomizerAdapter(val context: Context, val metaData: MutableList<
 //            notifyDataSetChanged()
 //        }
 
-        textView.text = metaDataItem.getTitle()
+        textView.text = metaDataItem.getTitle(context)
         return item
     }
 }

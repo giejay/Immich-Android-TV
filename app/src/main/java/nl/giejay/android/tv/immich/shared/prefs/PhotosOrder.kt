@@ -1,5 +1,7 @@
 package nl.giejay.android.tv.immich.shared.prefs
 
+import nl.giejay.android.tv.immich.ImmichApplication
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.util.Utils.compareToNullSafe
 
@@ -12,7 +14,7 @@ enum class PhotosOrder(val sort: Comparator<Asset>): EnumWithTitle {
         }
     ) {
         override fun getTitle(): String {
-            return "Newest - Oldest"
+            return ImmichApplication.appContext!!.getString(R.string.order_newest_oldest)
         }
     },
     OLDEST_NEWEST(
@@ -21,9 +23,10 @@ enum class PhotosOrder(val sort: Comparator<Asset>): EnumWithTitle {
                 a2.exifInfo?.dateTimeOriginal ?: a2.fileModifiedAt
             ) ?: 1
         }
+
     ) {
         override fun getTitle(): String {
-            return "Oldest - Newest"
+            return ImmichApplication.appContext!!.getString(R.string.order_oldest_newest)
         }
     };
 

@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
+import nl.giejay.android.tv.immich.R
 import nl.giejay.mediaslider.view.MediaSliderFragment
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -21,7 +22,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
 
         if(bundle.config.items.isEmpty()){
             Timber.i("No items to play for photoslider")
-            Toast.makeText(requireContext(),"No items to play", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.no_items_to_play), Toast.LENGTH_SHORT).show()
             findNavController().popBackStack()
             return
         }

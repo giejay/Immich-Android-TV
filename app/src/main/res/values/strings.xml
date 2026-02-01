@@ -15,7 +15,7 @@
   -->
 
 <resources>
-    <string name="app_name">Immich TV</string>
+    <string name="app_name" translatable="false">Immich TV</string>
 
     <!-- Strings for the "No Firebase" screen -->
     <string name="no_firebase_title">Firebase not configured</string>
@@ -55,4 +55,209 @@
 
     <!-- Watch Next -->
     <string name="season">%1$s Season %2$s</string>
+
+    <!-- Home Menu -->
+    <string name="seasonal">Seasonal</string>
+    <string name="folders">Folders</string>
+    <string name="settings">Settings</string>
+    <string name="edit">Edit</string>
+    <string name="photos">Photos</string>
+    <string name="random">Random</string>
+    <string name="people">People</string>
+    <string name="recent">Recent</string>
+    <string name="albums">Albums</string>
+    <string name="server">Server</string>
+    <string name="screensaver">Screensaver</string>
+    <string name="debug">Debug</string>
+    <string name="donate">Donate</string>
+    <string name="use_hd_thumbnails">Use high resolution thumbnails</string>
+    <string name="use_hd_thumbnails_text">Use high resolution thumbnails instead of native/full images. Will dramatically speed up loading.</string>
+    <string name="albums_sorting_text">Set the order in which albums should appear</string>
+    <string name="order">Order</string>
+    <string name="photos_sorting_text">Set the order in which photos should appear</string>
+    <string name="disable_ssl">Disable SSL Verification</string>
+    <string name="disable_ssl_text">Only use this when you have issues with self signed certificates!</string>
+    <string name="api_key_text">API key</string>
+    <string name="server_url_text">Server URL</string>
+    <string name="done">Done</string>
+
+
+    <!-- Auth by phone -->
+    <string name="scan_qr_below">Scan the QR code below</string>
+    <string name="or_enter_code_on_site">Or enter the code on https://immich.giejay.nl</string>
+
+    <!-- Metadata -->
+    <string name="metadata">Metadata</string>
+
+    <!-- Screensaver  -->
+    <string name="screensaver_set">Set Immich as screensaver</string>
+    <string name="screensaver_set_select_albums_first">Please set your albums to show first!</string>
+    <string name="screensaver_not_possible_title">Not possible to set screensaver</string>
+    <string name="screensaver_not_possible">Could not start screensaver for Immich because of invalid Hostname/API key</string>
+    <string name="close">Close</string>
+    <string name="interval">Interval</string>
+    <string name="screensaver_interval_desc">Interval of the screensaver</string>
+    <string name="show_media_count">Show media count</string>
+    <string name="show_media_count_desc_screensaver">Show the number of total items and currently selected item</string>
+    <string name="show_description">Show description</string>
+    <string name="show_description_screensaver">Show description of asset in screensaver</string>
+    <string name="show_album_name">Show album name</string>
+    <string name="show_album_name_desc">Show album name of asset in screensaver</string>
+    <string name="show_date">Show date</string>
+    <string name="show_date_screensaver">Show date of asset in screensaver</string>
+    <string name="show_clock">Show clock</string>
+    <string name="show_clock_screensaver">Show clock in screensaver</string>
+    <string name="slide_new_asset_in">Slide the new asset in</string>
+    <string name="slide_new_asset_in_desc">Slide the new asset in when transitioning</string>
+    <string name="set_albums_screensaver">Set albums to show in screensaver</string>
+    <string name="set_albums_screensaver_desc">Set albums to show in screensaver</string>
+    <string name="set_albums_screensaver_error">Set the Immich albums to show in the screensaver settings</string>
+    <string name="customize_metadata">Customize metadata</string>
+    <string name="configure_metadata_screensaver">Configure what to show in screensaver</string>
+    <string name="include_videos">Include videos</string>
+    <string name="include_videos_screensaver">Include videos in screensaver</string>
+    <string name="play_sound">Play sound</string>
+    <string name="play_sound_screensaver">Play sound of videos during screensaver</string>
+    <string name="screensaver_type">Screensaver type</string>
+    <string name="screensaver_type_desc">What to show: albums, random, recent etc.</string>
+
+    <!-- Slider/viewer preferences -->
+    <string name="interval_slideshow">Interval</string>
+    <string name="interval_slideshow_desc">Interval of the slideshow</string>
+    <string name="slide_animation_speed_ms">Slide animation speed (ms)</string>
+    <string name="slide_animation_speed_desc">Slide animation speed in milliseconds</string>
+    <string name="show_description_slideshow">Show description</string>
+    <string name="show_description_slideshow_desc">Show description of asset in slideshow</string>
+    <string name="show_media_count_slideshow">Show media count</string>
+    <string name="show_media_count_slideshow_desc">Show the number of total items and currently selected item</string>
+    <string name="show_date_slideshow">Show date</string>
+    <string name="show_date_slideshow_desc">Show date of asset in slideshow</string>
+    <string name="show_city">Show city</string>
+    <string name="show_city_desc">Show city of asset in slideshow</string>
+    <string name="customize_metadata_viewer">Customize metadata</string>
+    <string name="configure_metadata_viewer">Configure what to show in viewer</string>
+    <string name="merge_portrait_photos">Merge portrait photos</string>
+    <string name="merge_portrait_photos_desc">Show two portrait photos next to each other</string>
+    <string name="safe_center_crop_max_cutoff_height">Safe Center Crop max cutoff height %</string>
+    <string name="safe_center_crop_max_cutoff_height_desc">Maximum percentage to cut off image height if using SafeCenterCrop</string>
+    <string name="safe_center_crop_max_cutoff_width">Safe Center Crop max cutoff width %</string>
+    <string name="safe_center_crop_max_cutoff_width_desc">Maximum percentage to cut off image width if using SafeCenterCrop</string>
+    <string name="photo_transformation">Photo transformation</string>
+    <string name="photo_transformation_desc">Photo transformation</string>
+    <string name="force_original_video">Force original video</string>
+    <string name="force_original_video_desc">Play original video, even when transcode is available</string>
+
+    <!-- Other preferences -->
+    <string name="photos_in_albums">Photos in albums</string>
+    <string name="photos_in_albums_desc_inside">Set the order in which photos should appear inside albums</string>
+    <string name="content_type">Content type</string>
+    <string name="filter_by_content_type">Filter by content type</string>
+    <string name="assets_outside_albums">Assets outside albums</string>
+    <string name="assets_outside_albums_desc">Set the order in which assets should appear outside Albums</string>
+    <string name="enable_debug_mode">Enable debug mode</string>
+    <string name="enable_debug_mode_desc">Enable this if you are experiencing issues.</string>
+    <string name="load_selected_item_as_background">Load selected item as background</string>
+    <string name="load_selected_item_as_background_desc">Load the currently selected image/album as the background</string>
+    <string name="user_id">User ID</string>
+    <string name="user_id_desc">Your user id, needed for debugging</string>
+    <string name="seasonal_photos_years_back">Seasonal photos years back</string>
+    <string name="seasonal_photos_years_back_desc">How many years to go back when selecting seasonal photos</string>
+    <string name="seasonal_photos_period_days">Seasonal photos period in days</string>
+    <string name="recent_photos_months_back">Recent photos months back</string>
+    <string name="excluded_albums">Excluded albums</string>
+    <string name="excluded_albums_desc">Exclude assets in specific albums for random/seasonal view</string>
+
+    <!-- Preference screens and categories -->
+    <string name="view_settings">View Settings</string>
+    <string name="ordering">Ordering</string>
+    <string name="slideshow">Slideshow</string>
+    <string name="other">Other</string>
+    <string name="screensaver_settings">Screensaver Settings</string>
+    <string name="debug_settings">Debug Settings</string>
+    <string name="settings_for">Settings for %1$s</string>
+    <string name="filtering">Filtering</string>
+
+    <!-- Auth step 1 -->
+    <string name="auth_sign_in_by_api_key">Sign in by API key</string>
+    <string name="auth_sign_in_by_api_key_desc">Login to your Immich instance by entering your API key.</string>
+    <string name="auth_sign_in_by_phone">Sign in by phone</string>
+    <string name="auth_sign_in_by_phone_desc">Login to your Immich instance by phone.</string>
+    <string name="auth_demo_mode">Demo mode</string>
+    <string name="auth_demo_mode_desc">Login to a demo Immich instance.</string>
+
+    <!-- Auth step 2 (GuidedStep) -->
+    <string name="login_immich_description">Login to your Immich server or try a demo.</string>
+    <string name="server_url_hint">Server URL (http[s]://...)</string>
+    <string name="disable_ssl_verification">Disable SSL verification</string>
+    <string name="disable_ssl_verification_desc">Only use this when you have issues with self signed certificates!</string>
+    <string name="debug_mode">Debug mode</string>
+    <string name="debug_mode_desc">Enable this if you are experiencing issues with getting the Immich data.</string>
+    <string name="submit">Submit</string>
+    <string name="enter_server_url">Please enter a server URL (https://...)</string>
+    <string name="enter_api_key">Please enter an API key, if you did enter it, try to highlight it again and press enter/OK, not back (sorry).</string>
+    <string name="enter_valid_server_url">Please enter a valid server URL (https://...)</string>
+
+    <!-- Auth by phone -->
+    <string name="or_enter_code_on_auth_url">Or enter the code %1$s on %2$s</string>
+    <string name="auth_timeout_recreating_qr">Did not authenticate within the timeout, recreating QR code.</string>
+    <string name="invalid_server_url_or_api_key">Invalid Server URL or API key, try scanning again!</string>
+    <string name="could_not_fetch_qr">Could not fetch QR code: %1$s</string>
+    <string name="could_not_fetch_qr_short">Could not fetch QR code</string>
+    <string name="could_not_load_assets">Could not load assets from Immich</string>
+
+    <!-- Albums ordering -->
+    <string name="albums_order_asset_count">Asset count</string>
+
+    <!-- Donate -->
+    <string name="donation_title">Donation</string>
+    <string name="donation_subtitle">Developing this app takes a lot of effort, if you would like to show your appreciation, you can donate using the following options.</string>
+    <string name="donation_exhausted">You have exhausted your donate options, thanks!</string>
+    <string name="donation_init_failed">Could not initialize donation service, sorry!</string>
+
+    <!-- Ordering -->
+    <string name="order_alphabetically_az">Alphabetically (A-Z)</string>
+    <string name="order_alphabetically_za">Alphabetically (Z-A)</string>
+    <string name="order_newest_oldest">Newest - Oldest</string>
+    <string name="order_oldest_newest">Oldest - Newest</string>
+    <string name="order_last_updated">Last updated</string>
+    <string name="order_least_updated">Least updated</string>
+
+    <!-- Interval titles -->
+    <string name="interval_1_second">1 second</string>
+    <string name="interval_3_seconds">3 seconds</string>
+    <string name="interval_5_seconds">5 seconds</string>
+    <string name="interval_10_seconds">10 seconds</string>
+    <string name="interval_20_seconds">20 seconds</string>
+    <string name="interval_30_seconds">30 seconds</string>
+    <string name="interval_1_minute">1 minute</string>
+    <string name="interval_3_minutes">3 minutes</string>
+    <string name="interval_5_minutes">5 minutes</string>
+    <string name="interval_10_minutes">10 minutes</string>
+
+    <!-- Content type filter -->
+    <string name="content_type_all">All</string>
+    <string name="content_type_image">Image</string>
+    <string name="content_type_video">Video</string>
+
+    <!-- Metadata alignment -->
+    <string name="left">Left</string>
+    <string name="right">Right</string>
+
+
+    <string name="already_added_metadata">You already added every possible meta data</string>
+    <string name="no_items_to_play">No items to play</string>
+    <string name="no_assets_for_screensaver">No assets to show for screensaver. Please configure a different screensaver type in the settings</string>
+    <string name="edit_metadata_title">Edit metadata</string>
+    <string name="meta_data_type_dialog_title">Type</string>
+    <string name="meta_data_type_desc">Type of metadata</string>
+    <string name="meta_data_type_title">Type of metadata</string>
+    <string name="meta_data_order_dialog_title">Order</string>
+    <string name="meta_data_order_desc">Order of metadata</string>
+    <string name="meta_data_order_title">Order of metadata</string>
+    <string name="meta_data_font_size_title">Font size</string>
+    <string name="meta_data_font_size_dialog_title">Font size</string>
+    <string name="meta_data_padding_title">Padding</string>
+    <string name="meta_data_padding_dialog_title">Padding above and below the item</string>
+    <string name="meta_data_delete_desc">Delete item</string>
+    <string name="meta_data_save_desc">Save item</string>
 </resources>

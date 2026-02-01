@@ -30,8 +30,8 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
         val icon: Drawable =
             requireContext().getDrawable(R.drawable.icon)!!
         return GuidanceStylist.Guidance(
-            "Immich TV (${BuildConfig.VERSION_NAME})",
-            "Login to your Immich server or try a demo.",
+            getString(R.string.app_name) + " (${BuildConfig.VERSION_NAME})",
+            getString(R.string.login_immich_description),
             "",
             icon
         )
@@ -41,24 +41,24 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
         addCheckedAction(
             actions,
             ACTION_SIGN_IN,
-            "Sign in by API key",
-            "Login to your Immich instance by entering your API key.",
+            getString(R.string.auth_sign_in_by_api_key),
+            getString(R.string.auth_sign_in_by_api_key_desc),
             true,
             1
         )
         addCheckedAction(
             actions,
             ACTION_PHONE_SIGN_IN,
-            "Sign in by phone",
-            "Login to your Immich instance by phone.",
+            getString(R.string.auth_sign_in_by_phone),
+            getString(R.string.auth_sign_in_by_phone_desc),
             false,
             1
         )
         addCheckedAction(
             actions,
             ACTION_DEMO,
-            "Demo mode",
-            "Login to a demo Immich instance.",
+            getString(R.string.auth_demo_mode),
+            getString(R.string.auth_demo_mode_desc),
             false,
             1
         )
@@ -69,7 +69,7 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
         savedInstanceState: Bundle?
     ) {
         super.onCreateButtonActions(actions, savedInstanceState)
-        addAction(actions, ACTION_CONTINUE, "Continue", "")
+        addAction(actions, ACTION_CONTINUE, getString(R.string.continue_text), "")
     }
 
     override fun onGuidedActionClicked(action: GuidedAction) {

@@ -50,7 +50,7 @@ class MetaDataItemInnerCustomizerFragment : SettingsScreenFragment.SettingsInner
         }
         val filteredTypes = MetaDataType.entries.filterNot { e -> e != metaDataItem.type && allItems.any { it.type == e } }
         type.entryValues = filteredTypes.map { it.toString() }.toTypedArray()
-        type.entries = filteredTypes.map { it.title }.toTypedArray()
+        type.entries = filteredTypes.map { it.getTitle(requireContext()) }.toTypedArray()
         type.value = metaDataItem.type.toString()
 
         val padding = findPreference<SeekBarPreference>("meta_data_item_padding")

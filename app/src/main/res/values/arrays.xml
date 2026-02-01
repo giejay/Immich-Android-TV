@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <array name="interval_titles">
-        <item>1 second</item>
-        <item>3 seconds</item>
-        <item>5 seconds</item>
-        <item>10 seconds</item>
-        <item>20 seconds</item>
-        <item>30 seconds</item>
-        <item>1 minute</item>
-        <item>3 minutes</item>
-        <item>5 minutes</item>
-        <item>10 minutes</item>
+        <item>@string/interval_1_second</item>
+        <item>@string/interval_3_seconds</item>
+        <item>@string/interval_5_seconds</item>
+        <item>@string/interval_10_seconds</item>
+        <item>@string/interval_20_seconds</item>
+        <item>@string/interval_30_seconds</item>
+        <item>@string/interval_1_minute</item>
+        <item>@string/interval_3_minutes</item>
+        <item>@string/interval_5_minutes</item>
+        <item>@string/interval_10_minutes</item>
     </array>
     <string-array name="interval_values">
         <item>1</item>
@@ -26,8 +26,8 @@
     </string-array>
 
     <array name="meta_data_alignment_labels">
-        <item>Left</item>
-        <item>Right</item>
+        <item>@string/left</item>
+        <item>@string/right</item>
     </array>
 
     <array name="meta_data_alignment_keys">
@@ -59,10 +59,10 @@
     </array>
 
     <string-array name="albums_order">
-        <item>Last updated</item>
-        <item>Alphabetically (A-Z)</item>
-        <item>Alphabetically (Z-A)</item>
-        <item>Least updated</item>
+        <item>@string/order_last_updated</item>
+        <item>@string/order_alphabetically_az</item>
+        <item>@string/order_alphabetically_za</item>
+        <item>@string/order_least_updated</item>
     </string-array>
 
     <string-array name="albums_order_keys">
@@ -73,16 +73,16 @@
     </string-array>
 
     <string-array name="photos_order">
-        <item>Newest - Oldest</item>
-        <item>Oldest - Newest</item>
-        <item>Alphabetically (A-Z)</item>
-        <item>Alphabetically (Z-A)</item>
+        <item>@string/order_newest_oldest</item>
+        <item>@string/order_oldest_newest</item>
+        <item>@string/order_alphabetically_az</item>
+        <item>@string/order_alphabetically_za</item>
     </string-array>
 
     <string-array name="content_type">
-        <item>All</item>
-        <item>Image</item>
-        <item>Video</item>
+        <item>@string/content_type_all</item>
+        <item>@string/content_type_image</item>
+        <item>@string/content_type_video</item>
     </string-array>
 
     <string-array name="content_type_keys">
@@ -99,8 +99,8 @@
     </string-array>
 
     <string-array name="all_assets_order">
-        <item>Newest - Oldest</item>
-        <item>Oldest - Newest</item>
+        <item>@string/order_newest_oldest</item>
+        <item>@string/order_oldest_newest</item>
     </string-array>
 
     <string-array name="all_assets_order_keys">
@@ -116,10 +116,10 @@
     </string-array>
 
     <string-array name="screensaver_type_values">
-        <item>Albums</item>
-        <item>Random</item>
-        <item>Recent</item>
-        <item>Seasonal</item>
+        <item>@string/albums</item>
+        <item>@string/random</item>
+        <item>@string/recent</item>
+        <item>@string/seasonal</item>
     </string-array>
 
     <string-array name="recent_assets_months_back">

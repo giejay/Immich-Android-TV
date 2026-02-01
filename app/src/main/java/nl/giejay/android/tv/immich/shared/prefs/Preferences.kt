@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.navigation.NavController
 import androidx.preference.ListPreference
 import androidx.preference.Preference
+import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
@@ -20,16 +21,16 @@ import nl.giejay.mediaslider.transformations.GlideTransformations
 
 // general
 data object DISABLE_SSL_VERIFICATION : BooleanPref(false,
-    "Disable SSL Verification",
-    "Only use this when you have issues with self signed certificates!") {
+    ImmichApplication.appContext!!.getString(R.string.disable_ssl),
+    ImmichApplication.appContext!!.getString(R.string.disable_ssl_text)) {
     override fun key() = "disableSSLVerification"
 }
 
-data object API_KEY : StringPref("", "API Key", "API Key") {
+data object API_KEY : StringPref("", ImmichApplication.appContext!!.getString(R.string.api_key_text), ImmichApplication.appContext!!.getString(R.string.api_key_text)) {
     override fun key() = "apiKey"
 }
 
-data object HOST_NAME : StringPref("", "Server URL", "Server URL") {
+data object HOST_NAME : StringPref("", ImmichApplication.appContext!!.getString(R.string.server_url_text), ImmichApplication.appContext!!.getString(R.string.server_url_text)) {
     override fun key() = "hostName"
 
     override fun save(sharedPreferences: SharedPreferences, value: String) {
@@ -40,11 +41,11 @@ data object HOST_NAME : StringPref("", "Server URL", "Server URL") {
 // screensaver
 private val SCREENSAVER_SETTINGS = "android.settings.DREAM_SETTINGS"
 
-data object SCREENSAVER_SET : ActionPref("Set Immich as screensaver", "Set Immich as screensaver", { context, navController ->
+data object SCREENSAVER_SET : ActionPref(ImmichApplication.appContext!!.getString(R.string.screensaver_set), ImmichApplication.appContext!!.getString(R.string.screensaver_set), { context, navController ->
     if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS && PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()) {
         Toast.makeText(
             context,
-            "Please set your albums to show first!",
+            context.getString(R.string.screensaver_set_select_albums_first),
             Toast.LENGTH_SHORT
         ).show()
     } else {
@@ -67,10 +68,10 @@ private fun startScreenSaverIntent(context: Context) {
                 context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             val inflate: View = layoutInflater.inflate(R.layout.screensaver_adb, null)
             val dialog = AlertDialog.Builder(context)
-                .setTitle("Not possible to set screensaver")
+                .setTitle(R.string.screensaver_not_possible_title)
                 .create()
             dialog.setView(inflate)
-            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Close") { d, _ ->
+            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, ImmichApplication.appContext!!.getString(R.string.close)) { d, _ ->
                 d.dismiss()
             }
             return dialog.show()
@@ -86,14 +87,14 @@ private fun intentAvailable(intent: Intent, context: Context): Boolean {
     return infos.isNotEmpty()
 }
 
-data object SCREENSAVER_INTERVAL : IntListPref(3, "Interval", "Interval of the screensaver", R.array.interval_titles, R.array.interval_values)
-data object SCREENSAVER_SHOW_MEDIA_COUNT : BooleanPref(true, "Show media count", "Show the number of total items and currently selected item")
-data object SCREENSAVER_SHOW_DESCRIPTION : BooleanPref(true, "Show description", "Show description of asset in screensaver")
-data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true, "Show album name", "Show album name of asset in screensaver")
-data object SCREENSAVER_SHOW_DATE : BooleanPref(true, "Show date", "Show date of asset in screensaver")
-data object SCREENSAVER_SHOW_CLOCK : BooleanPref(true, "Show clock", "Show clock in screensaver")
-data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true, "Slide the new asset in", "Slide the new asset in when transitioning")
-data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to show in screensaver", "Set albums to show in screensaver") {
+data object SCREENSAVER_INTERVAL : IntListPref(3, ImmichApplication.appContext!!.getString(R.string.interval), ImmichApplication.appContext!!.getString(R.string.screensaver_interval_desc), R.array.interval_titles, R.array.interval_values)
+data object SCREENSAVER_SHOW_MEDIA_COUNT : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_media_count), ImmichApplication.appContext!!.getString(R.string.show_media_count_desc_screensaver))
+data object SCREENSAVER_SHOW_DESCRIPTION : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_description), ImmichApplication.appContext!!.getString(R.string.show_description_screensaver))
+data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_album_name), ImmichApplication.appContext!!.getString(R.string.show_album_name_desc))
+data object SCREENSAVER_SHOW_DATE : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_date), ImmichApplication.appContext!!.getString(R.string.show_date_screensaver))
+data object SCREENSAVER_SHOW_CLOCK : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_clock), ImmichApplication.appContext!!.getString(R.string.show_clock_screensaver))
+data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in), ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in_desc))
+data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver), ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver_desc)) {
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
             AlbumFragmentDirections.actionGlobalAlbumFragment(
@@ -105,18 +106,18 @@ data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), "Set albums to sh
     }
 }
 
-data object SCREENSAVER_METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Configure what to show in screensaver", { _, navController ->
+data object SCREENSAVER_METADATA_CUSTOMIZER : ActionPref(ImmichApplication.appContext!!.getString(R.string.customize_metadata), ImmichApplication.appContext!!.getString(R.string.configure_metadata_screensaver), { _, navController ->
     navController.navigate(
         MetaDataCustomizerFragmentDirections.actionToMetadataFragment(MetaDataScreen.SCREENSAVER)
     )
     true
 })
 
-data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false, "Include videos", "Include videos in screensaver")
-data object SCREENSAVER_PLAY_SOUND : BooleanPref(false, "Play sound", "Play sound of videos during screensaver")
+data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.include_videos), ImmichApplication.appContext!!.getString(R.string.include_videos_screensaver))
+data object SCREENSAVER_PLAY_SOUND : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.play_sound), ImmichApplication.appContext!!.getString(R.string.play_sound_screensaver))
 data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.RECENT,
-    "Screensaver type",
-    "What to show: albums, random, recent etc.") {
+    ImmichApplication.appContext!!.getString(R.string.screensaver_type),
+    ImmichApplication.appContext!!.getString(R.string.screensaver_type_desc)) {
 
     override fun fromPrefValue(prefValue: String): ScreenSaverType {
         return ScreenSaverType.valueOf(prefValue)
@@ -128,48 +129,48 @@ data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.
 }
 
 // slider/viewer
-data object SLIDER_INTERVAL : IntListPref(3, "Interval", "Interval of the slideshow", R.array.interval_titles, R.array.interval_values)
+data object SLIDER_INTERVAL : IntListPref(3, ImmichApplication.appContext!!.getString(R.string.interval_slideshow), ImmichApplication.appContext!!.getString(R.string.interval_slideshow_desc), R.array.interval_titles, R.array.interval_values)
 data object SLIDER_ANIMATION_SPEED : IntListPref(0,
-    "Slide animation speed (ms)",
-    "Slide animation speed in milliseconds",
+    ImmichApplication.appContext!!.getString(R.string.slide_animation_speed_ms),
+    ImmichApplication.appContext!!.getString(R.string.slide_animation_speed_desc),
     R.array.animation_speed_ms,
     R.array.animation_speed_ms)
 
-data object SLIDER_SHOW_DESCRIPTION : BooleanPref(true, "Show description", "Show description of asset in slideshow")
-data object SLIDER_SHOW_MEDIA_COUNT : BooleanPref(true, "Show media count", "Show the number of total items and currently selected item")
-data object SLIDER_SHOW_DATE : BooleanPref(false, "Show date", "Show date of asset in slideshow")
-data object SLIDER_SHOW_CITY : BooleanPref(true, "Show city", "Show city of asset in slideshow")
-data object SLIDER_METADATA_CUSTOMIZER : ActionPref("Customize metadata", "Configure what to show in viewer", { _, navController ->
+data object SLIDER_SHOW_DESCRIPTION : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_description_slideshow), ImmichApplication.appContext!!.getString(R.string.show_description_slideshow_desc))
+data object SLIDER_SHOW_MEDIA_COUNT : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_media_count_slideshow), ImmichApplication.appContext!!.getString(R.string.show_media_count_slideshow_desc))
+data object SLIDER_SHOW_DATE : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.show_date_slideshow), ImmichApplication.appContext!!.getString(R.string.show_date_slideshow_desc))
+data object SLIDER_SHOW_CITY : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_city), ImmichApplication.appContext!!.getString(R.string.show_city_desc))
+data object SLIDER_METADATA_CUSTOMIZER : ActionPref(ImmichApplication.appContext!!.getString(R.string.customize_metadata_viewer), ImmichApplication.appContext!!.getString(R.string.configure_metadata_viewer), { _, navController ->
     navController.navigate(
         MetaDataCustomizerFragmentDirections.actionToMetadataFragment(MetaDataScreen.VIEWER)
     )
     true
 })
 
-data object SLIDER_ONLY_USE_THUMBNAILS : BooleanPref(true, "Use high resolution thumbnails", "Use high resolution thumbnails instead of native/full images. Will dramatically speed up loading.")
-data object SLIDER_MERGE_PORTRAIT_PHOTOS : BooleanPref(true, "Merge portrait photos", "Show two portrait photos next to each other")
+data object SLIDER_ONLY_USE_THUMBNAILS : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.use_hd_thumbnails) , ImmichApplication.appContext!!.getString(R.string.use_hd_thumbnails_text))
+data object SLIDER_MERGE_PORTRAIT_PHOTOS : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.merge_portrait_photos), ImmichApplication.appContext!!.getString(R.string.merge_portrait_photos_desc))
 data object SLIDER_MAX_CUT_OFF_WIDTH : IntSeekbarPref(20,
-    "Safe Center Crop max cutoff height %",
-    "Maximum percentage to cut off image height if using SafeCenterCrop")
+    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_height),
+    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_height_desc))
 
 data object SLIDER_MAX_CUT_OFF_HEIGHT : IntSeekbarPref(20,
-    "Safe Center Crop max cutoff width %",
-    "Maximum percentage to cut off image width if using SafeCenterCrop")
+    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_width),
+    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_width_desc))
 
 data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTransformations.CENTER_INSIDE,
-    "Photo transformation",
-    "Photo transformation", R.array.glide_transformation_labels, R.array.glide_transformation_keys) {
+    ImmichApplication.appContext!!.getString(R.string.photo_transformation),
+    ImmichApplication.appContext!!.getString(R.string.photo_transformation_desc), R.array.glide_transformation_labels, R.array.glide_transformation_keys) {
     override fun fromPrefValue(prefValue: String): GlideTransformations {
         return GlideTransformations.valueOfSafe(prefValue, defaultValue)
     }
 }
 
-data object SLIDER_FORCE_ORIGINAL_VIDEO : BooleanPref(false, "Force original video", "Play original video, even when transcode is available")
+data object SLIDER_FORCE_ORIGINAL_VIDEO : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.force_original_video), ImmichApplication.appContext!!.getString(R.string.force_original_video_desc))
 
 // other
 data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
-    "Albums",
-    "Set the order in which albums should appear") {
+    ImmichApplication.appContext!!.getString(R.string.albums),
+    ImmichApplication.appContext!!.getString(R.string.albums_sorting_text)) {
 
     override fun fromPrefValue(prefValue: String): AlbumsOrder {
         return AlbumsOrder.valueOfSafe(prefValue, defaultValue)
@@ -181,8 +182,8 @@ data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDAT
 }
 
 data object PHOTOS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.OLDEST_NEWEST,
-    "Photos in albums",
-    "Set the order in which photos should appear inside albums") {
+    ImmichApplication.appContext!!.getString(R.string.photos_in_albums),
+    ImmichApplication.appContext!!.getString(R.string.photos_in_albums_desc_inside)) {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(prefValue, defaultValue)
     }
@@ -194,8 +195,8 @@ data object PHOTOS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.OLDEST_NEW
 
 data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String, val albumName: String) : EnumByTitlePref<PhotosOrder>(PreferenceManager.get(
     PHOTOS_SORTING),
-    "Order",
-    "Set the order in which photos should appear") {
+    ImmichApplication.appContext!!.getString(R.string.order),
+    ImmichApplication.appContext!!.getString(R.string.photos_sorting_text))  {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(prefValue, defaultValue)
     }
@@ -216,8 +217,8 @@ data class PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(val albumId: String, val albumName:
 }
 
 data class FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(val albumId: String, val albumName: String) : EnumByTitlePref<ContentType>(ContentType.ALL,
-    "Content type",
-    "Filter by content type") {
+    ImmichApplication.appContext!!.getString(R.string.content_type),
+    ImmichApplication.appContext!!.getString(R.string.filter_by_content_type)) {
 
     override fun fromPrefValue(prefValue: String): ContentType {
         return ContentType.valueOf(prefValue)
@@ -239,8 +240,8 @@ data class FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(val albumId: String, val album
 }
 
 object FILTER_CONTENT_TYPE : EnumByTitlePref<ContentType>(ContentType.ALL,
-    "Content type",
-    "Filter by content type") {
+    ImmichApplication.appContext!!.getString(R.string.content_type),
+    ImmichApplication.appContext!!.getString(R.string.filter_by_content_type)) {
 
     override fun fromPrefValue(prefValue: String): ContentType {
         return ContentType.valueOf(prefValue)
@@ -263,8 +264,8 @@ object FILTER_CONTENT_TYPE : EnumByTitlePref<ContentType>(ContentType.ALL,
 
 
 data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST_OLDEST,
-    "Assets outside albums",
-    "Set the order in which assets should appear outside Albums") {
+    ImmichApplication.appContext!!.getString(R.string.assets_outside_albums),
+    ImmichApplication.appContext!!.getString(R.string.assets_outside_albums_desc)) {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
         return PhotosOrder.valueOfSafe(prefValue, defaultValue)
     }
@@ -275,31 +276,31 @@ data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST
 }
 
 // other
-data object DEBUG_MODE : BooleanPref(false, "Enable debug mode", "Enable this if you are experiencing issues.")
-data object LOAD_BACKGROUND_IMAGE : BooleanPref(true, "Load selected item as background", "Load the currently selected image/album as the background")
+data object DEBUG_MODE : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.enable_debug_mode), ImmichApplication.appContext!!.getString(R.string.enable_debug_mode_desc))
+data object LOAD_BACKGROUND_IMAGE : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background), ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background_desc))
 data object HIDDEN_HOME_ITEMS : StringSetPref(emptySet(), "", "")
-data object USER_ID : NotUserEditableStringPref("User ID", "Your user id, needed for debugging")
+data object USER_ID : NotUserEditableStringPref(ImmichApplication.appContext!!.getString(R.string.user_id), ImmichApplication.appContext!!.getString(R.string.user_id_desc))
 
 // seasonal/random/recents
 data object SIMILAR_ASSETS_YEARS_BACK : IntListPref(10,
-    "Seasonal photos years back",
-    "How many years to go back when selecting seasonal photos",
+    ImmichApplication.appContext!!.getString(R.string.seasonal_photos_years_back),
+    ImmichApplication.appContext!!.getString(R.string.seasonal_photos_years_back_desc),
     R.array.similar_assets_years_back,
     R.array.similar_assets_years_back)
 
 data object SIMILAR_ASSETS_PERIOD_DAYS : IntListPref(30,
-    "Seasonal photos period in days",
-    "Seasonal photos period in days",
+    ImmichApplication.appContext!!.getString(R.string.seasonal_photos_period_days),
+    ImmichApplication.appContext!!.getString(R.string.seasonal_photos_period_days),
     R.array.similar_assets_period_days,
     R.array.similar_assets_period_days)
 
 data object RECENT_ASSETS_MONTHS_BACK : IntListPref(5,
-    "Recent photos months back",
-    "Recent photos months back",
+    ImmichApplication.appContext!!.getString(R.string.recent_photos_months_back),
+    ImmichApplication.appContext!!.getString(R.string.recent_photos_months_back),
     R.array.recent_assets_months_back,
     R.array.recent_assets_months_back)
 
-data object EXCLUDE_ASSETS_IN_ALBUM : StringSetPref(emptySet(), "Excluded albums", "Exclude assets in specific albums for random/seasonal view") {
+data object EXCLUDE_ASSETS_IN_ALBUM : StringSetPref(emptySet(), ImmichApplication.appContext!!.getString(R.string.excluded_albums), ImmichApplication.appContext!!.getString(R.string.excluded_albums_desc)) {
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
             AlbumFragmentDirections.actionGlobalAlbumFragment(
@@ -313,15 +314,15 @@ data object EXCLUDE_ASSETS_IN_ALBUM : StringSetPref(emptySet(), "Excluded albums
 }
 
 // Building the view
-data object ViewPrefScreen : PrefScreen("View Settings", "view",
+data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.view_settings), "view",
     listOf(
-        PrefCategory("Ordering",
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.ordering),
             listOf(
                 ALBUMS_SORTING,
                 PHOTOS_SORTING,
                 ALL_ASSETS_SORTING)
         ),
-        PrefCategory("Slideshow", listOf(
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.slideshow), listOf(
             SLIDER_ONLY_USE_THUMBNAILS,
             SLIDER_FORCE_ORIGINAL_VIDEO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
@@ -331,7 +332,7 @@ data object ViewPrefScreen : PrefScreen("View Settings", "view",
             SLIDER_GLIDE_TRANSFORMATION,
             SLIDER_MAX_CUT_OFF_WIDTH,
             SLIDER_MAX_CUT_OFF_HEIGHT)),
-        PrefCategory("Other", listOf(
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.other), listOf(
             SIMILAR_ASSETS_YEARS_BACK,
             SIMILAR_ASSETS_PERIOD_DAYS,
             RECENT_ASSETS_MONTHS_BACK,
@@ -340,7 +341,7 @@ data object ViewPrefScreen : PrefScreen("View Settings", "view",
     )
 )
 
-data object ScreensaverPrefScreen : PrefScreen("Screensaver Settings", "screensaver",
+data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.screensaver_settings), "screensaver",
     listOf(
         PrefCategory("",
             listOf(
@@ -356,22 +357,22 @@ data object ScreensaverPrefScreen : PrefScreen("Screensaver Settings", "screensa
     )
 )
 
-data object DebugPrefScreen : PrefScreen("Debug Settings", "debug", listOf(PrefCategory("", listOf(DEBUG_MODE, USER_ID))), { prefManager ->
+data object DebugPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.debug_settings), "debug", listOf(PrefCategory("", listOf(DEBUG_MODE, USER_ID))), { prefManager ->
     prefManager.findPreference<Preference>(USER_ID.key())?.summary = PreferenceManager.get(USER_ID)
 })
 
-data class AlbumDetailsSettingsScreen(val albumId: String, val albumName: String) : PrefScreen("Settings for $albumName",
+data class AlbumDetailsSettingsScreen(val albumId: String, val albumName: String) : PrefScreen(ImmichApplication.appContext!!.getString(R.string.settings_for, albumName),
     "album_settings_${albumId}",
     listOf(
-        PrefCategory("Ordering", listOf(PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId, albumName))),
-        PrefCategory("Filtering", listOf(FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(albumId, albumName)))
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.ordering), listOf(PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId, albumName))),
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.filtering), listOf(FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(albumId, albumName)))
     )
 )
 
-data object GenericAssetsSettingsScreen : PrefScreen("Settings",
+data object GenericAssetsSettingsScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.settings),
     "generic_assets_settings",
     listOf(
-        PrefCategory("Ordering", listOf(ALL_ASSETS_SORTING)),
-        PrefCategory("Filtering", listOf(FILTER_CONTENT_TYPE))
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.ordering), listOf(ALL_ASSETS_SORTING)),
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.filtering), listOf(FILTER_CONTENT_TYPE))
     )
 )

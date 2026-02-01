@@ -1,54 +1,54 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:title="Edit metadata">
+    android:title="@string/edit_metadata_title">
 
     <ListPreference
-        android:dialogTitle="Type"
+        android:dialogTitle="@string/meta_data_type_dialog_title"
         android:key="meta_data_item_type"
-        android:summary="Type of metadata"
-        android:title="Type of metadata"
+        android:summary="@string/meta_data_type_desc"
+        android:title="@string/meta_data_type_title"
         app:useSimpleSummaryProvider="true" />
 
     <ListPreference
-        android:dialogTitle="Order"
+        android:dialogTitle="@string/meta_data_order_dialog_title"
         android:key="meta_data_item_order"
-        android:summary="Order of metadata"
-        android:title="Order of metadata"
+        android:summary="@string/meta_data_order_desc"
+        android:title="@string/meta_data_order_title"
         app:useSimpleSummaryProvider="true" />
 
     <SeekBarPreference
         android:key="meta_data_item_font_size"
-        android:title="Font size"
+        android:title="@string/meta_data_font_size_title"
         android:max="50"
         android:min="12"
         app:useSimpleSummaryProvider="true"
         android:defaultValue="18"
-        android:dialogTitle="Font size"
-        >
+        android:dialogTitle="@string/meta_data_font_size_dialog_title"
+    >
     </SeekBarPreference>
 
     <SeekBarPreference
         android:key="meta_data_item_padding"
-        android:title="Padding"
+        android:title="@string/meta_data_padding_title"
         android:max="50"
         android:min="0"
         app:useSimpleSummaryProvider="true"
         android:defaultValue="0"
-        android:dialogTitle="Padding above and below the item"
-        >
+        android:dialogTitle="@string/meta_data_padding_dialog_title"
+    >
     </SeekBarPreference>
 
-<!--    <ListPreference-->
-<!--        android:dialogTitle="Align"-->
-<!--        android:key="meta_data_item_align"-->
-<!--        android:summary="Alignment of metadata"-->
-<!--        android:entries="@array/meta_data_alignment_labels"-->
-<!--        android:entryValues="@array/meta_data_alignment_keys"-->
-<!--        android:title="Alignment of metadata"-->
-<!--        app:useSimpleSummaryProvider="true" />-->
+    <!--    <ListPreference-->
+    <!--        android:dialogTitle="Align"-->
+    <!--        android:key="meta_data_item_align"-->
+    <!--        android:summary="Alignment of metadata"-->
+    <!--        android:entries="@array/meta_data_alignment_labels"-->
+    <!--        android:entryValues="@array/meta_data_alignment_keys"-->
+    <!--        android:title="Alignment of metadata"-->
+    <!--        app:useSimpleSummaryProvider="true" />-->
 
     <Preference android:key="meta_data_delete"
-        android:summary="Delete item"/>
+        android:summary="@string/meta_data_delete_desc" />
     <Preference android:key="meta_data_save"
-        android:summary="Save item"/>
+        android:summary="@string/meta_data_save_desc" />
 </PreferenceScreen>
