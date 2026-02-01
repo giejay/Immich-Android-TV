@@ -110,6 +110,7 @@
     <string name="slide_new_asset_in_desc">Сдвигать новый элемент при переходе</string>
     <string name="set_albums_screensaver">Выбрать альбомы для заставки</string>
     <string name="set_albums_screensaver_desc">Выбрать альбомы для отображения в заставке</string>
+    <string name="set_albums_screensaver_error">Выберите альбомы для отображения в заставке заставке</string>
     <string name="customize_metadata">Настроить метаданные</string>
     <string name="configure_metadata_screensaver">Настроить, что показывать в заставке</string>
     <string name="include_videos">Включать видео</string>

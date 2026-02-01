@@ -111,6 +111,7 @@
     <string name="slide_new_asset_in_desc">Slide the new asset in when transitioning</string>
     <string name="set_albums_screensaver">Set albums to show in screensaver</string>
     <string name="set_albums_screensaver_desc">Set albums to show in screensaver</string>
+    <string name="set_albums_screensaver_error">Set the Immich albums to show in the screensaver settings</string>
     <string name="customize_metadata">Customize metadata</string>
     <string name="configure_metadata_screensaver">Configure what to show in screensaver</string>
     <string name="include_videos">Include videos</string>

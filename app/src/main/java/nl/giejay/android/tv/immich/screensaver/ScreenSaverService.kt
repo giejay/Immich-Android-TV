@@ -145,7 +145,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     }
                 }
             } else {
-                showErrorMessageMainScope(getString(R.string.set_albums_screensaver))
+                showErrorMessageMainScope(getString(R.string.set_albums_screensaver_error))
                 finish()
             }
         } catch (e: Exception) {
