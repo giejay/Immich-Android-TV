@@ -8,9 +8,11 @@ import nl.giejay.android.tv.immich.api.model.BucketResponse
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
+import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PUT
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -43,6 +45,9 @@ interface ApiService {
 
     @GET("assets/{id}")
     suspend fun getAsset(@Path("id") id: String): Response<Asset>
+
+    @PUT("assets/{id}")
+    suspend fun updateAsset(@Path("id") id: String, @Body request: UpdateAssetRequest): Response<Asset>
 
     @GET("view/folder/unique-paths")
     suspend fun getUniquePaths(): Response<List<String>>
