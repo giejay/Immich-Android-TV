@@ -41,6 +41,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.VIDEO_DISABLE_HARDWARE_DECODER
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MediaSliderListener
@@ -200,7 +201,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER)
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
+                    disableHardwareDecoder = PreferenceManager.get(VIDEO_DISABLE_HARDWARE_DECODER)
                 )
             )
             mediaSliderView.toggleSlideshow(false)
