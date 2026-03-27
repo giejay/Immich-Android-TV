@@ -92,7 +92,8 @@ fun Asset.toSliderItem(): SliderItem {
             MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" "))
             .mapValues { StaticMetaDataProvider(it.value) } +
                 mapOf(MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)),
-        ApiUtil.getThumbnailUrl(this.id, "preview"))
+        ApiUtil.getThumbnailUrl(this.id, "preview"),
+        isFavorite = this.isFavorite)
 }
 
 private fun formatDate(date: Date): String {

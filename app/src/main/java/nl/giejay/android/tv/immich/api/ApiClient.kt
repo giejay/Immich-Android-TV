@@ -12,6 +12,7 @@ import nl.giejay.android.tv.immich.api.model.Bucket
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
+import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
@@ -191,6 +192,12 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) {
             service.getAssetsForPath(folder)
         }.map { it.filter(excludeByTag()) }
+    }
+
+    suspend fun updateFavorite(id: String, isFavorite: Boolean): Either<String, Asset> {
+        return executeAPICall(200) {
+            service.updateAsset(id, UpdateAssetRequest(isFavorite))
+        }
     }
 }
 

@@ -260,4 +260,8 @@
     <string name="meta_data_padding_dialog_title">Padding above and below the item</string>
     <string name="meta_data_delete_desc">Delete item</string>
     <string name="meta_data_save_desc">Save item</string>
+    <string name="favorite_added">Added to favorites</string>
+    <string name="favorite_removed">Removed from favorites</string>
+    <string name="favorite_add_failed">Failed to add to favorites</string>
+    <string name="favorite_remove_failed">Failed to remove from favorites</string>
 </resources>
