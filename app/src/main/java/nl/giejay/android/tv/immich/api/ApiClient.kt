@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Bucket
 import nl.giejay.android.tv.immich.api.model.Folder
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.service.ApiService
@@ -25,6 +26,7 @@ import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -191,6 +193,15 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) {
             service.getAssetsForPath(folder)
         }.map { it.filter(excludeByTag()) }
+    }
+
+    suspend fun listMemories(): Either<String, List<Memory>> {
+        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        return executeAPICall(200) { service.listMemories(today) }
+    }
+
+    suspend fun getMemory(id: String): Either<String, Memory> {
+        return executeAPICall(200) { service.getMemory(id) }
     }
 }
 
