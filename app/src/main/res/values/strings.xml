@@ -213,6 +213,8 @@
     <string name="donation_subtitle">Developing this app takes a lot of effort, if you would like to show your appreciation, you can donate using the following options.</string>
     <string name="donation_exhausted">You have exhausted your donate options, thanks!</string>
     <string name="donation_init_failed">Could not initialize donation service, sorry!</string>
+    <string name="donation_fdroid_subtitle">Donations via Google Play are not available in the F-Droid build. You can support the project at https://github.com/giejay/Immich-Android-TV</string>
+    <string name="donation_fdroid_not_available">Donations are not available in the F-Droid build. Visit the GitHub page to support the project.</string>
 
     <!-- Ordering -->
     <string name="order_alphabetically_az">Alphabetically (A-Z)</string>
