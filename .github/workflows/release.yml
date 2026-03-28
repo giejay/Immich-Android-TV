@@ -34,13 +34,13 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
 
-      - name: Build signed APK
+      - name: Build signed APKs (gplay + fdroid)
         env:
           RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleGplayRelease assembleFdroidRelease
 
       - name: Get commit messages since last release
         id: get_commits
@@ -78,21 +78,32 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Set APK asset path without 'v' prefix
+      - name: Set APK asset paths without 'v' prefix
         id: set_apk_path
         run: |
-          APK_NAME="ImmichTV-${GITHUB_REF_NAME#v}.apk"
-          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
-          echo "apk_path=app/build/outputs/apk/release/$APK_NAME" >> $GITHUB_OUTPUT
-          echo "APK Name: $APK_NAME"
-          echo "APK Path: app/build/outputs/apk/release/$APK_NAME"
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "gplay_apk_name=ImmichTV-gplay-${VERSION}.apk" >> $GITHUB_OUTPUT
+          echo "gplay_apk_path=app/build/outputs/apk/gplay/release/ImmichTV-gplay-${VERSION}.apk" >> $GITHUB_OUTPUT
+          echo "fdroid_apk_name=ImmichTV-fdroid-${VERSION}.apk" >> $GITHUB_OUTPUT
+          echo "fdroid_apk_path=app/build/outputs/apk/fdroid/release/ImmichTV-fdroid-${VERSION}.apk" >> $GITHUB_OUTPUT
 
-      - name: Upload APK Asset
+      - name: Upload gplay APK Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.set_apk_path.outputs.apk_path }}
-          asset_name: ${{ steps.set_apk_path.outputs.apk_name }}
+          asset_path: ${{ steps.set_apk_path.outputs.gplay_apk_path }}
+          asset_name: ${{ steps.set_apk_path.outputs.gplay_apk_name }}
           asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload fdroid APK Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.set_apk_path.outputs.fdroid_apk_path }}
+          asset_name: ${{ steps.set_apk_path.outputs.fdroid_apk_name }}
+          asset_content_type: application/vnd.android.package-archive
+
