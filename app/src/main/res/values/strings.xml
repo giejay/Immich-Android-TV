@@ -109,6 +109,8 @@
     <string name="show_clock_screensaver">Show clock in screensaver</string>
     <string name="slide_new_asset_in">Slide the new asset in</string>
     <string name="slide_new_asset_in_desc">Slide the new asset in when transitioning</string>
+    <string name="ken_burns_effect">Ken Burns effect</string>
+    <string name="ken_burns_effect_desc">Slowly pan and zoom images during screensaver for a cinematic effect</string>
     <string name="set_albums_screensaver">Set albums to show in screensaver</string>
     <string name="set_albums_screensaver_desc">Set albums to show in screensaver</string>
     <string name="set_albums_screensaver_error">Set the Immich albums to show in the screensaver settings</string>

@@ -94,6 +94,7 @@ data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true, ImmichApplication.ap
 data object SCREENSAVER_SHOW_DATE : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_date), ImmichApplication.appContext!!.getString(R.string.show_date_screensaver))
 data object SCREENSAVER_SHOW_CLOCK : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_clock), ImmichApplication.appContext!!.getString(R.string.show_clock_screensaver))
 data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in), ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in_desc))
+data object SCREENSAVER_KEN_BURNS_ENABLED : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.ken_burns_effect), ImmichApplication.appContext!!.getString(R.string.ken_burns_effect_desc))
 data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(), ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver), ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver_desc)) {
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
@@ -352,7 +353,8 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,
                 SCREENSAVER_PLAY_SOUND,
-                SCREENSAVER_ANIMATE_ASSET_SLIDE)
+                SCREENSAVER_ANIMATE_ASSET_SLIDE,
+                SCREENSAVER_KEN_BURNS_ENABLED)
         )
     )
 )

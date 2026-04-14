@@ -29,6 +29,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INCLUDE_VIDEOS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INTERVAL
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_KEN_BURNS_ENABLED
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_PLAY_SOUND
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_ALBUM_NAME
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_CLOCK
@@ -200,7 +201,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER)
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
+                    kenBurnsEnabled = PreferenceManager.get(SCREENSAVER_KEN_BURNS_ENABLED)
                 )
             )
             mediaSliderView.toggleSlideshow(false)
