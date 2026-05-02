@@ -181,7 +181,7 @@
     <string name="auth_sign_in_by_api_key">Sign in by API key</string>
     <string name="auth_sign_in_by_api_key_desc">Login to your Immich instance by entering your API key.</string>
     <string name="auth_sign_in_by_phone">Sign in by phone</string>
-    <string name="auth_sign_in_by_phone_desc">Login to your Immich instance by phone.</string>
+    <string name="auth_sign_in_by_phone_desc">Login to your Immich instance by scanning a QR code with your phone. Note: this only works if your Immich server is accessible from the internet (not for local/private IP addresses).</string>
     <string name="auth_demo_mode">Demo mode</string>
     <string name="auth_demo_mode_desc">Login to a demo Immich instance.</string>
 
