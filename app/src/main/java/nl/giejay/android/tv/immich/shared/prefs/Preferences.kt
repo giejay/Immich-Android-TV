@@ -164,7 +164,7 @@ data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTr
         return GlideTransformations.valueOfSafe(prefValue, defaultValue)
     }
 }
-
+data object SLIDER_ZOOM_SCROLL_PANORAMAS : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas), ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas_desc))
 data object SLIDER_FORCE_ORIGINAL_VIDEO : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.force_original_video), ImmichApplication.appContext!!.getString(R.string.force_original_video_desc))
 
 // other
@@ -326,6 +326,7 @@ data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString
             SLIDER_ONLY_USE_THUMBNAILS,
             SLIDER_FORCE_ORIGINAL_VIDEO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
+            SLIDER_ZOOM_SCROLL_PANORAMAS,
             SLIDER_METADATA_CUSTOMIZER,
             SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,

@@ -146,6 +146,8 @@
     <string name="photo_transformation_desc">Photo transformation</string>
     <string name="force_original_video">Force original video</string>
     <string name="force_original_video_desc">Play original video, even when transcode is available</string>
+    <string name="zoom_scroll_panoramas">Zoom and scroll panoramas</string>
+    <string name="zoom_scroll_panoramas_desc">Automatically zoom panorama photos to fill the screen and scroll top-to-bottom or left-to-right.</string>
 
     <!-- Other preferences -->
     <string name="photos_in_albums">Photos in albums</string>
