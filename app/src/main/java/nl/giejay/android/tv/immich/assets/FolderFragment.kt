@@ -3,7 +3,6 @@ package nl.giejay.android.tv.immich.assets
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.getOrElse
-import nl.giejay.mediaslider.model.MetaDataType
 import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.ApiClient
@@ -26,7 +25,6 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
-import java.util.EnumSet
 
 data class Item(val item: Any) {
     fun isAsset() = item is Asset
