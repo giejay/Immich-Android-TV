@@ -47,6 +47,7 @@ import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import java.util.EnumSet
 
 class ScreenSaverService : DreamService(), MediaSliderListener {
@@ -200,7 +201,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER)
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
+                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS)
                 )
             )
             mediaSliderView.toggleSlideshow(false)
