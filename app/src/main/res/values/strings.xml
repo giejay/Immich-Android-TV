@@ -147,7 +147,7 @@
     <string name="force_original_video">Force original video</string>
     <string name="force_original_video_desc">Play original video, even when transcode is available</string>
     <string name="zoom_scroll_panoramas">Zoom and scroll panoramas</string>
-    <string name="zoom_scroll_panoramas_desc">Automatically zoom panorama photos to fill the screen and scroll top-to-bottom or left-to-right.</string>
+    <string name="zoom_scroll_panoramas_desc">Automatically zoom panorama photos to fill the screen and scroll bottom-to-top or right-to-left.</string>
 
     <!-- Other preferences -->
     <string name="photos_in_albums">Photos in albums</string>
@@ -189,15 +189,15 @@
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Login to your Immich server or try a demo.</string>
-    <string name="server_url_hint">Server URL (http[s]://...)</string>
+    <string name="server_url_hint">Server URL (http[s]://…)</string>
     <string name="disable_ssl_verification">Disable SSL verification</string>
-    <string name="disable_ssl_verification_desc">Only use this when you have issues with self signed certificates!</string>
+    <string name="disable_ssl_verification_desc">Only use this when you have issues with self-signed certificates!</string>
     <string name="debug_mode">Debug mode</string>
     <string name="debug_mode_desc">Enable this if you are experiencing issues with getting the Immich data.</string>
     <string name="submit">Submit</string>
-    <string name="enter_server_url">Please enter a server URL (https://...)</string>
+    <string name="enter_server_url">Please enter a server URL (https://…)</string>
     <string name="enter_api_key">Please enter an API key, if you did enter it, try to highlight it again and press enter/OK, not back (sorry).</string>
-    <string name="enter_valid_server_url">Please enter a valid server URL (https://...)</string>
+    <string name="enter_valid_server_url">Please enter a valid server URL (https://…)</string>
 
     <!-- Auth by phone -->
     <string name="or_enter_code_on_auth_url">Or enter the code %1$s on %2$s</string>
