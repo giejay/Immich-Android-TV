@@ -146,7 +146,7 @@
     <string name="force_original_video">Принудительно оригинальное видео</string>
     <string name="force_original_video_desc">Воспроизводить оригинальное видео, даже если доступна транскодированная версия</string>
     <string name="zoom_scroll_panoramas">Панорамы с увеличением и прокруткой</string>
-    <string name="zoom_scroll_panoramas_desc">Автоматически увеличивайте панорамные фотографии, чтобы заполнить экран, и прокручивайте снизу вверх или справа налево.</string>
+    <string name="zoom_scroll_panoramas_desc">Автоматически увеличивайте панорамные фотографии, чтобы заполнить экран, и прокручивайте снизу вверх или слева направо.</string>
 
     <!-- Other preferences -->
     <string name="photos_in_albums">Фото в альбомах</string>
@@ -188,15 +188,15 @@
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Войдите на ваш сервер Immich или попробуйте демо.</string>
-    <string name="server_url_hint">URL сервера (http[s]://...)</string>
+    <string name="server_url_hint">URL сервера (http[s]://…)</string>
     <string name="disable_ssl_verification">Отключить проверку SSL</string>
     <string name="disable_ssl_verification_desc">Используйте это только при проблемах с самоподписанными сертификатами!</string>
     <string name="debug_mode">Режим отладки</string>
     <string name="debug_mode_desc">Включите это, если у вас возникают проблемы с получением данных Immich.</string>
     <string name="submit">Отправить</string>
-    <string name="enter_server_url">Введите URL сервера (https://...)</string>
+    <string name="enter_server_url">Введите URL сервера (https://…)</string>
     <string name="enter_api_key">Введите API-ключ; если уже ввели, попробуйте снова выделить его и нажать Enter/OK, а не Назад</string>
-    <string name="enter_valid_server_url">Введите корректный URL сервера (https://...)</string>
+    <string name="enter_valid_server_url">Введите корректный URL сервера (https://…)</string>
 
     <!-- Auth by phone errors and messages -->
     <string name="or_enter_code_on_auth_url">Или введите код %1$s на %2$s</string>
