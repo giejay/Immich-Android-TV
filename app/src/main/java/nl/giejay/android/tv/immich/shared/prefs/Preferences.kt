@@ -165,6 +165,13 @@ data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTr
     }
 }
 data object SLIDER_ZOOM_SCROLL_PANORAMAS : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas), ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas_desc))
+data object SLIDER_ZOOM_EFFECT : IntSeekbarPref(100,
+    ImmichApplication.appContext!!.getString(R.string.zoom_effect_percent),
+    ImmichApplication.appContext!!.getString(R.string.zoom_effect_percent_desc))
+data object SLIDER_PAN_EFFECT : IntSeekbarPref(100,
+    ImmichApplication.appContext!!.getString(R.string.pan_effect_percent),
+    ImmichApplication.appContext!!.getString(R.string.pan_effect_percent_desc))
+
 data object SLIDER_FORCE_ORIGINAL_VIDEO : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.force_original_video), ImmichApplication.appContext!!.getString(R.string.force_original_video_desc))
 
 // other
@@ -327,6 +334,8 @@ data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString
             SLIDER_FORCE_ORIGINAL_VIDEO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
             SLIDER_ZOOM_SCROLL_PANORAMAS,
+            SLIDER_ZOOM_EFFECT,
+            SLIDER_PAN_EFFECT,
             SLIDER_METADATA_CUSTOMIZER,
             SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,

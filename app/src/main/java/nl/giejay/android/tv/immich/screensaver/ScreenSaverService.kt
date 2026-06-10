@@ -35,6 +35,8 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -195,7 +197,9 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
                     metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
-                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS)
+                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT)
                 )
             )
             mediaSliderView.toggleSlideshow(false)
