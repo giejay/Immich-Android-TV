@@ -165,10 +165,10 @@ data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTr
     }
 }
 data object SLIDER_ZOOM_SCROLL_PANORAMAS : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas), ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas_desc))
-data object SLIDER_ZOOM_EFFECT : IntSeekbarPref(100,
+data object SLIDER_ZOOM_EFFECT : IntSeekbarPref(50,
     ImmichApplication.appContext!!.getString(R.string.zoom_effect_percent),
     ImmichApplication.appContext!!.getString(R.string.zoom_effect_percent_desc))
-data object SLIDER_PAN_EFFECT : IntSeekbarPref(100,
+data object SLIDER_PAN_EFFECT : IntSeekbarPref(50,
     ImmichApplication.appContext!!.getString(R.string.pan_effect_percent),
     ImmichApplication.appContext!!.getString(R.string.pan_effect_percent_desc))
 
