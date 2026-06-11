@@ -146,11 +146,11 @@
     <string name="force_original_video">Принудительно оригинальное видео</string>
     <string name="force_original_video_desc">Воспроизводить оригинальное видео, даже если доступна транскодированная версия</string>
     <string name="zoom_scroll_panoramas">Эффект увеличения и панорамирования</string>
-    <string name="zoom_scroll_panoramas_desc">Во время слайд-шоу применяйте эффекты Кена Бернса, такие как эффекты увеличения и панорамирования, для фотостраниц, не относящихся к портретам. Автоматически увеличивайте панорамные фотографии, чтобы заполнить экран, и прокручивайте снизу вверх или слева направо.</string>
+    <string name="zoom_scroll_panoramas_desc">Во время слайд-шоу применяйте эффекты увеличения и панорамирования для отдельных страниц фотографии. Автоматически увеличивайте панорамные фотографии, чтобы заполнить экран, и прокручивайте снизу вверх или слева направо.</string>
     <string name="zoom_effect_percent">Величина эффекта увеличения %</string>
-    <string name="zoom_effect_percent_desc">Регулируйте силу эффекта увеличения на проценты.</string>
+    <string name="zoom_effect_percent_desc">Регулировка силы эффекта увеличения.</string>
     <string name="pan_effect_percent">Количество эффекта Пан %</string>
-    <string name="pan_effect_percent_desc">Отрегулируйте силу панорамирования на проценты.</string>
+    <string name="pan_effect_percent_desc">Отрегулируйте силу панорамирования.</string>
 
     <!-- Other preferences -->
     <string name="photos_in_albums">Фото в альбомах</string>
