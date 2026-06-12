@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name" translatable="false">MediaSlider</string>
+    <string name="font_family" translatable="false">sans-serif-light</string>
+
+    <string name="album_name">Album Name</string>
+    <string name="camera">Camera Model</string>
+    <string name="city">City</string>
+    <string name="clock">Clock</string>
+    <string name="country">Country</string>
+    <string name="date">Date</string>
+    <string name="description">Description</string>
+    <string name="filename">Filename</string>
+    <string name="filepath">Filepath</string>
+    <string name="media_count">Media Count</string>
+    <string name="people">People</string>
+</resources>
