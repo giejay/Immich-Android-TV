@@ -22,6 +22,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.VIDEO_DISABLE_HARDWARE_DECODER
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -102,7 +103,8 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                         debugEnabled = PreferenceManager.get(DEBUG_MODE),
                         enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                         gradiantOverlay = false,
-                        metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                        metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
+                        disableHardwareDecoder = PreferenceManager.get(VIDEO_DISABLE_HARDWARE_DECODER)
                     )
                 )
             )

@@ -146,6 +146,8 @@
     <string name="photo_transformation_desc">Photo transformation</string>
     <string name="force_original_video">Force original video</string>
     <string name="force_original_video_desc">Play original video, even when transcode is available</string>
+    <string name="disable_hardware_decoder">Disable hardware video decoder</string>
+    <string name="disable_hardware_decoder_desc">Use software decoder for videos. Fixes green screen issues with H.265/HDR videos on some devices</string>
 
     <!-- Other preferences -->
     <string name="photos_in_albums">Photos in albums</string>
