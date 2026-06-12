@@ -119,16 +119,19 @@ private fun formatDate(date: Date): String {
 
 fun Asset.isPortraitImage(): Boolean {
     val aspectRatio = this.getAspectRatio()
-    return (this.exifInfo?.orientation == 6 || this.exifInfo?.orientation == 8 || (aspectRatio > 0.56 && aspectRatio <= 1.1)) && this.type == SliderItemType.IMAGE.toString()
+    return (this.exifInfo?.orientation == 6 || this.exifInfo?.orientation == 8 || (aspectRatio != null && aspectRatio > 0.56 && aspectRatio <= 1.1)) && this.type == SliderItemType.IMAGE.toString()
 }
 
 fun Asset.isPanoramaImage(): Boolean {
     val aspectRatio = this.getAspectRatio()
-    return ((aspectRatio <= 0.56 || aspectRatio > 2.0)) && this.type == SliderItemType.IMAGE.toString()
+    return (aspectRatio != null && (aspectRatio <= 0.56 || aspectRatio > 2.0)) && this.type == SliderItemType.IMAGE.toString()
 }
 
-fun Asset.getAspectRatio(): Double {
-    return (this.exifInfo?.exifImageWidth?.toDouble() ?: 1.0) / (if ((this.exifInfo?.exifImageHeight ?: 1) > 0) this.exifInfo?.exifImageHeight?.toDouble() ?: 1.0 else 1.0)
+fun Asset.getAspectRatio(): Double? {
+    return if(this.exifInfo != null && this.exifInfo.exifImageHeight != null && this.exifInfo.exifImageWidth != null && this.exifInfo.exifImageHeight > 0)
+        this.exifInfo.exifImageWidth.toDouble() / this.exifInfo.exifImageHeight.toDouble()
+    else
+        null
 }
 
 fun List<Asset>.toCards(): List<Card> {
