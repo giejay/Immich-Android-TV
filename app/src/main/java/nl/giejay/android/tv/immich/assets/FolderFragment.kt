@@ -3,7 +3,6 @@ package nl.giejay.android.tv.immich.assets
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.getOrElse
-import nl.giejay.mediaslider.model.MetaDataType
 import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.ApiClient
@@ -22,10 +21,12 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
-import java.util.EnumSet
 
 data class Item(val item: Any) {
     fun isAsset() = item is Asset
@@ -102,7 +103,10 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                         debugEnabled = PreferenceManager.get(DEBUG_MODE),
                         enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                         gradiantOverlay = false,
-                        metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                        metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
+                        zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                        zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                        panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT)
                     )
                 )
             )

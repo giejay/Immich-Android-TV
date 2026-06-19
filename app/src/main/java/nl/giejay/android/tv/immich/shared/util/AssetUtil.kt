@@ -92,7 +92,8 @@ fun Asset.toSliderItem(): SliderItem {
             MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" "))
             .mapValues { StaticMetaDataProvider(it.value) } +
                 mapOf(MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)),
-        ApiUtil.getThumbnailUrl(this.id, "preview"))
+        ApiUtil.getThumbnailUrl(this.id, "preview"),
+        this.isPanoramaImage())
 }
 
 private fun formatDate(date: Date): String {
@@ -117,7 +118,20 @@ private fun formatDate(date: Date): String {
 }
 
 fun Asset.isPortraitImage(): Boolean {
-    return (this.exifInfo?.orientation == 6 || (this.exifInfo?.exifImageWidth != null && this.exifInfo.exifImageHeight != null && this.exifInfo.exifImageWidth - 100 < this.exifInfo.exifImageHeight)) && this.type == SliderItemType.IMAGE.toString()
+    val aspectRatio = this.getAspectRatio()
+    return (this.exifInfo?.orientation == 6 || this.exifInfo?.orientation == 8 || (aspectRatio != null && aspectRatio > 0.56 && aspectRatio <= 1.1)) && this.type == SliderItemType.IMAGE.toString()
+}
+
+fun Asset.isPanoramaImage(): Boolean {
+    val aspectRatio = this.getAspectRatio()
+    return (aspectRatio != null && (aspectRatio <= 0.56 || aspectRatio > 2.0)) && this.type == SliderItemType.IMAGE.toString()
+}
+
+fun Asset.getAspectRatio(): Double? {
+    return if(this.exifInfo != null && this.exifInfo.exifImageHeight != null && this.exifInfo.exifImageWidth != null && this.exifInfo.exifImageHeight > 0)
+        this.exifInfo.exifImageWidth.toDouble() / this.exifInfo.exifImageHeight.toDouble()
+    else
+        null
 }
 
 fun List<Asset>.toCards(): List<Card> {

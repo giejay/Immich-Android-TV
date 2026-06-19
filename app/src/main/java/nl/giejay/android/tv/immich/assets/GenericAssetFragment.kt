@@ -24,6 +24,9 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.util.LoadMore
@@ -105,7 +108,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = false,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
+                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT)
                 )
             )
         )
