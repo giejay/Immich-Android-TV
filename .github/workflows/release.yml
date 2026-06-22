@@ -2,8 +2,7 @@ name: Create Release on Tag
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [ "feature/*" ]
 
 jobs:
   release:
