@@ -29,8 +29,14 @@ jobs:
         GOOGLE_SERVICES_BASE64: ${{secrets.GOOGLE_SERVICES_BASE64}}
         STRINGS_OTHER_BASE64: ${{secrets.STRINGS_OTHER}}
       run: |
-         echo $GOOGLE_SERVICES_BASE64 | base64 --decode > ./app/google-services.json
-         echo $STRINGS_OTHER_BASE64 | base64 --decode > ./app/src/main/res/values/strings_other.xml
+         if [ -n "$GOOGLE_SERVICES_BASE64" ]; then
+           echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > ./app/google-services.json
+         else
+           cp ./app/google-services.example ./app/google-services.json
+         fi
+         if [ -n "$STRINGS_OTHER_BASE64" ]; then
+           echo "$STRINGS_OTHER_BASE64" | base64 --decode > ./app/src/main/res/values/strings_other.xml
+         fi
 
     - name: Decode Keystore
       env:
