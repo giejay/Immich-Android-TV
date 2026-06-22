@@ -16,12 +16,17 @@
 
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services'
-    id 'com.google.firebase.crashlytics'
     id 'org.jetbrains.kotlin.android' version "${kotlin_version}"
     id 'kotlin-parcelize'
     id 'androidx.navigation.safeargs.kotlin'
     id 'kotlin-kapt'
+}
+
+// Apply Firebase/Google Services plugins only for the gplay flavor.
+// The fdroid flavor is built without these plugins so that no google-services.json is required.
+if (file("google-services.json").exists()) {
+    apply plugin: 'com.google.gms.google-services'
+    apply plugin: 'com.google.firebase.crashlytics'
 }
 
 android {
@@ -43,6 +48,17 @@ android {
             storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: "dummy"
             keyAlias System.getenv("RELEASE_KEY_ALIAS") ?: "immich"
             keyPassword System.getenv("RELEASE_KEY_PASSWORD") ?: "dummy"
+        }
+    }
+
+    flavorDimensions "distribution"
+
+    productFlavors {
+        gplay {
+            dimension "distribution"
+        }
+        fdroid {
+            dimension "distribution"
         }
     }
 
@@ -76,7 +92,8 @@ android {
         variant.outputs.all { output ->
             def appName = "ImmichTV" // Change if needed
             def versionName = variant.versionName
-            outputFileName = "${appName}-${versionName}.apk"
+            def flavorName = variant.flavorName
+            outputFileName = "${appName}-${flavorName}-${versionName}.apk"
         }
     }
 
@@ -107,13 +124,14 @@ dependencies {
     implementation "androidx.leanback:leanback-preference:$leanback_version"
     implementation 'io.arrow-kt:arrow-core:1.2.0'
 
-    implementation platform('com.google.firebase:firebase-bom:33.16.0')
-    implementation 'com.google.firebase:firebase-crashlytics'
-    implementation("com.google.firebase:firebase-analytics")
+    // Firebase & Google Play Services – gplay flavor only
+    gplayImplementation platform('com.google.firebase:firebase-bom:33.16.0')
+    gplayImplementation 'com.google.firebase:firebase-crashlytics'
+    gplayImplementation("com.google.firebase:firebase-analytics")
 
     // Cast library used for Cast Connect feature
-//    implementation "com.google.android.gms:play-services-cast-tv:$cast_tv_version"
-//    implementation "com.google.android.gms:play-services-cast:$cast_version"
+//    gplayImplementation "com.google.android.gms:play-services-cast-tv:$cast_tv_version"
+//    gplayImplementation "com.google.android.gms:play-services-cast:$cast_version"
 
     debugImplementation "androidx.fragment:fragment-testing:$fragment_version"
 
@@ -130,15 +148,16 @@ dependencies {
     // Exoplayer for playback
     implementation 'androidx.media3:media3-exoplayer:1.7.1'
 
-    implementation "com.android.billingclient:billing-ktx:8.0.0"
+    // Google Play Billing – gplay flavor only (not available on F-Droid)
+    gplayImplementation "com.android.billingclient:billing-ktx:8.0.0"
 
     implementation "com.google.code.gson:gson:2.11.0"
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     implementation 'com.github.bumptech.glide:okhttp3-integration:4.16.0'
 
-    // Google Play Services for identity
+    // Google Play Services for identity – gplay flavor only
     def playservices_version = "21.3.0"
-    implementation "com.google.android.gms:play-services-auth:$playservices_version"
+    gplayImplementation "com.google.android.gms:play-services-auth:$playservices_version"
 
     // Retrofit for HTTP requests
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'

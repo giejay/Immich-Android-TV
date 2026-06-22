@@ -94,7 +94,7 @@ class DonateFragment : GuidedStepSupportFragment() {
     private fun finalizeFragment() {
         try {
             findNavController().popBackStack()
-        } catch (e: IllegalStateException){
+        } catch (e: IllegalStateException) {
             Timber.e(e, "Could not close Donate fragment")
         }
     }
