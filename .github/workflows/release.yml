@@ -34,13 +34,13 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
 
-      - name: Build signed APK
+      - name: Build signed APK and AAB
         env:
           RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease bundleRelease
 
       - name: Get commit messages since last release
         id: get_commits
@@ -62,8 +62,23 @@ jobs:
           RELEASE_NOTES="${RELEASE_NOTES//'%'/'%25'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\n'/'%0A'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\r'/'%0D'}"
-          echo "::set-output name=value::$RELEASE_NOTES"
+          echo "value=$RELEASE_NOTES" >> $GITHUB_OUTPUT
           echo "Release Notes: $RELEASE_NOTES"
+
+      - name: Prepare Play Store release notes
+        run: |
+          mkdir -p play-whatsnew/en-US
+          cp commits.txt play-whatsnew/en-US/default.txt
+
+      - name: Upload AAB to Google Play
+        uses: r0adkll/upload-google-play@v1.1.3
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: nl.giejay.android.tv.immich
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          track: ${{ vars.PLAY_STORE_TRACK || 'production' }}
+          status: completed
+          whatsNewDirectory: play-whatsnew
 
       - name: Create Release
         id: create_release
