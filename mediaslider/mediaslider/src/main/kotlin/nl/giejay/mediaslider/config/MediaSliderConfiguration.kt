@@ -25,6 +25,7 @@ class MediaSliderConfiguration : Parcelable {
     val zoomAndScrollPanorama: Boolean
     val zoomEffectPercent: Int
     val panEffectPercent: Int
+    val useLargeVideoBuffer: Boolean
 
     constructor(startPosition: Int,
                 interval: Int,
@@ -43,7 +44,8 @@ class MediaSliderConfiguration : Parcelable {
                 metaDataConfig: List<MetaDataItem>,
                 zoomAndScrollPanorama: Boolean,
                 zoomEffectPercent: Int,
-                panEffectPercent: Int) {
+                panEffectPercent: Int,
+                useLargeVideoBuffer: Boolean = false) {
         this.startPosition = startPosition
         this.interval = interval
         this.isOnlyUseThumbnails = onlyUseThumbnails
@@ -62,6 +64,7 @@ class MediaSliderConfiguration : Parcelable {
         this.zoomAndScrollPanorama = zoomAndScrollPanorama
         this.zoomEffectPercent = zoomEffectPercent
         this.panEffectPercent = panEffectPercent
+        this.useLargeVideoBuffer = useLargeVideoBuffer
     }
 
     private constructor(`in`: Parcel) {
@@ -80,6 +83,7 @@ class MediaSliderConfiguration : Parcelable {
         zoomAndScrollPanorama = `in`.readByte().toInt() != 0
         this.zoomEffectPercent = `in`.readInt()
         this.panEffectPercent = `in`.readInt()
+        this.useLargeVideoBuffer = `in`.readByte().toInt() != 0
     }
 
     val isGradiantOverlayVisible: Boolean
@@ -117,6 +121,7 @@ class MediaSliderConfiguration : Parcelable {
         dest.writeByte((if (zoomAndScrollPanorama) 1 else 0).toByte())
         dest.writeInt(zoomEffectPercent)
         dest.writeInt(panEffectPercent)
+        dest.writeByte((if (useLargeVideoBuffer) 1 else 0).toByte())
     }
 
     companion object {

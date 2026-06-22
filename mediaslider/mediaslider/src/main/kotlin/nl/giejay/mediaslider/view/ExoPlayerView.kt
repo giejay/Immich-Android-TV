@@ -1,5 +1,6 @@
 package nl.giejay.mediaslider.view
 
+import android.app.ActivityManager
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -44,10 +45,8 @@ class ExoPlayerView @JvmOverloads constructor(context: Context, resourceId: Int,
     ) {
         player = ExoPlayer.Builder(context)
             .setRenderersFactory(renderersFactory)
-            .setLoadControl(DefaultLoadControl.Builder()
-                .setPrioritizeTimeOverSizeThresholds(false)
-                .build()
-            ).build()
+            .setLoadControl(createLoadControl(config))
+            .build()
         playerView.player = player
         if (!config.isVideoSoundEnable) player?.volume = 0f
 
@@ -110,5 +109,45 @@ class ExoPlayerView @JvmOverloads constructor(context: Context, resourceId: Int,
 
     fun isReady(): Boolean {
         return player != null
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun createLoadControl(config: MediaSliderConfiguration): DefaultLoadControl {
+        val builder = DefaultLoadControl.Builder()
+        if (config.useLargeVideoBuffer) {
+            builder
+                .setBufferDurationsMs(
+                    MIN_BUFFER_MS,
+                    MAX_BUFFER_MS,
+                    BUFFER_FOR_PLAYBACK_MS,
+                    BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                )
+                .setTargetBufferBytes(getSafetyBufferBytes())
+                .setPrioritizeTimeOverSizeThresholds(true)
+        } else {
+            builder.setPrioritizeTimeOverSizeThresholds(false)
+        }
+        return builder.build()
+    }
+
+    private fun getSafetyBufferBytes(): Int {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return DEFAULT_SAFETY_BYTES
+        val memInfo = ActivityManager.MemoryInfo()
+        am.getMemoryInfo(memInfo)
+        val totalMemMb = memInfo.totalMem / (1024 * 1024)
+        val safeMb = (totalMemMb * SAFETY_MEMORY_FRACTION).toInt().coerceIn(MIN_SAFETY_MB, MAX_SAFETY_MB)
+        return safeMb * 1024 * 1024
+    }
+
+    private companion object {
+        const val MIN_BUFFER_MS = 10_000
+        const val MAX_BUFFER_MS = 300_000
+        const val BUFFER_FOR_PLAYBACK_MS = 4_000
+        const val BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 4_000
+
+        const val SAFETY_MEMORY_FRACTION = 0.40
+        const val MIN_SAFETY_MB = 384
+        const val MAX_SAFETY_MB = 768
+        const val DEFAULT_SAFETY_BYTES = 512 * 1024 * 1024
     }
 }
