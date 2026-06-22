@@ -48,10 +48,12 @@ jobs:
           echo "Last tag: $LAST_TAG"
           if [ -z "$LAST_TAG" ]; then
             echo "No previous tag found. Getting all commits."
-            git log --pretty=format:'%h %s' > commits.txt
+            git log --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/' > commits.txt
+            git log --pretty=format:'%s' | awk '!/^Create new release:/' > commits_playstore.txt
           else
             echo "Previous tag: $LAST_TAG"
-            git log "$LAST_TAG"..HEAD --pretty=format:'%h %s' > commits.txt
+            git log "$LAST_TAG"..HEAD --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/' > commits.txt
+            git log "$LAST_TAG"..HEAD --pretty=format:'%s' | awk '!/^Create new release:/' > commits_playstore.txt
           fi
 
       - name: Set release notes
@@ -67,7 +69,7 @@ jobs:
       - name: Prepare Play Store release notes
         run: |
           mkdir -p play-whatsnew
-          cp commits.txt play-whatsnew/whatsnew-en-US
+          cp commits_playstore.txt play-whatsnew/whatsnew-en-US
           ls -ltr app/build/outputs/bundle/release
 
       - name: Upload AAB to Google Play
@@ -93,14 +95,19 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Set APK asset path without 'v' prefix
+      - name: Set APK asset path
         id: set_apk_path
         run: |
-          APK_NAME="ImmichTV-${GITHUB_REF_NAME#v}.apk"
+          APK_PATH=$(ls -1 app/build/outputs/apk/release/*.apk | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "No APK found in app/build/outputs/apk/release"
+            exit 1
+          fi
+          APK_NAME=$(basename "$APK_PATH")
           echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
-          echo "apk_path=app/build/outputs/apk/release/$APK_NAME" >> $GITHUB_OUTPUT
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "APK Name: $APK_NAME"
-          echo "APK Path: app/build/outputs/apk/release/$APK_NAME"
+          echo "APK Path: $APK_PATH"
 
       - name: Upload APK Asset
         uses: actions/upload-release-asset@v1
