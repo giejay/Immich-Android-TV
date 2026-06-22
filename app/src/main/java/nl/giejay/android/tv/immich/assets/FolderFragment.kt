@@ -16,6 +16,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
@@ -106,7 +107,8 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                         metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
                         zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
                         zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
-                        panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT)
+                        panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+                        useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
                     )
                 )
             )
