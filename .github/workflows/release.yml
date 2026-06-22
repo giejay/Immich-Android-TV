@@ -66,8 +66,9 @@ jobs:
 
       - name: Prepare Play Store release notes
         run: |
-          mkdir -p play-whatsnew/en-US
-          cp commits.txt play-whatsnew/en-US/default.txt
+          mkdir -p play-whatsnew
+          cp commits.txt play-whatsnew/whatsnew-en-US
+          ls -ltr app/build/outputs/bundle/release
 
       - name: Upload AAB to Google Play
         uses: r0adkll/upload-google-play@v1.1.3
