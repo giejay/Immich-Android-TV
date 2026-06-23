@@ -124,7 +124,7 @@ jobs:
 
       - name: Upload AAB to Google Play
         uses: r0adkll/upload-google-play@v1.1.5
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishPlayStore == 'true' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishPlayStore }}
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
           packageName: nl.giejay.android.tv.immich
@@ -135,7 +135,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub == 'true' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
         uses: actions/create-release@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -148,7 +148,7 @@ jobs:
           prerelease: false
 
       - name: Set APK asset path
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub == 'true' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
         id: set_apk_path
         run: |
           APK_PATH=$(ls -1 app/build/outputs/apk/release/*.apk | head -n 1)
@@ -163,7 +163,7 @@ jobs:
           echo "APK Path: $APK_PATH"
 
       - name: Upload APK Asset
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub == 'true' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
