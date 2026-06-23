@@ -2,7 +2,8 @@ name: Create Release on Tag
 
 on:
   push:
-    branches: [ "feature/*" ]
+    tags:
+      - '*'
   workflow_dispatch:
     inputs:
       releaseName:
