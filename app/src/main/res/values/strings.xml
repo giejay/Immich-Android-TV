@@ -59,6 +59,19 @@
     <!-- Home Menu -->
     <string name="seasonal">Seasonal</string>
     <string name="folders">Folders</string>
+    <!-- Memories -->
+    <string name="memories">Memories</string>
+
+    <plurals name="memory_photo_count">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+
+    <plurals name="memory_years_ago">
+        <item quantity="one">%d year ago</item>
+        <item quantity="other">%d years ago</item>
+    </plurals>
+
     <string name="settings">Settings</string>
     <string name="edit">Edit</string>
     <string name="photos">Photos</string>

@@ -62,6 +62,18 @@
     <!--    </fragment>-->
 
     <fragment
+        android:id="@+id/memoryAssetsFragment"
+        android:name="nl.giejay.android.tv.immich.memories.MemoryAssetsFragment"
+        android:label="MemoryAssetsFragment">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
+        <argument
+            android:name="memoryTitle"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
         android:id="@+id/albumDetailsFragment"
         android:name="nl.giejay.android.tv.immich.album.AlbumDetailsFragment"
         android:label="AlbumDetailsFragment">
@@ -194,6 +206,9 @@
         android:id="@+id/homeFragment"
         android:name="nl.giejay.android.tv.immich.home.HomeFragment"
         android:label="HomeFragment">
+        <action
+            android:id="@+id/action_homeFragment_to_memoryAssetsFragment"
+            app:destination="@id/memoryAssetsFragment" />
         <action
             android:id="@+id/action_homeFragment_to_albumDetailsFragment"
             app:destination="@id/albumDetailsFragment" />

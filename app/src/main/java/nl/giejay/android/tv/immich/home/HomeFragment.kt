@@ -24,6 +24,7 @@ import nl.giejay.android.tv.immich.assets.FolderFragment
 import nl.giejay.android.tv.immich.assets.RandomAssetsFragment
 import nl.giejay.android.tv.immich.assets.RecentAssetsFragment
 import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
+import nl.giejay.android.tv.immich.memories.MemoriesFragment
 import nl.giejay.android.tv.immich.people.PeopleFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
 import nl.giejay.android.tv.immich.shared.fragment.GridFragment
@@ -131,6 +132,7 @@ class HomeFragment : BrowseSupportFragment() {
             Header(ImmichApplication.appContext!!.getString(R.string.people)) { PeopleFragment() },
             Header(ImmichApplication.appContext!!.getString(R.string.recent)) { RecentAssetsFragment() },
             Header(ImmichApplication.appContext!!.getString(R.string.seasonal)) { SimilarTimeAssetsFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.memories)) { MemoriesFragment() },
             Header(ImmichApplication.appContext!!.getString(R.string.folders)) { FolderFragment() },
             Header(ImmichApplication.appContext!!.getString(R.string.edit)) { GridFragment(hideProgressBar = true) },
             Header(ImmichApplication.appContext!!.getString(R.string.settings)) { SettingsFragment() },

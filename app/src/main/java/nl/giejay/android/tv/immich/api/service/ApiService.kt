@@ -5,6 +5,7 @@ import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Bucket
 import nl.giejay.android.tv.immich.api.model.BucketResponse
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -49,4 +50,10 @@ interface ApiService {
 
     @GET("view/folder")
     suspend fun getAssetsForPath(@Query("path") path: String): Response<List<Asset>>
+
+    @GET("memories")
+    suspend fun listMemories(@Query("for") date: String): Response<List<Memory>>
+
+    @GET("memories/{id}")
+    suspend fun getMemory(@Path("id") id: String): Response<Memory>
 }
