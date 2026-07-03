@@ -66,8 +66,8 @@ object PreferenceManager {
     }
 
     fun removeApiSettings() {
-        HOST_NAME.save(sharedPreference, "")
-        API_KEY.save(sharedPreference, "")
+        save(HOST_NAME, "")
+        save(API_KEY, "")
     }
 
     private fun removeStringSetItem(item: String, prefKey: StringSetPref) {
