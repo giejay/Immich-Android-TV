@@ -3,7 +3,7 @@ name: Create Release on Tag
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
   workflow_dispatch:
     inputs:
       releaseName:
