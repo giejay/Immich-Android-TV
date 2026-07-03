@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_count">Кол-во элементов</string>
+    <string name="people">Люди</string>
+    <string name="album_name">Альбом</string>
+    <string name="camera">Камера</string>
+    <string name="city">Город</string>
+    <string name="clock">Часы</string>
+    <string name="country">Страна</string>
+    <string name="date">Дата</string>
+    <string name="description">Описание</string>
+    <string name="filename">Имя файла</string>
+    <string name="filepath">Путь файла</string>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="#99000000"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <ImageButton
+        android:id="@+id/image_favorite"
+        style="@style/TVMediaButton"
+        android:contentDescription="@string/favorite"
+        android:nextFocusRight="@id/image_slideshow"
+        android:src="@drawable/ic_favorite_border" />
+
+    <ImageButton
+        android:id="@+id/image_slideshow"
+        style="@style/TVMediaButton"
+        android:contentDescription="@string/slideshow"
+        android:nextFocusLeft="@id/image_favorite"
+        android:src="@drawable/slideshow" />
+
+</LinearLayout>

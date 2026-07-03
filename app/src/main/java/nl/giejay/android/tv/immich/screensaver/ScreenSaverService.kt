@@ -7,13 +7,12 @@ import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import arrow.core.Either
 import arrow.core.getOrElse
-import nl.giejay.mediaslider.model.MetaDataType
-import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
@@ -30,24 +29,22 @@ import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INCLUDE_VIDEOS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_PLAY_SOUND
-import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_ALBUM_NAME
-import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_CLOCK
-import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DATE
-import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_DESCRIPTION
-import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_MEDIA_COUNT
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
+import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
-import nl.giejay.android.tv.immich.R
-import java.util.EnumSet
 
 class ScreenSaverService : DreamService(), MediaSliderListener {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
@@ -200,7 +197,11 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER)
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
+                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
                 )
             )
             mediaSliderView.toggleSlideshow(false)
@@ -215,12 +216,11 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         private const val PAGE_COUNT = 100
     }
 
-    override fun onButtonPressed(event: KeyEvent): Boolean {
-        if((event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER) && !mediaSliderView.isControllerVisible()){
+    override fun onButtonPressed(keyEvent: KeyEvent): Boolean {
+        if((keyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyEvent.keyCode == KeyEvent.KEYCODE_ENTER) && !mediaSliderView.isControllerVisible()){
             finish()
             return true
         }
         return false
     }
 }
-
