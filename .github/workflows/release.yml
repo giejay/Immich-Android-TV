@@ -50,8 +50,8 @@ jobs:
           NEW_CODE=$CURRENT_CODE
           if [ "${{ inputs.increaseVersion }}" = "true" ]; then
             NEW_CODE=$((CURRENT_CODE + 1))
-            sed -i '' "s/versionName \".*\"/versionName \"$RELEASE_NAME\"/" "$GRADLE_FILE"
-            sed -i '' "s/versionCode $CURRENT_CODE/versionCode $NEW_CODE/" "$GRADLE_FILE"
+            sed -i "s/versionName \".*\"/versionName \"$RELEASE_NAME\"/" "$GRADLE_FILE"
+            sed -i "s/versionCode $CURRENT_CODE/versionCode $NEW_CODE/" "$GRADLE_FILE"
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add "$GRADLE_FILE"
