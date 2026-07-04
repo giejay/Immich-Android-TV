@@ -31,6 +31,30 @@ data class ApiClientConfig(
     val debugMode: Boolean
 )
 
+// internal so app/src/test can call it directly without instantiating ApiClient/Retrofit
+internal fun buildListAssetsSearchRequest(
+    page: Int,
+    pageCount: Int,
+    albumIds: List<String>,
+    order: String,
+    type: String?,
+    personIds: List<UUID>,
+    endDate: String?,
+    fromDate: String?
+): SearchRequest = SearchRequest(
+    page = page,
+    size = pageCount,
+    albumIds = albumIds,
+    order = order,
+    type = type,
+    personIds = personIds,
+    takenBefore = endDate,
+    takenAfter = fromDate,
+    // "timeline" reproduces pre-v3 default for normal browsing; album-scoped search
+    // omits it so archived-in-album assets keep showing (VIS-02)
+    visibility = if (albumIds.isEmpty()) "timeline" else null
+)
+
 class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
@@ -110,15 +134,16 @@ class ApiClient(private val config: ApiClientConfig) {
                            endDate: LocalDateTime? = null,
                            contentType: ContentType,
                            albumIds: List<String> = emptyList()): Either<String, List<Asset>> {
-        val searchRequest = SearchRequest(page,
-            pageCount,
-            albumIds,
-            order,
-            // null for all content
-            if (contentType == ContentType.ALL) null else contentType.toString(),
-            personIds,
-            endDate?.format(dateTimeFormatter),
-            fromDate?.format(dateTimeFormatter))
+        val searchRequest = buildListAssetsSearchRequest(
+            page = page,
+            pageCount = pageCount,
+            albumIds = albumIds,
+            order = order,
+            type = if (contentType == ContentType.ALL) null else contentType.toString(),
+            personIds = personIds,
+            endDate = endDate?.format(dateTimeFormatter),
+            fromDate = fromDate?.format(dateTimeFormatter)
+        )
         val assetsResult = if (random) {
             executeAPICall(200) { service.randomAssets(searchRequest) }
         } else {

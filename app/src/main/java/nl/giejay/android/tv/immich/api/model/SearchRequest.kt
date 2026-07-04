@@ -10,5 +10,6 @@ data class SearchRequest(val page: Int = 0,
                          val personIds: List<UUID> = emptyList(),
                          val takenBefore: String? = null,
                          val takenAfter: String? = null,
-                         val withExif: Boolean = true
+                         val withExif: Boolean = true,
+                         val visibility: String? = null
 )
