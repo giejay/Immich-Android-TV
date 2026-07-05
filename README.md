@@ -10,6 +10,14 @@ Immich is a self hosted backup solution for photos and videos. Current features 
 
 More info here: https://github.com/immich-app/immich
 
+## Compatibility
+
+This app is compatible with Immich server **v3.0.0 and newer**. Immich 3.0.0 introduced several
+breaking API changes (album asset loading via `search/metadata`, search visibility defaults,
+error response format); this app has been adapted accordingly. No additional API key permissions
+are required for v3 compared to earlier versions — the existing `asset.read`/`album.read`
+permissions listed below already cover the endpoints this app uses.
+
 This Android TV app will allow you to view those uploaded photos and videos. Current features
 include:
 

@@ -10,12 +10,12 @@ import arrow.core.getOrElse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
-import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
@@ -31,14 +31,15 @@ import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_PLAY_SOUND
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
+import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
@@ -46,12 +47,19 @@ import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
 
+// internal so app/src/test can call it directly without instantiating ScreenSaverService
+internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: T): T =
+    this.onLeft { error -> Timber.w("Failed to load assets for %s: %s", logContext, error) }
+        .getOrElse { default }
+
 class ScreenSaverService : DreamService(), MediaSliderListener {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
     private lateinit var mediaSliderView: MediaSliderView
     private var currentPage = 0
+    private val PAGE_SIZE = 20
     private var doneLoading: Boolean = false
+    private val albumPages = mutableMapOf<String, Int>()
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
@@ -86,7 +94,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                             emptyList()
                         } else {
                             currentPage += 1
-                            val newAssets = loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().getOrElse { emptyList() }
+                            val newAssets = loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke()
+                                .getOrElseLogged("screensaver random/recent/similar loadMore", emptyList())
                             doneLoading = newAssets.size < PAGE_COUNT
                             newAssets.toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
                         }
@@ -127,20 +136,14 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
 
     private suspend fun loadImagesFromAlbums(albums: Set<String>) {
         try {
-            // first fetch one album, show the (first few) pictures, then fetch other albums and shuffle again
             if (albums.isNotEmpty()) {
-                val shuffledAlbums = albums.toList().shuffled()
-                // todo use timeline buckets to speed up loading
-                apiClient.listAssetsFromAlbum(shuffledAlbums.first()).map { album ->
-                    val randomAssets = getAssets(listOf(album))
-                    setInitialAssets(randomAssets, null)
-                    if (shuffledAlbums.size > 1) {
-                        // load next ones
-                        val nextAlbums = shuffledAlbums.drop(1).map { apiClient.listAssetsFromAlbum(it) }
-                        val assets = getAssets(nextAlbums.flatMap { it.getOrNone().toList() })
-                        setAllAssets((randomAssets + assets).shuffled().distinct())
-                    }
-                }
+                albumPages.clear()
+                albums.forEach { albumPages[it] = 1 }
+
+                val initialAssets = loadNextBuckets()
+                setInitialAssets(initialAssets, suspend {
+                    loadNextBuckets().toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+                })
             } else {
                 showErrorMessageMainScope(getString(R.string.set_albums_screensaver_error))
                 finish()
@@ -150,6 +153,37 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
             showErrorMessageMainScope(getString(R.string.could_not_load_assets))
             finish()
         }
+    }
+
+    private suspend fun loadNextBuckets(): List<Asset> {
+        val activeAlbums = albumPages.keys.toList()
+        val results = coroutineScope {
+            activeAlbums.pmap { albumId ->
+                val page = albumPages[albumId] ?: 1
+                val contentType =
+                    if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
+
+                val result = apiClient.listAssets(
+                    page = page,
+                    pageCount = PAGE_SIZE,
+                    contentType = contentType,
+                    albumIds = listOf(albumId)
+                ).getOrElseLogged("loadNextBuckets for album $albumId", emptyList())
+                albumId to result
+            }
+        }
+
+        val allAssets = mutableListOf<Asset>()
+        results.forEach { (albumId, result) ->
+            if (result.isNotEmpty()) {
+                allAssets.addAll(filterVideos(result))
+                albumPages[albumId] = (albumPages[albumId] ?: 1) + 1
+            }
+            if (result.size < PAGE_SIZE) {
+                albumPages.remove(albumId)
+            }
+        }
+        return allAssets.shuffled()
     }
 
     private suspend fun showErrorMessageMainScope(errorMessage: String) {
@@ -164,10 +198,6 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
             errorMessage,
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    private fun getAssets(albums: List<AlbumDetails>): List<Asset> {
-        return albums.flatMap { filterVideos(it.assets) }
     }
 
     private fun filterVideos(assets: List<Asset>) = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) {
@@ -208,16 +238,12 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         }
     }
 
-    private suspend fun setAllAssets(assets: List<Asset>) = withContext(Dispatchers.Main) {
-        mediaSliderView.setItems(assets.toSliderItems(keepOrder = false, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)))
-    }
-
     companion object ScreenSaverService {
         private const val PAGE_COUNT = 100
     }
 
     override fun onButtonPressed(keyEvent: KeyEvent): Boolean {
-        if((keyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyEvent.keyCode == KeyEvent.KEYCODE_ENTER) && !mediaSliderView.isControllerVisible()){
+        if ((keyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyEvent.keyCode == KeyEvent.KEYCODE_ENTER) && !mediaSliderView.isControllerVisible()) {
             finish()
             return true
         }
