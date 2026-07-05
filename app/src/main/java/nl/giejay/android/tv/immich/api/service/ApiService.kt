@@ -3,8 +3,6 @@ package nl.giejay.android.tv.immich.api.service
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
-import nl.giejay.android.tv.immich.api.model.Bucket
-import nl.giejay.android.tv.immich.api.model.BucketResponse
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -23,6 +21,11 @@ interface ApiService {
     @POST("search/random")
     suspend fun randomAssets(@Body searchRequest: SearchRequest): Response<List<Asset>>
 
+    // ALB-01: intentionally sends no shared-albums filter query param. This app never sent the
+    // legacy `shared` param, and v3's `isShared`/`isOwned` are additive, optional params (not
+    // required replacements) per .planning/research/STACK.md's live OpenAPI verification, so
+    // omitting them preserves the existing combined owned+shared album list. Locked in by the
+    // regression test ApiServiceAlbumParamsTest.
     @GET("albums")
     suspend fun listAlbums(@Query("assetId") assetId: String? = null): Response<List<Album>>
 

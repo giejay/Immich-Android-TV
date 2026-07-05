@@ -8,7 +8,7 @@ data class SearchAlbumResponseDto(val total: Int,
                                   val count: Int,
                                   val items: List<Album>)
 
-data class SearchAssetResponseDto(val total: Int,
+data class SearchAssetResponseDto(val total: Int?,
                                   val count: Int,
                                   val items: List<Asset>,
                                   val nextPage: String?)

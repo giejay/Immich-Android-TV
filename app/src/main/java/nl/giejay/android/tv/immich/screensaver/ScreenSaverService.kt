@@ -47,6 +47,11 @@ import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
 
+// internal so app/src/test can call it directly without instantiating ScreenSaverService
+internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: T): T =
+    this.onLeft { error -> Timber.w("Failed to load assets for %s: %s", logContext, error) }
+        .getOrElse { default }
+
 class ScreenSaverService : DreamService(), MediaSliderListener {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
@@ -89,7 +94,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                             emptyList()
                         } else {
                             currentPage += 1
-                            val newAssets = loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().getOrElse { emptyList() }
+                            val newAssets = loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke()
+                                .getOrElseLogged("screensaver random/recent/similar loadMore", emptyList())
                             doneLoading = newAssets.size < PAGE_COUNT
                             newAssets.toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
                         }
@@ -162,7 +168,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     pageCount = PAGE_SIZE,
                     contentType = contentType,
                     albumIds = listOf(albumId)
-                ).getOrElse { emptyList() }
+                ).getOrElseLogged("loadNextBuckets for album $albumId", emptyList())
                 albumId to result
             }
         }
