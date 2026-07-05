@@ -118,7 +118,12 @@ jobs:
       - name: Prepare Play Store release notes
         run: |
           mkdir -p play-whatsnew
-          cp commits_playstore.txt play-whatsnew/whatsnew-en-US
+          python3 - <<'PY'
+          from pathlib import Path
+          
+          notes = Path("commits_playstore.txt").read_text()
+          Path("play-whatsnew/whatsnew-en-US").write_text(notes[:500])
+          PY
           ls -ltr app/build/outputs/bundle/release
           ls -ltr app/build/outputs/apk/release
 
