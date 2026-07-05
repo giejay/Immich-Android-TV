@@ -44,7 +44,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
         return items.sortedWith({ i, i2 ->
             if (!i.isAsset() && !i2.isAsset() || (i.isAsset() && i2.isAsset())) {
                 // both folders or both items
-                i.name()!!.compareTo(i2.name()!!)
+                i2.name()?.let { i.name()?.compareTo(it) } ?: 0
             } else if (!i.isAsset()) {
                 // i is folder, i2 is asset, precedence for folder
                 -1
