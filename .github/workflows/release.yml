@@ -97,28 +97,34 @@ jobs:
           echo "Last tag: $LAST_TAG"
           if [ -z "$LAST_TAG" ]; then
             echo "No previous tag found. Getting all commits."
-            git log --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/' > commits.txt
-            git log --pretty=format:'%s' | awk '!/^Create new release:/' > commits_playstore.txt
+            git log --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/ && !/^[0-9a-f]+ Initial plan$/' > commits.txt
+            git log --pretty=format:'%s' | awk '!/^Create new release:/ && !/^Initial plan$/' > commits_playstore.txt
           else
             echo "Previous tag: $LAST_TAG"
-            git log "$LAST_TAG"..HEAD --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/' > commits.txt
-            git log "$LAST_TAG"..HEAD --pretty=format:'%s' | awk '!/^Create new release:/' > commits_playstore.txt
+            git log "$LAST_TAG"..HEAD --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/ && !/^[0-9a-f]+ Initial plan$/' > commits.txt
+            git log "$LAST_TAG"..HEAD --pretty=format:'%s' | awk '!/^Create new release:/ && !/^Initial plan$/' > commits_playstore.txt
           fi
 
       - name: Set release notes
         id: set_release_notes
         run: |
-          RELEASE_NOTES=$(cat commits.txt)
-          RELEASE_NOTES="${RELEASE_NOTES//'%'/'%25'}"
-          RELEASE_NOTES="${RELEASE_NOTES//$'\n'/'%0A'}"
-          RELEASE_NOTES="${RELEASE_NOTES//$'\r'/'%0D'}"
-          echo "value=$RELEASE_NOTES" >> $GITHUB_OUTPUT
-          echo "Release Notes: $RELEASE_NOTES"
+          {
+            echo "value<<EOF"
+            cat commits.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release Notes:"
+          cat commits.txt
 
       - name: Prepare Play Store release notes
         run: |
           mkdir -p play-whatsnew
-          cp commits_playstore.txt play-whatsnew/whatsnew-en-US
+          python3 - <<'PY'
+          from pathlib import Path
+          
+          notes = Path("commits_playstore.txt").read_text()
+          Path("play-whatsnew/whatsnew-en-US").write_text(notes[:500])
+          PY
           ls -ltr app/build/outputs/bundle/release
           ls -ltr app/build/outputs/apk/release
 
@@ -141,7 +147,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          release_name: Release ${{ steps.version.outputs.release_name }}
           body: |
             ${{ steps.set_release_notes.outputs.value }}
           draft: false
