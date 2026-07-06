@@ -166,6 +166,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                 val result = apiClient.listAssets(
                     page = page,
                     pageCount = PAGE_SIZE,
+                    random = true,
                     contentType = contentType,
                     albumIds = listOf(albumId)
                 ).getOrElseLogged("loadNextBuckets for album $albumId", emptyList())
