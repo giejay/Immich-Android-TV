@@ -6,11 +6,11 @@ import android.view.KeyEvent
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import arrow.core.Either
+import arrow.core.flatten
 import arrow.core.getOrElse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.R
@@ -42,6 +42,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
@@ -57,9 +58,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     private lateinit var apiClient: ApiClient
     private lateinit var mediaSliderView: MediaSliderView
     private var currentPage = 0
-    private val PAGE_SIZE = 20
     private var doneLoading: Boolean = false
-    private val albumPages = mutableMapOf<String, Int>()
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
@@ -86,7 +85,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         isInteractive = true
         ioScope.launch {
             if (ScreenSaverType.ALBUMS == PreferenceManager.get(SCREENSAVER_TYPE)) {
-                loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS))
+                loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS).toList())
             } else {
                 loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().map {
                     setInitialAssets(it, suspend {
@@ -134,15 +133,13 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         }
     }
 
-    private suspend fun loadImagesFromAlbums(albums: Set<String>) {
+    private suspend fun loadImagesFromAlbums(albums: List<String>) {
         try {
             if (albums.isNotEmpty()) {
-                albumPages.clear()
-                albums.forEach { albumPages[it] = 1 }
-
-                val initialAssets = loadNextBuckets()
+                // first load x random assets from each album. Then load all assets from all albums.
+                val initialAssets = loadNextAssetsFromAlbums(albums, random = true)
                 setInitialAssets(initialAssets, suspend {
-                    loadNextBuckets().toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+                    loadNextAssetsFromAlbums(albums, random = false).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
                 })
             } else {
                 showErrorMessageMainScope(getString(R.string.set_albums_screensaver_error))
@@ -155,36 +152,24 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         }
     }
 
-    private suspend fun loadNextBuckets(): List<Asset> {
-        val activeAlbums = albumPages.keys.toList()
-        val results = coroutineScope {
-            activeAlbums.pmap { albumId ->
-                val page = albumPages[albumId] ?: 1
-                val contentType =
-                    if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
-
-                val result = apiClient.listAssets(
-                    page = page,
-                    pageCount = PAGE_SIZE,
+    private fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): List<Asset> {
+        val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
+        val assets = if (random) {
+            val pageCount = (50 / albums.size).coerceAtLeast(1)
+            albums.pmap { albumId ->
+                apiClient.listAssets(
+                    page = 1,
+                    pageCount = pageCount,
                     random = true,
                     contentType = contentType,
                     albumIds = listOf(albumId)
-                ).getOrElseLogged("loadNextBuckets for album $albumId", emptyList())
-                albumId to result
-            }
+                ).getOrElse { emptyList() }
+            }.flatten()
+        } else {
+            apiClient.listAssetsFromAlbum(albums, contentType, pageCount = 1000).getOrElse { emptyList() }
         }
 
-        val allAssets = mutableListOf<Asset>()
-        results.forEach { (albumId, result) ->
-            if (result.isNotEmpty()) {
-                allAssets.addAll(filterVideos(result))
-                albumPages[albumId] = (albumPages[albumId] ?: 1) + 1
-            }
-            if (result.size < PAGE_SIZE) {
-                albumPages.remove(albumId)
-            }
-        }
-        return allAssets.shuffled()
+        return assets.shuffled()
     }
 
     private suspend fun showErrorMessageMainScope(errorMessage: String) {
@@ -199,12 +184,6 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
             errorMessage,
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    private fun filterVideos(assets: List<Asset>) = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) {
-        assets.shuffled()
-    } else {
-        assets.filter { it.type != "VIDEO" }.shuffled()
     }
 
     private suspend fun setInitialAssets(assets: List<Asset>, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
@@ -228,7 +207,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER).filter { it.type != MetaDataType.MEDIA_COUNT },
                     zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
                     zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),

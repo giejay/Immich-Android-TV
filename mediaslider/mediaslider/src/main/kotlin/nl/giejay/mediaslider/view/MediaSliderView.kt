@@ -314,8 +314,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         setStartPosition()
         mPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(sliderItemIndex: Int, v: Float, i1: Int) {
-                if (config.loadMore != null && mPager.currentItem > config.items.size - 10 && !loading) {
-                    // do not load more in the "background" because "addItemsMain" will invoke the onPageScrolled again and reload the current item
+                if (config.loadMore != null && mPager.currentItem > config.items.size - 40 && !loading) {
                     loading = true
 
                     ioScope.launch {
@@ -324,64 +323,62 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                         // keep loading until no more items are received, so set it to false if there are items
                         loading = nextItems.isEmpty()
                     }
-                } else {
-                    stopPlayer()
-                    if (sliderItemIndex != mPager.currentItem) {
+                }
+                stopPlayer()
+                if (sliderItemIndex != mPager.currentItem) {
+                    return
+                }
+                val sliderItem = config.items[sliderItemIndex]
+                val mainItem = sliderItem.mainItem
+
+                updateMetaData(metaDataLeftAdapter, mainItem, sliderItemIndex)
+                updateMetaData(metaDataRightAdapter, if (sliderItem.hasSecondaryItem()) sliderItem.secondaryItem!! else mainItem, sliderItemIndex)
+
+                config.onAssetSelected(sliderItem)
+                currentToast?.cancel()
+                if (!sliderItem.hasSecondaryItem() && config.debugEnabled && transformResults.contains(sliderItemIndex)) {
+                    currentToast = Toast.makeText(context, transformResults[sliderItemIndex], Toast.LENGTH_LONG)
+                    currentToast!!.show()
+                    transformResults.remove(sliderItemIndex)
+                }
+
+                val statusLayoutLeft = findViewById<LinearLayout>(R.id.meta_data_holder)
+                if (sliderItem.type == SliderItemType.VIDEO) {
+                    if (config.isGradiantOverlayVisible) {
+                        statusLayoutLeft.background = null
+                    }
+                    val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
+                    if (!viewTag.isReady()) {
+                        Timber.e("Player is not initialized properly, cannot play video.")
+                        Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
                         return
                     }
-                    val sliderItem = config.items[sliderItemIndex]
-                    val mainItem = sliderItem.mainItem
-
-                    updateMetaData(metaDataLeftAdapter, mainItem, sliderItemIndex)
-                    updateMetaData(metaDataRightAdapter, if (sliderItem.hasSecondaryItem()) sliderItem.secondaryItem!! else mainItem, sliderItemIndex)
-
-                    config.onAssetSelected(sliderItem)
-                    currentToast?.cancel()
-                    if (!sliderItem.hasSecondaryItem() && config.debugEnabled && transformResults.contains(sliderItemIndex)) {
-                        currentToast = Toast.makeText(context, transformResults[sliderItemIndex], Toast.LENGTH_LONG)
-                        currentToast!!.show()
-                        transformResults.remove(sliderItemIndex)
+                    currentPlayerView = viewTag.getPlayerView()
+                    currentPlayerInScope = viewTag.getPlayer()
+                    currentPlayerInScope!!.seekTo(0, 0)
+                    if (currentPlayerInScope!!.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
+                        prepareMedia(sliderItem.url!!,
+                            currentPlayerInScope!!, defaultExoFactory)
                     }
-
-                    val statusLayoutLeft = findViewById<LinearLayout>(R.id.meta_data_holder)
-                    if (sliderItem.type == SliderItemType.VIDEO) {
-                        if (config.isGradiantOverlayVisible) {
-                            statusLayoutLeft.background = null
-                        }
-                        val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
-                        if(!viewTag.isReady()){
-                            Timber.e("Player is not initialized properly, cannot play video.")
-                            Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
-                            return
-                        }
-                        currentPlayerView = viewTag.getPlayerView()
-                        currentPlayerInScope = viewTag.getPlayer()
-                        currentPlayerInScope!!.seekTo(0, 0)
-                        if (currentPlayerInScope!!.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
-                            prepareMedia(sliderItem.url!!,
-                                currentPlayerInScope!!, defaultExoFactory)
-                        }
-                        if (!config.isVideoSoundEnable) {
-                            currentPlayerView!!.player!!.volume = 0f
-                        }
-                        currentPlayerInScope!!.playWhenReady = true
-                    } else {
-                        if (config.isGradiantOverlayVisible) {
-                            statusLayoutLeft.setBackgroundResource(R.drawable.gradient_overlay)
-                        }
-                        if (slideShowPlaying) {
-                            startTimerNextAsset()
-                            val viewTag = mPager.findViewWithTag<RelativeLayout>("view$sliderItemIndex") ?: return
-                            val touchImageView = viewTag.children.first() as? TouchImageView
-                            if (touchImageView!= null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
-                                touchImageView.zoomAndScrollPanorama(config, sliderItem)
-                            }
-                            else if(touchImageView!= null && config.zoomAndScrollPanorama && !mainItem.isPanorama){
-                                touchImageView.zoomAndPanEffect(config, sliderItem)
-                            }
-                        }
-                        stopPlayer()
+                    if (!config.isVideoSoundEnable) {
+                        currentPlayerView!!.player!!.volume = 0f
                     }
+                    currentPlayerInScope!!.playWhenReady = true
+                } else {
+                    if (config.isGradiantOverlayVisible) {
+                        statusLayoutLeft.setBackgroundResource(R.drawable.gradient_overlay)
+                    }
+                    if (slideShowPlaying) {
+                        startTimerNextAsset()
+                        val viewTag = mPager.findViewWithTag<RelativeLayout>("view$sliderItemIndex") ?: return
+                        val touchImageView = viewTag.children.first() as? TouchImageView
+                        if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
+                            touchImageView.zoomAndScrollPanorama(config, sliderItem)
+                        } else if (touchImageView != null && config.zoomAndScrollPanorama && !mainItem.isPanorama) {
+                            touchImageView.zoomAndPanEffect(config, sliderItem)
+                        }
+                    }
+                    stopPlayer()
                 }
             }
 

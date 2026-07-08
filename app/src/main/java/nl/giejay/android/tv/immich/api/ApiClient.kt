@@ -18,6 +18,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.RECENT_ASSETS_MONTHS_BACK
 import nl.giejay.android.tv.immich.shared.prefs.SIMILAR_ASSETS_PERIOD_DAYS
 import nl.giejay.android.tv.immich.shared.prefs.SIMILAR_ASSETS_YEARS_BACK
+import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDateTime
@@ -93,15 +94,36 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) { service.listPeople() }.map { response -> response.people.filter { !it.name.isNullOrBlank() } }
     }
 
-    suspend fun listAssetsFromAlbum(albumIds: List<String>): Either<String, List<Asset>> {
+    fun listAssetsFromAlbum(albumIds: List<String>, contentType: ContentType = ContentType.ALL, pageCount: Int = 100): Either<String, List<Asset>> {
+        val results = albumIds.pmap { albumId ->
+            val album = executeAPICall(200) { service.getAlbum(albumId) }
+                .getOrElse { return@pmap Either.Left(it) }
+
+            val total = album.assetCount
+            val numPages = (total + pageCount - 1) / pageCount
+            val pages = (1..numPages).toList()
+
+            val assetsResults = pages.pmap { page ->
+                search(SearchRequest(
+                    page = page,
+                    size = pageCount,
+                    albumIds = listOf(albumId),
+                    type = if (contentType == ContentType.ALL) null else contentType.toString()
+                ))
+            }
+
+            val albumAssets = mutableListOf<Asset>()
+            for (res in assetsResults) {
+                val resp = res.getOrElse { return@pmap Either.Left(it) }
+                albumAssets.addAll(resp.assets.items)
+            }
+            Either.Right(albumAssets.toList())
+        }
+
         val allAssets = mutableListOf<Asset>()
-        var currentPage = 1
-        while (true) {
-            val searchResponse = search(SearchRequest(page = currentPage, size = 100, albumIds = albumIds))
-                .getOrElse { return Either.Left(it) }
-            allAssets.addAll(searchResponse.assets.items)
-            if (searchResponse.assets.nextPage == null) break
-            currentPage++
+        for (res in results) {
+            val assets = res.getOrElse { return Either.Left(it) }
+            allAssets.addAll(assets)
         }
         return Either.Right(allAssets.filter(excludeByTag()))
     }
@@ -162,7 +184,7 @@ class ApiClient(private val config: ApiClientConfig) {
             val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
             if (excludedAlbums.isNotEmpty()) {
                 val excludedAssets =
-                    listAssetsFromAlbum(excludedAlbums.toList()).getOrElse { emptyList() }.map { it.id }.toSet()
+                    listAssetsFromAlbum(excludedAlbums.toList(), pageCount = pageCount).getOrElse { emptyList() }.map { it.id }.toSet()
                 it.filterNot { asset -> excludedAssets.contains(asset.id) }
             } else {
                 it
@@ -209,4 +231,3 @@ class ApiClient(private val config: ApiClientConfig) {
         }.map { it.filter(excludeByTag()) }
     }
 }
-
