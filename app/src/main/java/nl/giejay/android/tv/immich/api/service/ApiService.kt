@@ -1,10 +1,7 @@
 package nl.giejay.android.tv.immich.api.service
 
 import nl.giejay.android.tv.immich.api.model.Album
-import nl.giejay.android.tv.immich.api.model.AlbumDetails
 import nl.giejay.android.tv.immich.api.model.Asset
-import nl.giejay.android.tv.immich.api.model.Bucket
-import nl.giejay.android.tv.immich.api.model.BucketResponse
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -23,26 +20,19 @@ interface ApiService {
     @POST("search/random")
     suspend fun randomAssets(@Body searchRequest: SearchRequest): Response<List<Asset>>
 
+    // ALB-01: intentionally sends no shared-albums filter query param. This app never sent the
+    // legacy `shared` param, and v3's `isShared`/`isOwned` are additive, optional params (not
+    // required replacements) per .planning/research/STACK.md's live OpenAPI verification, so
+    // omitting them preserves the existing combined owned+shared album list. Locked in by the
+    // regression test ApiServiceAlbumParamsTest.
     @GET("albums")
-    suspend fun listAlbums(@Query("shared") shared: Boolean = false, @Query("assetId") assetId: String? = null): Response<List<Album>>
+    suspend fun listAlbums(@Query("assetId") assetId: String? = null): Response<List<Album>>
+
+    @GET("albums/{id}")
+    suspend fun getAlbum(@Path("id") id: String): Response<Album>
 
     @GET("people")
     suspend fun listPeople(): Response<PeopleResponse>
-
-    @GET("albums/{albumId}")
-    suspend fun listAssetsFromAlbum(@Path("albumId") albumId: String): Response<AlbumDetails>
-
-    @GET("timeline/buckets")
-    suspend fun listBuckets(@Query("albumId") albumId: String, @Query("size") size: String = "MONTH", @Query("order") order: String = "desc"): Response<List<Bucket>>
-
-    @GET("timeline/bucket")
-    suspend fun getBucket(@Query("albumId") albumId: String, @Query("timeBucket") timeBucket: String, @Query("size") size: String = "MONTH",  @Query("order") order: String = "desc"): Response<List<Asset>>
-
-    @GET("timeline/bucket")
-    suspend fun getBucketV2(@Query("albumId") albumId: String, @Query("timeBucket") timeBucket: String, @Query("size") size: String = "MONTH",  @Query("order") order: String = "desc"): Response<BucketResponse>
-
-    @GET("assets/{id}")
-    suspend fun getAsset(@Path("id") id: String): Response<Asset>
 
     @GET("view/folder/unique-paths")
     suspend fun getUniquePaths(): Response<List<String>>

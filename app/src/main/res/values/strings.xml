@@ -148,6 +148,12 @@
     <string name="force_original_video_desc">Play original video, even when transcode is available</string>
     <string name="load_edited_photo">Load edited photos</string>
     <string name="load_edited_photo_desc">Load the edited version of photos instead of the original</string>
+    <string name="zoom_scroll_panoramas">Zoom and Pan Effect</string>
+    <string name="zoom_scroll_panoramas_desc">During Slideshows apply zoom and pan effects for single photo pages. Automatically zoom panorama photos to fill the screen and scroll bottom-to-top or left-to-right.</string>
+    <string name="zoom_effect_percent">Zoom Effect Amount %</string>
+    <string name="zoom_effect_percent_desc">Adjust strength of zoom effect.</string>
+    <string name="pan_effect_percent">Pan Effect Amount %</string>
+    <string name="pan_effect_percent_desc">Adjust strength of panning effect.</string>
 
     <!-- Other preferences -->
     <string name="photos_in_albums">Photos in albums</string>
@@ -183,21 +189,21 @@
     <string name="auth_sign_in_by_api_key">Sign in by API key</string>
     <string name="auth_sign_in_by_api_key_desc">Login to your Immich instance by entering your API key.</string>
     <string name="auth_sign_in_by_phone">Sign in by phone</string>
-    <string name="auth_sign_in_by_phone_desc">Login to your Immich instance by phone.</string>
+    <string name="auth_sign_in_by_phone_desc">Login to your Immich instance by scanning a QR code with your phone. Note: this only works if your Immich server is accessible from the internet (not for local/private IP addresses).</string>
     <string name="auth_demo_mode">Demo mode</string>
     <string name="auth_demo_mode_desc">Login to a demo Immich instance.</string>
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Login to your Immich server or try a demo.</string>
-    <string name="server_url_hint">Server URL (http[s]://...)</string>
+    <string name="server_url_hint">Server URL (http[s]://…)</string>
     <string name="disable_ssl_verification">Disable SSL verification</string>
-    <string name="disable_ssl_verification_desc">Only use this when you have issues with self signed certificates!</string>
+    <string name="disable_ssl_verification_desc">Only use this when you have issues with self-signed certificates!</string>
     <string name="debug_mode">Debug mode</string>
     <string name="debug_mode_desc">Enable this if you are experiencing issues with getting the Immich data.</string>
     <string name="submit">Submit</string>
-    <string name="enter_server_url">Please enter a server URL (https://...)</string>
+    <string name="enter_server_url">Please enter a server URL (https://…)</string>
     <string name="enter_api_key">Please enter an API key, if you did enter it, try to highlight it again and press enter/OK, not back (sorry).</string>
-    <string name="enter_valid_server_url">Please enter a valid server URL (https://...)</string>
+    <string name="enter_valid_server_url">Please enter a valid server URL (https://…)</string>
 
     <!-- Auth by phone -->
     <string name="or_enter_code_on_auth_url">Or enter the code %1$s on %2$s</string>

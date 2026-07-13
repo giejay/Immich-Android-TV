@@ -66,8 +66,8 @@ object PreferenceManager {
     }
 
     fun removeApiSettings() {
-        HOST_NAME.save(sharedPreference, "")
-        API_KEY.save(sharedPreference, "")
+        save(HOST_NAME, "")
+        save(API_KEY, "")
     }
 
     private fun removeStringSetItem(item: String, prefKey: StringSetPref) {
@@ -132,9 +132,6 @@ object PreferenceManager {
         }
         if (get(SCREENSAVER_SHOW_DATE)) {
             metaData.add(MetaDataSliderItem(MetaDataType.DATE, AlignOption.RIGHT))
-        }
-        if (get(SCREENSAVER_SHOW_MEDIA_COUNT)) {
-            metaData.add(MetaDataMediaCount(AlignOption.RIGHT))
         }
 
         return metaData

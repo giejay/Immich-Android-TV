@@ -1,0 +1,55 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    compileSdk 36
+
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 36
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        // View binding allows efficient, type-safe view access
+        // See more at https://developer.android.com/topic/libraries/view-binding
+        viewBinding = true
+    }
+    namespace 'com.zeuskartik.mediaslider'
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation("com.jakewharton.timber:timber:5.0.1")
+    implementation 'androidx.core:core-ktx:1.16.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.14.2'
+    implementation 'androidx.media3:media3-exoplayer:1.10.0'
+    implementation "androidx.media3:media3-exoplayer-dash:1.10.0"
+    implementation "androidx.media3:media3-ui:1.10.0"
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation "com.google.code.gson:gson:2.11.0"
+    implementation "io.github.anilbeesetti:nextlib-media3ext:1.9.3-0.12.0"
+}

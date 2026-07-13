@@ -3,7 +3,28 @@ name: Create Release on Tag
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      releaseName:
+        description: 'Release name/version (leave empty to use current version from build.gradle)'
+        required: false
+        default: ''
+      increaseVersion:
+        description: 'Increase versionCode'
+        required: false
+        type: boolean
+        default: true
+      publishPlayStore:
+        description: 'Publish to Google Play Store'
+        required: false
+        type: boolean
+        default: true
+      publishGitHub:
+        description: 'Publish to GitHub Release'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   release:
@@ -13,6 +34,33 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 0
+
+      - name: Extract version and update if needed
+        id: version
+        run: |
+          GRADLE_FILE="app/build.gradle"
+          CURRENT_VERSION=$(grep 'versionName' "$GRADLE_FILE" | grep -o '".*"' | sed 's/"//g' | head -1)
+          CURRENT_CODE=$(grep 'versionCode' "$GRADLE_FILE" | head -1 | grep -o '[0-9]\+')
+          
+          RELEASE_NAME="${{ inputs.releaseName }}"
+          if [ -z "$RELEASE_NAME" ]; then
+            RELEASE_NAME="$CURRENT_VERSION"
+          fi
+          
+          NEW_CODE=$CURRENT_CODE
+          if [ "${{ inputs.increaseVersion }}" = "true" ]; then
+            NEW_CODE=$((CURRENT_CODE + 1))
+            sed -i "s/versionName \".*\"/versionName \"$RELEASE_NAME\"/" "$GRADLE_FILE"
+            sed -i "s/versionCode $CURRENT_CODE/versionCode $NEW_CODE/" "$GRADLE_FILE"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "$GRADLE_FILE"
+            git commit -m "Create new release: $RELEASE_NAME ($NEW_CODE)"
+            git push origin HEAD:${{ github.ref }}
+          fi
+          
+          echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$NEW_CODE" >> $GITHUB_OUTPUT
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -34,13 +82,13 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
 
-      - name: Build signed APK
+      - name: Build signed APK and AAB
         env:
           RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease bundleRelease
 
       - name: Get commit messages since last release
         id: get_commits
@@ -49,45 +97,79 @@ jobs:
           echo "Last tag: $LAST_TAG"
           if [ -z "$LAST_TAG" ]; then
             echo "No previous tag found. Getting all commits."
-            git log --pretty=format:'%h %s' > commits.txt
+            git log --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/ && !/^[0-9a-f]+ Initial plan$/' > commits.txt
+            git log --pretty=format:'%s' | awk '!/^Create new release:/ && !/^Initial plan$/' > commits_playstore.txt
           else
             echo "Previous tag: $LAST_TAG"
-            git log "$LAST_TAG"..HEAD --pretty=format:'%h %s' > commits.txt
+            git log "$LAST_TAG"..HEAD --pretty=format:'%h %s' | awk '!/^[0-9a-f]+ Create new release:/ && !/^[0-9a-f]+ Initial plan$/' > commits.txt
+            git log "$LAST_TAG"..HEAD --pretty=format:'%s' | awk '!/^Create new release:/ && !/^Initial plan$/' > commits_playstore.txt
           fi
 
       - name: Set release notes
         id: set_release_notes
         run: |
-          RELEASE_NOTES=$(cat commits.txt)
-          RELEASE_NOTES="${RELEASE_NOTES//'%'/'%25'}"
-          RELEASE_NOTES="${RELEASE_NOTES//$'\n'/'%0A'}"
-          RELEASE_NOTES="${RELEASE_NOTES//$'\r'/'%0D'}"
-          echo "::set-output name=value::$RELEASE_NOTES"
-          echo "Release Notes: $RELEASE_NOTES"
+          {
+            echo "value<<EOF"
+            cat commits.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release Notes:"
+          cat commits.txt
+
+      - name: Prepare Play Store release notes
+        run: |
+          mkdir -p play-whatsnew
+          python3 - <<'PY'
+          from pathlib import Path
+          
+          notes = Path("commits_playstore.txt").read_text()
+          Path("play-whatsnew/whatsnew-en-US").write_text(notes[:500])
+          PY
+          ls -ltr app/build/outputs/bundle/release
+          ls -ltr app/build/outputs/apk/release
+
+      - name: Upload AAB to Google Play
+        uses: r0adkll/upload-google-play@v1.1.5
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishPlayStore }}
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: nl.giejay.android.tv.immich
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          tracks: ${{ vars.PLAY_STORE_TRACK || 'production' }}
+          status: ${{ vars.PLAY_STORE_STATUS || 'completed' }}
+          whatsNewDirectory: play-whatsnew
 
       - name: Create Release
         id: create_release
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
         uses: actions/create-release@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          release_name: Release ${{ steps.version.outputs.release_name }}
           body: |
             ${{ steps.set_release_notes.outputs.value }}
           draft: false
           prerelease: false
 
-      - name: Set APK asset path without 'v' prefix
+      - name: Set APK asset path
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
         id: set_apk_path
         run: |
-          APK_NAME="ImmichTV-${GITHUB_REF_NAME#v}.apk"
+          APK_PATH=$(ls -1 app/build/outputs/apk/release/*.apk | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "No APK found in app/build/outputs/apk/release"
+            exit 1
+          fi
+          APK_NAME=$(basename "$APK_PATH")
           echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
-          echo "apk_path=app/build/outputs/apk/release/$APK_NAME" >> $GITHUB_OUTPUT
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "APK Name: $APK_NAME"
-          echo "APK Path: app/build/outputs/apk/release/$APK_NAME"
+          echo "APK Path: $APK_PATH"
 
       - name: Upload APK Asset
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
