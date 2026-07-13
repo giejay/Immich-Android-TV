@@ -143,7 +143,7 @@ fun List<Asset>.toCards(): List<Card> {
 }
 
 fun Asset.toCard(): Card {
-    return Card(this.deviceAssetId ?: "",
+    return Card(this.originalFileName ?: this.deviceAssetId ?: "",
         this.exifInfo?.description ?: "",
         this.id,
         ApiUtil.getThumbnailUrl(this.id, "thumbnail"),

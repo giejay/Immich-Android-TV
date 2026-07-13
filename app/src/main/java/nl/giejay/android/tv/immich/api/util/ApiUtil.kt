@@ -37,8 +37,7 @@ object ApiUtil {
 
             else ->
                 assetId?.let {
-                    val base = "${hostName().lowercase()}/api/assets/${it}/original"
-                    if (loadEdited) "$base?c=EDITED" else base
+                    "${hostName().lowercase()}/api/assets/${it}/original?edited=${loadEdited}"
                 }
 
         }
