@@ -52,6 +52,7 @@ import nl.giejay.mediaslider.util.FixedSpeedScroller
 import nl.giejay.mediaslider.util.MediaSliderListener
 import timber.log.Timber
 import java.lang.reflect.Field
+import androidx.core.view.isVisible
 
 
 class MediaSliderView(context: Context) : ConstraintLayout(context) {
@@ -120,6 +121,10 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 return false
             } else if ((event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
                 if (itemType == SliderItemType.IMAGE) {
+                    // If controls are already visible, let focused buttons consume click events.
+                    if (isImageControllerVisible) {
+                        return super.dispatchKeyEvent(event)
+                    }
                     if (toggleImageController()) {
                         return true
                     }
@@ -177,13 +182,18 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 return super.dispatchKeyEvent(event)
             }
         }
-        return if (itemType == SliderItemType.IMAGE) false else super.dispatchKeyEvent(event)
+        return if (itemType == SliderItemType.IMAGE) {
+            if (isImageControllerVisible) super.dispatchKeyEvent(event) else false
+        } else {
+            super.dispatchKeyEvent(event)
+        }
     }
 
     private fun goToPreviousAsset() {
         hideImageController()
         mPager.setCurrentItem((if (0 == mPager.currentItem) mPager.adapter!!.count else mPager.currentItem) - 1,
             config.enableSlideAnimation)
+        restorePagerFocus()
     }
 
     fun loadMediaSliderView(config: MediaSliderConfiguration) {
@@ -254,6 +264,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             mPager.currentItem = 0
         }
         mPager.offscreenPageLimit = 1
+        restorePagerFocus()
     }
 
     fun toggleSlideshow(togglePlayButton: Boolean) {
@@ -278,6 +289,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         playButton.setBackgroundResource(if (slideShowPlaying) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause)
         mainHandler.postDelayed({
             playButton.visibility = GONE
+            restorePagerFocus()
         }, 2000)
     }
 
@@ -293,6 +305,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         } else {
             mPager.setCurrentItem(0, config.enableSlideAnimation)
         }
+        restorePagerFocus()
     }
 
     private fun initViewsAndSetAdapter(listener: ExoPlayerListener) {
@@ -416,6 +429,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             override fun onPageSelected(i: Int) {
                 metaDataRightAdapter.notifyDataSetChanged()
                 metaDataLeftAdapter.notifyDataSetChanged()
+                if (!isImageControllerVisible) {
+                    restorePagerFocus()
+                }
             }
 
             override fun onPageScrollStateChanged(i: Int) {
@@ -506,11 +522,21 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
         imageController.visibility = GONE
         isImageControllerVisible = false
-        if (sliderItem.hasSecondaryItem()) {
-            return
-        }
+        val previousButton = imageRoot.findViewById<ImageButton>(R.id.image_previous) ?: return
         val favoriteButton = imageRoot.findViewById<ImageButton>(R.id.image_favorite) ?: return
         val slideshowButton = imageRoot.findViewById<ImageButton>(R.id.image_slideshow) ?: return
+        val nextButton = imageRoot.findViewById<ImageButton>(R.id.image_next) ?: return
+
+        val hasSecondaryItem = sliderItem.hasSecondaryItem()
+        favoriteButton.visibility = if (hasSecondaryItem) GONE else VISIBLE
+        if (hasSecondaryItem) {
+            // Keep D-pad navigation contiguous when favorite is hidden.
+            previousButton.nextFocusRightId = R.id.image_slideshow
+            slideshowButton.nextFocusLeftId = R.id.image_previous
+        } else {
+            previousButton.nextFocusRightId = R.id.image_favorite
+            slideshowButton.nextFocusLeftId = R.id.image_favorite
+        }
 
         updateFavoriteIcon(favoriteButton, sliderItem.mainItem.isFavorite)
         favoriteButton.setOnClickListener {
@@ -519,19 +545,21 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             updateFavoriteIcon(favoriteButton, newFavoriteValue)
             MediaSliderConfiguration.onFavoriteToggle(sliderItem.mainItem.id, newFavoriteValue)
         }
+        previousButton.setOnClickListener {
+            goToPreviousAsset()
+        }
         slideshowButton.setOnClickListener {
             toggleSlideshow(true)
+        }
+        nextButton.setOnClickListener {
+            goToNextAsset()
         }
     }
 
     private fun toggleImageController(): Boolean {
-        val sliderItem = currentItem()
-        if (sliderItem.hasSecondaryItem()) {
-            return false
-        }
         val imageRoot = mPager.findViewWithTag<RelativeLayout>("view${mPager.currentItem}") ?: return false
         val imageController = imageRoot.findViewById<View>(R.id.image_controller) ?: return false
-        if (imageController.visibility == VISIBLE) {
+        if (imageController.isVisible) {
             hideImageController()
             return true
         }
@@ -540,17 +568,30 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
         imageController.visibility = VISIBLE
         isImageControllerVisible = true
-        imageRoot.findViewById<ImageButton>(R.id.image_favorite)?.requestFocus()
+        val sliderItem = currentItem()
+        val initialFocusId = if (sliderItem.hasSecondaryItem()) R.id.image_slideshow else R.id.image_favorite
+        imageRoot.findViewById<ImageButton>(initialFocusId)?.requestFocus()
         return true
     }
 
     private fun hideImageController() {
-        val imageRoot = mPager.findViewWithTag<RelativeLayout>("view${mPager.currentItem}") ?: run {
+        val imageRoot = mPager.findViewWithTag<View>("view${mPager.currentItem}") ?: run {
             isImageControllerVisible = false
+            restorePagerFocus()
             return
         }
         imageRoot.findViewById<View>(R.id.image_controller)?.visibility = GONE
         isImageControllerVisible = false
+        restorePagerFocus()
+    }
+
+    private fun restorePagerFocus() {
+        // Slideshow can leave focus on transient/hidden controls; keep focus on pager for key dispatch.
+        mPager.post {
+            if (!mPager.hasFocus()) {
+                mPager.requestFocus()
+            }
+        }
     }
 
     private fun updateFavoriteIcon(favoriteButton: ImageButton, isFavorite: Boolean) {

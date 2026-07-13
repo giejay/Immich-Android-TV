@@ -22,11 +22,9 @@
     <include
         android:id="@+id/image_controller"
         layout="@layout/image_controller"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="36dp"
         android:visibility="gone" />
 
 </RelativeLayout>
