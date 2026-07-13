@@ -10,6 +10,7 @@ import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.model.StaticMetaDataProvider
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_LOAD_EDITED_PHOTO
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -79,7 +80,7 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 
 fun Asset.toSliderItem(): SliderItem {
     return SliderItem(this.id,
-        ApiUtil.getFileUrl(this.id, this.type, PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)),
+        ApiUtil.getFileUrl(this.id, this.type, PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO), PreferenceManager.get(SLIDER_LOAD_EDITED_PHOTO)),
         SliderItemType.valueOf(this.type.uppercase()),
         this.exifInfo?.orientation ?: 1,
         mapOf(MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let { formatDate(it) },
