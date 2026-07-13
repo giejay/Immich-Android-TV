@@ -29,9 +29,6 @@ interface ApiService {
     @GET("people")
     suspend fun listPeople(): Response<PeopleResponse>
 
-    @GET("albums/{albumId}")
-    suspend fun listAssetsFromAlbum(@Path("albumId") albumId: String): Response<AlbumDetails>
-
     @PUT("assets/{id}")
     suspend fun updateAsset(@Path("id") id: String, @Body request: UpdateAssetRequest): Response<Asset>
 
