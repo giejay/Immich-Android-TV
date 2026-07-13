@@ -66,6 +66,8 @@
     <string name="people">Люди</string>
     <string name="recent">Недавние</string>
     <string name="albums">Альбомы</string>
+    <string name="timeline">Лента</string>
+    <string name="this_month">Этот месяц</string>
     <string name="server">Сервер</string>
     <string name="screensaver">Заставка\n</string>
     <string name="debug">Отладка</string>

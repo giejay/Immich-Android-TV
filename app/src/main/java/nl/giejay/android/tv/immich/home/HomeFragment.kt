@@ -29,6 +29,7 @@ import nl.giejay.android.tv.immich.settings.SettingsFragment
 import nl.giejay.android.tv.immich.shared.fragment.GridFragment
 import nl.giejay.android.tv.immich.shared.prefs.HIDDEN_HOME_ITEMS
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.timeline.TimelineFragment
 import timber.log.Timber
 
 class HomeFragment : BrowseSupportFragment() {
@@ -81,7 +82,7 @@ class HomeFragment : BrowseSupportFragment() {
         headersState = HEADERS_ENABLED
         isHeadersTransitionOnBackEnabled = true
         brandColor = resources.getColor(android.R.color.black)
-        title = getString(R.string.albums)
+        title = getString(R.string.timeline)
 //        setOnSearchClickedListener {
 //            Toast.makeText(
 //                activity, "Search!", Toast.LENGTH_SHORT
@@ -121,6 +122,7 @@ class HomeFragment : BrowseSupportFragment() {
 
     companion object {
         private val HEADERS: List<Header> = listOf(
+            Header(ImmichApplication.appContext!!.getString(R.string.timeline)) { TimelineFragment() },
             Header(ImmichApplication.appContext!!.getString(R.string.albums)) {
                 AlbumFragment().apply {
                     arguments = bundleOf("selectionMode" to false)

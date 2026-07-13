@@ -66,6 +66,8 @@
     <string name="people">Personnes</string>
     <string name="recent">Récent</string>
     <string name="albums">Albums</string>
+    <string name="timeline">Chronologie</string>
+    <string name="this_month">Ce mois-ci</string>
     <string name="server">Serveur</string>
     <string name="screensaver">Écran de veille</string>
     <string name="debug">Débogage</string>

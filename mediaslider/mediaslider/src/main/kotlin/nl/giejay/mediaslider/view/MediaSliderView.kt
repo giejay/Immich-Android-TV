@@ -245,6 +245,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     fun toggleSlideshow(togglePlayButton: Boolean) {
         slideShowPlaying = !slideShowPlaying
+        updateVideoRepeatMode()
         if (slideShowPlaying) {
             // do not start timers for videos, they will continue in the player listener
             if (currentItemType() == SliderItemType.IMAGE) {
@@ -254,10 +255,22 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         } else {
             clearKeepScreenOnFlags()
             mainHandler.removeCallbacks(goToNextAssetRunnable)
+            // Resuming manual viewing: restart if the video had already finished
+            if (currentItemType() == SliderItemType.VIDEO &&
+                currentPlayerInScope?.playbackState == Player.STATE_ENDED
+            ) {
+                currentPlayerInScope?.seekTo(0)
+                currentPlayerInScope?.play()
+            }
         }
         if (togglePlayButton) {
             togglePlayButton()
         }
+    }
+
+    private fun updateVideoRepeatMode() {
+        currentPlayerInScope?.repeatMode =
+            if (slideShowPlaying) Player.REPEAT_MODE_OFF else Player.REPEAT_MODE_ONE
     }
 
     private fun togglePlayButton() {
@@ -356,6 +369,8 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     currentPlayerView = viewTag.getPlayerView()
                     currentPlayerInScope = viewTag.getPlayer()
                     currentPlayerInScope!!.seekTo(0, 0)
+                    // Immich loops the current video while browsing; slideshow advances on end instead.
+                    updateVideoRepeatMode()
                     if (currentPlayerInScope!!.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
                         prepareMedia(sliderItem.url!!,
                             currentPlayerInScope!!, defaultExoFactory)

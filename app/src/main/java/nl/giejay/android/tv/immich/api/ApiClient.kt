@@ -10,6 +10,9 @@ import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
+import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
+import nl.giejay.android.tv.immich.api.model.TimelineAsset
+import nl.giejay.android.tv.immich.api.model.toTimelineAssets
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
@@ -230,4 +233,21 @@ class ApiClient(private val config: ApiClientConfig) {
             service.getAssetsForPath(folder)
         }.map { it.filter(excludeByTag()) }
     }
+
+    suspend fun getAsset(id: String): Either<String, Asset> {
+        return executeAPICall(200) { service.getAsset(id) }
+    }
+
+    suspend fun getTimeBuckets(): Either<String, List<TimeBucketSummary>> =
+        executeAPICall(200) { service.getTimeBuckets() }
+
+    /**
+     * Fetches all assets for a month bucket.
+     *
+     * V1 gap: [excludeByTag] / EXCLUDE_ASSETS_IN_ALBUM cannot apply here — bucket responses
+     * omit tags and album membership. Filtering those requires a follow-up ID set cross-check.
+     */
+    suspend fun getTimeBucket(timeBucket: String): Either<String, List<TimelineAsset>> =
+        executeAPICall(200) { service.getTimeBucket(timeBucket) }
+            .map { it.toTimelineAssets() }
 }

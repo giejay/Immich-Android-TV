@@ -209,6 +209,17 @@
         <item name="imageCardViewImageStyle">@style/DefaultCardImageStyle</item>
     </style>
 
+    <!-- Timeline rows: thumbnail only, no title/content footer. -->
+    <style name="TimelineCardStyle" parent="Widget.Leanback.ImageCardViewStyle">
+        <item name="cardBackground">@null</item>
+        <item name="lbImageCardViewType">ImageOnly</item>
+    </style>
+
+    <style name="TimelineCardTheme" parent="Theme.Leanback">
+        <item name="imageCardViewStyle">@style/TimelineCardStyle</item>
+        <item name="imageCardViewImageStyle">@style/DefaultCardImageStyle</item>
+    </style>
+
     <!-- Squared single line card with colored footer style. Used in cards example. -->
     <style name="SingleLineCardTitleStyle" parent="Widget.Leanback.ImageCardView.TitleStyle">
         <item name="android:textAlignment">center</item>
