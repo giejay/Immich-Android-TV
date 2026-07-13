@@ -12,12 +12,12 @@ import android.os.Looper
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ListView
-import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -398,7 +398,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     }
                     if (slideShowPlaying) {
                         startTimerNextAsset()
-                        val viewTag = mPager.findViewWithTag<RelativeLayout>("view$sliderItemIndex") ?: return
+                        val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return
                         val touchImageView = viewTag.children.first() as? TouchImageView
                         if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
                             touchImageView.zoomAndScrollPanorama(config, sliderItem)
@@ -512,7 +512,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     private fun configureImageController(sliderItem: SliderItemViewHolder, sliderItemIndex: Int) {
-        val imageRoot = mPager.findViewWithTag<RelativeLayout>("view$sliderItemIndex") ?: run {
+        val imageRoot = mPager.findViewWithTag<View>("view$sliderItemIndex") ?: run {
             isImageControllerVisible = false
             return
         }
@@ -557,7 +557,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     private fun toggleImageController(): Boolean {
-        val imageRoot = mPager.findViewWithTag<RelativeLayout>("view${mPager.currentItem}") ?: return false
+        val imageRoot = mPager.findViewWithTag<View>("view${mPager.currentItem}") ?: return false
         val imageController = imageRoot.findViewById<View>(R.id.image_controller) ?: return false
         if (imageController.isVisible) {
             hideImageController()
