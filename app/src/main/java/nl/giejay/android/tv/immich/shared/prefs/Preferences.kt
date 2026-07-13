@@ -88,7 +88,6 @@ private fun intentAvailable(intent: Intent, context: Context): Boolean {
 }
 
 data object SCREENSAVER_INTERVAL : IntListPref(3, ImmichApplication.appContext!!.getString(R.string.interval), ImmichApplication.appContext!!.getString(R.string.screensaver_interval_desc), R.array.interval_titles, R.array.interval_values)
-data object SCREENSAVER_SHOW_MEDIA_COUNT : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_media_count), ImmichApplication.appContext!!.getString(R.string.show_media_count_desc_screensaver))
 data object SCREENSAVER_SHOW_DESCRIPTION : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_description), ImmichApplication.appContext!!.getString(R.string.show_description_screensaver))
 data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_album_name), ImmichApplication.appContext!!.getString(R.string.show_album_name_desc))
 data object SCREENSAVER_SHOW_DATE : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_date), ImmichApplication.appContext!!.getString(R.string.show_date_screensaver))

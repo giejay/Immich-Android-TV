@@ -133,9 +133,6 @@ object PreferenceManager {
         if (get(SCREENSAVER_SHOW_DATE)) {
             metaData.add(MetaDataSliderItem(MetaDataType.DATE, AlignOption.RIGHT))
         }
-        if (get(SCREENSAVER_SHOW_MEDIA_COUNT)) {
-            metaData.add(MetaDataMediaCount(AlignOption.RIGHT))
-        }
 
         return metaData
     }
