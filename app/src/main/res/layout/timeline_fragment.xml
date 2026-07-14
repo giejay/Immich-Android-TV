@@ -15,7 +15,8 @@
         <FrameLayout
             android:id="@+id/browse_grid_dock"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:clipChildren="false">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/timeline_recycler"
@@ -24,14 +25,19 @@
                 android:clipToPadding="false"
                 android:paddingStart="24dp"
                 android:paddingTop="16dp"
-                android:paddingEnd="64dp"
+                android:paddingEnd="56dp"
                 android:paddingBottom="48dp" />
 
+            <!--
+              Wide enough for Immich end-anchored month badge (min-w-20 ~) over the year column
+              with only a slight left overhang into the mosaic; years/dots stay on the trailing edge.
+            -->
             <nl.giejay.android.tv.immich.timeline.TimelineScrubberView
                 android:id="@+id/timeline_scrubber"
-                android:layout_width="64dp"
+                android:layout_width="112dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="end"
+                android:clipToPadding="false"
                 android:focusable="true"
                 android:focusableInTouchMode="true" />
 

@@ -175,4 +175,32 @@ class TimelineViewModelTest {
             TimelineViewModel.monthBucketKey(java.time.LocalDate.of(2026, 7, 13))
         )
     }
+
+    @Test
+    fun `newestDayKeyForBucket uses local capture date not UTC month label`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(listOf(TimeBucketSummary("2022-01-01", 1)))
+            },
+            fetchBucket = {
+                // UTC Jan 1 05:00 with UTC-8 → local Dec 31 2021 — common scrubber miss.
+                Either.Right(
+                    listOf(
+                        asset(
+                            id = "nye",
+                            createdAt = "2022-01-01T05:00:00Z",
+                            localOffsetHours = -8.0
+                        )
+                    )
+                )
+            },
+            prefetchDebounceMs = 0
+        )
+
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+
+        assertEquals("2021-12-31", vm.newestDayKeyForBucket("2022-01-01"))
+        assertEquals("2022-01-01", vm.resolveBucketKey("2022-01"))
+    }
 }

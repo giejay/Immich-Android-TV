@@ -3,6 +3,8 @@ package nl.giejay.android.tv.immich.timeline
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.max
 
 /**
@@ -22,37 +24,43 @@ data class TimelineScrubberStop(
     val fractionBottom: Float
 )
 
+/**
+ * Port of Immich web [Scrubber.svelte](https://github.com/immich-app/immich/blob/main/web/src/lib/components/timeline/Scrubber.svelte)
+ * `calculateSegments` (constants MIN_YEAR_LABEL_DISTANCE=16, MIN_DOT_DISTANCE=8, height>5).
+ *
+ * Immich sizes each scrubber segment from the month's laid-out timeline height; we approximate
+ * that with [TimeBucketSummary.count]. Callers may scale the Immich px constants for TV.
+ */
 object TimelineScrubberModel {
 
-    /** Matches Immich web MIN_YEAR_LABEL_DISTANCE (px at scrubber content height). */
+    /** Immich Scrubber.svelte `MIN_YEAR_LABEL_DISTANCE`. */
     const val DEFAULT_MIN_YEAR_LABEL_PX = 16
 
-    /** Matches Immich web MIN_DOT_DISTANCE. */
+    /** Immich Scrubber.svelte `MIN_DOT_DISTANCE`. */
     const val DEFAULT_MIN_DOT_PX = 8
+
+    /** Immich Scrubber.svelte `segment.height > 5` gate before a month may show a dot. */
+    const val DEFAULT_MIN_SEGMENT_HEIGHT_FOR_DOT_PX = 5
 
     private const val MIN_WEIGHT = 0.35
 
     /**
      * @param buckets newest-first Immich month buckets
      * @param railContentHeightPx drawable height of the scrubber content area (excluding padding)
-     *
-     * Label/dot gating mirrors Immich Scrubber.svelte `calculateSegments`, except we do **not**
-     * require `segment.height > 5` for dots: Immich uses laid-out timeline pixel heights (often
-     * large); our count-weighted bands are often only a few px tall, and that Immich threshold
-     * would wipe almost every tick.
      */
     fun buildStops(
         buckets: List<TimeBucketSummary>,
         railContentHeightPx: Int,
         minYearLabelPx: Int = DEFAULT_MIN_YEAR_LABEL_PX,
-        minDotPx: Int = DEFAULT_MIN_DOT_PX
+        minDotPx: Int = DEFAULT_MIN_DOT_PX,
+        minSegmentHeightForDotPx: Int = DEFAULT_MIN_SEGMENT_HEIGHT_FOR_DOT_PX
     ): List<TimelineScrubberStop> {
         if (buckets.isEmpty() || railContentHeightPx <= 0) return emptyList()
 
         val weights = buckets.map { max(MIN_WEIGHT, it.count.toDouble().coerceAtLeast(0.0)) }
         val totalWeight = weights.sum().coerceAtLeast(1.0)
 
-        // Immich walks oldest→newest when assigning labels, then reverses for display (newest on top).
+        // Immich walks oldest→newest when assigning labels, then reverses for display.
         data class MutableSeg(
             val monthKey: String,
             val year: Int,
@@ -65,7 +73,8 @@ object TimelineScrubberModel {
             val bucket = buckets[index]
             val ym = parseYearMonth(bucket.timeBucket)
             MutableSeg(
-                monthKey = TimelineViewModel.monthBucketKey(ym.atDay(1)),
+                // Keep the API key so loadBucket / recomputeDays share the same map key.
+                monthKey = bucket.timeBucket,
                 year = ym.year,
                 heightPx = (weights[index] / totalWeight) * railContentHeightPx
             )
@@ -84,9 +93,11 @@ object TimelineScrubberModel {
                     segment.hasLabel = true
                     previousLabeled = segment
                 }
-                // Place a tick every ~minDotPx of accumulated rail (Immich uses the same span
-                // counter; we skip their height>5 gate — see KDoc).
-                if (verticalSpanWithoutDot > minDotPx) {
+                // Exact Immich gate: only "tall enough" months may host a tick, and only after
+                // enough unused vertical span has accumulated since the last tick.
+                if (segment.heightPx > minSegmentHeightForDotPx &&
+                    verticalSpanWithoutDot > minDotPx
+                ) {
                     segment.hasDot = true
                     verticalSpanWithoutDot = 0.0
                 }
@@ -99,7 +110,6 @@ object TimelineScrubberModel {
             verticalSpanWithoutDot += segment.heightPx
         }
 
-        // Newest-first for UI / D-pad (index 0 = top of scrubber).
         val newestFirst = oldestFirst.asReversed()
         var cumulative = 0.0
         return newestFirst.map { seg ->
@@ -125,8 +135,12 @@ object TimelineScrubberModel {
     fun indexForMonth(stops: List<TimelineScrubberStop>, monthKey: String): Int {
         val exact = stops.indexOfFirst { it.monthKey == monthKey }
         if (exact >= 0) return exact
-        val prefix = monthKey.take(7)
-        return stops.indexOfFirst { it.monthKey.startsWith(prefix) }
+        val target = runCatching { YearMonth.from(LocalDate.parse(monthKey.take(10))) }.getOrNull()
+            ?: runCatching { YearMonth.parse(monthKey.take(7)) }.getOrNull()
+            ?: return -1
+        return stops.indexOfFirst {
+            runCatching { YearMonth.from(LocalDate.parse(it.monthKey.take(10))) }.getOrNull() == target
+        }
     }
 
     fun indexNearestFraction(stops: List<TimelineScrubberStop>, fraction: Float): Int {
@@ -142,6 +156,15 @@ object TimelineScrubberModel {
         }
         return best
     }
+
+    /** Immich hover label style: "Jul 2022". */
+    fun formatMonthYear(monthKey: String, locale: Locale = Locale.getDefault()): String =
+        try {
+            YearMonth.from(LocalDate.parse(monthKey))
+                .format(DateTimeFormatter.ofPattern("MMM yyyy", locale))
+        } catch (_: Exception) {
+            monthKey.take(7)
+        }
 
     private fun parseYearMonth(timeBucket: String): YearMonth =
         try {

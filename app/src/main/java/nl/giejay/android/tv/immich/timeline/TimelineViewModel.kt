@@ -103,12 +103,13 @@ class TimelineViewModel(
             viewModelScope.launch(Dispatchers.IO) {
                 val monthKey = monthBucketKey(LocalDate.parse(dayKey))
                 val list = _buckets.value
-                val index = list.indexOfFirst { it.timeBucket == monthKey }
+                val resolved = resolveBucketKey(monthKey) ?: monthKey
+                val index = list.indexOfFirst { it.timeBucket == resolved }
                 if (index < 0) {
-                    loadBucket(monthKey)
+                    loadBucket(resolved)
                     return@launch
                 }
-                loadBucket(monthKey)
+                loadBucket(resolved)
                 list.getOrNull(index - 1)?.let { loadBucket(it.timeBucket) }
                 list.getOrNull(index + 1)?.let { loadBucket(it.timeBucket) }
             }
@@ -121,6 +122,36 @@ class TimelineViewModel(
     fun nextUnloadedBucket(): TimeBucketSummary? {
         val loaded = _bucketAssets.value
         return _buckets.value.firstOrNull { it.timeBucket !in loaded }
+    }
+
+    /**
+     * Resolve an Immich bucket key for a scrubber/month token. Matches by calendar
+     * [YearMonth] so normalized `YYYY-MM-01` finds API keys that may differ slightly.
+     */
+    fun resolveBucketKey(monthKey: String): String? {
+        val target = runCatching { YearMonth.from(LocalDate.parse(monthKey.take(10))) }.getOrNull()
+            ?: runCatching { YearMonth.parse(monthKey.take(7)) }.getOrNull()
+            ?: return null
+        return _buckets.value.firstOrNull { bucket ->
+            runCatching {
+                YearMonth.from(LocalDate.parse(bucket.timeBucket.take(10)))
+            }.getOrElse {
+                runCatching { YearMonth.parse(bucket.timeBucket.take(7)) }.getOrNull()
+            } == target
+        }?.timeBucket
+    }
+
+    /**
+     * Newest local calendar day among assets already loaded for [timeBucket].
+     *
+     * Immich month buckets use server/file UTC month boundaries, while our mosaic
+     * groups by photographer-local day — so UTC January often contains late December
+     * local days. Scrubber jumps must target a day that actually came from this bucket.
+     */
+    fun newestDayKeyForBucket(timeBucket: String): String? {
+        val assets = _bucketAssets.value[timeBucket].orEmpty()
+        if (assets.isEmpty()) return null
+        return assets.maxOf { it.localCaptureDate() }.toString()
     }
 
     fun clearError() {

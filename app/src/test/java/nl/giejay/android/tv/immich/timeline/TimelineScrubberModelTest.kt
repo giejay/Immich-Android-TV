@@ -2,7 +2,6 @@ package nl.giejay.android.tv.immich.timeline
 
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -28,7 +27,6 @@ class TimelineScrubberModelTest {
 
     @Test
     fun `crowded years omit overlapping labels like Immich`() {
-        // Many consecutive years with tiny buckets on a short rail → most year labels suppressed.
         val buckets = (2026 downTo 2000).map { year ->
             TimeBucketSummary("$year-06-01", 2)
         }
@@ -36,37 +34,47 @@ class TimelineScrubberModelTest {
             buckets = buckets,
             railContentHeightPx = 400,
             minYearLabelPx = 16,
-            minDotPx = 8
+            minDotPx = 8,
+            minSegmentHeightForDotPx = 5
         )
         val labeledYears = stops.filter { it.isYearLabel }.map { it.year }
-        // Not every year can fit a label; Immich skips when span ≤ min distance.
-        assertTrue(labeledYears.size < stops.size)
         assertTrue(labeledYears.size < buckets.size)
-        // Oldest segment is always labeled (Immich walks oldest→newest).
         assertTrue(stops.last().isYearLabel)
-        // Newest-first display: first labeled after reverse is the most recent that fit —
-        // the very oldest always has a label.
         assertEquals(2000, stops.last().year)
     }
 
     @Test
-    fun `dots appear along the rail even with many tiny month bands`() {
-        val buckets = (1..48).map { i ->
-            val year = 2026 - (i - 1) / 12
-            val month = ((i - 1) % 12) + 1
-            TimeBucketSummary("%04d-%02d-01".format(year, month), 3)
+    fun `dots follow Immich height and span gates`() {
+        // Many equal thin months on a short rail → each band < 5px → only the seeded first ticks.
+        val thin = (1..60).map { i ->
+            TimeBucketSummary("2015-%02d-01".format(((i - 1) % 12) + 1), 1)
         }
-        // Tall rail + Immich 8px cadence → ticks even when each month band is only a few px.
-        val stops = TimelineScrubberModel.buildStops(
-            buckets = buckets,
+        val thinStops = TimelineScrubberModel.buildStops(
+            buckets = thin,
+            railContentHeightPx = 200,
+            minYearLabelPx = 16,
+            minDotPx = 8,
+            minSegmentHeightForDotPx = 5
+        )
+        // 200/60 ≈ 3.3px < 5 → no additional dots beyond the oldest seed.
+        assertEquals(1, thinStops.count { it.hasDot })
+
+        // A few fat months on a tall rail → enough height + span for multiple ticks.
+        val fat = listOf(
+            TimeBucketSummary("2026-06-01", 200),
+            TimeBucketSummary("2025-06-01", 200),
+            TimeBucketSummary("2024-06-01", 200),
+            TimeBucketSummary("2023-06-01", 200),
+            TimeBucketSummary("2022-06-01", 200)
+        )
+        val fatStops = TimelineScrubberModel.buildStops(
+            buckets = fat,
             railContentHeightPx = 400,
             minYearLabelPx = 16,
-            minDotPx = 8
+            minDotPx = 8,
+            minSegmentHeightForDotPx = 5
         )
-        val dotted = stops.count { it.hasDot }
-        // ~400/8 ≈ 50 possible ticks; with equal bands we get dense but not necessarily every month.
-        assertTrue("expected plentiful dots, got $dotted of ${stops.size}", dotted >= 20)
-        assertTrue(stops.first().hasDot || stops.last().hasDot)
+        assertTrue(fatStops.count { it.hasDot } >= 2)
     }
 
     @Test
@@ -91,5 +99,13 @@ class TimelineScrubberModelTest {
         )
         assertEquals(1, TimelineScrubberModel.indexForMonth(stops, "2026-06-01"))
         assertEquals(-1, TimelineScrubberModel.indexForMonth(stops, "2020-01-01"))
+    }
+
+    @Test
+    fun `formatMonthYear matches Immich hover style`() {
+        assertEquals(
+            "Jul 2022",
+            TimelineScrubberModel.formatMonthYear("2022-07-01", java.util.Locale.US)
+        )
     }
 }

@@ -51,21 +51,36 @@ class TimelineFocusNavigator(
         onFocused(dayKey, assetId)
     }
 
-    fun focusAsset(assetId: String, smooth: Boolean = true) {
+    fun focusAsset(assetId: String, smooth: Boolean = true, adjustScroll: Boolean = true) {
         val position = adapter.positionOfAsset(assetId)
         if (position < 0) return
         val lm = recyclerView.layoutManager as? LinearLayoutManager
-        if (smooth) {
-            recyclerView.smoothScrollToPosition(position)
-        } else {
-            lm?.scrollToPositionWithOffset(position, recyclerView.height / 4)
+        if (adjustScroll) {
+            if (smooth) {
+                recyclerView.smoothScrollToPosition(position)
+            } else {
+                lm?.scrollToPositionWithOffset(position, recyclerView.height / 4)
+            }
+        }
+        val mosaicLm = recyclerView.layoutManager as? TimelineMosaicLayoutManager
+        if (!adjustScroll) {
+            mosaicLm?.suppressFocusScroll = true
+        }
+        fun clearSuppress() {
+            if (!adjustScroll) {
+                recyclerView.post { mosaicLm?.suppressFocusScroll = false }
+            }
         }
         recyclerView.post {
             val cell = adapter.findCellView(recyclerView, assetId)
             if (cell != null) {
                 cell.requestFocus()
+                clearSuppress()
             } else {
-                recyclerView.post { adapter.findCellView(recyclerView, assetId)?.requestFocus() }
+                recyclerView.post {
+                    adapter.findCellView(recyclerView, assetId)?.requestFocus()
+                    clearSuppress()
+                }
             }
         }
     }
