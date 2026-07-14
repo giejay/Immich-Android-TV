@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.api.service
 
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -54,6 +55,9 @@ interface ApiService {
         @Query("visibility") visibility: String? = "timeline",
         @Query("withPartners") withPartners: Boolean? = null
     ): Response<TimeBucketAssetsResponse>
+
+    @GET("memories")
+    suspend fun getMemories(@Query("for") forDate: String): Response<List<Memory>>
 
     @GET("view/folder/unique-paths")
     suspend fun getUniquePaths(): Response<List<String>>

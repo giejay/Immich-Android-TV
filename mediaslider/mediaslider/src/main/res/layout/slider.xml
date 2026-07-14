@@ -76,19 +76,19 @@
             android:gravity="bottom"
             android:orientation="horizontal">
 
-            <ListView
+            <LinearLayout
                 android:id="@+id/metadata_view_left"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:divider="@null" />
+                android:orientation="vertical" />
 
-            <ListView
+            <LinearLayout
                 android:id="@+id/metadata_view_right"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:divider="@null" />
+                android:orientation="vertical" />
         </LinearLayout>
     </LinearLayout>
 

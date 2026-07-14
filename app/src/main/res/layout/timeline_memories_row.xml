@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.leanback.widget.HorizontalGridView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/timeline_memories_grid"
+    android:layout_width="match_parent"
+    android:layout_height="180dp"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:paddingBottom="20dp"
+    app:focusOutFront="true"
+    app:horizontalMargin="16dp" />

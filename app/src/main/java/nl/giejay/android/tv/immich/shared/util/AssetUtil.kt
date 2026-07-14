@@ -78,25 +78,36 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 }
 
 fun Asset.toSliderItem(): SliderItem {
-    return SliderItem(this.id,
+    val itemType = SliderItemType.valueOf(this.type.uppercase())
+    // Memories (and other thin Asset payloads) omit EXIF/people; match the mosaic slider by
+    // resolving those fields lazily via GET /assets/{id}. Prefer an inline DATE when present.
+    val date = this.exifInfo?.dateTimeOriginal ?: this.fileCreatedAt ?: this.fileModifiedAt
+    return SliderItem(
+        this.id,
         ApiUtil.getFileUrl(this.id, this.type, PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)),
-        SliderItemType.valueOf(this.type.uppercase()),
-        this.exifInfo?.orientation ?: 1,
-        mapOf(MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let { formatDate(it) },
-            MetaDataType.CITY to this.exifInfo?.city,
-            MetaDataType.COUNTRY to this.exifInfo?.country,
-            MetaDataType.DESCRIPTION to this.exifInfo?.description,
-            MetaDataType.FILENAME to this.originalFileName,
-            MetaDataType.PEOPLE to this.people?.map { it.name }?.filter { it?.isNotBlank() == true }?.joinToString(", "),
-            MetaDataType.FILEPATH to this.originalPath,
-            MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" "))
-            .mapValues { StaticMetaDataProvider(it.value) } +
-                mapOf(MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)),
+        itemType,
+        this.exifInfo?.orientation ?: if (itemType == SliderItemType.IMAGE) 1 else 6,
+        mapOf(
+            MetaDataType.DATE to if (date != null) {
+                StaticMetaDataProvider(formatAssetDate(date))
+            } else {
+                AssetDetailMetaDataProvider(this.id, MetaDataType.DATE)
+            },
+            MetaDataType.CITY to AssetDetailMetaDataProvider(this.id, MetaDataType.CITY),
+            MetaDataType.COUNTRY to AssetDetailMetaDataProvider(this.id, MetaDataType.COUNTRY),
+            MetaDataType.DESCRIPTION to AssetDetailMetaDataProvider(this.id, MetaDataType.DESCRIPTION),
+            MetaDataType.FILENAME to AssetDetailMetaDataProvider(this.id, MetaDataType.FILENAME),
+            MetaDataType.PEOPLE to AssetDetailMetaDataProvider(this.id, MetaDataType.PEOPLE),
+            MetaDataType.FILEPATH to AssetDetailMetaDataProvider(this.id, MetaDataType.FILEPATH),
+            MetaDataType.CAMERA to AssetDetailMetaDataProvider(this.id, MetaDataType.CAMERA),
+            MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)
+        ),
         ApiUtil.getThumbnailUrl(this.id, "preview"),
-        this.isPanoramaImage())
+        this.isPanoramaImage()
+    )
 }
 
-private fun formatDate(date: Date): String {
+internal fun formatAssetDate(date: Date): String {
     val calendar = Calendar.getInstance()
     calendar.time = date
     val locale = Locale.getDefault(Locale.Category.FORMAT)

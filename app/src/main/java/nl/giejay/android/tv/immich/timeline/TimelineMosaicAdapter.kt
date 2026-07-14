@@ -6,11 +6,15 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.leanback.widget.ArrayObjectAdapter
+import androidx.leanback.widget.HorizontalGridView
+import androidx.leanback.widget.ItemBridgeAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 
 class TimelineMosaicAdapter(
@@ -19,7 +23,8 @@ class TimelineMosaicAdapter(
     private val onCellFocus: (TimelineMosaicCell, View) -> Unit,
     private val onCellBlur: (TimelineMosaicCell, View) -> Unit,
     private val onCellDetached: (View) -> Unit,
-    private val onCellKey: (View, Int, android.view.KeyEvent) -> Boolean
+    private val onCellKey: (View, Int, android.view.KeyEvent) -> Boolean,
+    private val onMemoryClicked: (Memory) -> Unit = {}
 ) : ListAdapter<TimelineMosaicItem, RecyclerView.ViewHolder>(Diff) {
 
     private var itemsSnapshot: List<TimelineMosaicItem> = emptyList()
@@ -36,6 +41,7 @@ class TimelineMosaicAdapter(
     override fun getItemViewType(position: Int): Int = when (getItem(position)) {
         is TimelineMosaicItem.Header -> VIEW_TYPE_HEADER
         is TimelineMosaicItem.Row -> VIEW_TYPE_ROW
+        is TimelineMosaicItem.MemoriesRow -> VIEW_TYPE_MEMORIES
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -43,6 +49,9 @@ class TimelineMosaicAdapter(
         return when (viewType) {
             VIEW_TYPE_HEADER -> HeaderVH(
                 inflater.inflate(R.layout.timeline_day_header, parent, false)
+            )
+            VIEW_TYPE_MEMORIES -> MemoriesRowVH(
+                inflater.inflate(R.layout.timeline_memories_row, parent, false) as HorizontalGridView
             )
             else -> RowVH(inflater.inflate(R.layout.timeline_mosaic_row, parent, false) as LinearLayout)
         }
@@ -52,6 +61,7 @@ class TimelineMosaicAdapter(
         when (val item = getItem(position)) {
             is TimelineMosaicItem.Header -> (holder as HeaderVH).bind(item)
             is TimelineMosaicItem.Row -> (holder as RowVH).bind(item)
+            is TimelineMosaicItem.MemoriesRow -> (holder as MemoriesRowVH).bind(item)
         }
     }
 
@@ -155,6 +165,7 @@ class TimelineMosaicAdapter(
         when (val item = itemsSnapshot.getOrNull(position)) {
             is TimelineMosaicItem.Header -> item.dayKey
             is TimelineMosaicItem.Row -> item.dayKey
+            is TimelineMosaicItem.MemoriesRow -> null
             null -> null
         }
 
@@ -208,8 +219,8 @@ class TimelineMosaicAdapter(
                 cellRoot.isFocusableInTouchMode = true
                 cellRoot.setOnClickListener { onCellClick(cell) }
                 cellRoot.setOnFocusChangeListener { v, hasFocus ->
-                    v.animate().scaleX(if (hasFocus) 1.06f else 1f)
-                        .scaleY(if (hasFocus) 1.06f else 1f)
+                    v.animate().scaleX(if (hasFocus) 1.14f else 1f)
+                        .scaleY(if (hasFocus) 1.14f else 1f)
                         .setDuration(120)
                         .start()
                     v.elevation = if (hasFocus) 8f else 0f
@@ -243,6 +254,18 @@ class TimelineMosaicAdapter(
         }
     }
 
+    private inner class MemoriesRowVH(private val gridView: HorizontalGridView) : RecyclerView.ViewHolder(gridView) {
+        private val arrayAdapter = ArrayObjectAdapter(MemoryPresenter(gridView.context, onMemoryClicked))
+
+        init {
+            gridView.adapter = ItemBridgeAdapter(arrayAdapter)
+        }
+
+        fun bind(item: TimelineMosaicItem.MemoriesRow) {
+            arrayAdapter.setItems(item.memories, null)
+        }
+    }
+
     private object Diff : DiffUtil.ItemCallback<TimelineMosaicItem>() {
         override fun areItemsTheSame(oldItem: TimelineMosaicItem, newItem: TimelineMosaicItem): Boolean =
             when {
@@ -250,6 +273,7 @@ class TimelineMosaicAdapter(
                     oldItem.dayKey == newItem.dayKey
                 oldItem is TimelineMosaicItem.Row && newItem is TimelineMosaicItem.Row ->
                     oldItem.rowId == newItem.rowId
+                oldItem is TimelineMosaicItem.MemoriesRow && newItem is TimelineMosaicItem.MemoriesRow -> true
                 else -> false
             }
 
@@ -260,5 +284,6 @@ class TimelineMosaicAdapter(
     companion object {
         private const val VIEW_TYPE_HEADER = 1
         private const val VIEW_TYPE_ROW = 2
+        private const val VIEW_TYPE_MEMORIES = 3
     }
 }

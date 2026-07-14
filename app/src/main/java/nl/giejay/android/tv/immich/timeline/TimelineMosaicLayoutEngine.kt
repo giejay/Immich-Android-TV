@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.timeline
 
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -30,6 +31,11 @@ sealed class TimelineMosaicItem {
         val rowId: String,
         val dayKey: String,
         val cells: List<TimelineMosaicCell>
+    ) : TimelineMosaicItem()
+
+    /** Horizontally-scrolling "N years ago" row, always the first item when non-empty. */
+    data class MemoriesRow(
+        val memories: List<Memory>
     ) : TimelineMosaicItem()
 }
 

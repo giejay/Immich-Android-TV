@@ -46,8 +46,9 @@ class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
 }
 
 /**
- * Lazy [GET /assets/{id}] metadata for Timeline slider. DATE is supplied statically from the
- * bucket response; other fields resolve on first access and share one cached Asset per id.
+ * Lazy [GET /assets/{id}] metadata for slider details. Used by the timeline mosaic (which only
+ * has thin bucket payloads) and by memories (which omit EXIF/people entirely). DATE is usually
+ * supplied statically from the list response; when missing, it is resolved here on open.
  */
 class AssetDetailMetaDataProvider(
     private val assetId: String,
@@ -60,8 +61,14 @@ class AssetDetailMetaDataProvider(
     )
 
     override suspend fun getValue(): String? {
-        val asset = AssetDetailCache.get(assetId) ?: return null
+        val asset = AssetDetailCache.get(assetId)
         return when (field) {
+            MetaDataType.DATE -> {
+                val date = asset.exifInfo?.dateTimeOriginal
+                    ?: asset.fileCreatedAt
+                    ?: asset.fileModifiedAt
+                date?.let { formatAssetDate(it) }
+            }
             MetaDataType.CITY -> asset.exifInfo?.city
             MetaDataType.COUNTRY -> asset.exifInfo?.country
             MetaDataType.DESCRIPTION -> asset.exifInfo?.description
@@ -96,7 +103,11 @@ class AssetDetailMetaDataProvider(
 object AssetDetailCache {
     private val cache = ConcurrentHashMap<String, Asset>()
 
-    suspend fun get(assetId: String): Asset? {
+    /**
+     * Returns the asset or throws if the API call fails. Callers should not mark a metadata
+     * field as "fetched" on failure so opening details can retry.
+     */
+    suspend fun get(assetId: String): Asset {
         cache[assetId]?.let { return it }
         val client = ApiClient.getClient(
             ApiClientConfig(
@@ -107,7 +118,7 @@ object AssetDetailCache {
             )
         )
         return client.getAsset(assetId).fold(
-            { null },
+            { error -> throw IllegalStateException("Failed to load asset $assetId: $error") },
             { asset ->
                 cache[assetId] = asset
                 asset

@@ -17,7 +17,6 @@ import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.widget.ImageButton
 import android.widget.LinearLayout
-import android.widget.ListView
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -258,9 +257,17 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     private fun showDetailsOverlay() {
         if (detailsOverlayVisible) return
+        // Memories (and any other autoplay entry) keep advancing while details are open,
+        // which tears down/rebuilds the bottom strip before lazy EXIF can bind. Pause first
+        // so metadata can settle — mosaic never hits this because it does not autoPlay.
+        if (slideShowPlaying) {
+            toggleSlideshow(false)
+        }
         detailsOverlayVisible = true
         applyDetailsOverlayVisibility()
-        updateDateOverlay(currentItem().mainItem)
+        refreshOverlayMetadata()
+        metaDataLeftAdapter.bind()
+        metaDataRightAdapter.bind()
     }
 
     @OptIn(UnstableApi::class)
@@ -354,16 +361,16 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             applyTransportChrome(isVideo = videoControllerVisible)
         }
         metadataRows.visibility = if (detailsOn && hasBottomDetails) VISIBLE else GONE
-        // Keep D-pad on transport controls; ListViews would otherwise steal focus.
+        // Keep D-pad on transport controls; metadata rows would otherwise steal focus.
         metadataRows.descendantFocusability =
             if (showTransport) ViewGroup.FOCUS_BLOCK_DESCENDANTS
             else ViewGroup.FOCUS_AFTER_DESCENDANTS
-        findViewById<ListView>(R.id.metadata_view_left)?.apply {
-            isFocusable = !showTransport
+        findViewById<LinearLayout>(R.id.metadata_view_left)?.apply {
+            isFocusable = false
             isFocusableInTouchMode = false
         }
-        findViewById<ListView>(R.id.metadata_view_right)?.apply {
-            isFocusable = !showTransport
+        findViewById<LinearLayout>(R.id.metadata_view_right)?.apply {
+            isFocusable = false
             isFocusableInTouchMode = false
         }
 
@@ -448,16 +455,15 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         val detailsConfig = config.metaDataConfig.filterNot { it.type == MetaDataType.DATE }
         hasBottomDetails = detailsConfig.isNotEmpty()
 
-        val listViewRight = findViewById<ListView>(R.id.metadata_view_right)
+        val columnRight = findViewById<LinearLayout>(R.id.metadata_view_right)
         metaDataRightAdapter = MetaDataAdapter(context,
             detailsConfig.filter { it.align == AlignOption.RIGHT },
             detailsConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
             { if (currentItem().hasSecondaryItem()) currentItem().secondaryItem!! else currentItem().mainItem },
             { currentItem().hasSecondaryItem() })
-        listViewRight.divider = null
-        listViewRight.adapter = metaDataRightAdapter
+        metaDataRightAdapter.attach(columnRight)
 
-        val listViewLeft = findViewById<ListView>(R.id.metadata_view_left)
+        val columnLeft = findViewById<LinearLayout>(R.id.metadata_view_left)
         metaDataLeftAdapter = MetaDataAdapter(context,
             detailsConfig.filter { it.align == AlignOption.LEFT },
             // don't show the clock/media count twice in portrait mode and force everything to be left aligned
@@ -465,8 +471,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 .map { it.withAlign(align = AlignOption.LEFT) }.distinct(),
             { currentItem().mainItem },
             { currentItem().hasSecondaryItem() })
-        listViewLeft.divider = null
-        listViewLeft.adapter = metaDataLeftAdapter
+        metaDataLeftAdapter.attach(columnLeft)
 
         wireSharedVideoControls()
         applyDetailsOverlayVisibility()
@@ -612,10 +617,6 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 val sliderItem = config.items[sliderItemIndex]
                 val mainItem = sliderItem.mainItem
 
-                updateMetaData(metaDataLeftAdapter, mainItem, sliderItemIndex)
-                updateMetaData(metaDataRightAdapter, if (sliderItem.hasSecondaryItem()) sliderItem.secondaryItem!! else mainItem, sliderItemIndex)
-                updateDateOverlay(mainItem)
-
                 config.onAssetSelected(sliderItem)
                 currentToast?.cancel()
                 if (!sliderItem.hasSecondaryItem() && config.debugEnabled && transformResults.contains(sliderItemIndex)) {
@@ -678,30 +679,57 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 }
             }
 
-            private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
-                adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
-                    if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
-                        // already have state for this item, no need to fetch again
-                        return@forEachIndexed
-                    }
-                    ioScope.launch {
-                        val value = item.getValue(context, sliderItem, sliderItemIndex, config.items.size)
-                        adapter.updateState(sliderItem.id, metaDataIndex, value)
-                        withContext(Dispatchers.Main) {
-                            adapter.notifyDataSetChanged()
-                        }
-                    }
-                }
-            }
-
             override fun onPageSelected(i: Int) {
-                metaDataRightAdapter.notifyDataSetChanged()
-                metaDataLeftAdapter.notifyDataSetChanged()
+                // Load/bind metadata here (once per page), not from onPageScrolled which fires
+                // continuously and previously stamped null states after failed/aborted storms.
+                refreshOverlayMetadata()
+                metaDataLeftAdapter.bind()
+                metaDataRightAdapter.bind()
             }
 
             override fun onPageScrollStateChanged(i: Int) {
             }
         })
+        // Listener is registered after setCurrentItem, so the start page never receives
+        // onPageSelected — load its metadata explicitly.
+        refreshOverlayMetadata()
+    }
+
+    private fun refreshOverlayMetadata() {
+        if (config.items.isEmpty() || mPager.adapter == null) return
+        val index = mPager.currentItem.coerceIn(0, config.items.lastIndex)
+        val sliderItem = config.items[index]
+        val mainItem = sliderItem.mainItem
+        updateMetaData(metaDataLeftAdapter, mainItem, index)
+        updateMetaData(
+            metaDataRightAdapter,
+            if (sliderItem.hasSecondaryItem()) sliderItem.secondaryItem!! else mainItem,
+            index
+        )
+        updateDateOverlay(mainItem)
+    }
+
+    private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
+        adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
+            if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
+                return@forEachIndexed
+            }
+            ioScope.launch {
+                try {
+                    val value = item.getValue(context, sliderItem, sliderItemIndex, config.items.size)
+                    adapter.updateState(sliderItem.id, metaDataIndex, value)
+                    withContext(Dispatchers.Main) {
+                        adapter.bind()
+                        if (detailsOverlayVisible) {
+                            applyDetailsOverlayVisibility()
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Do not mark as fetched — next open / page select can retry.
+                    Timber.w(e, "Failed to load metadata %s for %s", item.type, sliderItem.id)
+                }
+            }
+        }
     }
 
     fun onDestroy() {

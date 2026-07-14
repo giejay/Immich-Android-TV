@@ -7,6 +7,7 @@ import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Folder
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -25,6 +26,7 @@ import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -250,4 +252,8 @@ class ApiClient(private val config: ApiClientConfig) {
     suspend fun getTimeBucket(timeBucket: String): Either<String, List<TimelineAsset>> =
         executeAPICall(200) { service.getTimeBucket(timeBucket) }
             .map { it.toTimelineAssets() }
+
+    /** "On this day" style memories for the current moment (server filters by day-of-year). */
+    suspend fun getMemories(): Either<String, List<Memory>> =
+        executeAPICall(200) { service.getMemories(OffsetDateTime.now().format(dateTimeFormatter)) }
 }

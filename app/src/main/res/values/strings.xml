@@ -70,6 +70,10 @@
     <string name="this_month">This month</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
+    <plurals name="years_ago">
+        <item quantity="one">%d year ago</item>
+        <item quantity="other">%d years ago</item>
+    </plurals>
     <string name="server">Server</string>
     <string name="screensaver">Screensaver</string>
     <string name="debug">Debug</string>

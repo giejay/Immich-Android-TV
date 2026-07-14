@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import nl.giejay.android.tv.immich.shared.util.Debouncer
@@ -26,11 +27,15 @@ import java.util.concurrent.TimeUnit
 class TimelineViewModel(
     private val fetchBuckets: suspend () -> Either<String, List<TimeBucketSummary>>,
     private val fetchBucket: suspend (String) -> Either<String, List<TimelineAsset>>,
+    private val fetchMemories: suspend () -> Either<String, List<Memory>> = { Either.Right(emptyList()) },
     private val prefetchDebounceMs: Long = PREFETCH_DEBOUNCE_MS
 ) : ViewModel() {
 
     private val _buckets = MutableStateFlow<List<TimeBucketSummary>>(emptyList())
     val buckets: StateFlow<List<TimeBucketSummary>> = _buckets.asStateFlow()
+
+    private val _memories = MutableStateFlow<List<Memory>>(emptyList())
+    val memories: StateFlow<List<Memory>> = _memories.asStateFlow()
 
     private val _bucketAssets = MutableStateFlow<Map<String, List<TimelineAsset>>>(emptyMap())
     val bucketAssets: StateFlow<Map<String, List<TimelineAsset>>> = _bucketAssets.asStateFlow()
@@ -55,6 +60,13 @@ class TimelineViewModel(
                 _buckets.value = list
                 list.take(eagerMonths).forEach { loadBucket(it.timeBucket) }
             }
+        )
+    }
+
+    suspend fun loadMemories() {
+        fetchMemories().fold(
+            { message -> _error.value = message },
+            { list -> _memories.value = list }
         )
     }
 

@@ -8,6 +8,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.R
 import nl.giejay.mediaslider.view.MediaSliderFragment
+import nl.giejay.mediaslider.view.MediaSliderView
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import timber.log.Timber
@@ -33,5 +34,11 @@ class ImmichMediaSlider : MediaSliderFragment() {
         )
 
         loadMediaSliderView(bundle.config)
+
+        if (bundle.autoPlay) {
+            // Same pattern ScreenSaverService uses to auto-start slideshow (mediaslider is a
+            // submodule; drive autoplay from here instead of adding config it needs to expose).
+            (view as MediaSliderView).toggleSlideshow(false)
+        }
     }
 }

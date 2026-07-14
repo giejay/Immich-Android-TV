@@ -70,6 +70,12 @@
     <string name="this_month">Этот месяц</string>
     <string name="today">Сегодня</string>
     <string name="yesterday">Вчера</string>
+    <plurals name="years_ago">
+        <item quantity="one">%d год назад</item>
+        <item quantity="few">%d года назад</item>
+        <item quantity="many">%d лет назад</item>
+        <item quantity="other">%d года назад</item>
+    </plurals>
     <string name="server">Сервер</string>
     <string name="screensaver">Заставка\n</string>
     <string name="debug">Отладка</string>

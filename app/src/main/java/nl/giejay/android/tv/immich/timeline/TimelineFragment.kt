@@ -32,6 +32,7 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
@@ -46,10 +47,12 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
+import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.LoadMore
@@ -178,7 +181,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             },
             onCellKey = { v, keyCode, event ->
                 focusNavigator?.onCellKey(v, keyCode, event) == true
-            }
+            },
+            onMemoryClicked = { memory -> onMemoryClicked(memory) }
         )
         mosaicAdapter = adapter
 
@@ -264,6 +268,11 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     }
                 }
                 launch {
+                    viewModel.memories.collect {
+                        bindDays(viewModel.days.value)
+                    }
+                }
+                launch {
                     viewModel.error.collect { message ->
                         if (message != null && isAdded) {
                             progressBar?.visibility = View.GONE
@@ -277,6 +286,9 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
         lifecycleScope.launch(Dispatchers.IO) {
             viewModel.loadBucketList()
+        }
+        lifecycleScope.launch(Dispatchers.IO) {
+            viewModel.loadMemories()
         }
     }
 
@@ -520,7 +532,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         val neighbors = TimelineMosaicLayoutEngine.buildFocusNeighbors(items)
         focusNavigator?.updateNeighbors(neighbors)
 
-        adapter.submitList(items) {
+        val memories = viewModel.memories.value
+        val itemsWithMemories = if (memories.isNotEmpty()) {
+            listOf(TimelineMosaicItem.MemoriesRow(memories)) + items
+        } else {
+            items
+        }
+
+        adapter.submitList(itemsWithMemories) {
             if (!isAdded) return@submitList
             if (days.isNotEmpty()) {
                 progressBar?.visibility = View.GONE
@@ -650,6 +669,41 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         )
     }
 
+    /** Opens a memory's assets in the slider, auto-playing — bounded set, no [LoadMore]. */
+    private fun onMemoryClicked(memory: Memory) {
+        if (memory.assets.isEmpty()) return
+        val sliderItems = memory.assets.toSliderItems(
+            keepOrder = true,
+            mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)
+        )
+        findNavController().navigate(
+            AlbumDetailsFragmentDirections.actionToPhotoSlider(
+                MediaSliderConfiguration(
+                    0,
+                    PreferenceManager.get(SLIDER_INTERVAL),
+                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
+                    isVideoSoundEnable = true,
+                    sliderItems,
+                    null,
+                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
+                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
+                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+                    gradiantOverlay = false,
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                        .filter { it.type != MetaDataType.MEDIA_COUNT },
+                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
+                ),
+                autoPlay = true
+            )
+        )
+    }
+
     private fun dp(value: Int): Int =
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
@@ -667,7 +721,8 @@ class TimelineViewModelFactory(
         if (modelClass.isAssignableFrom(TimelineViewModel::class.java)) {
             return TimelineViewModel(
                 fetchBuckets = { apiClient.getTimeBuckets() },
-                fetchBucket = { apiClient.getTimeBucket(it) }
+                fetchBucket = { apiClient.getTimeBucket(it) },
+                fetchMemories = { apiClient.getMemories() }
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
