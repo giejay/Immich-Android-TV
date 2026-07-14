@@ -2,7 +2,9 @@ package nl.giejay.android.tv.immich.timeline
 
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.OffsetDateTime
 
@@ -73,5 +75,15 @@ class TimelineMosaicIndexTest {
         assertNull(TimelineMosaicIndex.rightmostAssetIdForDay(items, "2020-01-01"))
         assertEquals(1, TimelineMosaicIndex.positionOfAsset(items, "b"))
         assertEquals(TimelineMosaicIndex.NO_POSITION, TimelineMosaicIndex.positionOfAsset(items, "missing"))
+    }
+
+    @Test
+    fun `isInFirstMosaicRow only matches newest mosaic row`() {
+        val withMemories = listOf(TimelineMosaicItem.MemoriesRow(emptyList())) + items
+        assertTrue(TimelineMosaicIndex.hasMemoriesRow(withMemories))
+        assertTrue(TimelineMosaicIndex.isInFirstMosaicRow(withMemories, "a"))
+        assertTrue(TimelineMosaicIndex.isInFirstMosaicRow(withMemories, "b"))
+        assertFalse(TimelineMosaicIndex.isInFirstMosaicRow(withMemories, "c"))
+        assertFalse(TimelineMosaicIndex.isInFirstMosaicRow(withMemories, "missing"))
     }
 }

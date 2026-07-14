@@ -219,15 +219,27 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 applyDetailsOverlayVisibility()
                 return true
             } else if (slideShowPlaying && itemType == SliderItemType.IMAGE) {
-                if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    toggleSlideshow(true)
-                } else {
-                    // remove all current callbacks to prevent multiple runnables
-                    mainHandler.removeCallbacks(goToNextAssetRunnable)
-                    goToNextAsset()
-                    return false
+                // Keep autoplay running for Left/Right so memories (and regular slideshow)
+                // can step either direction without an accidental pause.
+                when (event.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        mainHandler.removeCallbacks(goToNextAssetRunnable)
+                        goToNextAsset()
+                        return false
+                    }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        mainHandler.removeCallbacks(goToNextAssetRunnable)
+                        goToPreviousAsset()
+                        return false
+                    }
+                    else -> {
+                        // Back exits the viewer — don't flash the center pause glyph first.
+                        if (event.keyCode != KeyEvent.KEYCODE_BACK) {
+                            toggleSlideshow(true)
+                        }
+                        return super.dispatchKeyEvent(event)
+                    }
                 }
-                return super.dispatchKeyEvent(event)
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                 if (videoControllerVisible) {
                     return super.dispatchKeyEvent(event)

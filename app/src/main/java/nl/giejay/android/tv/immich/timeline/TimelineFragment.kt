@@ -173,8 +173,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             },
             onCellFocus = { cell, cellView ->
                 viewModel.prefetchAroundDay(cell.dayKey)
-                // Don't overwrite leave-off selection while the side menu owns focus.
-                if (!ignoreSelectionMemory && !isBrowseShowingHeaders()) {
+                // Don't overwrite sticky leave-off while the menu owns focus or before restore.
+                if (!ignoreSelectionMemory &&
+                    !isBrowseShowingHeaders() &&
+                    TimelineLeaveOff.shouldUpdateLiveLeaveOff(selectionRestored)
+                ) {
+                    viewModel.lastSelectedMemoryId = null
                     focusNavigator?.onCellFocused(cell.dayKey, cell.asset.id)
                     viewModel.rememberSelection(cell.dayKey, cell.asset.id)
                     syncScrubberToAsset(cell.asset.id, cell.dayKey)
@@ -190,7 +194,15 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             onCellKey = { v, keyCode, event ->
                 focusNavigator?.onCellKey(v, keyCode, event) == true
             },
-            onMemoryClicked = { memory -> onMemoryClicked(memory) }
+            onMemoryClicked = { memory -> onMemoryClicked(memory) },
+            onMemoryFocused = { memory ->
+                if (!ignoreSelectionMemory &&
+                    !isBrowseShowingHeaders() &&
+                    TimelineLeaveOff.shouldUpdateLiveLeaveOff(selectionRestored)
+                ) {
+                    viewModel.lastSelectedMemoryId = memory.id
+                }
+            }
         )
         mosaicAdapter = adapter
 
@@ -205,7 +217,11 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             adapter,
             onFocused = { dayKey, assetId ->
                 viewModel.prefetchAroundDay(dayKey)
-                if (!ignoreSelectionMemory && !isBrowseShowingHeaders()) {
+                if (!ignoreSelectionMemory &&
+                    !isBrowseShowingHeaders() &&
+                    TimelineLeaveOff.shouldUpdateLiveLeaveOff(selectionRestored)
+                ) {
+                    viewModel.lastSelectedMemoryId = null
                     viewModel.rememberSelection(dayKey, assetId)
                 }
                 maybeLoadMoreNearEnd()
@@ -256,6 +272,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     focusScrubberFromMosaic()
                     focused
                 }
+                direction == View.FOCUS_UP &&
+                    mosaicAdapter?.hasMemoriesRow() == true &&
+                    mosaicAdapter?.isInFirstMosaicRow(assetId) == true -> {
+                    focusNavigator?.focusMemoriesRow()
+                    focused
+                }
                 direction == View.FOCUS_DOWN -> focused
                 else -> null
             }
@@ -273,7 +295,9 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                         // Opening menu — remember the mosaic cell before Leanback steals focus.
                         captureResumeState()
                         beginResumeFocusLock()
-                    } else if (viewModel.pendingResumeAssetId != null ||
+                    } else if (
+                        viewModel.pendingResumeAssetId != null ||
+                        viewModel.lastSelectedMemoryId != null ||
                         viewModel.lastSelectedAssetId != null
                     ) {
                         // Re-entering with a prior cell — block children so Leanback cannot flash
@@ -285,8 +309,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 override fun onHeadersTransitionStop(withHeaders: Boolean) {
                     if (!isAdded) return
                     if (withHeaders) {
+                        // Snapshot already taken on start — don't recapture with focus gone.
                         selectionRestored = false
-                        if (viewModel.pendingResumeAssetId == null) captureResumeState()
                     } else {
                         hideBrowseTitle()
                         restoreSelectionIfNeeded()
@@ -298,8 +322,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         rv.post {
             contentWidthPx = (rv.width - rv.paddingStart - rv.paddingEnd).coerceAtLeast(1)
             // Recreated while the menu is already open (e.g. Photos → Timeline): never auto-enter.
+            // Leave-off was captured when the user left Timeline; do not wipe it with a null focus.
             if (isBrowseShowingHeaders()) {
-                if (viewModel.pendingResumeAssetId == null) captureResumeState()
                 beginResumeFocusLock()
                 selectionRestored = false
             }
@@ -355,10 +379,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     override fun onDestroyView() {
-        // Keep leave-off position for Photos → Timeline recreate (fragment-local state dies here).
-        if (viewModel.pendingResumeAssetId == null) {
-            captureResumeState()
-        }
+        // Do not captureResumeState here — focus is already cleared and would wipe a sticky
+        // memory/mosaic leave-off set when opening the slider. Menu open already snapshots.
         (parentFragment as? BrowseSupportFragment)?.setBrowseTransitionListener(null)
         focusVideoPreview?.release()
         focusVideoPreview = null
@@ -624,7 +646,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             }
 
             val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
-            if (anchorAssetId != null && layoutManager != null && scrubberView?.hasFocus() != true) {
+            val deferAnchor = TimelineLeaveOff.shouldDeferBindAnchorScroll(
+                allowScrollAdjust = viewModel.leaveOffAllowScrollAdjust
+            )
+            if (anchorAssetId != null &&
+                layoutManager != null &&
+                !deferAnchor &&
+                scrubberView?.hasFocus() != true
+            ) {
                 val newPos = adapter.positionOfAsset(anchorAssetId)
                 if (newPos != RecyclerView.NO_POSITION) {
                     layoutManager.scrollToPositionWithOffset(newPos, anchorOffset)
@@ -672,7 +701,16 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     private fun captureResumeState() {
-        viewModel.pendingResumeAssetId = viewModel.lastSelectedAssetId
+        val focused = recyclerView?.findFocus()
+        viewModel.applyLeaveOffSnapshot(
+            TimelineLeaveOff.captureForMenu(
+                focusedMemoryId = focused?.getTag(R.id.timeline_memory_id) as? String,
+                focusedMosaicAssetId = focused?.getTag(R.id.timeline_mosaic_cell_asset_id) as? String,
+                // Left from a memory steals focus before this runs — keep the sticky id.
+                stickyMemoryId = viewModel.lastSelectedMemoryId,
+                lastAssetId = viewModel.lastSelectedAssetId
+            )
+        )
     }
 
     private fun setFocusScrollSuppressed(suppressed: Boolean) {
@@ -707,53 +745,103 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         // presses Enter/Right (BrowseTransitionListener → restoreSelectionIfNeeded).
         if (isBrowseShowingHeaders()) return
 
-        // Prefer the cell captured when the menu opened — not whatever Leanback focused mid-transition.
-        val assetId = viewModel.pendingResumeAssetId ?: viewModel.lastSelectedAssetId
-        if (assetId != null) {
-            val position = adapter.positionOfAsset(assetId)
-            if (position < 0) {
-                val dayKey = viewModel.lastSelectedDayKey
-                if (dayKey != null) {
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        viewModel.loadBucket(TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey)))
+        when (val target = TimelineLeaveOff.resolveRestore(viewModel.leaveOffSnapshot())) {
+            is TimelineLeaveOff.Target.Memory -> {
+                if (!adapter.hasMemoriesRow()) return
+                selectionRestored = true
+                val rv = recyclerView ?: return
+                setFocusScrollSuppressed(true)
+                rv.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+                scrubberView?.isFocusable = false
+                rv.scrollToPosition(0)
+                fun tryFocus() {
+                    if (!adapter.focusMemory(rv, target.id)) {
+                        rv.post { adapter.focusMemory(rv, target.id) }
                     }
                 }
+                rv.post { tryFocus() }
+                rv.post { finishResumeFocusLock() }
                 return
             }
-
-            selectionRestored = true
-            val rv = recyclerView ?: return
-            val fromMenu = viewModel.pendingResumeAssetId != null
-            // Unblock and focus the saved cell synchronously — no delay, no intermediate cell.
-            setFocusScrollSuppressed(true)
-            rv.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
-            scrubberView?.isFocusable = false
-            val cell = adapter.findCellView(rv, assetId)
-            val lm = rv.layoutManager as? LinearLayoutManager
-            val first = lm?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
-            val last = lm?.findLastVisibleItemPosition() ?: RecyclerView.NO_POSITION
-            val visible = first != RecyclerView.NO_POSITION && position in first..last
-            if (fromMenu) {
-                // Menu re-entry: keep scroll if already there; otherwise jump once (recreate starts at top).
-                if (cell != null && visible) {
-                    cell.requestFocus()
-                } else {
-                    navigator.focusAsset(assetId, adjustScroll = true, lockScroll = true)
+            is TimelineLeaveOff.Target.Mosaic -> {
+                val assetId = target.assetId
+                val position = adapter.positionOfAsset(assetId)
+                if (position < 0) {
+                    val dayKey = viewModel.lastSelectedDayKey
+                    if (dayKey != null) {
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            viewModel.loadBucket(TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey)))
+                        }
+                    }
+                    return
                 }
-            } else if (cell != null && visible) {
-                cell.requestFocus()
-            } else {
-                // Returning from the photo slider (etc.): scroll may have been lost while
-                // buckets loaded in the background — jump back to the remembered asset.
-                navigator.focusAsset(assetId, adjustScroll = true, lockScroll = false)
+
+                selectionRestored = true
+                val rv = recyclerView ?: return
+                setFocusScrollSuppressed(true)
+                rv.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+                scrubberView?.isFocusable = false
+                val lm = rv.layoutManager as? LinearLayoutManager
+                val savedScroll = viewModel.consumeMosaicScrollStateForRestore(
+                    restoreAssetId = assetId,
+                    allowScrollAdjust = target.allowScrollAdjust
+                )
+                if (savedScroll != null) {
+                    // Same-item slider exit: put the exact pre-open viewport back, then focus
+                    // after layout. Never scrollToPosition — it clears pending restore state and
+                    // causes the jump-then-settle the user sees. Keep allowScrollAdjust=false
+                    // until unlock so a concurrent bindDays cannot yank the viewport.
+                    lm?.onRestoreInstanceState(savedScroll)
+                    rv.requestLayout()
+                    viewModel.pendingResumeAssetId = null
+                    viewModel.rememberSelectionByAssetId(assetId)
+                    rv.post {
+                        if (!isAdded) return@post
+                        setFocusScrollSuppressed(true)
+                        val cell = adapter.findCellView(rv, assetId)
+                        if (cell != null) {
+                            cell.requestFocus()
+                        } else {
+                            rv.post {
+                                adapter.findCellView(rv, assetId)?.requestFocus()
+                            }
+                        }
+                        rv.postDelayed({
+                            if (!isAdded) return@postDelayed
+                            viewModel.leaveOffAllowScrollAdjust = true
+                            finishResumeFocusLock()
+                        }, TimelineLeaveOff.MOSAIC_FOCUS_LOCK_RELEASE_MS)
+                    }
+                    return
+                }
+                val cell = adapter.findCellView(rv, assetId)
+                val first = lm?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
+                val last = lm?.findLastVisibleItemPosition() ?: RecyclerView.NO_POSITION
+                val visible = first != RecyclerView.NO_POSITION && position in first..last
+                when (
+                    TimelineLeaveOff.mosaicFocusMode(
+                        cellBound = cell != null,
+                        rowVisible = visible,
+                        allowScrollAdjust = target.allowScrollAdjust
+                    )
+                ) {
+                    TimelineLeaveOff.MosaicFocusMode.RequestFocusOnly -> cell!!.requestFocus()
+                    TimelineLeaveOff.MosaicFocusMode.AdjustScrollIntoView ->
+                        navigator.focusAsset(assetId, adjustScroll = true, lockScroll = true)
+                    TimelineLeaveOff.MosaicFocusMode.BindWithoutAdjust ->
+                        navigator.focusAsset(assetId, adjustScroll = false, lockScroll = true)
+                }
+                viewModel.pendingResumeAssetId = null
+                viewModel.leaveOffAllowScrollAdjust = true
+                viewModel.rememberSelectionByAssetId(assetId)
+                // Hold scroll-suppress through focus scale so Leanback cannot inch the page.
+                rv.postDelayed(
+                    { if (isAdded) finishResumeFocusLock() },
+                    TimelineLeaveOff.MOSAIC_FOCUS_LOCK_RELEASE_MS
+                )
+                return
             }
-            viewModel.pendingResumeAssetId = null
-            viewModel.rememberSelectionByAssetId(assetId)
-            // Re-enable scrubber after focus has landed on the mosaic cell.
-            rv.post {
-                finishResumeFocusLock()
-            }
-            return
+            TimelineLeaveOff.Target.None -> Unit
         }
 
         // First entry: wait for days + memories, then land on first memory (or mosaic).
@@ -845,14 +933,15 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     /**
      * When Up has no safe neighbor (calendar gap above the focused island), load the closest
      * unloaded newer month so focus can walk forward continuously instead of teleports.
+     * @return true if a load was started (or already in flight).
      */
-    private fun maybeLoadMoreNearStart() {
-        if (loadingNewerBucket) return
-        val rv = recyclerView ?: return
+    private fun maybeLoadMoreNearStart(): Boolean {
+        if (loadingNewerBucket) return true
+        val rv = recyclerView ?: return false
         val dayKey = rv.findFocus()?.getTag(R.id.timeline_mosaic_cell_day_key) as? String
             ?: viewModel.lastSelectedDayKey
-            ?: return
-        val next = viewModel.nextNewerUnloadedBucket(dayKey) ?: return
+            ?: return false
+        val next = viewModel.nextNewerUnloadedBucket(dayKey) ?: return false
         loadingNewerBucket = true
         lifecycleScope.launch(Dispatchers.IO) {
             viewModel.loadBucket(next.timeBucket)
@@ -860,10 +949,16 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 loadingNewerBucket = false
             }
         }
+        return true
     }
 
     private fun onItemClicked(assetId: String) {
         selectionRestored = false
+        viewModel.applyLeaveOffSnapshot(TimelineLeaveOff.afterOpeningMosaic(assetId))
+        viewModel.snapMosaicScrollForSlider(
+            assetId,
+            recyclerView?.layoutManager?.onSaveInstanceState()
+        )
         val flat = viewModel.flatAssetIndex()
         if (flat.isEmpty()) return
         val sliderItems = flat.map { it.second.toSliderItemViewHolder() }
@@ -898,7 +993,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     isVideoSoundEnable = true,
                     sliderItems,
                     loadMore,
-                    { item -> viewModel.rememberSelectionByAssetId(item.mainItem.id) },
+                    { item ->
+                        // Keep leave-off on the asset the user is currently viewing so Back
+                        // lands on that cell — not the one that opened the slider.
+                        viewModel.applyLeaveOffSnapshot(
+                            TimelineLeaveOff.afterOpeningMosaic(item.mainItem.id)
+                        )
+                        viewModel.rememberSelectionByAssetId(item.mainItem.id)
+                    },
                     animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
                     maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                     maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
@@ -920,6 +1022,10 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     /** Opens a memory's assets in the slider, auto-playing — bounded set, no [LoadMore]. */
     private fun onMemoryClicked(memory: Memory) {
         if (memory.assets.isEmpty()) return
+        selectionRestored = false
+        viewModel.applyLeaveOffSnapshot(
+            TimelineLeaveOff.afterOpeningMemory(memory.id, viewModel.lastSelectedAssetId)
+        )
         val sliderItems = memory.assets.toSliderItems(
             keepOrder = true,
             // Memory payloads omit EXIF/dimensions; portrait pairing is unreliable and can

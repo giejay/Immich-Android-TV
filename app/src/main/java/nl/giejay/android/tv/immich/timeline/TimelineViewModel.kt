@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.timeline
 
+import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
@@ -57,10 +58,79 @@ class TimelineViewModel(
     var lastSelectedAssetId: String? = null
 
     /**
-     * Cell to restore after a menu round-trip. Lives on the activity-scoped ViewModel so it
-     * survives TimelineFragment destruction when browsing Photos (etc.) and coming back.
+     * Memory card to restore after returning from the memory slider. Distinct from mosaic
+     * [lastSelectedAssetId] so leave-off can land back on "N years ago" instead of a cell.
+     */
+    var lastSelectedMemoryId: String? = null
+
+    /**
+     * Sticky mosaic asset for menu / slider return. Survives stray Leanback focus until
+     * [TimelineFragment] restore consumes it. Prefer over [lastSelectedAssetId] when set.
      */
     var pendingResumeAssetId: String? = null
+
+    /**
+     * Menu re-entry may jump-scroll into view; slider round-trips should keep the viewport
+     * and only re-focus (see [TimelineLeaveOff.Snapshot.allowScrollAdjust]).
+     */
+    var leaveOffAllowScrollAdjust: Boolean = true
+
+    /**
+     * Mosaic [RecyclerView.LayoutManager] scroll state snapped when opening the slider so
+     * return can restore the exact viewport instead of inching/jumping. Only applied when
+     * restoring [mosaicScrollStateAssetId] (same cell as open); ignored after slider advance.
+     */
+    var mosaicScrollState: Parcelable? = null
+    var mosaicScrollStateAssetId: String? = null
+
+    /** Activity-scoped leave-off snapshot for unit tests and restore. */
+    fun leaveOffSnapshot(): TimelineLeaveOff.Snapshot =
+        TimelineLeaveOff.Snapshot(
+            memoryId = lastSelectedMemoryId,
+            pendingAssetId = pendingResumeAssetId,
+            lastAssetId = lastSelectedAssetId,
+            allowScrollAdjust = leaveOffAllowScrollAdjust
+        )
+
+    fun applyLeaveOffSnapshot(snapshot: TimelineLeaveOff.Snapshot) {
+        lastSelectedMemoryId = snapshot.memoryId
+        pendingResumeAssetId = snapshot.pendingAssetId
+        leaveOffAllowScrollAdjust = snapshot.allowScrollAdjust
+        if (snapshot.lastAssetId != null) {
+            lastSelectedAssetId = snapshot.lastAssetId
+        }
+    }
+
+    /** Snap mosaic viewport when opening a mosaic slider (same-item exit restores it). */
+    fun snapMosaicScrollForSlider(assetId: String, state: Parcelable?) {
+        mosaicScrollStateAssetId = assetId
+        mosaicScrollState = state
+    }
+
+    /**
+     * Returns saved scroll when [TimelineLeaveOff.shouldRestoreSavedScroll] says so, then clears
+     * the snap so a later bind/restore cannot re-apply a stale viewport.
+     */
+    fun consumeMosaicScrollStateForRestore(
+        restoreAssetId: String,
+        allowScrollAdjust: Boolean
+    ): Parcelable? {
+        val state =
+            if (
+                TimelineLeaveOff.shouldRestoreSavedScroll(
+                    allowScrollAdjust = allowScrollAdjust,
+                    savedForAssetId = mosaicScrollStateAssetId,
+                    restoreAssetId = restoreAssetId
+                )
+            ) {
+                mosaicScrollState
+            } else {
+                null
+            }
+        mosaicScrollState = null
+        mosaicScrollStateAssetId = null
+        return state
+    }
 
     suspend fun loadBucketList(eagerMonths: Int = 3) {
         if (_buckets.value.isNotEmpty()) return

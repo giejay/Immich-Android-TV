@@ -22,7 +22,8 @@ import java.time.Year
  */
 class MemoryPresenter(
     private val context: Context,
-    private val onMemoryClicked: (Memory) -> Unit
+    private val onMemoryClicked: (Memory) -> Unit,
+    private val onMemoryFocused: (Memory) -> Unit = {}
 ) : Presenter() {
 
     private val cornerRadiusPx =
@@ -54,6 +55,7 @@ class MemoryPresenter(
             .centerCrop()
             .into(image)
 
+        view.setTag(R.id.timeline_memory_id, memory.id)
         view.setOnClickListener { onMemoryClicked(memory) }
         view.setOnFocusChangeListener { v, hasFocus ->
             v.animate().scaleX(if (hasFocus) 1.14f else 1f)
@@ -61,6 +63,9 @@ class MemoryPresenter(
                 .setDuration(120)
                 .start()
             v.elevation = if (hasFocus) 24f else 0f
+            if (hasFocus) {
+                onMemoryFocused(memory)
+            }
         }
     }
 

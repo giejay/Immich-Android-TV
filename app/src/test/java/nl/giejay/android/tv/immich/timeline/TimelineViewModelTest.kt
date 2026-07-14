@@ -1,5 +1,7 @@
 package nl.giejay.android.tv.immich.timeline
 
+import android.os.Parcelable
+import arrow.core.Either
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -9,15 +11,17 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import arrow.core.Either
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito.mock
 import java.time.OffsetDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -308,6 +312,98 @@ class TimelineViewModelTest {
         vm.rememberSelectionByAssetId("b")
         assertEquals("2026-07-01", vm.lastSelectedDayKey)
         assertEquals("b", vm.lastSelectedAssetId)
+    }
+
+    @Test
+    fun `slider open then advance leave-off restores last viewed asset`() {
+        val vm = TimelineViewModel(
+            fetchBuckets = { Either.Right(emptyList()) },
+            fetchBucket = { Either.Right(emptyList()) },
+            prefetchDebounceMs = 0
+        )
+
+        // Opening a mosaic item (TimelineFragment.onItemClicked).
+        vm.applyLeaveOffSnapshot(TimelineLeaveOff.afterOpeningMosaic("asset-open"))
+        assertEquals(
+            TimelineLeaveOff.Target.Mosaic("asset-open", allowScrollAdjust = false),
+            TimelineLeaveOff.resolveRestore(vm.leaveOffSnapshot())
+        )
+
+        // Advancing in the slider (MediaSliderConfiguration.onAssetSelected wiring).
+        vm.applyLeaveOffSnapshot(TimelineLeaveOff.afterOpeningMosaic("asset-later"))
+        vm.rememberSelectionByAssetId("asset-later") // no-op without buckets; dayKey unset
+        assertEquals(
+            TimelineLeaveOff.Target.Mosaic("asset-later", allowScrollAdjust = false),
+            TimelineLeaveOff.resolveRestore(vm.leaveOffSnapshot())
+        )
+        assertEquals("asset-later", vm.pendingResumeAssetId)
+        assertEquals("asset-later", vm.lastSelectedAssetId)
+        assertFalse(vm.leaveOffAllowScrollAdjust)
+    }
+
+    @Test
+    fun `menu capture after Left keeps sticky memory on ViewModel`() {
+        val vm = TimelineViewModel(
+            fetchBuckets = { Either.Right(emptyList()) },
+            fetchBucket = { Either.Right(emptyList()) },
+            prefetchDebounceMs = 0
+        )
+        vm.lastSelectedMemoryId = "mem-left"
+        vm.lastSelectedAssetId = "asset-a"
+
+        // Headers open: focus already gone (focusedMemory/Mosaic null), sticky remains.
+        vm.applyLeaveOffSnapshot(
+            TimelineLeaveOff.captureForMenu(
+                focusedMemoryId = null,
+                focusedMosaicAssetId = null,
+                stickyMemoryId = vm.lastSelectedMemoryId,
+                lastAssetId = vm.lastSelectedAssetId
+            )
+        )
+        assertEquals(
+            TimelineLeaveOff.Target.Memory("mem-left"),
+            TimelineLeaveOff.resolveRestore(vm.leaveOffSnapshot())
+        )
+    }
+
+    @Test
+    fun `consume mosaic scroll restores only for same-item slider exit`() {
+        val vm = TimelineViewModel(
+            fetchBuckets = { Either.Right(emptyList()) },
+            fetchBucket = { Either.Right(emptyList()) },
+            prefetchDebounceMs = 0
+        )
+        val saved = mock(Parcelable::class.java)
+        vm.snapMosaicScrollForSlider("asset-open", saved)
+
+        assertNull(
+            vm.consumeMosaicScrollStateForRestore(
+                restoreAssetId = "asset-later",
+                allowScrollAdjust = false
+            )
+        )
+        assertNull(vm.mosaicScrollState)
+        assertNull(vm.mosaicScrollStateAssetId)
+
+        vm.snapMosaicScrollForSlider("asset-open", saved)
+        assertSame(
+            saved,
+            vm.consumeMosaicScrollStateForRestore(
+                restoreAssetId = "asset-open",
+                allowScrollAdjust = false
+            )
+        )
+        assertNull(vm.mosaicScrollState)
+        assertNull(vm.mosaicScrollStateAssetId)
+
+        vm.snapMosaicScrollForSlider("asset-open", saved)
+        assertNull(
+            vm.consumeMosaicScrollStateForRestore(
+                restoreAssetId = "asset-open",
+                allowScrollAdjust = true
+            )
+        )
+        assertNull(vm.mosaicScrollStateAssetId)
     }
 
     @Test

@@ -61,4 +61,13 @@ object TimelineMosaicIndex {
             ?.lastOrNull()
             ?.asset
             ?.id
+
+    /** True when [assetId] sits in the newest mosaic row (directly under an optional memories row). */
+    fun isInFirstMosaicRow(items: List<TimelineMosaicItem>, assetId: String): Boolean {
+        val firstRow = items.filterIsInstance<TimelineMosaicItem.Row>().firstOrNull() ?: return false
+        return firstRow.cells.any { it.asset.id == assetId }
+    }
+
+    fun hasMemoriesRow(items: List<TimelineMosaicItem>): Boolean =
+        items.firstOrNull() is TimelineMosaicItem.MemoriesRow
 }

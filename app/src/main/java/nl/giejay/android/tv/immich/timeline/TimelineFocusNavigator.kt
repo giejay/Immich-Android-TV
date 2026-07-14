@@ -18,8 +18,11 @@ class TimelineFocusNavigator(
     private val onExitRightToScrubber: (() -> Unit)? = null,
     /** Fired when Down is pressed with no neighbor — load older months / extend the list. */
     private val onReachContentEnd: (() -> Unit)? = null,
-    /** Fired when Up is pressed with no neighbor — load newer months across a sparse gap. */
-    private val onReachContentStart: (() -> Unit)? = null
+    /**
+     * Fired when Up is pressed with no neighbor mid-timeline (sparse gap toward today).
+     * Return true if a load was started (key consumed); false to let Browse take Up.
+     */
+    private val onReachContentStart: (() -> Boolean)? = null
 ) {
     var neighbors: Map<String, TimelineFocusNeighbors> = emptyMap()
         private set
@@ -48,13 +51,27 @@ class TimelineFocusNavigator(
                 true
             }
             TimelineFocusAction.LoadNewer -> {
-                // Gap above current island (unloaded months) or true top — try bridging newer.
-                onReachContentStart?.invoke()
-                // Consume so Browse headers don't steal focus while we fill the gap.
-                onReachContentStart != null
+                // Top of the visible mosaic: return to memories instead of trapping Up forever.
+                if (adapter.hasMemoriesRow() && adapter.isInFirstMosaicRow(assetId)) {
+                    focusMemoriesRow()
+                    return true
+                }
+                // Sparse gap toward today — bridge newer months when possible.
+                onReachContentStart?.invoke() == true
             }
             TimelineFocusAction.Pass -> false
             TimelineFocusAction.Ignore -> false
+        }
+    }
+
+    /** Scroll the memories row on-screen and focus its first card. */
+    fun focusMemoriesRow() {
+        if (!adapter.hasMemoriesRow()) return
+        recyclerView.scrollToPosition(0)
+        recyclerView.post {
+            if (!adapter.focusFirstMemory(recyclerView)) {
+                recyclerView.post { adapter.focusFirstMemory(recyclerView) }
+            }
         }
     }
 

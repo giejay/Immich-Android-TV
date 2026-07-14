@@ -24,7 +24,8 @@ class TimelineMosaicAdapter(
     private val onCellBlur: (TimelineMosaicCell, View) -> Unit,
     private val onCellDetached: (View) -> Unit,
     private val onCellKey: (View, Int, android.view.KeyEvent) -> Boolean,
-    private val onMemoryClicked: (Memory) -> Unit = {}
+    private val onMemoryClicked: (Memory) -> Unit = {},
+    private val onMemoryFocused: (Memory) -> Unit = {}
 ) : ListAdapter<TimelineMosaicItem, RecyclerView.ViewHolder>(Diff) {
 
     private var itemsSnapshot: List<TimelineMosaicItem> = emptyList()
@@ -76,18 +77,25 @@ class TimelineMosaicAdapter(
         TimelineMosaicIndex.positionOfAsset(itemsSnapshot, assetId)
 
     fun hasMemoriesRow(): Boolean =
-        itemsSnapshot.firstOrNull() is TimelineMosaicItem.MemoriesRow
+        TimelineMosaicIndex.hasMemoriesRow(itemsSnapshot)
+
+    fun isInFirstMosaicRow(assetId: String): Boolean =
+        TimelineMosaicIndex.isInFirstMosaicRow(itemsSnapshot, assetId)
 
     /**
-     * Focus the first "N years ago" card. Returns false if the row isn't laid out yet
-     * (caller may scroll to 0 and retry).
+     * Focus a memory card by [memoryId], or the first card when null / not found.
+     * Returns false if the row isn't laid out yet (caller may scroll to 0 and retry).
      */
-    fun focusFirstMemory(recyclerView: RecyclerView): Boolean {
-        if (itemsSnapshot.firstOrNull() !is TimelineMosaicItem.MemoriesRow) return false
+    fun focusMemory(recyclerView: RecyclerView, memoryId: String?): Boolean {
+        if (!hasMemoriesRow()) return false
         val holder = recyclerView.findViewHolderForAdapterPosition(0) as? MemoriesRowVH
             ?: return false
-        return holder.focusFirstCard()
+        return holder.focusMemory(memoryId)
     }
+
+    /** Focus the first "N years ago" card. */
+    fun focusFirstMemory(recyclerView: RecyclerView): Boolean =
+        focusMemory(recyclerView, memoryId = null)
 
     fun firstAssetId(): String? =
         itemsSnapshot.filterIsInstance<TimelineMosaicItem.Row>()
@@ -241,7 +249,9 @@ class TimelineMosaicAdapter(
     }
 
     private inner class MemoriesRowVH(private val gridView: HorizontalGridView) : RecyclerView.ViewHolder(gridView) {
-        private val arrayAdapter = ArrayObjectAdapter(MemoryPresenter(gridView.context, onMemoryClicked))
+        private val arrayAdapter = ArrayObjectAdapter(
+            MemoryPresenter(gridView.context, onMemoryClicked, onMemoryFocused)
+        )
 
         init {
             gridView.adapter = ItemBridgeAdapter(arrayAdapter)
@@ -251,10 +261,17 @@ class TimelineMosaicAdapter(
             arrayAdapter.setItems(item.memories, null)
         }
 
-        fun focusFirstCard(): Boolean {
+        fun focusMemory(memoryId: String?): Boolean {
             if (arrayAdapter.size() == 0) return false
-            gridView.setSelectedPosition(0)
-            val child = gridView.layoutManager?.findViewByPosition(0)
+            val index = if (memoryId != null) {
+                (0 until arrayAdapter.size()).indexOfFirst {
+                    (arrayAdapter.get(it) as? Memory)?.id == memoryId
+                }.takeIf { it >= 0 } ?: 0
+            } else {
+                0
+            }
+            gridView.setSelectedPosition(index)
+            val child = gridView.layoutManager?.findViewByPosition(index)
             return if (child != null) {
                 child.requestFocus()
             } else {
