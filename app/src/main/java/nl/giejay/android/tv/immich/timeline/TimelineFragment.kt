@@ -47,7 +47,6 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
@@ -674,7 +673,9 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         if (memory.assets.isEmpty()) return
         val sliderItems = memory.assets.toSliderItems(
             keepOrder = true,
-            mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)
+            // Memory payloads omit EXIF/dimensions; portrait pairing is unreliable and can
+            // bind the wrong asset's city/country into the details strip.
+            mergePortrait = false
         )
         findNavController().navigate(
             AlbumDetailsFragmentDirections.actionToPhotoSlider(

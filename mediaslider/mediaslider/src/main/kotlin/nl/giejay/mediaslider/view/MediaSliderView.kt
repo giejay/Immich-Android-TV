@@ -710,24 +710,28 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
-        adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
-            if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
-                return@forEachIndexed
-            }
-            ioScope.launch {
-                try {
-                    val value = item.getValue(context, sliderItem, sliderItemIndex, config.items.size)
-                    adapter.updateState(sliderItem.id, metaDataIndex, value)
-                    withContext(Dispatchers.Main) {
-                        adapter.bind()
-                        if (detailsOverlayVisible) {
-                            applyDetailsOverlayVisibility()
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Do not mark as fetched — next open / page select can retry.
-                    Timber.w(e, "Failed to load metadata %s for %s", item.type, sliderItem.id)
+        val items = adapter.getItemsToShow()
+        if (items.isEmpty()) return
+        // One batch per asset: parallel per-field fetches stamped blank DESCRIPTION before CITY
+        // arrived, which collapsed the bottom strip (slideshow button dropped) then flickered.
+        if (adapter.isFullyFetched(sliderItem.id)) return
+        ioScope.launch {
+            try {
+                val values = items.map { item ->
+                    item.getValue(context, sliderItem, sliderItemIndex, config.items.size)
                 }
+                withContext(Dispatchers.Main) {
+                    if (!currentItem().ids().contains(sliderItem.id)) return@withContext
+                    values.forEachIndexed { i, value ->
+                        adapter.updateState(sliderItem.id, i, value)
+                    }
+                    adapter.bind()
+                    if (detailsOverlayVisible) {
+                        applyDetailsOverlayVisibility()
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load metadata for %s", sliderItem.id)
             }
         }
     }

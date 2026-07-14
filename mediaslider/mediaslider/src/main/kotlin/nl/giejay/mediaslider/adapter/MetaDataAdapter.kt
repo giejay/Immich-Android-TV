@@ -122,11 +122,23 @@ class MetaDataAdapter(val context: Context,
     /** Keys that have completed a fetch (including blank/null results). */
     private val fetchedKeys = mutableSetOf<String>()
     private var container: LinearLayout? = null
+    private var boundAssetId: String? = null
 
     fun getItemsToShow(): List<MetaDataItem> = (if (portraitMode()) portraitViewItems else items)
 
     fun attach(container: LinearLayout) {
         this.container = container
+    }
+
+    fun isFullyFetched(assetId: String): Boolean {
+        val toShow = getItemsToShow()
+        return toShow.isNotEmpty() && toShow.indices.all { hasStateForItem(assetId, it) }
+    }
+
+    fun clearState(assetId: String) {
+        val prefix = "$assetId#"
+        stateForItem.keys.filter { it.startsWith(prefix) }.forEach { stateForItem.remove(it) }
+        fetchedKeys.removeAll { it.startsWith(prefix) }
     }
 
     fun bind() {
@@ -139,15 +151,15 @@ class MetaDataAdapter(val context: Context,
         val toShow = getItemsToShow()
         val allFetched = toShow.indices.all { hasStateForItem(currentId, it) }
         val rows = toShow.mapIndexedNotNull { index, item ->
-            val value = stateForItem[currentId + index]
+            val value = stateForItem[stateKey(currentId, index)]
             if (value.isNullOrBlank()) null else item to value
         }
-        // Match the date overlay: don't blank the bottom while the next asset's EXIF is
-        // still loading — only replace once we have this asset's results (or a known empty).
-        if (rows.isEmpty() && !allFetched && parent.childCount > 0) {
+        // Don't blank the bottom while this asset's EXIF batch is still in flight.
+        if (rows.isEmpty() && !allFetched && parent.childCount > 0 && boundAssetId != currentId) {
             return
         }
         parent.removeAllViews()
+        boundAssetId = currentId
         rows.forEach { (item, value) ->
             val view = item.createView(layoutInflater)
             val textView = view.findViewById<TextView>(item.textViewResourceId)
@@ -173,12 +185,14 @@ class MetaDataAdapter(val context: Context,
     }
 
     fun updateState(sliderItemId: String, metaDataIndex: Int, value: String?) {
-        val key = sliderItemId + metaDataIndex
+        val key = stateKey(sliderItemId, metaDataIndex)
         stateForItem[key] = value
         fetchedKeys.add(key)
     }
 
     fun hasStateForItem(id: String, metaDataIndex: Int): Boolean {
-        return (id + metaDataIndex) in fetchedKeys
+        return stateKey(id, metaDataIndex) in fetchedKeys
     }
+
+    private fun stateKey(assetId: String, metaDataIndex: Int): String = "$assetId#$metaDataIndex"
 }
