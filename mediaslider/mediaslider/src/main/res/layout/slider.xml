@@ -17,6 +17,46 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Persistent Immich Memories progress + count; above date scrim (elevation). -->
+    <LinearLayout
+        android:id="@+id/story_progress_row"
+        android:layout_width="0dp"
+        android:layout_height="28dp"
+        android:elevation="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="24dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="24dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible">
+
+        <nl.giejay.mediaslider.view.StoryProgressView
+            android:id="@+id/story_progress"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/story_progress_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@string/font_family"
+            android:includeFontPadding="false"
+            android:shadowColor="#FF000000"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="4"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="5/20" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/metadata_date"
         android:layout_width="0dp"
@@ -28,7 +68,7 @@
         android:gravity="start"
         android:maxLines="2"
         android:paddingStart="32dp"
-        android:paddingTop="28dp"
+        android:paddingTop="36dp"
         android:paddingEnd="48dp"
         android:paddingBottom="36dp"
         android:shadowColor="#FF000000"

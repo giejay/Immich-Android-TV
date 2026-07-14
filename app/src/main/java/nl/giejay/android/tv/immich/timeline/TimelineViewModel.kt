@@ -1,6 +1,5 @@
 package nl.giejay.android.tv.immich.timeline
 
-import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
@@ -75,14 +74,6 @@ class TimelineViewModel(
      */
     var leaveOffAllowScrollAdjust: Boolean = true
 
-    /**
-     * Mosaic [RecyclerView.LayoutManager] scroll state snapped when opening the slider so
-     * return can restore the exact viewport instead of inching/jumping. Only applied when
-     * restoring [mosaicScrollStateAssetId] (same cell as open); ignored after slider advance.
-     */
-    var mosaicScrollState: Parcelable? = null
-    var mosaicScrollStateAssetId: String? = null
-
     /** Activity-scoped leave-off snapshot for unit tests and restore. */
     fun leaveOffSnapshot(): TimelineLeaveOff.Snapshot =
         TimelineLeaveOff.Snapshot(
@@ -99,37 +90,6 @@ class TimelineViewModel(
         if (snapshot.lastAssetId != null) {
             lastSelectedAssetId = snapshot.lastAssetId
         }
-    }
-
-    /** Snap mosaic viewport when opening a mosaic slider (same-item exit restores it). */
-    fun snapMosaicScrollForSlider(assetId: String, state: Parcelable?) {
-        mosaicScrollStateAssetId = assetId
-        mosaicScrollState = state
-    }
-
-    /**
-     * Returns saved scroll when [TimelineLeaveOff.shouldRestoreSavedScroll] says so, then clears
-     * the snap so a later bind/restore cannot re-apply a stale viewport.
-     */
-    fun consumeMosaicScrollStateForRestore(
-        restoreAssetId: String,
-        allowScrollAdjust: Boolean
-    ): Parcelable? {
-        val state =
-            if (
-                TimelineLeaveOff.shouldRestoreSavedScroll(
-                    allowScrollAdjust = allowScrollAdjust,
-                    savedForAssetId = mosaicScrollStateAssetId,
-                    restoreAssetId = restoreAssetId
-                )
-            ) {
-                mosaicScrollState
-            } else {
-                null
-            }
-        mosaicScrollState = null
-        mosaicScrollStateAssetId = null
-        return state
     }
 
     suspend fun loadBucketList(eagerMonths: Int = 3) {

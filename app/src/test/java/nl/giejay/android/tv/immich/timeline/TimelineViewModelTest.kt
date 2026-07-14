@@ -1,6 +1,5 @@
 package nl.giejay.android.tv.immich.timeline
 
-import android.os.Parcelable
 import arrow.core.Either
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,11 +16,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
 import java.time.OffsetDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -364,46 +361,6 @@ class TimelineViewModelTest {
             TimelineLeaveOff.Target.Memory("mem-left"),
             TimelineLeaveOff.resolveRestore(vm.leaveOffSnapshot())
         )
-    }
-
-    @Test
-    fun `consume mosaic scroll restores only for same-item slider exit`() {
-        val vm = TimelineViewModel(
-            fetchBuckets = { Either.Right(emptyList()) },
-            fetchBucket = { Either.Right(emptyList()) },
-            prefetchDebounceMs = 0
-        )
-        val saved = mock(Parcelable::class.java)
-        vm.snapMosaicScrollForSlider("asset-open", saved)
-
-        assertNull(
-            vm.consumeMosaicScrollStateForRestore(
-                restoreAssetId = "asset-later",
-                allowScrollAdjust = false
-            )
-        )
-        assertNull(vm.mosaicScrollState)
-        assertNull(vm.mosaicScrollStateAssetId)
-
-        vm.snapMosaicScrollForSlider("asset-open", saved)
-        assertSame(
-            saved,
-            vm.consumeMosaicScrollStateForRestore(
-                restoreAssetId = "asset-open",
-                allowScrollAdjust = false
-            )
-        )
-        assertNull(vm.mosaicScrollState)
-        assertNull(vm.mosaicScrollStateAssetId)
-
-        vm.snapMosaicScrollForSlider("asset-open", saved)
-        assertNull(
-            vm.consumeMosaicScrollStateForRestore(
-                restoreAssetId = "asset-open",
-                allowScrollAdjust = true
-            )
-        )
-        assertNull(vm.mosaicScrollStateAssetId)
     }
 
     @Test

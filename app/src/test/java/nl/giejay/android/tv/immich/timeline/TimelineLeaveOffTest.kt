@@ -136,31 +136,6 @@ class TimelineLeaveOffTest {
     }
 
     @Test
-    fun `same-item slider exit restores saved scroll advanced does not`() {
-        assertTrue(
-            TimelineLeaveOff.shouldRestoreSavedScroll(
-                allowScrollAdjust = false,
-                savedForAssetId = "asset-open",
-                restoreAssetId = "asset-open"
-            )
-        )
-        assertFalse(
-            TimelineLeaveOff.shouldRestoreSavedScroll(
-                allowScrollAdjust = false,
-                savedForAssetId = "asset-open",
-                restoreAssetId = "asset-later"
-            )
-        )
-        assertFalse(
-            TimelineLeaveOff.shouldRestoreSavedScroll(
-                allowScrollAdjust = true,
-                savedForAssetId = "asset-open",
-                restoreAssetId = "asset-open"
-            )
-        )
-    }
-
-    @Test
     fun `mosaic focus mode avoids scroll adjust when cell already visible`() {
         assertEquals(
             TimelineLeaveOff.MosaicFocusMode.RequestFocusOnly,
@@ -217,5 +192,12 @@ class TimelineLeaveOffTest {
     fun `bindDays defers anchor scroll while slider viewport is pinned`() {
         assertTrue(TimelineLeaveOff.shouldDeferBindAnchorScroll(allowScrollAdjust = false))
         assertFalse(TimelineLeaveOff.shouldDeferBindAnchorScroll(allowScrollAdjust = true))
+    }
+
+    @Test
+    fun `pending slider leave-off forces restore over Leanback open-cell focus`() {
+        assertTrue(TimelineLeaveOff.shouldForceLeaveOffRestore("asset-later"))
+        assertFalse(TimelineLeaveOff.shouldForceLeaveOffRestore(null))
+        assertFalse(TimelineLeaveOff.shouldForceLeaveOffRestore(""))
     }
 }

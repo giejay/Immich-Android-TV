@@ -370,6 +370,10 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     override fun onResume() {
         super.onResume()
         clearBackground()
+        // Leanback may restore focus to the opened mosaic cell before leave-off runs.
+        if (TimelineLeaveOff.shouldForceLeaveOffRestore(viewModel.pendingResumeAssetId)) {
+            selectionRestored = false
+        }
         restoreSelectionIfNeeded()
     }
 
@@ -669,6 +673,11 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 scrubberView?.hasFocus() == true -> {
                     selectionRestored = true
                 }
+                // Slider leave-off wins over Leanback restoring focus to the *opened* cell.
+                TimelineLeaveOff.shouldForceLeaveOffRestore(viewModel.pendingResumeAssetId) -> {
+                    selectionRestored = false
+                    restoreSelectionIfNeeded()
+                }
                 anchorAssetId != null &&
                     adapter.positionOfAsset(anchorAssetId) >= 0 &&
                     recyclerView?.findFocus()?.getTag(R.id.timeline_mosaic_cell_asset_id) != null -> {
@@ -737,7 +746,13 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     private fun restoreSelectionIfNeeded() {
-        if (selectionRestored || !isAdded) return
+        if (!isAdded) return
+        // Pending slider leave-off must re-run even if a prior bind retained the open cell.
+        if (selectionRestored &&
+            !TimelineLeaveOff.shouldForceLeaveOffRestore(viewModel.pendingResumeAssetId)
+        ) {
+            return
+        }
         val navigator = focusNavigator ?: return
         val adapter = mosaicAdapter ?: return
 
@@ -782,42 +797,13 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 rv.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
                 scrubberView?.isFocusable = false
                 val lm = rv.layoutManager as? LinearLayoutManager
-                val savedScroll = viewModel.consumeMosaicScrollStateForRestore(
-                    restoreAssetId = assetId,
-                    allowScrollAdjust = target.allowScrollAdjust
-                )
-                if (savedScroll != null) {
-                    // Same-item slider exit: put the exact pre-open viewport back, then focus
-                    // after layout. Never scrollToPosition — it clears pending restore state and
-                    // causes the jump-then-settle the user sees. Keep allowScrollAdjust=false
-                    // until unlock so a concurrent bindDays cannot yank the viewport.
-                    lm?.onRestoreInstanceState(savedScroll)
-                    rv.requestLayout()
-                    viewModel.pendingResumeAssetId = null
-                    viewModel.rememberSelectionByAssetId(assetId)
-                    rv.post {
-                        if (!isAdded) return@post
-                        setFocusScrollSuppressed(true)
-                        val cell = adapter.findCellView(rv, assetId)
-                        if (cell != null) {
-                            cell.requestFocus()
-                        } else {
-                            rv.post {
-                                adapter.findCellView(rv, assetId)?.requestFocus()
-                            }
-                        }
-                        rv.postDelayed({
-                            if (!isAdded) return@postDelayed
-                            viewModel.leaveOffAllowScrollAdjust = true
-                            finishResumeFocusLock()
-                        }, TimelineLeaveOff.MOSAIC_FOCUS_LOCK_RELEASE_MS)
-                    }
-                    return
-                }
                 val cell = adapter.findCellView(rv, assetId)
                 val first = lm?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
                 val last = lm?.findLastVisibleItemPosition() ?: RecyclerView.NO_POSITION
                 val visible = first != RecyclerView.NO_POSITION && position in first..last
+                // Land on the leave-off asset (last viewed in the slider, or the one just
+                // opened). Do not reinstate open-time LayoutManager state — that fights
+                // scrubber jumps and adapter changes while the slider was open.
                 when (
                     TimelineLeaveOff.mosaicFocusMode(
                         cellBound = cell != null,
@@ -832,13 +818,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                         navigator.focusAsset(assetId, adjustScroll = false, lockScroll = true)
                 }
                 viewModel.pendingResumeAssetId = null
-                viewModel.leaveOffAllowScrollAdjust = true
                 viewModel.rememberSelectionByAssetId(assetId)
                 // Hold scroll-suppress through focus scale so Leanback cannot inch the page.
-                rv.postDelayed(
-                    { if (isAdded) finishResumeFocusLock() },
-                    TimelineLeaveOff.MOSAIC_FOCUS_LOCK_RELEASE_MS
-                )
+                // Keep allowScrollAdjust=false until unlock so bindDays cannot yank focus away.
+                rv.postDelayed({
+                    if (!isAdded) return@postDelayed
+                    viewModel.leaveOffAllowScrollAdjust = true
+                    finishResumeFocusLock()
+                }, TimelineLeaveOff.MOSAIC_FOCUS_LOCK_RELEASE_MS)
                 return
             }
             TimelineLeaveOff.Target.None -> Unit
@@ -953,12 +940,13 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     private fun onItemClicked(assetId: String) {
+        // Scrubber Enter jump must not re-anchor after we leave for the slider.
+        stickyJumpBucketKey = null
+        pendingJumpMonth = null
+        pendingJumpFocus = false
         selectionRestored = false
         viewModel.applyLeaveOffSnapshot(TimelineLeaveOff.afterOpeningMosaic(assetId))
-        viewModel.snapMosaicScrollForSlider(
-            assetId,
-            recyclerView?.layoutManager?.onSaveInstanceState()
-        )
+        viewModel.rememberSelectionByAssetId(assetId)
         val flat = viewModel.flatAssetIndex()
         if (flat.isEmpty()) return
         val sliderItems = flat.map { it.second.toSliderItemViewHolder() }

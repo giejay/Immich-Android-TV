@@ -79,7 +79,7 @@ object TimelineLeaveOff {
             allowScrollAdjust = false
         )
 
-    /** Opening / advancing a mosaic slider — sticky asset survives stray focus before restore. */
+    /** Opening / advancing a mosaic slider — leave-off tracks the current asset (exit lands here). */
     fun afterOpeningMosaic(assetId: String): Snapshot =
         Snapshot(
             memoryId = null,
@@ -93,20 +93,6 @@ object TimelineLeaveOff {
      * Before restore, sticky fields must not be clobbered by interim focus.
      */
     fun shouldUpdateLiveLeaveOff(selectionRestored: Boolean): Boolean = selectionRestored
-
-    /**
-     * Same-item slider exit only: reinstate the viewport snapped at open.
-     * After the user advances in the slider, the open-time scroll must not fight
-     * focusing the new asset.
-     */
-    fun shouldRestoreSavedScroll(
-        allowScrollAdjust: Boolean,
-        savedForAssetId: String?,
-        restoreAssetId: String
-    ): Boolean =
-        !allowScrollAdjust &&
-            !savedForAssetId.isNullOrBlank() &&
-            savedForAssetId == restoreAssetId
 
     /**
      * How to land focus on a mosaic restore target without jank.
@@ -129,7 +115,10 @@ object TimelineLeaveOff {
         /** Menu re-entry — may jump viewport (height/4). */
         data object AdjustScrollIntoView : MosaicFocusMode()
 
-        /** Slider return to an off-screen asset — scrollToPosition, no height/4. */
+        /**
+         * Slider return to an off-screen asset — [LinearLayoutManager.scrollToPosition] to bind,
+         * then focus; no height/4 jump. Implement via focusAsset(adjustScroll=false, lockScroll=true).
+         */
         data object BindWithoutAdjust : MosaicFocusMode()
     }
 
@@ -141,8 +130,16 @@ object TimelineLeaveOff {
 
     /**
      * While slider leave-off has the viewport pinned (`allowScrollAdjust == false`),
-     * [TimelineFragment.bindDays] must not `scrollToPositionWithOffset` — that races the
-     * saved viewport and causes jump-then-settle.
+     * [TimelineFragment.bindDays] must not `scrollToPositionWithOffset` — that races focus
+     * restore after the slider.
      */
     fun shouldDeferBindAnchorScroll(allowScrollAdjust: Boolean): Boolean = !allowScrollAdjust
+
+    /**
+     * After returning from the mosaic slider, Leanback often restores focus to the cell that
+     * *opened* the slider. That must not skip leave-off when [pendingResumeAssetId] still
+     * points at the asset last viewed in the slider.
+     */
+    fun shouldForceLeaveOffRestore(pendingResumeAssetId: String?): Boolean =
+        !pendingResumeAssetId.isNullOrBlank()
 }

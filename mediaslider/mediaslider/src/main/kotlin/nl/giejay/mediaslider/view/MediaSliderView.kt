@@ -1,5 +1,6 @@
 package nl.giejay.mediaslider.view
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.BroadcastReceiver
@@ -15,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -69,6 +71,11 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private lateinit var metadataRows: LinearLayout
     private lateinit var videoControls: PlayerControlView
     private lateinit var muteButton: ImageButton
+    private lateinit var storyProgress: StoryProgressView
+    private lateinit var storyProgressRow: View
+    private lateinit var storyProgressCount: TextView
+    private var storyProgressEnabled = false
+    private var storyProgressAnimator: ValueAnimator? = null
     private val volumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == "android.media.VOLUME_CHANGED_ACTION") {
@@ -112,6 +119,22 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     /** YouTube-style hide of play/slideshow chrome after idle; EXIF/details stay up. */
     private val hideTransportRunnable = Runnable { hideTransportControls() }
 
+    private val videoStoryProgressRunnable = object : Runnable {
+        override fun run() {
+            if (!storyProgressEnabled || !slideShowPlaying) return
+            if (currentItemType() != SliderItemType.VIDEO) return
+            val player = currentPlayerInScope ?: return
+            val duration = player.duration
+            if (duration > 0) {
+                updateStoryProgressChrome(
+                    mPager.currentItem,
+                    player.currentPosition.toFloat() / duration.toFloat()
+                )
+            }
+            mainHandler.postDelayed(this, 50)
+        }
+    }
+
     /**
      * Viewer: center opens a details overlay. Screensaver (MediaSliderListener) keeps
      * always-on metadata and uses center to exit the dream instead.
@@ -130,6 +153,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         metadataRows = findViewById(R.id.metadata_rows)
         videoControls = findViewById(R.id.slider_video_controls)
         muteButton = videoControls.findViewById(R.id.exo_mute)
+        storyProgress = findViewById(R.id.story_progress)
+        storyProgressRow = findViewById(R.id.story_progress_row)
+        storyProgressCount = findViewById(R.id.story_progress_count)
         mainHandler = Handler(Looper.getMainLooper())
     }
 
@@ -142,7 +168,38 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         cancelTransportAutoHide()
+        stopStoryProgressAnimation()
         context.unregisterReceiver(volumeReceiver)
+    }
+
+    /**
+     * Immich Memories: always-on segmented progress over the media (above the date overlay).
+     * Call before [toggleSlideshow] when opening a memory autoplay session.
+     */
+    fun setStoryProgressEnabled(enabled: Boolean) {
+        storyProgressEnabled = enabled
+        if (!enabled) {
+            stopStoryProgressAnimation()
+            storyProgressRow.visibility = GONE
+            return
+        }
+        if (::config.isInitialized) {
+            updateStoryProgressChrome(mPager.currentItem.coerceAtLeast(0), progress = 0f)
+        }
+        storyProgressRow.visibility = VISIBLE
+    }
+
+    private fun updateStoryProgressChrome(index: Int, progress: Float) {
+        if (!storyProgressEnabled || !::config.isInitialized) return
+        val total = config.items.size
+        if (total <= 0) {
+            storyProgressCount.text = ""
+            return
+        }
+        val safeIndex = index.coerceIn(0, total - 1)
+        storyProgress.setSegmentCount(total)
+        storyProgress.setProgress(safeIndex, progress)
+        storyProgressCount.text = "${safeIndex + 1}/$total"
     }
 
     @OptIn(UnstableApi::class)
@@ -224,11 +281,13 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 when (event.keyCode) {
                     KeyEvent.KEYCODE_DPAD_RIGHT -> {
                         mainHandler.removeCallbacks(goToNextAssetRunnable)
+                        stopStoryProgressAnimation()
                         goToNextAsset()
                         return false
                     }
                     KeyEvent.KEYCODE_DPAD_LEFT -> {
                         mainHandler.removeCallbacks(goToNextAssetRunnable)
+                        stopStoryProgressAnimation()
                         goToPreviousAsset()
                         return false
                     }
@@ -580,11 +639,13 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     player.seekTo(0)
                 }
                 player?.playWhenReady = true
+                startVideoStoryProgress()
             }
             setKeepScreenOnFlags()
         } else {
             clearKeepScreenOnFlags()
             mainHandler.removeCallbacks(goToNextAssetRunnable)
+            pauseStoryProgress()
             // Resuming manual viewing: restart if the video had already finished
             if (currentItemType() == SliderItemType.VIDEO &&
                 currentPlayerInScope?.playbackState == Player.STATE_ENDED
@@ -626,7 +687,42 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     private fun startTimerNextAsset() {
         mainHandler.removeCallbacks(goToNextAssetRunnable)
-        mainHandler.postDelayed(goToNextAssetRunnable, (config.interval * 1000).toLong())
+        val durationMs = (config.interval * 1000).toLong()
+        startImageStoryProgress(durationMs)
+        mainHandler.postDelayed(goToNextAssetRunnable, durationMs)
+    }
+
+    private fun startImageStoryProgress(durationMs: Long) {
+        if (!storyProgressEnabled) return
+        stopStoryProgressAnimation()
+        val index = mPager.currentItem
+        updateStoryProgressChrome(index, progress = 0f)
+        storyProgressAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = durationMs
+            interpolator = LinearInterpolator()
+            addUpdateListener { anim ->
+                updateStoryProgressChrome(index, anim.animatedValue as Float)
+            }
+            start()
+        }
+    }
+
+    private fun startVideoStoryProgress() {
+        if (!storyProgressEnabled || !slideShowPlaying) return
+        mainHandler.removeCallbacks(videoStoryProgressRunnable)
+        updateStoryProgressChrome(mPager.currentItem, progress = 0f)
+        mainHandler.post(videoStoryProgressRunnable)
+    }
+
+    private fun pauseStoryProgress() {
+        storyProgressAnimator?.pause()
+        mainHandler.removeCallbacks(videoStoryProgressRunnable)
+    }
+
+    private fun stopStoryProgressAnimation() {
+        storyProgressAnimator?.cancel()
+        storyProgressAnimator = null
+        mainHandler.removeCallbacks(videoStoryProgressRunnable)
     }
 
     private fun goToNextAsset() {
@@ -686,7 +782,6 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 val sliderItem = config.items[sliderItemIndex]
                 val mainItem = sliderItem.mainItem
 
-                config.onAssetSelected(sliderItem)
                 currentToast?.cancel()
                 if (!sliderItem.hasSecondaryItem() && config.debugEnabled && transformResults.contains(sliderItemIndex)) {
                     currentToast = Toast.makeText(context, transformResults[sliderItemIndex], Toast.LENGTH_LONG)
@@ -729,6 +824,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                         applyDetailsOverlayVisibility()
                     }
                     currentPlayerInScope!!.playWhenReady = true
+                    if (slideShowPlaying) {
+                        startVideoStoryProgress()
+                    }
                 } else {
                     // Keep details if open; dismiss any transport so Left/Right stay on assets.
                     hideVideoController()
@@ -753,11 +851,19 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             }
 
             override fun onPageSelected(i: Int) {
+                // Settled page only — onPageScrolled often skips while currentItem has already
+                // advanced during animated Left/Right, which left timeline leave-off stuck on open.
+                if (i in config.items.indices) {
+                    config.onAssetSelected(config.items[i])
+                }
                 // Load/bind metadata here (once per page), not from onPageScrolled which fires
                 // continuously and previously stamped null states after failed/aborted storms.
                 refreshOverlayMetadata()
                 metaDataLeftAdapter.bind()
                 metaDataRightAdapter.bind()
+                if (storyProgressEnabled) {
+                    updateStoryProgressChrome(i, progress = 0f)
+                }
             }
 
             override fun onPageScrollStateChanged(i: Int) {

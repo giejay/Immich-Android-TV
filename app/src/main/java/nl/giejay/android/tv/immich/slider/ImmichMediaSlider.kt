@@ -38,7 +38,9 @@ class ImmichMediaSlider : MediaSliderFragment() {
         if (bundle.autoPlay) {
             // Same pattern ScreenSaverService uses to auto-start slideshow (mediaslider is a
             // submodule; drive autoplay from here instead of adding config it needs to expose).
-            (view as MediaSliderView).toggleSlideshow(false)
+            val slider = view as MediaSliderView
+            slider.setStoryProgressEnabled(true)
+            slider.toggleSlideshow(false)
         }
     }
 }

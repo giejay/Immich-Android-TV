@@ -80,8 +80,10 @@ class TimelineFocusNavigator(
     }
 
     /**
-     * @param adjustScroll jump-scroll so the asset sits near the upper quarter (slider restore, etc.)
-     * @param lockScroll ignore focus bring-into-view entirely (menu re-entry must not inch)
+     * @param adjustScroll jump-scroll so the asset sits near the upper quarter (menu restore)
+     * @param lockScroll suppress focus-driven bring-into-view ([TimelineMosaicLayoutManager.suppressFocusScroll]).
+     *   Still scrolls with [LinearLayoutManager.scrollToPosition] when the cell is off-screen so
+     *   it can bind — required for slider leave-off ([TimelineLeaveOff.MosaicFocusMode.BindWithoutAdjust]).
      */
     fun focusAsset(
         assetId: String,
@@ -98,11 +100,12 @@ class TimelineFocusNavigator(
             } else {
                 lm?.scrollToPositionWithOffset(position, recyclerView.height / 4)
             }
-        } else if (!lockScroll && lm != null) {
+        } else if (lm != null) {
             val first = lm.findFirstVisibleItemPosition()
             val last = lm.findLastVisibleItemPosition()
-            // Off-screen neighbor has no ViewHolder yet — scroll just enough to bind it so
-            // requestFocus can succeed. On-screen moves rely on requestChildRectangleOnScreen.
+            // Off-screen cell has no ViewHolder — must scrollToPosition to bind before
+            // requestFocus. lockScroll only blocks requestChildRectangleOnScreen nudge,
+            // not this explicit bind (slider exit used to skip this and leave focus nowhere).
             if (first == RecyclerView.NO_POSITION || position !in first..last) {
                 if (smooth) {
                     recyclerView.smoothScrollToPosition(position)
