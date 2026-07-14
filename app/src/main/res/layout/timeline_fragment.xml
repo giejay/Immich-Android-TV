@@ -24,8 +24,16 @@
                 android:clipToPadding="false"
                 android:paddingStart="24dp"
                 android:paddingTop="16dp"
-                android:paddingEnd="48dp"
+                android:paddingEnd="64dp"
                 android:paddingBottom="48dp" />
+
+            <nl.giejay.android.tv.immich.timeline.TimelineScrubberView
+                android:id="@+id/timeline_scrubber"
+                android:layout_width="64dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:focusable="true"
+                android:focusableInTouchMode="true" />
 
             <ProgressBar
                 android:id="@+id/browse_progressbar"

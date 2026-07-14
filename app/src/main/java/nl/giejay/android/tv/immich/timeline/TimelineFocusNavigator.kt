@@ -9,11 +9,13 @@ import nl.giejay.android.tv.immich.R
 /**
  * D-pad navigation over mosaic cells using an explicit neighbor map.
  * Left/Right stay in the visual row; Up/Down use max horizontal overlap.
+ * Right at the end of a row can hand off to the year scrubber.
  */
 class TimelineFocusNavigator(
     private val recyclerView: RecyclerView,
     private val adapter: TimelineMosaicAdapter,
-    private val onFocused: (dayKey: String, assetId: String) -> Unit
+    private val onFocused: (dayKey: String, assetId: String) -> Unit,
+    private val onExitRightToScrubber: (() -> Unit)? = null
 ) {
     var neighbors: Map<String, TimelineFocusNeighbors> = emptyMap()
         private set
@@ -34,8 +36,12 @@ class TimelineFocusNavigator(
             else -> return false
         }
         if (targetId == null) {
-            // Let Browse steal Left/Up at the edge; keep Right/Down from wandering.
-            return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                onExitRightToScrubber?.invoke()
+                return true
+            }
+            // Let Browse steal Left/Up at the edge; keep Down from wandering.
+            return keyCode == KeyEvent.KEYCODE_DPAD_DOWN
         }
         focusAsset(targetId)
         return true

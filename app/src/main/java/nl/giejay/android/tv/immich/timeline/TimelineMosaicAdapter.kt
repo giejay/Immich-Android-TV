@@ -97,6 +97,26 @@ class TimelineMosaicAdapter(
         return itemsSnapshot.drop(adapterPosition).count { it is TimelineMosaicItem.Header }
     }
 
+    /**
+     * First day-header adapter position whose day falls in [monthKey] (`YYYY-MM-01`).
+     */
+    fun positionOfMonth(monthKey: String): Int {
+        val prefix = monthKey.take(7) // YYYY-MM
+        itemsSnapshot.forEachIndexed { index, item ->
+            if (item is TimelineMosaicItem.Header && item.dayKey.startsWith(prefix)) {
+                return index
+            }
+        }
+        return RecyclerView.NO_POSITION
+    }
+
+    fun dayKeyAtAdapterPosition(position: Int): String? =
+        when (val item = itemsSnapshot.getOrNull(position)) {
+            is TimelineMosaicItem.Header -> item.dayKey
+            is TimelineMosaicItem.Row -> item.dayKey
+            null -> null
+        }
+
     private class HeaderVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val text: TextView = itemView as TextView
         fun bind(header: TimelineMosaicItem.Header) {

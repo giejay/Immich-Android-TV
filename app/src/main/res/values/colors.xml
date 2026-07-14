@@ -49,4 +49,9 @@
 
     <color name="progressbarColor">#ffffff</color>
 
+    <!-- Immich-like timeline scrubber accent -->
+    <color name="timeline_scrubber_accent">#4250AF</color>
+    <color name="timeline_scrubber_label">@color/screen_white</color>
+    <color name="timeline_scrubber_dot">@color/screen_white_70</color>
+
 </resources>

@@ -57,8 +57,8 @@ import java.time.LocalDate
 import kotlin.math.roundToInt
 
 /**
- * Vertical Immich-style mosaic timeline: day headers + justified asset rows.
- * Hosted inside Browse as a [BrowseSupportFragment.MainFragmentAdapterProvider].
+ * Vertical Immich-style mosaic timeline: day headers + justified asset rows,
+ * with a right-edge year/month scrubber for fast D-pad jumps.
  */
 class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
 
@@ -67,6 +67,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
     private var recyclerView: RecyclerView? = null
     private var progressBar: ProgressBar? = null
+    private var scrubberView: TimelineScrubberView? = null
     private var mosaicAdapter: TimelineMosaicAdapter? = null
     private var focusNavigator: TimelineFocusNavigator? = null
 
@@ -76,6 +77,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private var contentWidthPx = 0
     private var rowHeightPx = 0
     private var gapPx = 0
+
+    /** Month key waiting for assets after a scrubber jump (`YYYY-MM-01`). */
+    private var pendingJumpMonth: String? = null
+    private val jumpHandler = Handler(Looper.getMainLooper())
+    private val jumpRunnable = Runnable {
+        val month = pendingJumpMonth ?: return@Runnable
+        executeJump(month)
+    }
 
     private val mainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
         object : BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {}
@@ -121,15 +130,18 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         super.onViewCreated(view, savedInstanceState)
         if (!::viewModel.isInitialized) return
         clearBackground()
-        // Keep Browse's own title chrome off the mosaic; "Timeline" lives in the left headers.
         showTitle(false)
         mainFragmentAdapter.fragmentHost?.showTitleView(false)
 
         progressBar = view.findViewById(R.id.browse_progressbar)
         recyclerView = view.findViewById(R.id.timeline_recycler)
+        scrubberView = view.findViewById(R.id.timeline_scrubber)
 
         gapPx = dp(6)
         rowHeightPx = dp(180)
+
+        scrubberView?.onStopSelected = { monthKey -> scheduleJump(monthKey) }
+        scrubberView?.onExitLeft = { returnFocusFromScrubber() }
 
         val adapter = TimelineMosaicAdapter(
             gapPx = gapPx,
@@ -141,6 +153,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 focusNavigator?.onCellFocused(cell.dayKey, cell.asset.id)
                 viewModel.prefetchAroundDay(cell.dayKey)
                 viewModel.rememberSelection(cell.dayKey, cell.asset.id)
+                scrubberView?.setIndicatorMonthKey(TimelineViewModel.monthBucketKey(cell.dayKey.let { LocalDate.parse(it) }))
             },
             onCellKey = { v, keyCode, event ->
                 focusNavigator?.onCellKey(v, keyCode, event) == true
@@ -154,20 +167,36 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         rv.setHasFixedSize(false)
         rv.itemAnimator = null
 
-        focusNavigator = TimelineFocusNavigator(rv, adapter) { dayKey, assetId ->
-            viewModel.prefetchAroundDay(dayKey)
-            viewModel.rememberSelection(dayKey, assetId)
-        }
+        focusNavigator = TimelineFocusNavigator(
+            rv,
+            adapter,
+            onFocused = { dayKey, assetId ->
+                viewModel.prefetchAroundDay(dayKey)
+                viewModel.rememberSelection(dayKey, assetId)
+            },
+            onExitRightToScrubber = { focusScrubberFromMosaic() }
+        )
 
         rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 maybeLoadMoreNearEnd()
+                updateScrubberFromVisibleMonth()
             }
         })
 
         val frame = view.findViewById<BrowseFrameLayout>(R.id.timeline_frame)
         frame.onFocusSearchListener = BrowseFrameLayout.OnFocusSearchListener { focused, direction ->
-            if (focused?.getTag(R.id.timeline_mosaic_cell_asset_id) == null) return@OnFocusSearchListener null
+            if (focused is TimelineScrubberView) {
+                return@OnFocusSearchListener if (direction == View.FOCUS_LEFT) {
+                    returnFocusFromScrubber()
+                    focused
+                } else {
+                    focused
+                }
+            }
+            if (focused?.getTag(R.id.timeline_mosaic_cell_asset_id) == null) {
+                return@OnFocusSearchListener null
+            }
             val assetId = focused.getTag(R.id.timeline_mosaic_cell_asset_id) as? String
                 ?: return@OnFocusSearchListener null
             val n = focusNavigator?.neighbors?.get(assetId) ?: return@OnFocusSearchListener null
@@ -178,13 +207,17 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 View.FOCUS_DOWN -> n.downAssetId
                 else -> null
             }
-            if (targetId != null) {
-                focusNavigator?.focusAsset(targetId)
-                focused // keep current until post-focus lands
-            } else if (direction == View.FOCUS_RIGHT || direction == View.FOCUS_DOWN) {
-                focused
-            } else {
-                null
+            when {
+                targetId != null -> {
+                    focusNavigator?.focusAsset(targetId)
+                    focused
+                }
+                direction == View.FOCUS_RIGHT -> {
+                    focusScrubberFromMosaic()
+                    focused
+                }
+                direction == View.FOCUS_DOWN -> focused
+                else -> null
             }
         }
 
@@ -203,8 +236,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     }
                 }
                 launch {
+                    viewModel.buckets.collect { buckets ->
+                        scrubberView?.setBuckets(buckets)
+                    }
+                }
+                launch {
                     viewModel.error.collect { message ->
                         if (message != null && isAdded) {
+                            progressBar?.visibility = View.GONE
                             Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
                             viewModel.clearError()
                         }
@@ -225,9 +264,11 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     override fun onDestroyView() {
+        jumpHandler.removeCallbacks(jumpRunnable)
         super.onDestroyView()
         recyclerView = null
         progressBar = null
+        scrubberView = null
         mosaicAdapter = null
         focusNavigator = null
     }
@@ -237,9 +278,96 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         if (!backgroundManager.isAttached) {
             backgroundManager.attach(requireActivity().window)
         }
-        // Solid theme background — never show hovered asset photos behind the mosaic.
         backgroundManager.drawable = ColorDrawable(
             ContextCompat.getColor(requireContext(), R.color.gray_dark)
+        )
+    }
+
+    private fun scheduleJump(monthKey: String) {
+        pendingJumpMonth = monthKey
+        jumpHandler.removeCallbacks(jumpRunnable)
+        jumpHandler.postDelayed(jumpRunnable, JUMP_DEBOUNCE_MS)
+    }
+
+    private fun executeJump(monthKey: String) {
+        if (!isAdded) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            viewModel.loadBucket(monthKey)
+            val list = viewModel.buckets.value
+            val index = list.indexOfFirst { it.timeBucket == monthKey }
+            if (index >= 0) {
+                list.getOrNull(index - 1)?.let { viewModel.loadBucket(it.timeBucket) }
+                list.getOrNull(index + 1)?.let { viewModel.loadBucket(it.timeBucket) }
+            }
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
+                if (!scrollToMonth(monthKey)) {
+                    // Keep pendingJumpMonth; bindDays will retry once assets arrive.
+                    pendingJumpMonth = monthKey
+                }
+            }
+        }
+    }
+
+    private fun scrollToMonth(monthKey: String): Boolean {
+        val adapter = mosaicAdapter ?: return false
+        val rv = recyclerView ?: return false
+        val position = adapter.positionOfMonth(monthKey)
+        if (position == RecyclerView.NO_POSITION) return false
+        pendingJumpMonth = null
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return false
+        lm.scrollToPositionWithOffset(position, dp(24))
+        scrubberView?.setIndicatorMonthKey(monthKey)
+        return true
+    }
+
+    private fun focusScrubberFromMosaic() {
+        val focused = recyclerView?.findFocus()
+        val dayKey = focused?.getTag(R.id.timeline_mosaic_cell_day_key) as? String
+            ?: viewModel.lastSelectedDayKey
+        val monthKey = dayKey?.let {
+            runCatching { TimelineViewModel.monthBucketKey(LocalDate.parse(it)) }.getOrNull()
+        }
+        scrubberView?.prepareFocusForMonth(monthKey)
+        scrubberView?.requestFocus()
+    }
+
+    private fun returnFocusFromScrubber() {
+        val navigator = focusNavigator ?: return
+        val monthKey = scrubberView?.selectedMonthKey()
+        val adapter = mosaicAdapter ?: return
+
+        val preferredAsset = viewModel.lastSelectedAssetId
+        if (preferredAsset != null && adapter.positionOfAsset(preferredAsset) >= 0) {
+            val day = viewModel.lastSelectedDayKey
+            if (day != null && monthKey != null && day.startsWith(monthKey.take(7))) {
+                navigator.focusAsset(preferredAsset, smooth = false)
+                return
+            }
+        }
+        if (monthKey != null) {
+            val assetId = viewModel.flatAssetIndex()
+                .firstOrNull { it.first.startsWith(monthKey.take(7)) }
+                ?.second
+                ?.id
+            if (assetId != null) {
+                navigator.focusAsset(assetId, smooth = false)
+                return
+            }
+        }
+        adapter.firstAssetId()?.let { navigator.focusAsset(it, smooth = false) }
+    }
+
+    private fun updateScrubberFromVisibleMonth() {
+        if (scrubberView?.hasFocus() == true) return
+        val rv = recyclerView ?: return
+        val adapter = mosaicAdapter ?: return
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return
+        val first = lm.findFirstVisibleItemPosition()
+        if (first == RecyclerView.NO_POSITION) return
+        val dayKey = adapter.dayKeyAtAdapterPosition(first) ?: return
+        scrubberView?.setIndicatorMonthKey(
+            TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey))
         )
     }
 
@@ -284,10 +412,11 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             }
             val hasCellFocus =
                 recyclerView?.findFocus()?.getTag(R.id.timeline_mosaic_cell_asset_id) != null
-            if (!hasCellFocus) {
+            if (!hasCellFocus && scrubberView?.hasFocus() != true) {
                 selectionRestored = false
             }
             restoreSelectionIfNeeded()
+            pendingJumpMonth?.let { scrollToMonth(it) }
             loadingNextBucket = false
         }
     }
@@ -299,7 +428,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
         val assetId = viewModel.lastSelectedAssetId
         if (assetId == null) {
-            // Leave focus on Browse headers so the left menu stays visible on cold start.
             selectionRestored = true
             return
         }
@@ -394,6 +522,10 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             value.toFloat(),
             resources.displayMetrics
         ).roundToInt()
+
+    companion object {
+        private const val JUMP_DEBOUNCE_MS = 200L
+    }
 }
 
 class TimelineViewModelFactory(
