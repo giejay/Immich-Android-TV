@@ -72,14 +72,8 @@ class TimelineMosaicAdapter(
         super.onViewRecycled(holder)
     }
 
-    fun positionOfAsset(assetId: String): Int {
-        itemsSnapshot.forEachIndexed { index, item ->
-            if (item is TimelineMosaicItem.Row && item.cells.any { it.asset.id == assetId }) {
-                return index
-            }
-        }
-        return RecyclerView.NO_POSITION
-    }
+    fun positionOfAsset(assetId: String): Int =
+        TimelineMosaicIndex.positionOfAsset(itemsSnapshot, assetId)
 
     fun hasMemoriesRow(): Boolean =
         itemsSnapshot.firstOrNull() is TimelineMosaicItem.MemoriesRow
@@ -105,12 +99,7 @@ class TimelineMosaicAdapter(
 
     /** Right-most cell in the first row for [dayKey] — natural entry from the scrubber. */
     fun rightmostAssetIdForDay(dayKey: String): String? =
-        itemsSnapshot.filterIsInstance<TimelineMosaicItem.Row>()
-            .firstOrNull { it.dayKey == dayKey }
-            ?.cells
-            ?.lastOrNull()
-            ?.asset
-            ?.id
+        TimelineMosaicIndex.rightmostAssetIdForDay(itemsSnapshot, dayKey)
 
     /** Right-most cell of the first mosaic row in the list. */
     fun firstRowRightmostAssetId(): String? =
@@ -123,7 +112,7 @@ class TimelineMosaicAdapter(
 
     fun findCellView(recyclerView: RecyclerView, assetId: String): View? {
         val position = positionOfAsset(assetId)
-        if (position == RecyclerView.NO_POSITION) return null
+        if (position == TimelineMosaicIndex.NO_POSITION) return null
         val holder = recyclerView.findViewHolderForAdapterPosition(position) as? RowVH ?: return null
         return holder.cellViews[assetId]
     }
@@ -132,14 +121,12 @@ class TimelineMosaicAdapter(
         for (i in itemsSnapshot.indices.reversed()) {
             if (itemsSnapshot[i] is TimelineMosaicItem.Row) return i
         }
-        return RecyclerView.NO_POSITION
+        return TimelineMosaicIndex.NO_POSITION
     }
 
     /** Approximate countdown of remaining day headers from [adapterPosition]. */
-    fun remainingDayHeadersFrom(adapterPosition: Int): Int {
-        if (adapterPosition < 0) return 0
-        return itemsSnapshot.drop(adapterPosition).count { it is TimelineMosaicItem.Header }
-    }
+    fun remainingDayHeadersFrom(adapterPosition: Int): Int =
+        TimelineMosaicIndex.remainingDayHeadersFrom(itemsSnapshot, adapterPosition)
 
     /**
      * Adapter position for a scrubber jump.
@@ -148,28 +135,11 @@ class TimelineMosaicAdapter(
      * bucket). Fall back to the first header whose day sits in the same YYYY-MM as
      * [monthKey] — which can miss when local dates straddle the UTC month boundary.
      */
-    fun positionForScrubberMonth(monthKey: String, preferredDayKey: String?): Int {
-        if (preferredDayKey != null) {
-            val exact = positionOfDay(preferredDayKey)
-            if (exact != RecyclerView.NO_POSITION) return exact
-        }
-        val prefix = monthKey.take(7) // YYYY-MM
-        itemsSnapshot.forEachIndexed { index, item ->
-            if (item is TimelineMosaicItem.Header && item.dayKey.startsWith(prefix)) {
-                return index
-            }
-        }
-        return RecyclerView.NO_POSITION
-    }
+    fun positionForScrubberMonth(monthKey: String, preferredDayKey: String?): Int =
+        TimelineMosaicIndex.positionForScrubberMonth(itemsSnapshot, monthKey, preferredDayKey)
 
-    fun positionOfDay(dayKey: String): Int {
-        itemsSnapshot.forEachIndexed { index, item ->
-            if (item is TimelineMosaicItem.Header && item.dayKey == dayKey) {
-                return index
-            }
-        }
-        return RecyclerView.NO_POSITION
-    }
+    fun positionOfDay(dayKey: String): Int =
+        TimelineMosaicIndex.positionOfDay(itemsSnapshot, dayKey)
 
     /** @see positionForScrubberMonth */
     fun positionOfMonth(monthKey: String): Int =

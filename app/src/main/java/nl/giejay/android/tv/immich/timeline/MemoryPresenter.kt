@@ -71,7 +71,7 @@ class MemoryPresenter(
 
     companion object {
         fun yearsAgoLabel(context: Context, memory: Memory): String {
-            val years = Year.now().value - memory.data.year
+            val years = MemoryLabels.yearsAgo(Year.now().value, memory.data.year)
             return context.resources.getQuantityString(
                 R.plurals.years_ago, years, years
             )

@@ -192,6 +192,17 @@ class TimelineViewModel(
     }
 
     /**
+     * Next month bucket after [bucketKey] in the newest-first list (older in calendar time).
+     * Used by slider load-more so paging continues from the oldest asset already shown —
+     * never from the first global unloaded gap near today.
+     */
+    fun nextBucketAfter(bucketKey: String): TimeBucketSummary? {
+        val afterIndex = _buckets.value.indexOfFirst { it.timeBucket == bucketKey }
+        if (afterIndex < 0) return null
+        return _buckets.value.getOrNull(afterIndex + 1)
+    }
+
+    /**
      * Immich UTC month bucket that owns [assetId], if that bucket is loaded.
      * Preferred over local calendar month when syncing the scrubber.
      */

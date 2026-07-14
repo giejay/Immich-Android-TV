@@ -14,6 +14,7 @@ import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -222,6 +223,202 @@ class TimelineViewModelTest {
 
         // Closest newer unloaded month above July 2006 is August 2006, not a 2026 gap.
         assertEquals("2006-08-01", vm.nextNewerUnloadedBucket("2006-07-15")?.timeBucket)
+    }
+
+    @Test
+    fun `nextOlder and nextNewer return null when contiguous island has no gap`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(
+                    listOf(
+                        TimeBucketSummary("2026-07-01", 1),
+                        TimeBucketSummary("2026-06-01", 1),
+                        TimeBucketSummary("2026-05-01", 1)
+                    )
+                )
+            },
+            fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
+            prefetchDebounceMs = 0
+        )
+        vm.loadBucketList(eagerMonths = 3)
+        advanceUntilIdle()
+
+        assertNull(vm.nextOlderUnloadedBucket())
+        assertNull(vm.nextNewerUnloadedBucket("2026-05-15"))
+        assertNull(vm.nextUnloadedBucket())
+    }
+
+    @Test
+    fun `nextBucketAfter pages older than slider cursor never first global gap`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(
+                    listOf(
+                        TimeBucketSummary("2026-07-01", 1),
+                        TimeBucketSummary("2026-06-01", 1),
+                        TimeBucketSummary("2026-05-01", 1),
+                        TimeBucketSummary("2005-03-01", 1)
+                    )
+                )
+            },
+            fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
+            prefetchDebounceMs = 0
+        )
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+        vm.loadBucket("2005-03-01")
+        advanceUntilIdle()
+
+        // Global gap is still June; slider at historic island must continue to May (via after Jul? No —
+        // after 2005-03 there is nothing). After June when only Jul loaded: May is not next after Jul.
+        assertEquals("2026-06-01", vm.nextBucketAfter("2026-07-01")?.timeBucket)
+        assertEquals("2026-05-01", vm.nextBucketAfter("2026-06-01")?.timeBucket)
+        assertNull(vm.nextBucketAfter("2005-03-01"))
+        assertNull(vm.nextBucketAfter("missing"))
+    }
+
+    @Test
+    fun `rememberSelection and rememberSelectionByAssetId round trip`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(listOf(TimeBucketSummary("2026-07-01", 2)))
+            },
+            fetchBucket = {
+                Either.Right(
+                    listOf(
+                        asset("a", "2026-07-02T12:00:00Z"),
+                        asset("b", "2026-07-01T12:00:00Z")
+                    )
+                )
+            },
+            prefetchDebounceMs = 0
+        )
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+
+        vm.rememberSelection("2026-07-02", "a")
+        assertEquals("2026-07-02", vm.lastSelectedDayKey)
+        assertEquals("a", vm.lastSelectedAssetId)
+
+        vm.pendingResumeAssetId = "a"
+        assertEquals("a", vm.pendingResumeAssetId)
+        vm.pendingResumeAssetId = null
+        assertNull(vm.pendingResumeAssetId)
+
+        vm.rememberSelectionByAssetId("b")
+        assertEquals("2026-07-01", vm.lastSelectedDayKey)
+        assertEquals("b", vm.lastSelectedAssetId)
+    }
+
+    @Test
+    fun `prefetchAroundDay loads focus month plus neighbors`() = runTest {
+        val fetches = AtomicInteger(0)
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(
+                    listOf(
+                        TimeBucketSummary("2026-07-01", 1),
+                        TimeBucketSummary("2026-06-01", 1),
+                        TimeBucketSummary("2026-05-01", 1),
+                        TimeBucketSummary("2026-04-01", 1)
+                    )
+                )
+            },
+            fetchBucket = { key ->
+                fetches.incrementAndGet()
+                Either.Right(listOf(asset("$key-a", createdAt = "${key.take(8)}15T12:00:00Z")))
+            },
+            prefetchDebounceMs = 0
+        )
+        // Do not eager-load; only populate bucket list.
+        vm.loadBucketList(eagerMonths = 0)
+        advanceUntilIdle()
+        assertEquals(0, fetches.get())
+
+        vm.prefetchAroundDay("2026-06-15")
+        // Debouncer runs on its own scheduler; give it a beat then drain Main.
+        Thread.sleep(80)
+        advanceUntilIdle()
+
+        assertTrue(vm.bucketAssets.value.containsKey("2026-06-01"))
+        assertTrue(vm.bucketAssets.value.containsKey("2026-07-01"))
+        assertTrue(vm.bucketAssets.value.containsKey("2026-05-01"))
+        assertTrue("2026-04-01" !in vm.bucketAssets.value)
+    }
+
+    @Test
+    fun `loadMemories sets memoriesReady on success and error`() = runTest {
+        val ok = TimelineViewModel(
+            fetchBuckets = { Either.Right(emptyList()) },
+            fetchBucket = { Either.Right(emptyList()) },
+            fetchMemories = {
+                Either.Right(
+                    listOf(
+                        nl.giejay.android.tv.immich.api.model.Memory(
+                            id = "m1",
+                            type = "on_this_day",
+                            memoryAt = java.util.Date(),
+                            data = nl.giejay.android.tv.immich.api.model.MemoryData(year = 2020),
+                            assets = emptyList()
+                        )
+                    )
+                )
+            },
+            prefetchDebounceMs = 0
+        )
+        ok.loadMemories()
+        advanceUntilIdle()
+        assertTrue(ok.memoriesReady.value)
+        assertEquals(1, ok.memories.value.size)
+
+        val fail = TimelineViewModel(
+            fetchBuckets = { Either.Right(emptyList()) },
+            fetchBucket = { Either.Right(emptyList()) },
+            fetchMemories = { Either.Left("boom") },
+            prefetchDebounceMs = 0
+        )
+        fail.loadMemories()
+        advanceUntilIdle()
+        assertTrue(fail.memoriesReady.value)
+        assertTrue(fail.memories.value.isEmpty())
+        assertEquals("boom", fail.error.value)
+    }
+
+    @Test
+    fun `loadBucketList is idempotent`() = runTest {
+        val fetches = AtomicInteger(0)
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                fetches.incrementAndGet()
+                Either.Right(listOf(TimeBucketSummary("2026-07-01", 1)))
+            },
+            fetchBucket = { Either.Right(listOf(asset("a"))) },
+            prefetchDebounceMs = 0
+        )
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+        assertEquals(1, fetches.get())
+    }
+
+    @Test
+    fun `bucketKeyForAsset and resolveBucketKey fuzzy YearMonth`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(listOf(TimeBucketSummary("2022-01-01", 1)))
+            },
+            fetchBucket = {
+                Either.Right(listOf(asset("x", "2022-01-15T12:00:00Z")))
+            },
+            prefetchDebounceMs = 0
+        )
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+
+        assertEquals("2022-01-01", vm.bucketKeyForAsset("x"))
+        assertEquals("2022-01-01", vm.resolveBucketKey("2022-01"))
+        assertEquals("2022-01-01", vm.resolveBucketKey("2022-01-15"))
     }
 
     @Test

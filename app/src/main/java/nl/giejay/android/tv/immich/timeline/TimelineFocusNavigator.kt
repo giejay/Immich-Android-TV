@@ -31,36 +31,31 @@ class TimelineFocusNavigator(
     fun onCellKey(view: View, keyCode: Int, event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN) return false
         val assetId = view.getTag(R.id.timeline_mosaic_cell_asset_id) as? String ?: return false
-        val n = neighbors[assetId] ?: return false
-        val targetId = when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_LEFT -> n.leftAssetId
-            KeyEvent.KEYCODE_DPAD_RIGHT -> n.rightAssetId
-            KeyEvent.KEYCODE_DPAD_UP -> n.upAssetId
-            KeyEvent.KEYCODE_DPAD_DOWN -> n.downAssetId
-            else -> return false
-        }
-        if (targetId == null) {
-            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                onExitRightToScrubber?.invoke()
-                return true
+        val action = TimelineFocusActions.resolve(keyCode, neighbors[assetId])
+        return when (action) {
+            is TimelineFocusAction.Move -> {
+                focusAsset(action.assetId, adjustScroll = false, lockScroll = false)
+                true
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+            TimelineFocusAction.ExitScrubber -> {
+                onExitRightToScrubber?.invoke()
+                true
+            }
+            TimelineFocusAction.LoadOlder -> {
                 // End of currently built mosaic — request older months (focus doesn't scroll,
                 // so onScrolled alone never fires load-more here).
                 onReachContentEnd?.invoke()
-                return true
+                true
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            TimelineFocusAction.LoadNewer -> {
                 // Gap above current island (unloaded months) or true top — try bridging newer.
                 onReachContentStart?.invoke()
                 // Consume so Browse headers don't steal focus while we fill the gap.
-                return onReachContentStart != null
+                onReachContentStart != null
             }
-            // Let Browse steal Left at the edge.
-            return false
+            TimelineFocusAction.Pass -> false
+            TimelineFocusAction.Ignore -> false
         }
-        focusAsset(targetId, adjustScroll = false, lockScroll = false)
-        return true
     }
 
     fun onCellFocused(dayKey: String, assetId: String) {

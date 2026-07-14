@@ -879,10 +879,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
         val loadMore: LoadMore = suspend loadMore@{
             val afterKey = lastBucketKey ?: return@loadMore emptyList()
-            val buckets = viewModel.buckets.value
-            val afterIndex = buckets.indexOfFirst { it.timeBucket == afterKey }
-            if (afterIndex < 0) return@loadMore emptyList()
-            val next = buckets.getOrNull(afterIndex + 1) ?: return@loadMore emptyList()
+            val next = viewModel.nextBucketAfter(afterKey) ?: return@loadMore emptyList()
             val knownIds = viewModel.flatAssetIndex().map { it.second.id }.toSet()
             viewModel.loadBucket(next.timeBucket)
             lastBucketKey = next.timeBucket

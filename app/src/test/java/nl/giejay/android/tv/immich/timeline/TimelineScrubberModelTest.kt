@@ -108,4 +108,24 @@ class TimelineScrubberModelTest {
             TimelineScrubberModel.formatMonthYear("2022-07-01", java.util.Locale.US)
         )
     }
+
+    @Test
+    fun `indexNearestFraction picks closest stop`() {
+        val stops = TimelineScrubberModel.buildStops(
+            listOf(
+                TimeBucketSummary("2026-07-01", 10),
+                TimeBucketSummary("2026-06-01", 10),
+                TimeBucketSummary("2026-05-01", 10)
+            ),
+            railContentHeightPx = 300
+        )
+        assertTrue(stops.size >= 2)
+        val mid = (stops[0].fraction + stops[1].fraction) / 2f
+        val nearest = TimelineScrubberModel.indexNearestFraction(stops, mid)
+        assertTrue(nearest == 0 || nearest == 1)
+        // Slightly closer to first stop → index 0.
+        val closerToFirst = stops[0].fraction + (stops[1].fraction - stops[0].fraction) * 0.25f
+        assertEquals(0, TimelineScrubberModel.indexNearestFraction(stops, closerToFirst))
+        assertEquals(-1, TimelineScrubberModel.indexNearestFraction(emptyList(), 0.5f))
+    }
 }

@@ -184,4 +184,14 @@ class TimelineMosaicLayoutEngineTest {
             TimelineMosaicLayoutEngine.isVerticalNeighborAllowed("2006-07-01", "2026-02-15")
         )
     }
+
+    @Test
+    fun `isVerticalNeighborAllowed at MAX_VERTICAL_MONTH_GAP boundary`() {
+        assertTrue(
+            TimelineMosaicLayoutEngine.isVerticalNeighborAllowed("2026-07-01", "2026-01-01")
+        )
+        assertFalse(
+            TimelineMosaicLayoutEngine.isVerticalNeighborAllowed("2026-07-01", "2025-12-01")
+        )
+    }
 }
