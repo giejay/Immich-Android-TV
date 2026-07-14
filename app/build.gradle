@@ -127,8 +127,9 @@ dependencies {
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.2'
     implementation group: 'io.reactivex.rxjava3', name: 'rxjava', version: '3.1.8'
 
-    // Exoplayer for playback
+    // Exoplayer for playback (timeline focus preview + slider)
     implementation 'androidx.media3:media3-exoplayer:1.7.1'
+    implementation 'androidx.media3:media3-ui:1.7.1'
 
     implementation "com.android.billingclient:billing-ktx:8.0.0"
 

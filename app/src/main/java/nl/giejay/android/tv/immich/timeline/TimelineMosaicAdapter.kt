@@ -16,7 +16,9 @@ import nl.giejay.android.tv.immich.api.util.ApiUtil
 class TimelineMosaicAdapter(
     private val gapPx: Int,
     private val onCellClick: (TimelineMosaicCell) -> Unit,
-    private val onCellFocus: (TimelineMosaicCell) -> Unit,
+    private val onCellFocus: (TimelineMosaicCell, View) -> Unit,
+    private val onCellBlur: (TimelineMosaicCell, View) -> Unit,
+    private val onCellDetached: (View) -> Unit,
     private val onCellKey: (View, Int, android.view.KeyEvent) -> Boolean
 ) : ListAdapter<TimelineMosaicItem, RecyclerView.ViewHolder>(Diff) {
 
@@ -156,6 +158,17 @@ class TimelineMosaicAdapter(
             null -> null
         }
 
+    fun firstAssetIdAtAdapterPosition(position: Int): String? {
+        // Prefer the row itself; if landing on a header, use the following row.
+        for (i in position until itemsSnapshot.size) {
+            val item = itemsSnapshot[i]
+            if (item is TimelineMosaicItem.Row) {
+                return item.cells.firstOrNull()?.asset?.id
+            }
+        }
+        return null
+    }
+
     private class HeaderVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val text: TextView = itemView as TextView
         fun bind(header: TimelineMosaicItem.Header) {
@@ -169,6 +182,7 @@ class TimelineMosaicAdapter(
 
         fun clearImages() {
             cellViews.values.forEach { cellRoot ->
+                onCellDetached(cellRoot)
                 val image = cellRoot.findViewById<ImageView>(R.id.timeline_mosaic_image)
                 Glide.with(image).clear(image)
             }
@@ -182,6 +196,9 @@ class TimelineMosaicAdapter(
             rowItem.cells.forEachIndexed { index, cell ->
                 val cellRoot = inflater.inflate(R.layout.timeline_mosaic_cell, row, false)
                 val image = cellRoot.findViewById<ImageView>(R.id.timeline_mosaic_image)
+                val videoBadge = cellRoot.findViewById<View>(R.id.timeline_mosaic_video_badge)
+                val videoDuration = cellRoot.findViewById<TextView>(R.id.timeline_mosaic_video_duration)
+                val videoPlayPause = cellRoot.findViewById<ImageView>(R.id.timeline_mosaic_video_play_pause)
                 val lp = LinearLayout.LayoutParams(cell.widthPx, cell.heightPx)
                 if (index > 0) lp.marginStart = gapPx
                 cellRoot.layoutParams = lp
@@ -196,9 +213,23 @@ class TimelineMosaicAdapter(
                         .setDuration(120)
                         .start()
                     v.elevation = if (hasFocus) 8f else 0f
-                    if (hasFocus) onCellFocus(cell)
+                    if (!cell.asset.isImage) {
+                        videoPlayPause.setImageResource(
+                            if (hasFocus) R.drawable.ic_video_badge_pause else R.drawable.ic_video_badge_play
+                        )
+                    }
+                    if (hasFocus) onCellFocus(cell, v) else onCellBlur(cell, v)
                 }
                 cellRoot.setOnKeyListener { v, keyCode, event -> onCellKey(v, keyCode, event) }
+
+                if (cell.asset.isImage) {
+                    videoBadge.visibility = View.GONE
+                } else {
+                    videoBadge.visibility = View.VISIBLE
+                    val totalSeconds = TimelineVideoDuration.parseSeconds(cell.asset.duration) ?: 0L
+                    videoDuration.text = TimelineVideoDuration.format(totalSeconds)
+                    videoPlayPause.setImageResource(R.drawable.ic_video_badge_play)
+                }
 
                 val url = ApiUtil.getThumbnailUrl(cell.asset.id, "thumbnail")
                 Glide.with(image)

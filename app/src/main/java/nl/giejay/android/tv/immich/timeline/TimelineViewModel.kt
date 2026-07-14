@@ -125,6 +125,15 @@ class TimelineViewModel(
     }
 
     /**
+     * Immich UTC month bucket that owns [assetId], if that bucket is loaded.
+     * Preferred over local calendar month when syncing the scrubber.
+     */
+    fun bucketKeyForAsset(assetId: String): String? =
+        _bucketAssets.value.entries.firstOrNull { (_, assets) ->
+            assets.any { it.id == assetId }
+        }?.key
+
+    /**
      * Resolve an Immich bucket key for a scrubber/month token. Matches by calendar
      * [YearMonth] so normalized `YYYY-MM-01` finds API keys that may differ slightly.
      */

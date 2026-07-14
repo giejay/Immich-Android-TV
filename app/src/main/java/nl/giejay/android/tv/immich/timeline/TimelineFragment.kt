@@ -71,6 +71,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private var scrubberView: TimelineScrubberView? = null
     private var mosaicAdapter: TimelineMosaicAdapter? = null
     private var focusNavigator: TimelineFocusNavigator? = null
+    private var focusVideoPreview: TimelineFocusVideoPreview? = null
 
     private var selectionRestored = false
     private var dataReadyNotified = false
@@ -89,6 +90,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
      * otherwise leave February visible after an Enter jump to January.
      */
     private var stickyJumpBucketKey: String? = null
+    /** True after Up/Down on the scrubber while focused — Left should commit a jump. */
+    private var scrubberPreviewMoved = false
 
     private val mainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
         object : BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {}
@@ -149,7 +152,10 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         }
         scrubberView?.onPreviewMoved = {
             stickyJumpBucketKey = null
+            scrubberPreviewMoved = true
         }
+
+        focusVideoPreview = TimelineFocusVideoPreview(requireContext())
 
         val adapter = TimelineMosaicAdapter(
             gapPx = gapPx,
@@ -157,11 +163,18 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 viewModel.rememberSelection(cell.dayKey, cell.asset.id)
                 onItemClicked(cell.asset.id)
             },
-            onCellFocus = { cell ->
+            onCellFocus = { cell, cellView ->
                 focusNavigator?.onCellFocused(cell.dayKey, cell.asset.id)
                 viewModel.prefetchAroundDay(cell.dayKey)
                 viewModel.rememberSelection(cell.dayKey, cell.asset.id)
-                scrubberView?.setIndicatorMonthKey(TimelineViewModel.monthBucketKey(cell.dayKey.let { LocalDate.parse(it) }))
+                syncScrubberToAsset(cell.asset.id, cell.dayKey)
+                focusVideoPreview?.onCellFocus(cell, cellView)
+            },
+            onCellBlur = { cell, _ ->
+                focusVideoPreview?.onCellBlur(cell)
+            },
+            onCellDetached = { cellView ->
+                focusVideoPreview?.onHostDetached(cellView)
             },
             onCellKey = { v, keyCode, event ->
                 focusNavigator?.onCellKey(v, keyCode, event) == true
@@ -273,7 +286,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         restoreSelectionIfNeeded()
     }
 
+    override fun onPause() {
+        focusVideoPreview?.pause()
+        super.onPause()
+    }
+
     override fun onDestroyView() {
+        focusVideoPreview?.release()
+        focusVideoPreview = null
         super.onDestroyView()
         recyclerView = null
         progressBar = null
@@ -283,6 +303,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         pendingJumpMonth = null
         pendingJumpFocus = false
         stickyJumpBucketKey = null
+        scrubberPreviewMoved = false
     }
 
     private fun clearBackground() {
@@ -300,15 +321,26 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         if (!isAdded) return
         val bucketKey = viewModel.resolveBucketKey(monthKey) ?: monthKey
 
+        // Accidental scrubber focus: Left returns to the current mosaic cell without jumping.
+        if (exitToMosaic && !scrubberPreviewMoved && stickyJumpBucketKey == null) {
+            scrubberPreviewMoved = false
+            pendingJumpMonth = null
+            pendingJumpFocus = false
+            returnFocusToLastMosaicCell()
+            return
+        }
+
         // Enter already scrolled the mosaic; Left should only hand off focus — no second scroll.
         if (exitToMosaic && stickyJumpBucketKey == bucketKey) {
             stickyJumpBucketKey = null
+            scrubberPreviewMoved = false
             pendingJumpMonth = null
             pendingJumpFocus = false
             returnFocusFromScrubber()
             return
         }
 
+        scrubberPreviewMoved = false
         pendingJumpMonth = bucketKey
         pendingJumpFocus = exitToMosaic
         // Enter: keep re-anchoring after neighbor loads insert content above the target.
@@ -368,18 +400,41 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         if (!pendingJumpFocus) return
         pendingJumpFocus = false
         stickyJumpBucketKey = null
+        scrubberPreviewMoved = false
         returnFocusFromScrubber()
     }
 
     private fun focusScrubberFromMosaic() {
+        scrubberPreviewMoved = false
         val focused = recyclerView?.findFocus()
+        val assetId = focused?.getTag(R.id.timeline_mosaic_cell_asset_id) as? String
+            ?: viewModel.lastSelectedAssetId
         val dayKey = focused?.getTag(R.id.timeline_mosaic_cell_day_key) as? String
             ?: viewModel.lastSelectedDayKey
-        val monthKey = dayKey?.let {
-            runCatching { TimelineViewModel.monthBucketKey(LocalDate.parse(it)) }.getOrNull()
+        val monthKey = when {
+            assetId != null -> viewModel.bucketKeyForAsset(assetId)
+            dayKey != null -> runCatching {
+                TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey))
+            }.getOrNull()
+            else -> null
         }
         scrubberView?.prepareFocusForMonth(monthKey)
         scrubberView?.requestFocus()
+    }
+
+    /** Restore the cell that had focus before the scrubber — no scroll. */
+    private fun returnFocusToLastMosaicCell() {
+        val navigator = focusNavigator ?: return
+        val assetId = viewModel.lastSelectedAssetId ?: run {
+            returnFocusFromScrubber()
+            return
+        }
+        val position = mosaicAdapter?.positionOfAsset(assetId) ?: RecyclerView.NO_POSITION
+        if (position >= 0) {
+            navigator.focusAsset(assetId, smooth = false, adjustScroll = false)
+            return
+        }
+        returnFocusFromScrubber()
     }
 
     /**
@@ -408,6 +463,15 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         }
     }
 
+    private fun syncScrubberToAsset(assetId: String, dayKey: String) {
+        if (scrubberView?.hasFocus() == true) return
+        val bucketKey = viewModel.bucketKeyForAsset(assetId)
+            ?: runCatching {
+                TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey))
+            }.getOrNull()
+        scrubberView?.setIndicatorMonthKey(bucketKey)
+    }
+
     private fun updateScrubberFromVisibleMonth() {
         if (scrubberView?.hasFocus() == true) return
         val rv = recyclerView ?: return
@@ -416,9 +480,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         val first = lm.findFirstVisibleItemPosition()
         if (first == RecyclerView.NO_POSITION) return
         val dayKey = adapter.dayKeyAtAdapterPosition(first) ?: return
-        scrubberView?.setIndicatorMonthKey(
-            TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey))
-        )
+        val assetId = adapter.firstAssetIdAtAdapterPosition(first)
+        if (assetId != null) {
+            syncScrubberToAsset(assetId, dayKey)
+        } else {
+            scrubberView?.setIndicatorMonthKey(
+                TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey))
+            )
+        }
     }
 
     private fun bindDays(days: List<TimelineDay>) {
