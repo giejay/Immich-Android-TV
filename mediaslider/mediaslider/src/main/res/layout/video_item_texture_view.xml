@@ -10,6 +10,7 @@
         android:layout_height="match_parent"
         app:surface_type="texture_view"
         app:use_controller="false"
+        app:controller_layout_id="@layout/exo_player_control_stub"
         app:show_buffering="when_playing"
         app:show_shuffle_button="true"/>
 </RelativeLayout>

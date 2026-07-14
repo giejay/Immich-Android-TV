@@ -1,6 +1,5 @@
 package nl.giejay.android.tv.immich.timeline
 
-import arrow.core.Either
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -10,6 +9,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import arrow.core.Either
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import org.junit.After
@@ -35,16 +35,20 @@ class TimelineViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun asset(id: String) = TimelineAsset(
+    private fun asset(
+        id: String,
+        createdAt: String = "2026-07-01T12:00:00Z",
+        localOffsetHours: Double = 0.0
+    ) = TimelineAsset(
         id = id,
         ratio = 1.0,
         isFavorite = false,
         isImage = true,
         thumbhash = null,
-        fileCreatedAt = OffsetDateTime.parse("2026-07-01T12:00:00Z"),
+        fileCreatedAt = OffsetDateTime.parse(createdAt),
+        localOffsetHours = localOffsetHours,
         duration = null
     )
-
 
     @Test
     fun `loadBucketList caches buckets and eagerly loads first months`() = runTest {
@@ -100,12 +104,12 @@ class TimelineViewModelTest {
     }
 
     @Test
-    fun `flatAssetIndex follows bucket order then in-bucket order`() = runTest {
+    fun `days groups assets by local calendar day newest first`() = runTest {
         val vm = TimelineViewModel(
             fetchBuckets = {
                 Either.Right(
                     listOf(
-                        TimeBucketSummary("2026-07-01", 2),
+                        TimeBucketSummary("2026-07-01", 3),
                         TimeBucketSummary("2026-06-01", 1)
                     )
                 )
@@ -113,8 +117,12 @@ class TimelineViewModelTest {
             fetchBucket = { key ->
                 Either.Right(
                     when (key) {
-                        "2026-07-01" -> listOf(asset("jul-1"), asset("jul-2"))
-                        else -> listOf(asset("jun-1"))
+                        "2026-07-01" -> listOf(
+                            asset("jul-2", "2026-07-02T18:00:00Z"),
+                            asset("jul-1b", "2026-07-01T15:00:00Z"),
+                            asset("jul-1a", "2026-07-01T10:00:00Z")
+                        )
+                        else -> listOf(asset("jun-1", "2026-06-15T12:00:00Z"))
                     }
                 )
             },
@@ -125,8 +133,17 @@ class TimelineViewModelTest {
         advanceUntilIdle()
 
         assertEquals(
-            listOf("jul-1", "jul-2", "jun-1"),
+            listOf("2026-07-02", "2026-07-01", "2026-06-15"),
+            vm.days.value.map { it.dayKey }
+        )
+        assertEquals(listOf("jul-1b", "jul-1a"), vm.days.value[1].assets.map { it.id })
+        assertEquals(
+            listOf("jul-2", "jul-1b", "jul-1a", "jun-1"),
             vm.flatAssetIndex().map { it.second.id }
+        )
+        assertEquals(
+            listOf("2026-07-02", "2026-07-01", "2026-07-01", "2026-06-15"),
+            vm.flatAssetIndex().map { it.first }
         )
     }
 
@@ -149,5 +166,13 @@ class TimelineViewModelTest {
         advanceUntilIdle()
 
         assertEquals("2026-06-01", vm.nextUnloadedBucket()?.timeBucket)
+    }
+
+    @Test
+    fun `monthBucketKey uses first of month`() {
+        assertEquals(
+            "2026-07-01",
+            TimelineViewModel.monthBucketKey(java.time.LocalDate.of(2026, 7, 13))
+        )
     }
 }

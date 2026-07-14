@@ -49,6 +49,7 @@ data class TimelineAsset(
     val isImage: Boolean,
     val thumbhash: String?,
     val fileCreatedAt: OffsetDateTime,
+    val localOffsetHours: Double,
     val duration: String?
 )
 
@@ -61,6 +62,7 @@ fun TimeBucketAssetsResponse.toTimelineAssets(): List<TimelineAsset> =
             isImage = isImage.getOrElse(i) { true },
             thumbhash = thumbhash.getOrNull(i),
             fileCreatedAt = parseTimelineTimestamp(fileCreatedAt[i]),
+            localOffsetHours = localOffsetHours.getOrElse(i) { 0.0 },
             duration = duration.getOrNull(i)
         )
     }

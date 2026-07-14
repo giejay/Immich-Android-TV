@@ -25,7 +25,6 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
-import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.card.CardPresenter
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
@@ -49,11 +48,11 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.LoadMore
+import java.time.LocalDate
 
 /**
- * Default Timeline screen: one horizontal [ListRow] per month (newest first).
- * Sibling of [nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment], not a
- * GenericAssetFragment — month rows do not fit that class's single flat-list model.
+ * Timeline screen: one horizontal [ListRow] per calendar day (newest first).
+ * Month buckets are still fetched from the API; days are grouped client-side.
  */
 class TimelineFragment : RowsSupportFragment() {
 
@@ -62,8 +61,7 @@ class TimelineFragment : RowsSupportFragment() {
 
     private var rowsAdapter: ArrayObjectAdapter? = null
     private val rowAdapters = linkedMapOf<String, ArrayObjectAdapter>()
-    private var bucketIndexByKey = emptyMap<String, Int>()
-    private var rowsBuilt = false
+    private var dayIndexByKey = emptyMap<String, Int>()
     private var selectionRestored = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +86,6 @@ class TimelineFragment : RowsSupportFragment() {
             return
         }
 
-        // Activity-scoped so month cache + selection survive slider navigation (Browse recreates this fragment).
         viewModel = ViewModelProvider(
             requireActivity(),
             TimelineViewModelFactory(apiClient)
@@ -96,22 +93,17 @@ class TimelineFragment : RowsSupportFragment() {
 
         onItemViewClickedListener = OnItemViewClickedListener { _, item, _, row ->
             val card = item as Card
-            val listRow = row as? ListRow
-            val timeBucket = listRow?.headerItem?.contentDescription?.toString()
-                ?: bucketKeyForHeaderId(listRow?.headerItem?.id ?: -1)
-            if (timeBucket != null) {
-                viewModel.rememberSelection(timeBucket, card.id)
+            val dayKey = dayKeyFromRow(row as? ListRow)
+            if (dayKey != null) {
+                viewModel.rememberSelection(dayKey, card.id)
             }
             onItemClicked(card)
         }
         setOnItemViewSelectedListener { _, item, _, row ->
-            val listRow = row as? ListRow ?: return@setOnItemViewSelectedListener
-            val timeBucket = listRow.headerItem.contentDescription?.toString()
-                ?: bucketKeyForHeaderId(listRow.headerItem.id)
-                ?: return@setOnItemViewSelectedListener
-            viewModel.prefetchAround(timeBucket)
+            val dayKey = dayKeyFromRow(row as? ListRow) ?: return@setOnItemViewSelectedListener
+            viewModel.prefetchAroundDay(dayKey)
             val card = item as? Card ?: return@setOnItemViewSelectedListener
-            viewModel.rememberSelection(timeBucket, card.id)
+            viewModel.rememberSelection(dayKey, card.id)
         }
     }
 
@@ -119,26 +111,13 @@ class TimelineFragment : RowsSupportFragment() {
         @Suppress("DEPRECATION")
         super.onActivityCreated(savedInstanceState)
         clearBackground()
+        ensureRowsAdapter()
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.buckets.collect { buckets ->
-                        if (buckets.isNotEmpty() && !rowsBuilt) {
-                            buildRows(buckets)
-                            // Re-bind any already-cached months after a fresh adapter build
-                            viewModel.bucketAssets.value.forEach { (timeBucket, assets) ->
-                                populateRow(timeBucket, assets)
-                            }
-                            restoreSelectionIfNeeded()
-                        }
-                    }
-                }
-                launch {
-                    viewModel.bucketAssets.collect { loaded ->
-                        loaded.forEach { (timeBucket, assets) ->
-                            populateRow(timeBucket, assets)
-                        }
+                    viewModel.days.collect { days ->
+                        syncDayRows(days)
                         restoreSelectionIfNeeded()
                     }
                 }
@@ -160,7 +139,6 @@ class TimelineFragment : RowsSupportFragment() {
 
     override fun onResume() {
         super.onResume()
-        // Other browse pages may have set a photo background; keep Timeline solid.
         clearBackground()
         restoreSelectionIfNeeded()
     }
@@ -172,49 +150,102 @@ class TimelineFragment : RowsSupportFragment() {
         }
     }
 
-    private fun buildRows(buckets: List<TimeBucketSummary>) {
-        if (!isAdded) return
-        rowsBuilt = true
-        selectionRestored = false
-        rowAdapters.clear()
-        bucketIndexByKey = buckets.mapIndexed { index, bucket -> bucket.timeBucket to index }.toMap()
-
+    private fun ensureRowsAdapter() {
+        if (rowsAdapter != null) return
         val adapter = ArrayObjectAdapter(ListRowPresenter())
-        val thisMonth = getString(R.string.this_month)
-        buckets.forEachIndexed { index, bucket ->
-            val cardAdapter = ArrayObjectAdapter(CardPresenter(requireContext(), R.style.TimelineCardTheme))
-            rowAdapters[bucket.timeBucket] = cardAdapter
-            val header = HeaderItem(
-                index.toLong(),
-                TimelineDateFormatter.label(bucket.timeBucket, thisMonthLabel = thisMonth)
-            )
-            header.contentDescription = bucket.timeBucket
-            adapter.add(ListRow(header, cardAdapter))
-        }
         rowsAdapter = adapter
         this.adapter = adapter
         mainFragmentAdapter.fragmentHost?.notifyDataReady(mainFragmentAdapter)
     }
 
-    private fun populateRow(timeBucket: String, assets: List<nl.giejay.android.tv.immich.api.model.TimelineAsset>) {
-        val rowAdapter = rowAdapters[timeBucket] ?: return
-        if (rowAdapter.size() > 0) return
-        rowAdapter.addAll(0, assets.map { it.toCard() })
+    /**
+     * Keep ListRows in sync with [days]. Append-only when new older days arrive; rebuild if
+     * order changed (parallel month loads).
+     */
+    private fun syncDayRows(days: List<TimelineDay>) {
+        if (!isAdded) return
+        ensureRowsAdapter()
+        val adapter = rowsAdapter ?: return
+
+        val oldKeys = rowAdapters.keys.toList()
+        val newKeys = days.map { it.dayKey }
+
+        if (oldKeys.isEmpty()) {
+            rebuildAllDayRows(days)
+            return
+        }
+
+        if (newKeys.take(oldKeys.size) == oldKeys) {
+            // Refresh in case timezone boundaries merged more assets into an existing day.
+            days.take(oldKeys.size).forEach { day ->
+                refreshDayRow(day)
+            }
+            days.drop(oldKeys.size).forEach { day ->
+                appendDayRow(day, adapter.size())
+            }
+            dayIndexByKey = days.mapIndexed { index, day -> day.dayKey to index }.toMap()
+            return
+        }
+
+        // Reorder (e.g. newer month finished after an older one) — rebuild and restore focus.
+        selectionRestored = false
+        rebuildAllDayRows(days)
+    }
+
+    private fun rebuildAllDayRows(days: List<TimelineDay>) {
+        val adapter = rowsAdapter ?: return
+        adapter.clear()
+        rowAdapters.clear()
+        days.forEachIndexed { index, day ->
+            appendDayRow(day, index)
+        }
+        dayIndexByKey = days.mapIndexed { index, day -> day.dayKey to index }.toMap()
+        mainFragmentAdapter.fragmentHost?.notifyDataReady(mainFragmentAdapter)
+    }
+
+    private fun appendDayRow(day: TimelineDay, index: Int) {
+        if (!isAdded) return
+        val adapter = rowsAdapter ?: return
+        if (rowAdapters.containsKey(day.dayKey)) return
+
+        val cardAdapter = ArrayObjectAdapter(CardPresenter(requireContext(), R.style.TimelineCardTheme))
+        cardAdapter.addAll(0, day.assets.map { it.toCard() })
+        rowAdapters[day.dayKey] = cardAdapter
+
+        val header = HeaderItem(
+            index.toLong(),
+            TimelineDateFormatter.dayLabel(
+                date = day.date,
+                todayLabel = getString(R.string.today),
+                yesterdayLabel = getString(R.string.yesterday)
+            )
+        )
+        header.contentDescription = day.dayKey
+        adapter.add(ListRow(header, cardAdapter))
+    }
+
+    private fun refreshDayRow(day: TimelineDay) {
+        val cardAdapter = rowAdapters[day.dayKey] ?: return
+        val newIds = day.assets.map { it.id }
+        val oldIds = (0 until cardAdapter.size()).mapNotNull { (cardAdapter[it] as? Card)?.id }
+        if (oldIds == newIds) return
+        cardAdapter.clear()
+        cardAdapter.addAll(0, day.assets.map { it.toCard() })
     }
 
     private fun restoreSelectionIfNeeded() {
-        if (selectionRestored || !rowsBuilt || !isAdded) return
-        val timeBucket = viewModel.lastSelectedTimeBucket ?: return
+        if (selectionRestored || !isAdded) return
+        val dayKey = viewModel.lastSelectedDayKey ?: return
         val assetId = viewModel.lastSelectedAssetId ?: return
-        val rowIndex = bucketIndexByKey[timeBucket] ?: return
-        val rowAdapter = rowAdapters[timeBucket] ?: return
-        if (rowAdapter.size() == 0) {
-            // Ensure the remembered month is loaded before we can restore focus
+        val rowIndex = dayIndexByKey[dayKey] ?: run {
+            // Day not visible yet — load its month
             lifecycleScope.launch(Dispatchers.IO) {
-                viewModel.loadBucket(timeBucket)
+                viewModel.loadBucket(TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey)))
             }
             return
         }
+        val rowAdapter = rowAdapters[dayKey] ?: return
+        if (rowAdapter.size() == 0) return
         val itemIndex = (0 until rowAdapter.size()).indexOfFirst { (rowAdapter[it] as? Card)?.id == assetId }
         if (itemIndex < 0) return
 
@@ -230,6 +261,7 @@ class TimelineFragment : RowsSupportFragment() {
     }
 
     private fun onItemClicked(card: Card) {
+        selectionRestored = false
         val flat = viewModel.flatAssetIndex()
         if (flat.isEmpty()) return
         val sliderItems = flat.map { it.second.toSliderItemViewHolder() }
@@ -240,7 +272,7 @@ class TimelineFragment : RowsSupportFragment() {
             val knownIds = viewModel.flatAssetIndex().map { it.second.id }.toSet()
             viewModel.loadBucket(next.timeBucket)
             withContext(Dispatchers.Main) {
-                viewModel.bucketAssets.value[next.timeBucket]?.let { populateRow(next.timeBucket, it) }
+                syncDayRows(viewModel.days.value)
             }
             viewModel.flatAssetIndex()
                 .map { it.second }
@@ -276,8 +308,9 @@ class TimelineFragment : RowsSupportFragment() {
         )
     }
 
-    private fun bucketKeyForHeaderId(id: Long): String? =
-        bucketIndexByKey.entries.firstOrNull { it.value.toLong() == id }?.key
+    private fun dayKeyFromRow(row: ListRow?): String? =
+        row?.headerItem?.contentDescription?.toString()
+            ?: dayIndexByKey.entries.firstOrNull { it.value.toLong() == row?.headerItem?.id }?.key
 }
 
 class TimelineViewModelFactory(

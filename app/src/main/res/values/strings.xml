@@ -68,6 +68,8 @@
     <string name="albums">Albums</string>
     <string name="timeline">Timeline</string>
     <string name="this_month">This month</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
     <string name="server">Server</string>
     <string name="screensaver">Screensaver</string>
     <string name="debug">Debug</string>

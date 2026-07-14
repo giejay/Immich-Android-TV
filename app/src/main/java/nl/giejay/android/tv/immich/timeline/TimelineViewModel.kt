@@ -15,12 +15,13 @@ import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import nl.giejay.android.tv.immich.shared.util.Debouncer
+import java.time.LocalDate
+import java.time.YearMonth
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
- * Holds timeline bucket list + lazily-fetched per-month assets.
- * Injectable fetch functions keep this unit-testable without Android/Retrofit.
+ * Holds timeline month buckets + lazily-fetched assets, exposed as day rows for the UI.
  */
 class TimelineViewModel(
     private val fetchBuckets: suspend () -> Either<String, List<TimeBucketSummary>>,
@@ -34,13 +35,16 @@ class TimelineViewModel(
     private val _bucketAssets = MutableStateFlow<Map<String, List<TimelineAsset>>>(emptyMap())
     val bucketAssets: StateFlow<Map<String, List<TimelineAsset>>> = _bucketAssets.asStateFlow()
 
+    private val _days = MutableStateFlow<List<TimelineDay>>(emptyList())
+    val days: StateFlow<List<TimelineDay>> = _days.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     private val inFlight = ConcurrentHashMap<String, Deferred<Either<String, List<TimelineAsset>>>>()
 
     /** Survives TimelineFragment recreation when returning from the photo slider. */
-    var lastSelectedTimeBucket: String? = null
+    var lastSelectedDayKey: String? = null
     var lastSelectedAssetId: String? = null
 
     suspend fun loadBucketList(eagerMonths: Int = 3) {
@@ -54,8 +58,8 @@ class TimelineViewModel(
         )
     }
 
-    fun rememberSelection(timeBucket: String, assetId: String) {
-        lastSelectedTimeBucket = timeBucket
+    fun rememberSelection(dayKey: String, assetId: String) {
+        lastSelectedDayKey = dayKey
         lastSelectedAssetId = assetId
     }
 
@@ -78,6 +82,7 @@ class TimelineViewModel(
                             { message -> _error.value = message },
                             { assets ->
                                 _bucketAssets.update { current -> current + (timeBucket to assets) }
+                                recomputeDays()
                             }
                         )
                     }
@@ -90,29 +95,28 @@ class TimelineViewModel(
     }
 
     /**
-     * Prefetch selected month plus adjacent months. Debounced so rapid D-pad scrolling
-     * does not fire a fetch per row.
+     * Prefetch the month for [dayKey] plus adjacent months. Debounced for rapid D-pad scrolling.
      */
-    fun prefetchAround(timeBucket: String) {
+    fun prefetchAroundDay(dayKey: String) {
         Debouncer.debounce(PREFETCH_KEY, {
             if (!viewModelScope.isActive) return@debounce
             viewModelScope.launch(Dispatchers.IO) {
+                val monthKey = monthBucketKey(LocalDate.parse(dayKey))
                 val list = _buckets.value
-                val index = list.indexOfFirst { it.timeBucket == timeBucket }
-                if (index < 0) return@launch
-                loadBucket(timeBucket)
+                val index = list.indexOfFirst { it.timeBucket == monthKey }
+                if (index < 0) {
+                    loadBucket(monthKey)
+                    return@launch
+                }
+                loadBucket(monthKey)
                 list.getOrNull(index - 1)?.let { loadBucket(it.timeBucket) }
                 list.getOrNull(index + 1)?.let { loadBucket(it.timeBucket) }
             }
         }, prefetchDebounceMs, TimeUnit.MILLISECONDS)
     }
 
-    fun flatAssetIndex(): List<Pair<String, TimelineAsset>> {
-        val loaded = _bucketAssets.value
-        return _buckets.value.flatMap { bucket ->
-            loaded[bucket.timeBucket].orEmpty().map { bucket.timeBucket to it }
-        }
-    }
+    fun flatAssetIndex(): List<Pair<String, TimelineAsset>> =
+        _days.value.flatMap { day -> day.assets.map { day.dayKey to it } }
 
     fun nextUnloadedBucket(): TimeBucketSummary? {
         val loaded = _bucketAssets.value
@@ -123,8 +127,17 @@ class TimelineViewModel(
         _error.value = null
     }
 
+    private fun recomputeDays() {
+        val loaded = _bucketAssets.value
+        val assets = _buckets.value.flatMap { loaded[it.timeBucket].orEmpty() }
+        _days.value = assets.toTimelineDays()
+    }
+
     companion object {
         const val PREFETCH_KEY = "timeline-prefetch"
         const val PREFETCH_DEBOUNCE_MS = 300L
+
+        fun monthBucketKey(date: LocalDate): String =
+            YearMonth.from(date).atDay(1).toString()
     }
 }

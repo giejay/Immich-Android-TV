@@ -30,7 +30,6 @@ class ScreenSlidePagerAdapter(private val context: Context,
                               private val config: MediaSliderConfiguration,
                               private val currentIndex: () -> Int,
                               private val transformResult: (String, Int) -> Unit,
-                              private val buttonListener: (Int) -> Unit,
                               private val exoPlayerListener: ExoPlayerListener) : PagerAdapter() {
     private var imageView: TouchImageView? = null
     private val progressBars: MutableMap<Int, ProgressBar> = HashMap()
@@ -73,7 +72,7 @@ class ScreenSlidePagerAdapter(private val context: Context,
             val useTextureView = model.mainItem.orientation != 1 || failedPositions.contains(model.url)
             view = ExoPlayerView(context, if (useTextureView) R.layout.video_item_texture_view else R.layout.video_item)
             view.tag = "view$position"
-            view.setupPlayer(config, NextRenderersFactory(context), exoPlayerListener, buttonListener) { player, error ->
+            view.setupPlayer(config, NextRenderersFactory(context), exoPlayerListener) { player, error ->
                 val shouldRetry = !useTextureView && !failedPositions.contains(model.url)
                 Timber.e(error,
                     "Player error at position $position for url ${model.url}. Already failed: ${failedPositions.contains(model.url)}." +

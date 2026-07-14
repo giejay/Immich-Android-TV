@@ -35,10 +35,12 @@ class TimeBucketAssetsResponseTest {
         assertTrue(assets[0].isFavorite)
         assertTrue(assets[0].isImage)
         assertEquals("hash", assets[0].thumbhash)
+        assertEquals(2.0, assets[0].localOffsetHours, 0.0)
         assertNull(assets[0].duration)
 
         assertEquals("b", assets[1].id)
         assertFalse(assets[1].isImage)
+        assertEquals(-5.0, assets[1].localOffsetHours, 0.0)
         assertEquals("00:00:48.113", assets[1].duration)
     }
 

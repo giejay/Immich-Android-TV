@@ -8,33 +8,6 @@
     android:theme="@style/AppTheme"
     tools:context="nl.giejay.mediaslider.view.MediaSliderFragment">
 
-    <LinearLayout
-        android:id="@+id/meta_data_holder"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:baselineAligned="false"
-        android:elevation="10dp"
-        android:gravity="bottom|left"
-        android:paddingBottom="30dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ListView
-            android:id="@+id/metadata_view_left"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content">
-        </ListView>
-
-        <ListView
-            android:id="@+id/metadata_view_right"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content">
-        </ListView>
-    </LinearLayout>
-
     <androidx.viewpager.widget.ViewPager
         android:id="@+id/pager"
         android:layout_width="match_parent"
@@ -43,6 +16,81 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/metadata_date"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/metadata_date_scrim"
+        android:elevation="10dp"
+        android:ellipsize="end"
+        android:fontFamily="@string/font_family"
+        android:gravity="start"
+        android:maxLines="2"
+        android:paddingStart="32dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="48dp"
+        android:paddingBottom="36dp"
+        android:shadowColor="#FF000000"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="6"
+        android:textColor="#FFFFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Monday, 13th July 2026"
+        tools:visibility="visible" />
+
+    <!-- Shared details + video controls strip (one scrim). -->
+    <LinearLayout
+        android:id="@+id/meta_data_holder"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/metadata_details_scrim"
+        android:elevation="10dp"
+        android:orientation="vertical"
+        android:paddingBottom="30dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <androidx.media3.ui.PlayerControlView
+            android:id="@+id/slider_video_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:animation_enabled="false"
+            app:controller_layout_id="@layout/exo_player_control_view"
+            app:show_timeout="0" />
+
+        <LinearLayout
+            android:id="@+id/metadata_rows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="bottom"
+            android:orientation="horizontal">
+
+            <ListView
+                android:id="@+id/metadata_view_left"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:divider="@null" />
+
+            <ListView
+                android:id="@+id/metadata_view_right"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:divider="@null" />
+        </LinearLayout>
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/left_arrow"
@@ -79,5 +127,3 @@
         app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
-

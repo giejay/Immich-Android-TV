@@ -12,12 +12,14 @@ import android.os.Looper
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.RelativeLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -29,6 +31,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.ui.PlayerControlView
 import androidx.media3.ui.PlayerView
 import androidx.viewpager.widget.ViewPager
 import com.google.common.collect.Iterables
@@ -45,6 +48,7 @@ import nl.giejay.mediaslider.adapter.MetaDataClock
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.adapter.ScreenSlidePagerAdapter
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
@@ -54,18 +58,24 @@ import timber.log.Timber
 import java.lang.reflect.Field
 
 
+@OptIn(UnstableApi::class)
 class MediaSliderView(context: Context) : ConstraintLayout(context) {
     // view elements
     private var playButton: View
     private var mainHandler: Handler
     private var mPager: ViewPager
+    private lateinit var dateView: TextView
+    private lateinit var metaDataHolder: LinearLayout
+    private lateinit var metadataRows: LinearLayout
+    private lateinit var videoControls: PlayerControlView
+    private lateinit var muteButton: ImageButton
     private val volumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == "android.media.VOLUME_CHANGED_ACTION") {
                 if (currentItemType() == SliderItemType.VIDEO && currentPlayerInScope?.isPlaying == true && currentPlayerInScope?.volume == 0f) {
                     Timber.i("Volume changed detected, unmuting video")
                     Toast.makeText(context, "Volume changed detected, unmuting video", Toast.LENGTH_SHORT).show()
-                    currentPlayerView?.findViewById<ImageButton>(R.id.exo_mute)?.performClick()
+                    muteButton.performClick()
                 }
             }
         }
@@ -87,6 +97,24 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val transformResults = mutableMapOf<Int, String>()
     private var currentToast: Toast? = null
+    private var detailsOverlayVisible = false
+    private var pendingDateAssetId: String? = null
+    private var hasBottomDetails = false
+    private var videoControllerVisible = false
+    /** Photo transport strip (slideshow button); independent of details so Back can dismiss it first. */
+    private var imageTransportVisible = false
+    /** Ignore Enter/Center ACTION_UP after opening transport so focus doesn't "click" the button. */
+    private var suppressTransportEnterUp = false
+
+    private val transportControlsVisible: Boolean
+        get() = videoControllerVisible || imageTransportVisible
+
+    /**
+     * Viewer: center opens a details overlay. Screensaver (MediaSliderListener) keeps
+     * always-on metadata and uses center to exit the dream instead.
+     */
+    private val detailsOverlayToggleEnabled: Boolean
+        get() = context !is MediaSliderListener
 
     init {
         inflate(getContext(), R.layout.slider, this)
@@ -94,6 +122,11 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         playButton = findViewById(R.id.playPause)
         playButton.setOnClickListener { toggleSlideshow(true) }
         mPager = findViewById(R.id.pager)
+        dateView = findViewById(R.id.metadata_date)
+        metaDataHolder = findViewById(R.id.meta_data_holder)
+        metadataRows = findViewById(R.id.metadata_rows)
+        videoControls = findViewById(R.id.slider_video_controls)
+        muteButton = videoControls.findViewById(R.id.exo_mute)
         mainHandler = Handler(Looper.getMainLooper())
     }
 
@@ -117,28 +150,66 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         if (event.action == KeyEvent.ACTION_DOWN) {
             if (context is MediaSliderListener && (context as MediaSliderListener).onButtonPressed(event)) {
                 return false
-            } else if ((event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
+            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER) {
+                if (detailsOverlayToggleEnabled) {
+                    // Focused transport control (video or image slideshow): activate it.
+                    if (videoControls.findFocus() != null) {
+                        return super.dispatchKeyEvent(event)
+                    }
+                    // Details already open: bring transport back (same layered model as video).
+                    if (detailsOverlayVisible && itemType == SliderItemType.IMAGE && !imageTransportVisible) {
+                        showImageTransportControls()
+                        suppressTransportEnterUp = true
+                        return true
+                    }
+                    if (detailsOverlayVisible && itemType == SliderItemType.VIDEO &&
+                        currentPlayerInScope != null && !videoControllerVisible
+                    ) {
+                        showVideoController()
+                        suppressTransportEnterUp = true
+                        return true
+                    }
+                    showDetailsOverlay()
+                    if (itemType == SliderItemType.VIDEO && currentPlayerInScope != null) {
+                        showVideoController()
+                        suppressTransportEnterUp = true
+                    } else if (itemType == SliderItemType.IMAGE) {
+                        showImageTransportControls()
+                        suppressTransportEnterUp = true
+                    }
+                    return true
+                }
+                if (itemType == SliderItemType.IMAGE) {
+                    toggleSlideshow(true)
+                    return false
+                }
+                if (currentPlayerView != null) {
+                    return super.dispatchKeyEvent(event)
+                }
+                return false
+            } else if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
                 if (itemType == SliderItemType.IMAGE) {
                     toggleSlideshow(true)
                 } else if (currentPlayerView != null) {
                     return super.dispatchKeyEvent(event)
                 }
                 return false
-            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && itemType == SliderItemType.VIDEO && currentPlayerView != null) {
-                currentPlayerView!!.useController = true
-                currentPlayerView!!.showController()
-
-                // Ensure proper focus to fix highlighting issue on first open
-                currentPlayerView!!.post {
-                    val progressView = currentPlayerView!!.findViewById<View>(R.id.exo_progress_layout)
-                    progressView?.requestFocus()
-                    // Force a refresh of the focus state
-                    progressView?.invalidate()
+            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && itemType == SliderItemType.VIDEO && currentPlayerInScope != null) {
+                if (!videoControllerVisible) {
+                    showVideoController()
                 }
-
                 return super.dispatchKeyEvent(event)
-            } else if (event.keyCode == KeyEvent.KEYCODE_BACK && itemType == SliderItemType.VIDEO && currentPlayerView != null && currentPlayerView!!.isControllerFullyVisible) {
-                currentPlayerView!!.hideController()
+            } else if (event.keyCode == KeyEvent.KEYCODE_BACK && videoControllerVisible) {
+                hideVideoController()
+                return true
+            } else if (event.keyCode == KeyEvent.KEYCODE_BACK && imageTransportVisible) {
+                hideImageTransportControls()
+                return true
+            } else if (event.keyCode == KeyEvent.KEYCODE_BACK && detailsOverlayToggleEnabled && detailsOverlayVisible) {
+                detailsOverlayVisible = false
+                hideImageTransportControls()
+                hideVideoController()
+                applyDetailsOverlayVisibility()
                 return true
             } else if (slideShowPlaying && itemType == SliderItemType.IMAGE) {
                 if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
@@ -151,21 +222,217 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 }
                 return super.dispatchKeyEvent(event)
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                if (itemType == SliderItemType.IMAGE || currentPlayerView?.isControllerFullyVisible == false) {
-                    goToNextAsset()
-                } else if (currentPlayerView?.isControllerFullyVisible == true) {
+                if (videoControllerVisible) {
                     return super.dispatchKeyEvent(event)
                 }
+                if (imageTransportVisible) {
+                    // Soft-trap on photo slideshow control; Left/Right change assets only after Back.
+                    return true
+                }
+                goToNextAsset()
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-                if (itemType == SliderItemType.IMAGE || currentPlayerView?.isControllerFullyVisible == false) {
-                    goToPreviousAsset()
-                    return false
+                if (videoControllerVisible) {
+                    return super.dispatchKeyEvent(event)
                 }
-                return super.dispatchKeyEvent(event)
+                if (imageTransportVisible) {
+                    return true
+                }
+                goToPreviousAsset()
+                return false
+            }
+        } else if (event.action == KeyEvent.ACTION_UP &&
+            (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER)
+        ) {
+            if (suppressTransportEnterUp) {
+                suppressTransportEnterUp = false
+                return true
             }
         }
+        // Forward remaining events to transport controls when they have focus.
+        if (videoControls.findFocus() != null || videoControllerVisible) {
+            return super.dispatchKeyEvent(event)
+        }
         return if (itemType == SliderItemType.IMAGE) false else super.dispatchKeyEvent(event)
+    }
+
+    private fun showDetailsOverlay() {
+        if (detailsOverlayVisible) return
+        detailsOverlayVisible = true
+        applyDetailsOverlayVisibility()
+        updateDateOverlay(currentItem().mainItem)
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun showVideoController() {
+        val player = currentPlayerInScope ?: return
+        videoControllerVisible = true
+        imageTransportVisible = false
+        // Open the shared details strip so controls and metadata share one scrim.
+        if (detailsOverlayToggleEnabled && !detailsOverlayVisible) {
+            detailsOverlayVisible = true
+            updateDateOverlay(currentItem().mainItem)
+        }
+        videoControls.player = player
+        videoControls.showTimeoutMs = 0
+        videoControls.show()
+        // PlayerControlView rebinds standard controls when player is set — re-apply ours after.
+        wireSharedVideoControls()
+        applyTransportChrome(isVideo = true)
+        syncMuteButton()
+        applyDetailsOverlayVisibility()
+        videoControls.post {
+            val pause = videoControls.findViewById<View>(R.id.exo_pause)
+            val progress = videoControls.findViewById<View>(R.id.exo_progress)
+            val focusTarget = pause ?: progress
+            focusTarget?.requestFocus()
+            focusTarget?.invalidate()
+        }
+    }
+
+    /** Photos: same overlay strip, only the slideshow control (no mute/seek chrome). */
+    private fun showImageTransportControls() {
+        imageTransportVisible = true
+        videoControllerVisible = false
+        videoControls.player = null
+        videoControls.showTimeoutMs = 0
+        videoControls.show()
+        wireSharedVideoControls()
+        applyTransportChrome(isVideo = false)
+        applyDetailsOverlayVisibility()
+        videoControls.post {
+            videoControls.findViewById<View>(R.id.exo_slideshow)?.requestFocus()
+        }
+    }
+
+    private fun hideImageTransportControls() {
+        if (!imageTransportVisible && videoControls.visibility != VISIBLE) return
+        imageTransportVisible = false
+        if (!videoControllerVisible) {
+            videoControls.hide()
+            videoControls.player = null
+        }
+        applyDetailsOverlayVisibility()
+    }
+
+    private fun applyTransportChrome(isVideo: Boolean) {
+        val videoOnly = if (isVideo) VISIBLE else GONE
+        muteButton.visibility = videoOnly
+        videoControls.findViewById<View>(R.id.exo_rewind)?.visibility = videoOnly
+        videoControls.findViewById<View>(R.id.exo_pause)?.visibility = videoOnly
+        videoControls.findViewById<View>(R.id.exo_forward)?.visibility = videoOnly
+        videoControls.findViewById<View>(R.id.exo_progress_layout)?.visibility = videoOnly
+        val slideshow = videoControls.findViewById<View>(R.id.exo_slideshow) ?: return
+        slideshow.visibility = VISIBLE
+        if (isVideo) {
+            slideshow.nextFocusLeftId = R.id.exo_forward
+            slideshow.nextFocusDownId = R.id.exo_progress
+        } else {
+            slideshow.nextFocusLeftId = View.NO_ID
+            slideshow.nextFocusDownId = View.NO_ID
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun hideVideoController() {
+        videoControllerVisible = false
+        if (!imageTransportVisible) {
+            videoControls.hide()
+            videoControls.player = null
+        }
+        applyDetailsOverlayVisibility()
+    }
+
+    private fun applyDetailsOverlayVisibility() {
+        val detailsOn = !detailsOverlayToggleEnabled || detailsOverlayVisible
+        val showTransport = transportControlsVisible
+        val showHolder = detailsOn || showTransport
+        metaDataHolder.visibility =
+            if (showHolder && (hasBottomDetails || showTransport)) VISIBLE else GONE
+        videoControls.visibility = if (showTransport) VISIBLE else GONE
+        if (showTransport) {
+            applyTransportChrome(isVideo = videoControllerVisible)
+        }
+        metadataRows.visibility = if (detailsOn && hasBottomDetails) VISIBLE else GONE
+        // Keep D-pad on transport controls; ListViews would otherwise steal focus.
+        metadataRows.descendantFocusability =
+            if (showTransport) ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            else ViewGroup.FOCUS_AFTER_DESCENDANTS
+        findViewById<ListView>(R.id.metadata_view_left)?.apply {
+            isFocusable = !showTransport
+            isFocusableInTouchMode = false
+        }
+        findViewById<ListView>(R.id.metadata_view_right)?.apply {
+            isFocusable = !showTransport
+            isFocusableInTouchMode = false
+        }
+
+        if (!detailsOn) {
+            dateView.visibility = GONE
+        } else if (dateView.text.isNotBlank()) {
+            dateView.visibility = VISIBLE
+        }
+        if (showHolder && (hasBottomDetails || showTransport)) {
+            if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible && !showTransport) {
+                metaDataHolder.setBackgroundResource(R.drawable.gradient_overlay)
+            } else {
+                metaDataHolder.setBackgroundResource(R.drawable.metadata_details_scrim)
+            }
+        }
+    }
+
+    private fun wireSharedVideoControls() {
+        videoControls.findViewById<ImageButton>(R.id.exo_pause)?.setOnClickListener {
+            val player = currentPlayerInScope ?: return@setOnClickListener
+            if (player.isPlaying) {
+                player.pause()
+            } else {
+                if (player.playbackState == Player.STATE_ENDED ||
+                    player.currentPosition >= player.contentDuration
+                ) {
+                    player.seekToDefaultPosition()
+                }
+                player.play()
+            }
+        }
+        muteButton.setOnClickListener {
+            val player = currentPlayerInScope ?: return@setOnClickListener
+            if (player.volume == 0f) {
+                player.volume = 1f
+                config.isVideoSoundEnable = true
+            } else {
+                player.volume = 0f
+                config.isVideoSoundEnable = false
+            }
+            syncMuteButton()
+        }
+        videoControls.findViewById<ImageButton>(R.id.exo_rewind)?.setOnClickListener {
+            goToPreviousAsset()
+        }
+        videoControls.findViewById<ImageButton>(R.id.exo_forward)?.setOnClickListener {
+            goToNextAsset()
+        }
+        videoControls.findViewById<ImageButton>(R.id.exo_slideshow)?.setOnClickListener {
+            toggleSlideshow(true)
+        }
+        val timeBar = videoControls.findViewById<View>(R.id.exo_progress)
+        val positionView = videoControls.findViewById<TextView>(R.id.exo_position)
+        val durationView = videoControls.findViewById<TextView>(R.id.exo_duration)
+        timeBar?.setOnFocusChangeListener { _, hasFocus ->
+            // Match transport-button focus: brighten times so scrub mode is obvious.
+            val color = if (hasFocus) 0xFFFFFFFF.toInt() else 0xFFBEBEBE.toInt()
+            val sizeSp = if (hasFocus) 18f else 14f
+            positionView?.setTextColor(color)
+            durationView?.setTextColor(color)
+            positionView?.textSize = sizeSp
+            durationView?.textSize = sizeSp
+        }
+    }
+
+    private fun syncMuteButton() {
+        muteButton.setImageResource(
+            if (config.isVideoSoundEnable) R.drawable.unmute_icon else R.drawable.mute_icon
+        )
     }
 
     private fun goToPreviousAsset() {
@@ -175,11 +442,16 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     fun loadMediaSliderView(config: MediaSliderConfiguration) {
         this.config = config
+        detailsOverlayVisible = false
+
+        // Date is reserved for the top-left chrome; exclude it from the bottom lists.
+        val detailsConfig = config.metaDataConfig.filterNot { it.type == MetaDataType.DATE }
+        hasBottomDetails = detailsConfig.isNotEmpty()
 
         val listViewRight = findViewById<ListView>(R.id.metadata_view_right)
         metaDataRightAdapter = MetaDataAdapter(context,
-            config.metaDataConfig.filter { it.align == AlignOption.RIGHT },
-            config.metaDataConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
+            detailsConfig.filter { it.align == AlignOption.RIGHT },
+            detailsConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
             { if (currentItem().hasSecondaryItem()) currentItem().secondaryItem!! else currentItem().mainItem },
             { currentItem().hasSecondaryItem() })
         listViewRight.divider = null
@@ -187,14 +459,17 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
         val listViewLeft = findViewById<ListView>(R.id.metadata_view_left)
         metaDataLeftAdapter = MetaDataAdapter(context,
-            config.metaDataConfig.filter { it.align == AlignOption.LEFT },
+            detailsConfig.filter { it.align == AlignOption.LEFT },
             // don't show the clock/media count twice in portrait mode and force everything to be left aligned
-            config.metaDataConfig.filterNot { it is MetaDataClock || it is MetaDataMediaCount }
+            detailsConfig.filterNot { it is MetaDataClock || it is MetaDataMediaCount }
                 .map { it.withAlign(align = AlignOption.LEFT) }.distinct(),
             { currentItem().mainItem },
             { currentItem().hasSecondaryItem() })
         listViewLeft.divider = null
         listViewLeft.adapter = metaDataLeftAdapter
+
+        wireSharedVideoControls()
+        applyDetailsOverlayVisibility()
 
         val listener: ExoPlayerListener = object : ExoPlayerListener {
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -204,7 +479,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                val playPauseButton = findViewById<ImageButton>(R.id.exo_pause)
+                val playPauseButton = videoControls.findViewById<ImageButton>(R.id.exo_pause)
                 playPauseButton?.setImageResource(if (isPlaying) R.drawable.exo_legacy_controls_pause else R.drawable.exo_legacy_controls_play)
 
                 // Handle screen wake lock for video playback
@@ -301,13 +576,6 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             config,
             { mPager.currentItem },
             { result, position -> transformResults[position] = result },
-            {
-                when (it) {
-                    R.id.exo_rewind -> goToPreviousAsset()
-                    R.id.exo_forward -> goToNextAsset()
-                    R.id.exo_slideshow -> toggleSlideshow(true)
-                }
-            },
             listener
         )
 
@@ -346,6 +614,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
                 updateMetaData(metaDataLeftAdapter, mainItem, sliderItemIndex)
                 updateMetaData(metaDataRightAdapter, if (sliderItem.hasSecondaryItem()) sliderItem.secondaryItem!! else mainItem, sliderItemIndex)
+                updateDateOverlay(mainItem)
 
                 config.onAssetSelected(sliderItem)
                 currentToast?.cancel()
@@ -355,10 +624,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     transformResults.remove(sliderItemIndex)
                 }
 
-                val statusLayoutLeft = findViewById<LinearLayout>(R.id.meta_data_holder)
                 if (sliderItem.type == SliderItemType.VIDEO) {
-                    if (config.isGradiantOverlayVisible) {
-                        statusLayoutLeft.background = null
+                    if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible && !videoControllerVisible) {
+                        metaDataHolder.background = null
                     }
                     val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
                     if (!viewTag.isReady()) {
@@ -376,12 +644,25 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                             currentPlayerInScope!!, defaultExoFactory)
                     }
                     if (!config.isVideoSoundEnable) {
-                        currentPlayerView!!.player!!.volume = 0f
+                        currentPlayerInScope!!.volume = 0f
+                    }
+                    syncMuteButton()
+                    // Keep details if open, but never auto-surface transport when paging.
+                    imageTransportVisible = false
+                    if (videoControllerVisible) {
+                        hideVideoController()
+                    } else {
+                        applyDetailsOverlayVisibility()
                     }
                     currentPlayerInScope!!.playWhenReady = true
                 } else {
-                    if (config.isGradiantOverlayVisible) {
-                        statusLayoutLeft.setBackgroundResource(R.drawable.gradient_overlay)
+                    // Keep details if open; dismiss any transport so Left/Right stay on assets.
+                    hideVideoController()
+                    hideImageTransportControls()
+                    if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible) {
+                        metaDataHolder.setBackgroundResource(R.drawable.gradient_overlay)
+                    } else if (detailsOverlayToggleEnabled) {
+                        metaDataHolder.setBackgroundResource(R.drawable.metadata_details_scrim)
                     }
                     if (slideShowPlaying) {
                         startTimerNextAsset()
@@ -490,9 +771,22 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private fun currentItem(): SliderItemViewHolder = config.items[mPager.currentItem]
     private fun currentItemType(): SliderItemType = config.items[mPager.currentItem].type
 
+    private fun updateDateOverlay(sliderItem: SliderItem) {
+        pendingDateAssetId = sliderItem.id
+        ioScope.launch {
+            val value = sliderItem.get(MetaDataType.DATE).orEmpty().trim()
+            withContext(Dispatchers.Main) {
+                if (pendingDateAssetId != sliderItem.id) return@withContext
+                dateView.text = value
+                val showOverlay = !detailsOverlayToggleEnabled || detailsOverlayVisible
+                dateView.visibility = if (showOverlay && value.isNotEmpty()) VISIBLE else GONE
+            }
+        }
+    }
+
     @OptIn(UnstableApi::class)
     fun isControllerVisible(): Boolean {
-        return currentPlayerView?.isControllerFullyVisible == true
+        return videoControllerVisible
     }
 
     companion object {

@@ -8,6 +8,7 @@ import java.util.Locale
 class TimelineDateFormatterTest {
 
     private val locale = Locale.US
+    private val now = LocalDate.of(2026, 7, 13) // Monday
 
     @Test
     fun `current month is labeled This month`() {
@@ -48,5 +49,43 @@ class TimelineDateFormatterTest {
             locale = locale
         )
         assertEquals("January", label)
+    }
+
+    @Test
+    fun `dayLabel uses Today and Yesterday`() {
+        assertEquals(
+            "Today",
+            TimelineDateFormatter.dayLabel(now, now = now, locale = locale)
+        )
+        assertEquals(
+            "Yesterday",
+            TimelineDateFormatter.dayLabel(now.minusDays(1), now = now, locale = locale)
+        )
+    }
+
+    @Test
+    fun `dayLabel uses weekday name for last 6 days`() {
+        // 2 days ago from Mon Jul 13 = Sat Jul 11
+        assertEquals(
+            "Saturday",
+            TimelineDateFormatter.dayLabel(LocalDate.of(2026, 7, 11), now = now, locale = locale)
+        )
+        // 6 days ago = Tue Jul 7
+        assertEquals(
+            "Tuesday",
+            TimelineDateFormatter.dayLabel(LocalDate.of(2026, 7, 7), now = now, locale = locale)
+        )
+    }
+
+    @Test
+    fun `dayLabel formats older same-year and prior-year dates`() {
+        assertEquals(
+            "Sun, Jul 5",
+            TimelineDateFormatter.dayLabel(LocalDate.of(2026, 7, 5), now = now, locale = locale)
+        )
+        assertEquals(
+            "Sat, Dec 20, 2025",
+            TimelineDateFormatter.dayLabel(LocalDate.of(2025, 12, 20), now = now, locale = locale)
+        )
     }
 }
