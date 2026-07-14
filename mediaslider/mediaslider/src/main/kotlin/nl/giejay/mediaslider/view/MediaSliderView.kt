@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
@@ -64,7 +65,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private var mainHandler: Handler
     private var mPager: ViewPager
     private lateinit var dateView: TextView
-    private lateinit var metaDataHolder: LinearLayout
+    private lateinit var metaDataHolder: FrameLayout
     private lateinit var metadataRows: LinearLayout
     private lateinit var videoControls: PlayerControlView
     private lateinit var muteButton: ImageButton
@@ -108,6 +109,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private val transportControlsVisible: Boolean
         get() = videoControllerVisible || imageTransportVisible
 
+    /** YouTube-style hide of play/slideshow chrome after idle; EXIF/details stay up. */
+    private val hideTransportRunnable = Runnable { hideTransportControls() }
+
     /**
      * Viewer: center opens a details overlay. Screensaver (MediaSliderListener) keeps
      * always-on metadata and uses center to exit the dream instead.
@@ -137,6 +141,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        cancelTransportAutoHide()
         context.unregisterReceiver(volumeReceiver)
     }
 
@@ -147,6 +152,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
         val itemType = currentItemType()
         if (event.action == KeyEvent.ACTION_DOWN) {
+            if (transportControlsVisible) {
+                scheduleTransportAutoHide()
+            }
             if (context is MediaSliderListener && (context as MediaSliderListener).onButtonPressed(event)) {
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER) {
@@ -278,6 +286,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             updateDateOverlay(currentItem().mainItem)
         }
         videoControls.player = player
+        // Auto-hide is handled by [scheduleTransportAutoHide]; keep PlayerControlView sticky.
         videoControls.showTimeoutMs = 0
         videoControls.show()
         // PlayerControlView rebinds standard controls when player is set — re-apply ours after.
@@ -286,6 +295,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         syncMuteButton()
         syncSlideshowButton()
         applyDetailsOverlayVisibility()
+        scheduleTransportAutoHide()
         videoControls.post {
             val pause = videoControls.findViewById<View>(R.id.exo_pause)
             val progress = videoControls.findViewById<View>(R.id.exo_progress)
@@ -306,6 +316,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         applyTransportChrome(isVideo = false)
         syncSlideshowButton()
         applyDetailsOverlayVisibility()
+        scheduleTransportAutoHide()
         videoControls.post {
             videoControls.findViewById<View>(R.id.exo_slideshow)?.requestFocus()
         }
@@ -313,12 +324,29 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     private fun hideImageTransportControls() {
         if (!imageTransportVisible && videoControls.visibility != VISIBLE) return
+        cancelTransportAutoHide()
         imageTransportVisible = false
         if (!videoControllerVisible) {
             videoControls.hide()
             videoControls.player = null
         }
         applyDetailsOverlayVisibility()
+    }
+
+    private fun hideTransportControls() {
+        when {
+            videoControllerVisible -> hideVideoController()
+            imageTransportVisible -> hideImageTransportControls()
+        }
+    }
+
+    private fun scheduleTransportAutoHide() {
+        mainHandler.removeCallbacks(hideTransportRunnable)
+        mainHandler.postDelayed(hideTransportRunnable, TRANSPORT_AUTO_HIDE_MS)
+    }
+
+    private fun cancelTransportAutoHide() {
+        mainHandler.removeCallbacks(hideTransportRunnable)
     }
 
     private fun applyTransportChrome(isVideo: Boolean) {
@@ -341,6 +369,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     @OptIn(UnstableApi::class)
     private fun hideVideoController() {
+        cancelTransportAutoHide()
         videoControllerVisible = false
         if (!imageTransportVisible) {
             videoControls.hide()
@@ -360,6 +389,8 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             applyTransportChrome(isVideo = videoControllerVisible)
         }
         metadataRows.visibility = if (detailsOn && hasBottomDetails) VISIBLE else GONE
+        // Soften EXIF while transport is up so times / scrubber stay readable over it.
+        metadataRows.alpha = if (showTransport) METADATA_DIMMED_WHILE_TRANSPORT_ALPHA else 1f
         // Keep D-pad on transport controls; metadata rows would otherwise steal focus.
         metadataRows.descendantFocusability =
             if (showTransport) ViewGroup.FOCUS_BLOCK_DESCENDANTS
@@ -864,6 +895,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     companion object {
+        private const val TRANSPORT_AUTO_HIDE_MS = 4_000L
+        private const val METADATA_DIMMED_WHILE_TRANSPORT_ALPHA = 0.35f
+
         @SuppressLint("UnsafeOptInUsageError")
         fun prepareMedia(mediaUrl: String, player: ExoPlayer, factory: DefaultHttpDataSource.Factory) {
             val mediaUri = Uri.parse(mediaUrl)

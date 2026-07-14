@@ -45,36 +45,28 @@
         tools:text="Monday, 13th July 2026"
         tools:visibility="visible" />
 
-    <!-- Shared details + video controls strip (one scrim). -->
-    <LinearLayout
+    <!-- Shared details strip. EXIF stays bottom-anchored; transport overlays it
+         (dark panel) and auto-hides so long descriptions never shove either band. -->
+    <FrameLayout
         android:id="@+id/meta_data_holder"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@drawable/metadata_details_scrim"
         android:elevation="10dp"
-        android:orientation="vertical"
-        android:paddingBottom="30dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <androidx.media3.ui.PlayerControlView
-            android:id="@+id/slider_video_controls"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            app:animation_enabled="false"
-            app:controller_layout_id="@layout/exo_player_control_view"
-            app:show_timeout="0" />
-
         <LinearLayout
             android:id="@+id/metadata_rows"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
             android:baselineAligned="false"
             android:gravity="bottom"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingBottom="30dp">
 
             <LinearLayout
                 android:id="@+id/metadata_view_left"
@@ -90,7 +82,18 @@
                 android:layout_weight="1"
                 android:orientation="vertical" />
         </LinearLayout>
-    </LinearLayout>
+
+        <androidx.media3.ui.PlayerControlView
+            android:id="@+id/slider_video_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:elevation="4dp"
+            android:visibility="gone"
+            app:animation_enabled="false"
+            app:controller_layout_id="@layout/exo_player_control_view"
+            app:show_timeout="0" />
+    </FrameLayout>
 
     <ImageView
         android:id="@+id/left_arrow"

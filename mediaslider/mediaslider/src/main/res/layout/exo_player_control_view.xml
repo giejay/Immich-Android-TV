@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<!-- Background is transparent: shared details scrim lives on meta_data_holder. -->
+<!-- Dark panel covers EXIF underneath so transport chrome stays readable. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -21,8 +21,10 @@
     android:layout_height="wrap_content"
     android:layout_gravity="bottom"
     android:layoutDirection="ltr"
-    android:background="@android:color/transparent"
+    android:background="@drawable/transport_controls_scrim"
     android:orientation="vertical"
+    android:paddingTop="12dp"
+    android:paddingBottom="30dp"
     tools:targetApi="28">
 
     <LinearLayout
