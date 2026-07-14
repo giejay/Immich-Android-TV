@@ -12,11 +12,4 @@
         app:use_controller="false"
         app:show_buffering="when_playing"
         app:show_shuffle_button="true"/>
-    <include
-        android:id="@+id/image_controller"
-        layout="@layout/image_controller"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:visibility="gone" />
 </RelativeLayout>

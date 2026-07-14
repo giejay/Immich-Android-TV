@@ -35,7 +35,8 @@ class MediaSliderController(
     private val mainHandler: Handler,
     private val pager: ViewPager,
     /** The centre play/pause overlay indicator shown briefly on slideshow toggle. */
-    private val playButtonView: View
+    private val playButtonView: View,
+    private val controllerRootView: View
 ) {
     private lateinit var config: MediaSliderConfiguration
 
@@ -44,6 +45,8 @@ class MediaSliderController(
 
     private var _isControllerVisible = false
     val isControllerVisible: Boolean get() = _isControllerVisible
+
+    var onControllerVisibilityChanged: ((Boolean) -> Unit)? = null
 
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
@@ -86,8 +89,7 @@ class MediaSliderController(
     }
 
     fun onIsPlayingChanged(isPlaying: Boolean) {
-        val viewRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: return
-        viewRoot.findViewById<ImageButton>(R.id.media_play_pause)
+        controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
             ?.let { updatePlayPauseIcon(it, isPlaying) }
 
         if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
@@ -177,8 +179,7 @@ class MediaSliderController(
      * Returns true if the event was consumed (controller shown or already visible).
      */
     fun toggleController(): Boolean {
-        val viewRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: return false
-        val controller = viewRoot.findViewById<View>(R.id.image_controller) ?: return false
+        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: return false
         if (controller.isVisible) {
             hideController()
             return true
@@ -188,14 +189,15 @@ class MediaSliderController(
         }
         controller.visibility = View.VISIBLE
         _isControllerVisible = true
+        onControllerVisibilityChanged?.invoke(true)
 
         // Initial focus
         if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
-            viewRoot.findViewById<ImageButton>(R.id.media_play_pause)?.requestFocus()
+            controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)?.requestFocus()
         } else {
             val focusId = if (currentItemOrNull()?.hasSecondaryItem() == true)
                 R.id.image_slideshow else R.id.image_favorite
-            viewRoot.findViewById<ImageButton>(focusId)?.requestFocus()
+            controllerRootView.findViewById<ImageButton>(focusId)?.requestFocus()
         }
 
         if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
@@ -205,13 +207,9 @@ class MediaSliderController(
     }
 
     fun hideController() {
-        val viewRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: run {
-            _isControllerVisible = false
-            restorePagerFocus()
-            return
-        }
-        viewRoot.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
+        controllerRootView.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
         _isControllerVisible = false
+        onControllerVisibilityChanged?.invoke(false)
         stopProgressUpdates()
         restorePagerFocus()
     }
@@ -222,26 +220,24 @@ class MediaSliderController(
      * video-only widgets based on [sliderItem].
      */
     fun configureController(sliderItem: SliderItemViewHolder, sliderItemIndex: Int) {
-        val viewRoot = pager.findViewWithTag<View>("view$sliderItemIndex") ?: run {
-            _isControllerVisible = false
-            return
-        }
-        val controller = viewRoot.findViewById<View>(R.id.image_controller) ?: run {
+        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: run {
             _isControllerVisible = false
             return
         }
 
         controller.visibility = View.GONE
         _isControllerVisible = false
+        onControllerVisibilityChanged?.invoke(false)
         stopProgressUpdates()
 
-        val previousButton = viewRoot.findViewById<ImageButton>(R.id.image_previous) ?: return
-        val favoriteButton = viewRoot.findViewById<ImageButton>(R.id.image_favorite) ?: return
-        val slideshowButton = viewRoot.findViewById<ImageButton>(R.id.image_slideshow) ?: return
-        val nextButton = viewRoot.findViewById<ImageButton>(R.id.image_next) ?: return
-        val muteButton = viewRoot.findViewById<ImageButton>(R.id.media_mute)
-        val playPauseButton = viewRoot.findViewById<ImageButton>(R.id.media_play_pause)
-        val progressLayout = viewRoot.findViewById<View>(R.id.media_progress_layout)
+        val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
+        val favoriteButton = controllerRootView.findViewById<ImageButton>(R.id.image_favorite) ?: return
+        val slideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow) ?: return
+        val nextButton = controllerRootView.findViewById<ImageButton>(R.id.image_next) ?: return
+        val muteButton = controllerRootView.findViewById<ImageButton>(R.id.media_mute)
+        val playPauseButton = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
+        val progressLayout = controllerRootView.findViewById<View>(R.id.media_progress_layout)
+        val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
 
         val isVideo = sliderItem.type == SliderItemType.VIDEO
         val hasSecondaryItem = sliderItem.hasSecondaryItem()
@@ -255,9 +251,12 @@ class MediaSliderController(
         favoriteButton.visibility = if (hasSecondaryItem) View.GONE else View.VISIBLE
 
         // Common navigation listeners
-        previousButton.setOnClickListener { goToPreviousAsset() }
+        previousButton.setOnClickListener { goToNextAsset() } // previousButton.setOnClickListener { goToPreviousAsset() }
         slideshowButton.setOnClickListener { toggleSlideshow(true) }
         nextButton.setOnClickListener { goToNextAsset() }
+
+        // Actually previousButton should go to previous asset
+        previousButton.setOnClickListener { goToPreviousAsset() }
 
         // Favorite
         updateFavoriteIcon(favoriteButton, sliderItem.mainItem.isFavorite)
@@ -300,8 +299,7 @@ class MediaSliderController(
                 }
             }
 
-            // SeekBar: allow the user to seek by focusing it and pressing D-pad left/right
-            val seekBar = viewRoot.findViewById<SeekBar>(R.id.media_seek_bar)
+            // SeekBar: allow the user to seek
             seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onStartTrackingTouch(seekBar: SeekBar) {
                     isSeeking = true
@@ -309,10 +307,7 @@ class MediaSliderController(
 
                 override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                     if (fromUser) {
-                        val duration = currentPlayer?.contentDuration ?: return
-                        if (duration > 0) {
-                            currentPlayer?.seekTo((progress.toLong() * duration) / 1000)
-                        }
+                        currentPlayer?.seekTo(progress.toLong() * 1000)
                     }
                 }
 
@@ -326,7 +321,7 @@ class MediaSliderController(
             previousButton, muteButton, playPauseButton,
             favoriteButton, slideshowButton, nextButton,
             isVideo, hasSecondaryItem,
-            viewRoot.findViewById(R.id.media_seek_bar)
+            seekBar
         )
     }
 
@@ -335,8 +330,7 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun toggleMute() {
-        val viewRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: return
-        viewRoot.findViewById<ImageButton>(R.id.media_mute)?.performClick()
+        controllerRootView.findViewById<ImageButton>(R.id.media_mute)?.performClick()
     }
 
     // -------------------------------------------------------------------------
@@ -435,14 +429,17 @@ class MediaSliderController(
         val duration = player.contentDuration
         if (duration <= 0) return
 
-        val viewRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: return
-        val seekBar = viewRoot.findViewById<SeekBar>(R.id.media_seek_bar) ?: return
-        val positionText = viewRoot.findViewById<TextView>(R.id.media_position) ?: return
-        val durationText = viewRoot.findViewById<TextView>(R.id.media_duration) ?: return
+        val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar) ?: return
+        val positionText = controllerRootView.findViewById<TextView>(R.id.media_position) ?: return
+        val durationText = controllerRootView.findViewById<TextView>(R.id.media_duration) ?: return
 
         val position = player.currentPosition
         if (!isSeeking) {
-            seekBar.progress = ((position.toFloat() / duration) * 1000).toInt()
+            val durationInSeconds = (duration / 1000).toInt()
+            if (seekBar.max != durationInSeconds) {
+                seekBar.max = durationInSeconds
+            }
+            seekBar.progress = (position / 1000).toInt()
         }
         positionText.text = formatDuration(position)
         durationText.text = formatDuration(duration)

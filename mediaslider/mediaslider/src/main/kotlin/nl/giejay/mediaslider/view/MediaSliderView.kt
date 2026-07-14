@@ -86,7 +86,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         val playButton: View = findViewById(R.id.playPause)
         mPager = findViewById(R.id.pager)
         mainHandler = Handler(Looper.getMainLooper())
-        controller = MediaSliderController(context, mainHandler, mPager, playButton)
+        controller = MediaSliderController(context, mainHandler, mPager, playButton, this)
         playButton.setOnClickListener { controller.toggleSlideshow(true) }
     }
 
@@ -125,10 +125,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             } else if (event.keyCode == KeyEvent.KEYCODE_BACK && controller.isControllerVisible) {
                 controller.hideController()
                 return true
-            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
-                && itemType == SliderItemType.VIDEO
-                && !controller.isControllerVisible
-            ) {
+            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && !controller.isControllerVisible) {
                 // Down-arrow on a video opens the unified controller.
                 if (controller.toggleController()) return true
                 return super.dispatchKeyEvent(event)
