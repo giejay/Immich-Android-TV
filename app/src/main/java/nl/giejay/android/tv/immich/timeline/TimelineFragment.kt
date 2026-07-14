@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.timeline
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.Toast
 import androidx.leanback.app.BackgroundManager
 import androidx.leanback.app.RowsSupportFragment
@@ -107,9 +108,8 @@ class TimelineFragment : RowsSupportFragment() {
         }
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        @Suppress("DEPRECATION")
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         clearBackground()
         ensureRowsAdapter()
 
