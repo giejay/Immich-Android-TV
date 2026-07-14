@@ -82,6 +82,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private var rowHeightPx = 0
     private var gapPx = 0
 
+    /**
+     * Snapshot taken when the side menu opens so re-entry can restore the exact cell
+     * even if Leanback briefly focuses another visible cell first.
+     */
+    private var pendingResumeAssetId: String? = null
+    /** Skip rememberSelection while we re-land focus after the menu. */
+    private var ignoreSelectionMemory = false
+
     /** Month key waiting for assets after a scrubber jump (`YYYY-MM-01`). */
     private var pendingJumpMonth: String? = null
     /** After a committed scrubber jump, focus a mosaic cell once that month is scrolled into view. */
@@ -139,8 +147,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         super.onViewCreated(view, savedInstanceState)
         if (!::viewModel.isInitialized) return
         clearBackground()
-        showTitle(false)
-        mainFragmentAdapter.fragmentHost?.showTitleView(false)
+        // Fragment host is usually still null here; hide again after notifyViewCreated.
+        hideBrowseTitle()
 
         progressBar = view.findViewById(R.id.browse_progressbar)
         recyclerView = view.findViewById(R.id.timeline_recycler)
@@ -166,10 +174,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 onItemClicked(cell.asset.id)
             },
             onCellFocus = { cell, cellView ->
-                focusNavigator?.onCellFocused(cell.dayKey, cell.asset.id)
                 viewModel.prefetchAroundDay(cell.dayKey)
-                viewModel.rememberSelection(cell.dayKey, cell.asset.id)
-                syncScrubberToAsset(cell.asset.id, cell.dayKey)
+                if (!ignoreSelectionMemory) {
+                    focusNavigator?.onCellFocused(cell.dayKey, cell.asset.id)
+                    viewModel.rememberSelection(cell.dayKey, cell.asset.id)
+                    syncScrubberToAsset(cell.asset.id, cell.dayKey)
+                }
                 focusVideoPreview?.onCellFocus(cell, cellView)
             },
             onCellBlur = { cell, _ ->
@@ -248,6 +258,36 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         }
 
         mainFragmentAdapter.fragmentHost?.notifyViewCreated(mainFragmentAdapter)
+        // Host is attached by now; keep Browse from flashing/animating the "Timeline" title.
+        hideBrowseTitle()
+
+        (parentFragment as? BrowseSupportFragment)?.setBrowseTransitionListener(
+            object : BrowseSupportFragment.BrowseTransitionListener() {
+                override fun onHeadersTransitionStart(withHeaders: Boolean) {
+                    if (!isAdded) return
+                    if (withHeaders) {
+                        // Opening menu — remember the mosaic cell before Leanback steals focus.
+                        captureResumeState()
+                        beginResumeFocusLock()
+                    } else if (pendingResumeAssetId != null || viewModel.lastSelectedAssetId != null) {
+                        // Re-entering with a prior cell — block children so Leanback cannot flash
+                        // a neighboring item before we hand focus back.
+                        beginResumeFocusLock()
+                    }
+                }
+
+                override fun onHeadersTransitionStop(withHeaders: Boolean) {
+                    if (!isAdded) return
+                    if (withHeaders) {
+                        selectionRestored = false
+                        if (pendingResumeAssetId == null) captureResumeState()
+                    } else {
+                        hideBrowseTitle()
+                        restoreSelectionIfNeeded()
+                    }
+                }
+            }
+        )
 
         rv.post {
             contentWidthPx = (rv.width - rv.paddingStart - rv.paddingEnd).coerceAtLeast(1)
@@ -303,6 +343,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     override fun onDestroyView() {
+        (parentFragment as? BrowseSupportFragment)?.setBrowseTransitionListener(null)
         focusVideoPreview?.release()
         focusVideoPreview = null
         super.onDestroyView()
@@ -546,6 +587,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     mainFragmentAdapter.fragmentHost?.notifyDataReady(mainFragmentAdapter)
                     dataReadyNotified = true
                 }
+                hideBrowseTitle()
             }
             val hasCellFocus =
                 recyclerView?.findFocus()?.getTag(R.id.timeline_mosaic_cell_asset_id) != null
@@ -560,32 +602,117 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         }
     }
 
+    private fun captureResumeState() {
+        pendingResumeAssetId = viewModel.lastSelectedAssetId
+    }
+
+    private fun setFocusScrollSuppressed(suppressed: Boolean) {
+        (recyclerView?.layoutManager as? TimelineMosaicLayoutManager)?.suppressFocusScroll = suppressed
+    }
+
+    private fun beginResumeFocusLock() {
+        ignoreSelectionMemory = true
+        setFocusScrollSuppressed(true)
+        val rv = recyclerView ?: return
+        rv.isFocusable = true
+        rv.isFocusableInTouchMode = true
+        // Children cannot take focus — Leanback may park on the recycler itself (no cell flash).
+        rv.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        scrubberView?.isFocusable = false
+    }
+
+    private fun finishResumeFocusLock() {
+        ignoreSelectionMemory = false
+        setFocusScrollSuppressed(false)
+        recyclerView?.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+        scrubberView?.isFocusable = true
+        scrubberView?.isFocusableInTouchMode = true
+    }
+
     private fun restoreSelectionIfNeeded() {
         if (selectionRestored || !isAdded) return
         val navigator = focusNavigator ?: return
         val adapter = mosaicAdapter ?: return
 
-        val assetId = viewModel.lastSelectedAssetId
-        if (assetId == null) {
-            selectionRestored = true
-            return
-        }
+        // Never pull focus while the side menu is still open — wait until the user
+        // presses Enter/Right (BrowseTransitionListener → restoreSelectionIfNeeded).
+        if (isBrowseShowingHeaders()) return
 
-        val position = adapter.positionOfAsset(assetId)
-        if (position < 0) {
-            val dayKey = viewModel.lastSelectedDayKey
-            if (dayKey != null) {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    viewModel.loadBucket(TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey)))
+        // Prefer the cell captured when the menu opened — not whatever Leanback focused mid-transition.
+        val assetId = pendingResumeAssetId ?: viewModel.lastSelectedAssetId
+        if (assetId != null) {
+            val position = adapter.positionOfAsset(assetId)
+            if (position < 0) {
+                val dayKey = viewModel.lastSelectedDayKey
+                if (dayKey != null) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        viewModel.loadBucket(TimelineViewModel.monthBucketKey(LocalDate.parse(dayKey)))
+                    }
                 }
+                return
+            }
+
+            selectionRestored = true
+            val rv = recyclerView ?: return
+            // Unblock and focus the saved cell synchronously — no delay, no intermediate cell.
+            setFocusScrollSuppressed(true)
+            rv.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+            scrubberView?.isFocusable = false
+            val cell = adapter.findCellView(rv, assetId)
+            if (cell != null) {
+                cell.requestFocus()
+            } else {
+                navigator.focusAsset(assetId, smooth = false, adjustScroll = false)
+            }
+            pendingResumeAssetId = null
+            viewModel.rememberSelectionByAssetId(assetId)
+            // Re-enable scrubber after focus has landed on the mosaic cell.
+            rv.post {
+                finishResumeFocusLock()
             }
             return
         }
 
+        // First entry: wait for days + memories, then land on first memory (or mosaic).
+        if (viewModel.days.value.isEmpty()) return
+        if (!viewModel.memoriesReady.value) return
+
         selectionRestored = true
+        finishResumeFocusLock()
         Handler(Looper.getMainLooper()).postDelayed({
-            if (isAdded) navigator.focusAsset(assetId, smooth = false)
+            if (!isAdded || isBrowseShowingHeaders()) {
+                selectionRestored = false
+                return@postDelayed
+            }
+            focusInitialEntry()
         }, 100)
+    }
+
+    private fun isBrowseShowingHeaders(): Boolean =
+        (parentFragment as? BrowseSupportFragment)?.isShowingHeaders == true
+
+    /** Timeline has no page title — hide immediately so Leanback cannot flash/animate one. */
+    private fun hideBrowseTitle() {
+        showTitle(false)
+        mainFragmentAdapter.fragmentHost?.showTitleView(false)
+        (parentFragment as? BrowseSupportFragment)?.showTitle(false)
+    }
+
+    /** Prefer the first memory card; fall back to the first mosaic cell. */
+    private fun focusInitialEntry() {
+        val rv = recyclerView ?: return
+        val adapter = mosaicAdapter ?: return
+        if (adapter.hasMemoriesRow()) {
+            if (adapter.focusFirstMemory(rv)) return
+            rv.scrollToPosition(0)
+            rv.post {
+                if (!isAdded) return@post
+                if (adapter.focusFirstMemory(rv)) return@post
+                adapter.firstAssetId()?.let { focusNavigator?.focusAsset(it, smooth = false) }
+            }
+            return
+        }
+        adapter.firstAssetId()?.let { focusNavigator?.focusAsset(it, smooth = false) }
     }
 
     private fun maybeLoadMoreNearEnd() {

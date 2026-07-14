@@ -81,6 +81,20 @@ class TimelineMosaicAdapter(
         return RecyclerView.NO_POSITION
     }
 
+    fun hasMemoriesRow(): Boolean =
+        itemsSnapshot.firstOrNull() is TimelineMosaicItem.MemoriesRow
+
+    /**
+     * Focus the first "N years ago" card. Returns false if the row isn't laid out yet
+     * (caller may scroll to 0 and retry).
+     */
+    fun focusFirstMemory(recyclerView: RecyclerView): Boolean {
+        if (itemsSnapshot.firstOrNull() !is TimelineMosaicItem.MemoriesRow) return false
+        val holder = recyclerView.findViewHolderForAdapterPosition(0) as? MemoriesRowVH
+            ?: return false
+        return holder.focusFirstCard()
+    }
+
     fun firstAssetId(): String? =
         itemsSnapshot.filterIsInstance<TimelineMosaicItem.Row>()
             .firstOrNull()
@@ -223,7 +237,7 @@ class TimelineMosaicAdapter(
                         .scaleY(if (hasFocus) 1.14f else 1f)
                         .setDuration(120)
                         .start()
-                    v.elevation = if (hasFocus) 8f else 0f
+                    v.elevation = if (hasFocus) 24f else 0f
                     if (!cell.asset.isImage) {
                         videoPlayPause.setImageResource(
                             if (hasFocus) R.drawable.ic_video_badge_pause else R.drawable.ic_video_badge_play
@@ -263,6 +277,17 @@ class TimelineMosaicAdapter(
 
         fun bind(item: TimelineMosaicItem.MemoriesRow) {
             arrayAdapter.setItems(item.memories, null)
+        }
+
+        fun focusFirstCard(): Boolean {
+            if (arrayAdapter.size() == 0) return false
+            gridView.setSelectedPosition(0)
+            val child = gridView.layoutManager?.findViewByPosition(0)
+            return if (child != null) {
+                child.requestFocus()
+            } else {
+                gridView.requestFocus()
+            }
         }
     }
 

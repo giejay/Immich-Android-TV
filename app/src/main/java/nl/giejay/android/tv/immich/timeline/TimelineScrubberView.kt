@@ -245,6 +245,10 @@ class TimelineScrubberView @JvmOverloads constructor(
             // Discard uncommitted preview if focus leaves without Enter/Left.
             selectedIndex = indicatorIndex.coerceIn(0, stops.lastIndex)
         }
+        // Sibling mosaic recycler sits at 4dp so year labels stay under focused cells/memories.
+        // Only raise above that while focused so the MMM yyyy badge can overlay them.
+        // Don't bringToFront() — that reorders siblings and steals next entry focus.
+        elevation = if (gainFocus) dp(32f) else 0f
         invalidate()
     }
 

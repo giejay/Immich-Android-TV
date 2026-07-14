@@ -37,6 +37,10 @@ class TimelineViewModel(
     private val _memories = MutableStateFlow<List<Memory>>(emptyList())
     val memories: StateFlow<List<Memory>> = _memories.asStateFlow()
 
+    /** True after [loadMemories] finishes (even when the list is empty). */
+    private val _memoriesReady = MutableStateFlow(false)
+    val memoriesReady: StateFlow<Boolean> = _memoriesReady.asStateFlow()
+
     private val _bucketAssets = MutableStateFlow<Map<String, List<TimelineAsset>>>(emptyMap())
     val bucketAssets: StateFlow<Map<String, List<TimelineAsset>>> = _bucketAssets.asStateFlow()
 
@@ -65,8 +69,15 @@ class TimelineViewModel(
 
     suspend fun loadMemories() {
         fetchMemories().fold(
-            { message -> _error.value = message },
-            { list -> _memories.value = list }
+            { message ->
+                _error.value = message
+                _memoriesReady.value = true
+            },
+            { list ->
+                // Mark ready before publishing the list so bindDays/restore sees both together.
+                _memoriesReady.value = true
+                _memories.value = list
+            }
         )
     }
 

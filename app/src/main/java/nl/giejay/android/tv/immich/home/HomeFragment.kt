@@ -51,8 +51,16 @@ class HomeFragment : BrowseSupportFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         headersSupportFragment.setOnHeaderViewSelectedListener { _, row ->
-            title = row?.headerItem?.name ?: "-"
             selectedPosition = row?.let { mRowsAdapter.indexOf(it) } ?: 0
+            val name = row?.headerItem?.name ?: "-"
+            // Timeline is a full-bleed mosaic — never show the Leanback page title there
+            // (it flashes and slides away when entering the page).
+            if (name == getString(R.string.timeline)) {
+                title = ""
+                showTitle(false)
+            } else {
+                title = name
+            }
         }
 
         headersSupportFragment.setOnHeaderClickedListener { _, row ->
@@ -82,7 +90,9 @@ class HomeFragment : BrowseSupportFragment() {
         headersState = HEADERS_ENABLED
         isHeadersTransitionOnBackEnabled = true
         brandColor = resources.getColor(android.R.color.black)
-        title = getString(R.string.timeline)
+        // First page is Timeline, which never shows a Browse title.
+        title = ""
+        showTitle(false)
 //        setOnSearchClickedListener {
 //            Toast.makeText(
 //                activity, "Search!", Toast.LENGTH_SHORT

@@ -60,7 +60,7 @@ class MemoryPresenter(
                 .scaleY(if (hasFocus) 1.14f else 1f)
                 .setDuration(120)
                 .start()
-            v.elevation = if (hasFocus) 8f else 0f
+            v.elevation = if (hasFocus) 24f else 0f
         }
     }
 

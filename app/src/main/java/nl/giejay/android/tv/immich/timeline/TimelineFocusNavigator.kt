@@ -63,11 +63,15 @@ class TimelineFocusNavigator(
             }
         }
         val mosaicLm = recyclerView.layoutManager as? TimelineMosaicLayoutManager
+        // When adjustScroll is false (e.g. re-entry from the menu), never let focus
+        // requestChildRectangleOnScreen nudge the list — that inches upward every time.
+        val alreadySuppressed = mosaicLm?.suppressFocusScroll == true
         if (!adjustScroll) {
             mosaicLm?.suppressFocusScroll = true
         }
         fun clearSuppress() {
-            if (!adjustScroll) {
+            // Don't lift a suppress that the caller is holding across a menu round-trip.
+            if (!adjustScroll && !alreadySuppressed) {
                 recyclerView.post { mosaicLm?.suppressFocusScroll = false }
             }
         }

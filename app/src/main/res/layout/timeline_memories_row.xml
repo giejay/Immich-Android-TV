@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/timeline_memories_grid"
     android:layout_width="match_parent"
-    android:layout_height="180dp"
+    android:layout_height="220dp"
     android:clipChildren="false"
     android:clipToPadding="false"
-    android:paddingBottom="20dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="24dp"
     app:focusOutFront="true"
     app:horizontalMargin="16dp" />
