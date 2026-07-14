@@ -80,12 +80,12 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <ProgressBar
+        <SeekBar
             android:id="@+id/media_seek_bar"
-            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:focusable="true"
             android:max="1000"
             android:progress="0" />
 

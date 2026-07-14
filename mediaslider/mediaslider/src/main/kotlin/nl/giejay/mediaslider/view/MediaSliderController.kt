@@ -7,7 +7,7 @@ import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageButton
-import android.widget.ProgressBar
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.media3.common.PlaybackException
@@ -48,6 +48,9 @@ class MediaSliderController(
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
         private set
+
+    /** True while the user is actively dragging the seek bar. */
+    private var isSeeking = false
 
     private val goToNextAssetRunnable = Runnable { goToNextAsset() }
 
@@ -296,12 +299,34 @@ class MediaSliderController(
                     }
                 }
             }
+
+            // SeekBar: allow the user to seek by focusing it and pressing D-pad left/right
+            val seekBar = viewRoot.findViewById<SeekBar>(R.id.media_seek_bar)
+            seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onStartTrackingTouch(seekBar: SeekBar) {
+                    isSeeking = true
+                }
+
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (fromUser) {
+                        val duration = currentPlayer?.contentDuration ?: return
+                        if (duration > 0) {
+                            currentPlayer?.seekTo((progress.toLong() * duration) / 1000)
+                        }
+                    }
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    isSeeking = false
+                }
+            })
         }
 
         setupFocusNavigation(
             previousButton, muteButton, playPauseButton,
             favoriteButton, slideshowButton, nextButton,
-            isVideo, hasSecondaryItem
+            isVideo, hasSecondaryItem,
+            viewRoot.findViewById(R.id.media_seek_bar)
         )
     }
 
@@ -346,7 +371,8 @@ class MediaSliderController(
         slideshowButton: ImageButton,
         nextButton: ImageButton,
         isVideo: Boolean,
-        hasSecondaryItem: Boolean
+        hasSecondaryItem: Boolean,
+        seekBar: SeekBar? = null
     ) {
         val chain = mutableListOf<ImageButton>()
         if (isVideo) muteButton?.let { chain.add(it) }
@@ -359,6 +385,12 @@ class MediaSliderController(
         for (i in chain.indices) {
             if (i > 0) chain[i].nextFocusLeftId = chain[i - 1].id
             if (i < chain.size - 1) chain[i].nextFocusRightId = chain[i + 1].id
+        }
+
+        // Wire up/down navigation between the buttons row and the seekbar
+        if (isVideo && seekBar != null) {
+            chain.forEach { button -> button.nextFocusDownId = R.id.media_seek_bar }
+            seekBar.nextFocusUpId = (playPauseButton ?: previousButton).id
         }
     }
 
@@ -404,12 +436,14 @@ class MediaSliderController(
         if (duration <= 0) return
 
         val viewRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: return
-        val progressBar = viewRoot.findViewById<ProgressBar>(R.id.media_seek_bar) ?: return
+        val seekBar = viewRoot.findViewById<SeekBar>(R.id.media_seek_bar) ?: return
         val positionText = viewRoot.findViewById<TextView>(R.id.media_position) ?: return
         val durationText = viewRoot.findViewById<TextView>(R.id.media_duration) ?: return
 
         val position = player.currentPosition
-        progressBar.progress = ((position.toFloat() / duration) * 1000).toInt()
+        if (!isSeeking) {
+            seekBar.progress = ((position.toFloat() / duration) * 1000).toInt()
+        }
         positionText.text = formatDuration(position)
         durationText.text = formatDuration(duration)
     }
