@@ -78,6 +78,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private var selectionRestored = false
     private var dataReadyNotified = false
     private var loadingNextBucket = false
+    private var loadingNewerBucket = false
     private var contentWidthPx = 0
     private var rowHeightPx = 0
     private var gapPx = 0
@@ -210,7 +211,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 maybeLoadMoreNearEnd()
             },
             onExitRightToScrubber = { focusScrubberFromMosaic() },
-            onReachContentEnd = { maybeLoadMoreNearEnd() }
+            onReachContentEnd = { maybeLoadMoreNearEnd() },
+            onReachContentStart = { maybeLoadMoreNearStart() }
         )
 
         rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -645,6 +647,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 reanchorStickyJumpIfNeeded()
             }
             loadingNextBucket = false
+            loadingNewerBucket = false
         }
     }
 
@@ -815,6 +818,26 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             viewModel.loadBucket(next.timeBucket)
             withContext(Dispatchers.Main) {
                 loadingNextBucket = false
+            }
+        }
+    }
+
+    /**
+     * When Up has no safe neighbor (calendar gap above the focused island), load the closest
+     * unloaded newer month so focus can walk forward continuously instead of teleports.
+     */
+    private fun maybeLoadMoreNearStart() {
+        if (loadingNewerBucket) return
+        val rv = recyclerView ?: return
+        val dayKey = rv.findFocus()?.getTag(R.id.timeline_mosaic_cell_day_key) as? String
+            ?: viewModel.lastSelectedDayKey
+            ?: return
+        val next = viewModel.nextNewerUnloadedBucket(dayKey) ?: return
+        loadingNewerBucket = true
+        lifecycleScope.launch(Dispatchers.IO) {
+            viewModel.loadBucket(next.timeBucket)
+            withContext(Dispatchers.Main) {
+                loadingNewerBucket = false
             }
         }
     }

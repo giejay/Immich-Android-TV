@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.timeline
 
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -155,5 +156,32 @@ class TimelineMosaicLayoutEngineTest {
         assertEquals("a", map["b"]?.leftAssetId)
         assertEquals("a", map["c"]?.upAssetId)
         assertNull(map["c"]?.downAssetId)
+    }
+
+    @Test
+    fun `buildFocusNeighbors refuses Up across multi-year loading gaps`() {
+        val recent = TimelineMosaicItem.Row(
+            "r-recent",
+            "2026-02-15",
+            listOf(TimelineMosaicCell("2026-02-15", asset("recent", 1.0), 100, 100, "r-recent", 0, 0))
+        )
+        val historic = TimelineMosaicItem.Row(
+            "r-old",
+            "2006-07-01",
+            listOf(TimelineMosaicCell("2006-07-01", asset("old", 1.0), 100, 100, "r-old", 0, 0))
+        )
+        val map = TimelineMosaicLayoutEngine.buildFocusNeighbors(listOf(recent, historic))
+        assertNull(map["old"]?.upAssetId)
+        assertNull(map["recent"]?.downAssetId)
+    }
+
+    @Test
+    fun `isVerticalNeighborAllowed allows nearby months but not decades`() {
+        assertTrue(
+            TimelineMosaicLayoutEngine.isVerticalNeighborAllowed("2006-07-01", "2006-01-15")
+        )
+        assertFalse(
+            TimelineMosaicLayoutEngine.isVerticalNeighborAllowed("2006-07-01", "2026-02-15")
+        )
     }
 }

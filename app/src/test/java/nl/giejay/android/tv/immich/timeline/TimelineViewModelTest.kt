@@ -197,6 +197,34 @@ class TimelineViewModelTest {
     }
 
     @Test
+    fun `nextNewerUnloadedBucket bridges toward today from a historic island`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(
+                    listOf(
+                        TimeBucketSummary("2026-07-01", 1),
+                        TimeBucketSummary("2026-06-01", 1),
+                        TimeBucketSummary("2026-02-01", 1),
+                        TimeBucketSummary("2006-08-01", 1),
+                        TimeBucketSummary("2006-07-01", 1)
+                    )
+                )
+            },
+            fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
+            prefetchDebounceMs = 0
+        )
+
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+        vm.loadBucket("2026-02-01")
+        vm.loadBucket("2006-07-01")
+        advanceUntilIdle()
+
+        // Closest newer unloaded month above July 2006 is August 2006, not a 2026 gap.
+        assertEquals("2006-08-01", vm.nextNewerUnloadedBucket("2006-07-15")?.timeBucket)
+    }
+
+    @Test
     fun `monthBucketKey uses first of month`() {
         assertEquals(
             "2026-07-01",

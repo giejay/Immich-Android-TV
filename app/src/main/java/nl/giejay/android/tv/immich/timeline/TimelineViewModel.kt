@@ -169,6 +169,23 @@ class TimelineViewModel(
     }
 
     /**
+     * Closest unloaded month newer than [fromDayKey] (toward today).
+     *
+     * Used when Up hits a sparse-loading gap above the focused island so we bridge
+     * forward in time instead of focusing across decades into another loaded island.
+     */
+    fun nextNewerUnloadedBucket(fromDayKey: String): TimeBucketSummary? {
+        val monthKey = monthBucketKey(LocalDate.parse(fromDayKey.take(10)))
+        val resolved = resolveBucketKey(monthKey) ?: monthKey
+        val list = _buckets.value
+        val fromIndex = list.indexOfFirst { it.timeBucket == resolved }
+        if (fromIndex <= 0) return null
+        val loaded = _bucketAssets.value.keys
+        // Newest-first: indices before fromIndex are newer. Prefer the closest (largest index).
+        return list.take(fromIndex).lastOrNull { it.timeBucket !in loaded }
+    }
+
+    /**
      * Immich UTC month bucket that owns [assetId], if that bucket is loaded.
      * Preferred over local calendar month when syncing the scrubber.
      */

@@ -2,6 +2,9 @@ package nl.giejay.android.tv.immich.timeline
 
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -50,6 +53,8 @@ object TimelineMosaicLayoutEngine {
 
     const val MIN_RATIO = 0.35
     const val MAX_RATIO = 3.0
+    /** Max calendar-month span for an Up/Down focus hop (allows sparse months, blocks islands). */
+    const val MAX_VERTICAL_MONTH_GAP = 6L
 
     /**
      * Packs [days] into a vertical list of headers + justified mosaic rows.
@@ -86,6 +91,10 @@ object TimelineMosaicLayoutEngine {
      * Builds L/R/U/D neighbors for every asset cell across [items].
      * Headers are ignored; Up/Down pick the cell with max horizontal overlap
      * (fallback: closest center X).
+     *
+     * Vertical neighbors that skip more than [MAX_VERTICAL_MONTH_GAP] calendar months are
+     * refused — sparse loading can leave distant "islands" adjacent in the recycler, and
+     * wiring across them makes rapid Up teleport decades (e.g. 2006 → Feb 2026).
      */
     fun buildFocusNeighbors(items: List<TimelineMosaicItem>): Map<String, TimelineFocusNeighbors> {
         val rows = items.filterIsInstance<TimelineMosaicItem.Row>()
@@ -94,8 +103,8 @@ object TimelineMosaicLayoutEngine {
             row.cells.forEachIndexed { cellIndex, cell ->
                 val left = row.cells.getOrNull(cellIndex - 1)?.asset?.id
                 val right = row.cells.getOrNull(cellIndex + 1)?.asset?.id
-                val up = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex - 1)?.cells)
-                val down = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex + 1)?.cells)
+                val up = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex - 1))
+                val down = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex + 1))
                 result[cell.asset.id] = TimelineFocusNeighbors(left, right, up, down)
             }
         }
@@ -104,9 +113,11 @@ object TimelineMosaicLayoutEngine {
 
     private fun pickVerticalNeighbor(
         from: TimelineMosaicCell,
-        candidates: List<TimelineMosaicCell>?
+        candidateRow: TimelineMosaicItem.Row?
     ): String? {
+        val candidates = candidateRow?.cells
         if (candidates.isNullOrEmpty()) return null
+        if (!isVerticalNeighborAllowed(from.dayKey, candidateRow.dayKey)) return null
         val fromLeft = from.xPx
         val fromRight = from.xPx + from.widthPx
         val fromCenter = fromLeft + from.widthPx / 2.0
@@ -126,6 +137,16 @@ object TimelineMosaicLayoutEngine {
             }
         }
         return bestId
+    }
+
+    /** True when [fromDayKey] and [toDayKey] are close enough to treat as continuous time. */
+    fun isVerticalNeighborAllowed(fromDayKey: String, toDayKey: String): Boolean {
+        val from = runCatching { LocalDate.parse(fromDayKey.take(10)) }.getOrNull() ?: return false
+        val to = runCatching { LocalDate.parse(toDayKey.take(10)) }.getOrNull() ?: return false
+        val months = kotlin.math.abs(
+            ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to))
+        )
+        return months <= MAX_VERTICAL_MONTH_GAP
     }
 
     private fun packDay(

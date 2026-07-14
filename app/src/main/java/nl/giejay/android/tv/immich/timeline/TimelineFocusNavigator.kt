@@ -17,7 +17,9 @@ class TimelineFocusNavigator(
     private val onFocused: (dayKey: String, assetId: String) -> Unit,
     private val onExitRightToScrubber: (() -> Unit)? = null,
     /** Fired when Down is pressed with no neighbor — load older months / extend the list. */
-    private val onReachContentEnd: (() -> Unit)? = null
+    private val onReachContentEnd: (() -> Unit)? = null,
+    /** Fired when Up is pressed with no neighbor — load newer months across a sparse gap. */
+    private val onReachContentStart: (() -> Unit)? = null
 ) {
     var neighbors: Map<String, TimelineFocusNeighbors> = emptyMap()
         private set
@@ -48,7 +50,13 @@ class TimelineFocusNavigator(
                 onReachContentEnd?.invoke()
                 return true
             }
-            // Let Browse steal Left/Up at the edge.
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                // Gap above current island (unloaded months) or true top — try bridging newer.
+                onReachContentStart?.invoke()
+                // Consume so Browse headers don't steal focus while we fill the gap.
+                return onReachContentStart != null
+            }
+            // Let Browse steal Left at the edge.
             return false
         }
         focusAsset(targetId, adjustScroll = false, lockScroll = false)
