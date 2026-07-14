@@ -1,37 +1,22 @@
-/*
- * Copyright 2020 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id 'com.android.application'
-    id 'com.google.gms.google-services'
-    id 'com.google.firebase.crashlytics'
-    id 'org.jetbrains.kotlin.android' version "${kotlin_version}"
+    alias libs.plugins.android.application
+    alias libs.plugins.google.gms.google.services
+    alias libs.plugins.google.firebase.crashlytics
     id 'kotlin-parcelize'
-    id 'androidx.navigation.safeargs.kotlin'
-    id 'kotlin-kapt'
+    alias libs.plugins.navigation.safeargs.kotlin
+    alias libs.plugins.google.devtools.ksp
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
-        targetSdkVersion 36
-        versionCode 125
-        versionName "3.3"
+        targetSdkVersion 37
+        versionCode 136
+        versionName "5.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
@@ -62,6 +47,7 @@ android {
         // View binding allows efficient, type-safe view access
         // See more at https://developer.android.com/topic/libraries/view-binding
         viewBinding = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -72,50 +58,49 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            def appName = "ImmichTV" // Change if needed
-            def versionName = variant.versionName
-            outputFileName = "${appName}-${versionName}.apk"
+    namespace 'nl.giejay.android.tv.immich'
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("ImmichTV-${output.versionName.get()}.apk")
         }
     }
+}
 
-    kotlinOptions {
-        jvmTarget = "17"
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
     }
-    namespace 'nl.giejay.android.tv.immich'
 }
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    implementation libs.kotlin.reflect
     implementation project(path: ':mediaslider:mediaslider')
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    coreLibraryDesugaring libs.desugar.jdk.libs
 
     // AndroidX libraries
-    def leanback_version = "1.2.0"
-    def fragment_version = "1.8.8"
-    implementation "androidx.appcompat:appcompat:1.7.1"
-    implementation "androidx.core:core-ktx:1.16.0"
-    implementation "androidx.fragment:fragment-ktx:$fragment_version"
-    implementation "androidx.leanback:leanback:$leanback_version"
-    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
-    implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
-    implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
-//    implementation "androidx.preference:preference-ktx:1.2.0"
-    implementation "androidx.leanback:leanback-preference:$leanback_version"
-    implementation 'io.arrow-kt:arrow-core:1.2.0'
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.fragment.ktx
+    implementation libs.androidx.leanback
+    implementation libs.androidx.lifecycle.extensions1
+    implementation libs.androidx.navigation.fragment.ktx
+    implementation libs.androidx.navigation.ui.ktx
+    implementation libs.androidx.leanback.preference
+    implementation libs.arrow.core
 
-    implementation platform('com.google.firebase:firebase-bom:33.16.0')
-    implementation 'com.google.firebase:firebase-crashlytics'
-    implementation("com.google.firebase:firebase-analytics")
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.analytics
+    implementation libs.firebase.crashlytics
 
     // Cast library used for Cast Connect feature
 //    implementation "com.google.android.gms:play-services-cast-tv:$cast_tv_version"
 //    implementation "com.google.android.gms:play-services-cast:$cast_version"
 
-    debugImplementation "androidx.fragment:fragment-testing:$fragment_version"
+    debugImplementation libs.androidx.fragment.testing
 
     // Work library used for simplifying work done in the background
 //    def work_version = "2.7.1"
@@ -124,51 +109,50 @@ dependencies {
     // TV provider library used for updating home screen channels
 //    implementation 'androidx.tvprovider:tvprovider:1.0.0'
 
-    implementation 'io.reactivex.rxjava3:rxandroid:3.0.2'
-    implementation group: 'io.reactivex.rxjava3', name: 'rxjava', version: '3.1.8'
+    implementation libs.rxandroid
+    implementation libs.rxjava
 
     // Exoplayer for playback
-    implementation 'androidx.media3:media3-exoplayer:1.7.1'
+    implementation libs.androidx.media3.exoplayer
 
-    implementation "com.android.billingclient:billing-ktx:8.0.0"
+    implementation libs.billing.ktx
 
-    implementation "com.google.code.gson:gson:2.11.0"
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
-    implementation 'com.github.bumptech.glide:okhttp3-integration:4.16.0'
+    implementation libs.gson
+    implementation libs.glide
+    implementation libs.okhttp3.integration
 
     // Google Play Services for identity
-    def playservices_version = "21.3.0"
-    implementation "com.google.android.gms:play-services-auth:$playservices_version"
+    implementation libs.play.services.auth
 
     // Retrofit for HTTP requests
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation "com.squareup.retrofit2:converter-gson:2.9.0"
+    implementation libs.retrofit
+    implementation libs.converter.gson
 
     // Logging
-    implementation("com.jakewharton.timber:timber:5.0.1")
+    implementation(libs.timber)
 
     // qr
-    implementation 'com.github.alexzhirkevich:custom-qr-generator:1.6.2'
+    implementation libs.custom.qr.generator
 
-    kapt 'com.github.bumptech.glide:compiler:4.14.2'
+    ksp libs.glide.ksp
 
     // Testing libraries
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'android.arch.core:core-testing:1.1.1'
-    testImplementation 'androidx.test:core:1.4.0'
-    testImplementation 'androidx.test:rules:1.4.0'
-    testImplementation 'androidx.test:runner:1.4.0'
-    testImplementation 'androidx.test.ext:junit:1.1.3'
+    testImplementation libs.junit
+    testImplementation libs.core.testing
+    testImplementation libs.androidx.core
+    testImplementation libs.androidx.rules
+    testImplementation libs.androidx.runner
+    testImplementation libs.androidx.junit
 //    testImplementation "androidx.work:work-testing:$work_version"
-    testImplementation "com.google.truth:truth:1.1.3"
-    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0-native-mt"
-    testImplementation "org.mockito:mockito-core:4.4.0"
-    testImplementation 'org.mockito:mockito-inline:4.4.0'
-    testImplementation 'org.robolectric:robolectric:4.7.3'
+    testImplementation libs.truth
+    testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.inline
+    testImplementation libs.robolectric
 
-    testImplementation 'com.google.apis:google-api-services-androidpublisher:v3-rev20230815-2.0.0'
-    testImplementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
-    testImplementation 'com.google.auth:google-auth-library-oauth2-http:1.22.0'
-    testImplementation 'com.google.api-client:google-api-client:2.2.0'
+    testImplementation libs.google.api.services.androidpublisher
+    testImplementation libs.org.eclipse.jgit
+    testImplementation libs.google.auth.library.oauth2.http
+    testImplementation libs.google.api.client
 
 }

@@ -11,6 +11,7 @@ import nl.giejay.mediaslider.adapter.MetaDataSliderItem
 import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.MetaDataConverter
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import kotlin.reflect.KClass
 
 enum class MetaDataScreen {
@@ -62,12 +63,12 @@ object PreferenceManager {
     }
 
     fun isValid(hostName: String?, apiKey: String?): Boolean {
-        return hostName?.isNotBlank() == true && apiKey?.isNotBlank() == true && HttpUrl.parse(hostName) != null
+        return hostName?.isNotBlank() == true && apiKey?.isNotBlank() == true && hostName.toHttpUrlOrNull() != null
     }
 
     fun removeApiSettings() {
-        HOST_NAME.save(sharedPreference, "")
-        API_KEY.save(sharedPreference, "")
+        save(HOST_NAME, "")
+        save(API_KEY, "")
     }
 
     private fun removeStringSetItem(item: String, prefKey: StringSetPref) {
@@ -132,9 +133,6 @@ object PreferenceManager {
         }
         if (get(SCREENSAVER_SHOW_DATE)) {
             metaData.add(MetaDataSliderItem(MetaDataType.DATE, AlignOption.RIGHT))
-        }
-        if (get(SCREENSAVER_SHOW_MEDIA_COUNT)) {
-            metaData.add(MetaDataMediaCount(AlignOption.RIGHT))
         }
 
         return metaData

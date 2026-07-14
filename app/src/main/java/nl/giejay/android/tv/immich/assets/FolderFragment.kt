@@ -3,7 +3,6 @@ package nl.giejay.android.tv.immich.assets
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.getOrElse
-import nl.giejay.mediaslider.model.MetaDataType
 import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.ApiClient
@@ -17,15 +16,18 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
-import java.util.EnumSet
 
 data class Item(val item: Any) {
     fun isAsset() = item is Asset
@@ -42,7 +44,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
         return items.sortedWith({ i, i2 ->
             if (!i.isAsset() && !i2.isAsset() || (i.isAsset() && i2.isAsset())) {
                 // both folders or both items
-                i.name()!!.compareTo(i2.name()!!)
+                i2.name()?.let { i.name()?.compareTo(it) } ?: 0
             } else if (!i.isAsset()) {
                 // i is folder, i2 is asset, precedence for folder
                 -1
@@ -102,7 +104,11 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                         debugEnabled = PreferenceManager.get(DEBUG_MODE),
                         enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                         gradiantOverlay = false,
-                        metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                        metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
+                        zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                        zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                        panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+                        useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
                     )
                 )
             )

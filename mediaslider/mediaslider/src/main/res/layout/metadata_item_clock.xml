@@ -1,0 +1,20 @@
+<RelativeLayout android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextClock
+        android:id="@id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="10dp"
+        android:fontFamily="@string/font_family"
+        android:paddingRight="30dp"
+        android:paddingLeft="30dp"
+        android:textColor="#FFFFFFFF"
+        android:shadowColor="#FF000000"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="6"
+        android:textStyle="bold"
+        android:textSize="48sp"/>
+</RelativeLayout>
