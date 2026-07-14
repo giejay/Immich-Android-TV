@@ -599,10 +599,23 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         val sliderItems = flat.map { it.second.toSliderItemViewHolder() }
         val startIndex = sliderItems.indexOfFirst { it.ids().contains(assetId) }.coerceAtLeast(0)
 
+        // Continue strictly forward in time from the oldest asset already in the slider.
+        // [TimelineViewModel.nextUnloadedBucket] picks the first *gap* in the whole bucket
+        // list — unrelated to where the slider currently is — which was jumping the slider
+        // to an arbitrary month once the locally-loaded assets ran out.
+        var lastBucketKey: String? = flat.lastOrNull()?.let { (_, asset) ->
+            viewModel.bucketKeyForAsset(asset.id)
+        }
+
         val loadMore: LoadMore = suspend loadMore@{
-            val next = viewModel.nextUnloadedBucket() ?: return@loadMore emptyList()
+            val afterKey = lastBucketKey ?: return@loadMore emptyList()
+            val buckets = viewModel.buckets.value
+            val afterIndex = buckets.indexOfFirst { it.timeBucket == afterKey }
+            if (afterIndex < 0) return@loadMore emptyList()
+            val next = buckets.getOrNull(afterIndex + 1) ?: return@loadMore emptyList()
             val knownIds = viewModel.flatAssetIndex().map { it.second.id }.toSet()
             viewModel.loadBucket(next.timeBucket)
+            lastBucketKey = next.timeBucket
             viewModel.flatAssetIndex()
                 .map { it.second }
                 .filter { it.id !in knownIds }
