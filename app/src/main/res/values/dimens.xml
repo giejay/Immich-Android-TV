@@ -82,4 +82,12 @@
     <dimen name="card_width">192dp</dimen>
     <dimen name="card_height">96dp</dimen>
     <dimen name="memory_card_corner_radius">16dp</dimen>
+    <dimen name="memory_card_width">280dp</dimen>
+    <dimen name="memory_card_height">160dp</dimen>
+    <!--
+      Clears scrubber year labels for the rightmost visible resting card
+      (scrubber 112dp − recycler paddingEnd 64dp, plus a little gap).
+    -->
+    <dimen name="timeline_memories_end_clearance">56dp</dimen>
+    <dimen name="timeline_memories_horizontal_margin">8dp</dimen>
 </resources>

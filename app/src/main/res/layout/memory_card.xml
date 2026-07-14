@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/memory_card"
-    android:layout_width="280dp"
-    android:layout_height="160dp"
+    android:layout_width="@dimen/memory_card_width"
+    android:layout_height="@dimen/memory_card_height"
     android:background="@drawable/bg_rounded_card"
     android:focusable="true"
     android:focusableInTouchMode="true">

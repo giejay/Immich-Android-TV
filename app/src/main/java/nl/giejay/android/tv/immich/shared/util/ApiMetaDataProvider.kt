@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.shared.util
 
 import android.os.Parcel
 import android.os.Parcelable
+import android.util.LruCache
 import arrow.core.Either
 import arrow.core.Option
 import nl.giejay.android.tv.immich.api.ApiClient
@@ -14,7 +15,6 @@ import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.mediaslider.model.MetaDataProvider
 import nl.giejay.mediaslider.model.MetaDataType
-import java.util.concurrent.ConcurrentHashMap
 
 class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
     constructor(parcel: Parcel) : this(parcel.readString()!!)
@@ -101,14 +101,17 @@ class AssetDetailMetaDataProvider(
 }
 
 object AssetDetailCache {
-    private val cache = ConcurrentHashMap<String, Asset>()
+    /** Cap detail payloads so long timeline/memory sessions cannot grow without bound. */
+    private const val MAX_ENTRIES = 100
+
+    private val cache = LruCache<String, Asset>(MAX_ENTRIES)
 
     /**
      * Returns the asset or throws if the API call fails. Callers should not mark a metadata
      * field as "fetched" on failure so opening details can retry.
      */
     suspend fun get(assetId: String): Asset {
-        cache[assetId]?.let { return it }
+        cache.get(assetId)?.let { return it }
         val client = ApiClient.getClient(
             ApiClientConfig(
                 PreferenceManager.get(HOST_NAME),
@@ -120,7 +123,7 @@ object AssetDetailCache {
         return client.getAsset(assetId).fold(
             { error -> throw IllegalStateException("Failed to load asset $assetId: $error") },
             { asset ->
-                cache[assetId] = asset
+                cache.put(assetId, asset)
                 asset
             }
         )

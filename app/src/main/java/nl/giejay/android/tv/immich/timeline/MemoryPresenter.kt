@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.leanback.widget.HorizontalGridView
 import androidx.leanback.widget.Presenter
 import com.bumptech.glide.Glide
 import nl.giejay.android.tv.immich.R
@@ -58,6 +59,8 @@ class MemoryPresenter(
         view.setTag(R.id.timeline_memory_id, memory.id)
         view.setOnClickListener { onMemoryClicked(memory) }
         view.setOnFocusChangeListener { v, hasFocus ->
+            // Resting cards stay clipped inside end clearance; focused scale may cover the scrubber.
+            findMemoriesGrid(v)?.clipToPadding = !hasFocus
             v.animate().scaleX(if (hasFocus) 1.14f else 1f)
                 .scaleY(if (hasFocus) 1.14f else 1f)
                 .setDuration(120)
@@ -80,6 +83,15 @@ class MemoryPresenter(
             return context.resources.getQuantityString(
                 R.plurals.years_ago, years, years
             )
+        }
+
+        private fun findMemoriesGrid(view: View): HorizontalGridView? {
+            var parent = view.parent
+            while (parent != null) {
+                if (parent is HorizontalGridView) return parent
+                parent = parent.parent
+            }
+            return null
         }
     }
 }
