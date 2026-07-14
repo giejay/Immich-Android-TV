@@ -47,6 +47,7 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     private var mSceneAfterEntranceTransition: Any? = null
     var progressBar: ProgressBar? = null
     private var dateIndicator: TextView? = null
+    private var forcedDateIndicator: String? = null
     private var mSelectedPosition = -1
     private val mMainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
         object : BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {
@@ -182,12 +183,18 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     }
 
     protected fun updateDateLabel(text: String?) {
-        if (text != null) {
-            dateIndicator?.text = text
+        val textToShow = forcedDateIndicator ?: text
+        if (textToShow != null) {
+            dateIndicator?.text = textToShow
             dateIndicator?.visibility = View.VISIBLE
         } else {
             dateIndicator?.visibility = View.GONE
         }
+    }
+
+    protected fun setForcedDateLabel(text: String?) {
+        forcedDateIndicator = text
+        updateDateLabel(null)
     }
 
     /**

@@ -110,6 +110,9 @@
         android:id="@+id/allAssetsFragment"
         android:name="nl.giejay.android.tv.immich.assets.AllAssetFragment"
         android:label="AllAssetsFragment">
+        <action
+            android:id="@+id/action_allAssetsFragment_to_dateJumpDialogFragment"
+            app:destination="@id/dateJumpDialogFragment" />
     </fragment>
 
     <fragment
@@ -238,6 +241,10 @@
             android:defaultValue="VIEWER"
             app:argType="nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen" />
     </dialog>
+
+    <dialog
+        android:id="@+id/dateJumpDialogFragment"
+        android:name="nl.giejay.android.tv.immich.assets.DateJumpDialogFragment" />
 
     <fragment
         android:id="@+id/viewSettings"

@@ -2,6 +2,8 @@ package nl.giejay.android.tv.immich.shared.fragment
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.KeyEvent
 import android.view.View
@@ -59,6 +61,15 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     protected var currentPage: Int = startPage
     protected var allPagesLoaded: Boolean = false
     private var currentLoadingJob: Job? = null
+    private val scrollDownHandler = Handler(Looper.getMainLooper())
+    private var scrollDownStartTime: Long? = null
+    private var scrollDownThresholdReached = false
+    private val scrollDownRunnable = Runnable {
+        if (!scrollDownThresholdReached) {
+            scrollDownThresholdReached = true
+            onScrollDownThresholdReached()
+        }
+    }
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
     private var currentSelectedIndex: Int = 0
@@ -110,10 +121,16 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                     // open popup menu on the right side if its the last photo in the row and user presses right button
                     if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ((adapter.size() == 0 && allPagesLoaded) || currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size()))) {
                         openPopUpMenu()
+                    } else if (it?.keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                        startScrollDownDetection()
                     } else if (it?.keyCode == KeyEvent.KEYCODE_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) {
+                        resetScrollDownDetection()
                         updateManualPositionHandler(adapter.size() - 1)
                     } else if (it?.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD) {
+                        resetScrollDownDetection()
                         updateManualPositionHandler((currentSelectedIndex - FETCH_PAGE_COUNT).coerceAtLeast(0))
+                    } else {
+                        resetScrollDownDetection()
                     }
                 }
             }
@@ -197,6 +214,10 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         // to implement by children
     }
 
+    protected open fun onScrollDownThresholdReached() {
+        // to implement by children
+    }
+
     private fun fetchNextItems(): Job {
         return ioScope.launch {
             val nextAssets = loadMoreAssets()
@@ -257,6 +278,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     override fun onDestroyView() {
+        resetScrollDownDetection()
         super.onDestroyView()
         if (mBackgroundManager?.isAttached == true) {
             mBackgroundManager?.drawable = null
@@ -347,5 +369,19 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
         const val FETCH_COUNT = 50
         const val FETCH_PAGE_COUNT = FETCH_COUNT
+        private const val SCROLL_DOWN_THRESHOLD_MS = 3000L
+    }
+
+    private fun startScrollDownDetection() {
+        if (scrollDownStartTime == null) {
+            scrollDownStartTime = System.currentTimeMillis()
+            scrollDownHandler.postDelayed(scrollDownRunnable, SCROLL_DOWN_THRESHOLD_MS)
+        }
+    }
+
+    private fun resetScrollDownDetection() {
+        scrollDownHandler.removeCallbacks(scrollDownRunnable)
+        scrollDownStartTime = null
+        scrollDownThresholdReached = false
     }
 }
