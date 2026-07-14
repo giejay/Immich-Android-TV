@@ -5,9 +5,9 @@ import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.BufferedSource
 import okio.GzipSource
-import okio.Okio
 import okio.buffer
 import timber.log.Timber
 
@@ -17,25 +17,25 @@ class ResponseLoggingInterceptor : Interceptor {
         val request: Request = chain.request()
         var response: Response = chain.proceed(request)
         var content: String? = null
-        response.body()?.let {
+        response.body?.let {
             val contentType: MediaType? = it.contentType()
             val contentEncoding: String? = response.header(CONTENT_ENCODING)
             if ("gzip" == contentEncoding) {
                 val buffer: BufferedSource = GzipSource(it.source()).buffer()
                 content = buffer.readUtf8()
-                val wrappedBody: ResponseBody = ResponseBody.create(contentType, content)
+                val wrappedBody: ResponseBody = content.toResponseBody(contentType)
                 response =
                     response.newBuilder().removeHeader(CONTENT_ENCODING).body(wrappedBody).build()
             } else {
                 content = it.string()
-                val wrappedBody: ResponseBody = ResponseBody.create(contentType, content)
+                val wrappedBody: ResponseBody = content.toResponseBody(contentType)
                 response = response.newBuilder().body(wrappedBody).build()
             }
         }
-        var protocol: String = response.protocol().name.replaceFirst("_", "/")
+        var protocol: String = response.protocol.name.replaceFirst("_", "/")
         protocol = protocol.replace('_', '.')
-        val httpLine = "" + protocol + ' ' + response.code()
-        Timber.d("${request.url()}\n${httpLine}\n${response.headers()}\n\n${content?.take(500)}")
+        val httpLine = "" + protocol + ' ' + response.code
+        Timber.d("${request.url}\n${httpLine}\n${response.headers}\n\n${content?.take(500)}")
         return response
     }
 
