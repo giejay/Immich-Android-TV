@@ -9,10 +9,10 @@ import androidx.annotation.OptIn
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.zeuskartik.mediaslider.R
-import io.github.anilbeesetti.nextlib.media3ext.ffdecoder.NextRenderersFactory
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 
 /**
@@ -31,7 +31,7 @@ class ExoPlayerView @JvmOverloads constructor(context: Context, resourceId: Int,
     @OptIn(UnstableApi::class)
     fun setupPlayer(
         config: MediaSliderConfiguration,
-        renderersFactory: NextRenderersFactory,
+        renderersFactory: DefaultRenderersFactory,
         listener: ExoPlayerListener,
         onPlayerError: (ExoPlayer, Exception) -> Boolean
     ) {

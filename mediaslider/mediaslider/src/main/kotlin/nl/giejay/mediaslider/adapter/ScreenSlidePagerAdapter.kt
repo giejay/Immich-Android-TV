@@ -14,7 +14,6 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.zeuskartik.mediaslider.R
-import io.github.anilbeesetti.nextlib.media3ext.ffdecoder.NextRenderersFactory
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
@@ -22,6 +21,7 @@ import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.view.ExoPlayerListener
 import nl.giejay.mediaslider.view.ExoPlayerView
 import nl.giejay.mediaslider.view.TouchImageView
+import nl.giejay.mediaslider.view.createVideoRenderersFactory
 import timber.log.Timber
 
 
@@ -72,7 +72,7 @@ class ScreenSlidePagerAdapter(private val context: Context,
             val useTextureView = model.mainItem.orientation != 1 || failedPositions.contains(model.url)
             view = ExoPlayerView(context, if (useTextureView) R.layout.video_item_texture_view else R.layout.video_item)
             view.tag = "view$position"
-            view.setupPlayer(config, NextRenderersFactory(context), exoPlayerListener) { player, error ->
+            view.setupPlayer(config, createVideoRenderersFactory(context), exoPlayerListener) { player, error ->
                 val shouldRetry = !useTextureView && !failedPositions.contains(model.url)
                 Timber.e(error,
                     "Player error at position $position for url ${model.url}. Already failed: ${failedPositions.contains(model.url)}." +
