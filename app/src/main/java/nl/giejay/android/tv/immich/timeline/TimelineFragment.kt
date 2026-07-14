@@ -51,6 +51,8 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
+import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.util.Debouncer
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.MetaDataType
@@ -83,11 +85,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private var rowHeightPx = 0
     private var gapPx = 0
 
-    /**
-     * Snapshot taken when the side menu opens so re-entry can restore the exact cell
-     * even if Leanback briefly focuses another visible cell first.
-     */
-    private var pendingResumeAssetId: String? = null
     /** Skip rememberSelection while we re-land focus after the menu. */
     private var ignoreSelectionMemory = false
 
@@ -176,7 +173,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             },
             onCellFocus = { cell, cellView ->
                 viewModel.prefetchAroundDay(cell.dayKey)
-                if (!ignoreSelectionMemory) {
+                // Don't overwrite leave-off selection while the side menu owns focus.
+                if (!ignoreSelectionMemory && !isBrowseShowingHeaders()) {
                     focusNavigator?.onCellFocused(cell.dayKey, cell.asset.id)
                     viewModel.rememberSelection(cell.dayKey, cell.asset.id)
                     syncScrubberToAsset(cell.asset.id, cell.dayKey)
@@ -207,7 +205,9 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             adapter,
             onFocused = { dayKey, assetId ->
                 viewModel.prefetchAroundDay(dayKey)
-                viewModel.rememberSelection(dayKey, assetId)
+                if (!ignoreSelectionMemory && !isBrowseShowingHeaders()) {
+                    viewModel.rememberSelection(dayKey, assetId)
+                }
                 maybeLoadMoreNearEnd()
             },
             onExitRightToScrubber = { focusScrubberFromMosaic() },
@@ -273,7 +273,9 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                         // Opening menu — remember the mosaic cell before Leanback steals focus.
                         captureResumeState()
                         beginResumeFocusLock()
-                    } else if (pendingResumeAssetId != null || viewModel.lastSelectedAssetId != null) {
+                    } else if (viewModel.pendingResumeAssetId != null ||
+                        viewModel.lastSelectedAssetId != null
+                    ) {
                         // Re-entering with a prior cell — block children so Leanback cannot flash
                         // a neighboring item before we hand focus back.
                         beginResumeFocusLock()
@@ -284,7 +286,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     if (!isAdded) return
                     if (withHeaders) {
                         selectionRestored = false
-                        if (pendingResumeAssetId == null) captureResumeState()
+                        if (viewModel.pendingResumeAssetId == null) captureResumeState()
                     } else {
                         hideBrowseTitle()
                         restoreSelectionIfNeeded()
@@ -295,6 +297,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
         rv.post {
             contentWidthPx = (rv.width - rv.paddingStart - rv.paddingEnd).coerceAtLeast(1)
+            // Recreated while the menu is already open (e.g. Photos → Timeline): never auto-enter.
+            if (isBrowseShowingHeaders()) {
+                if (viewModel.pendingResumeAssetId == null) captureResumeState()
+                beginResumeFocusLock()
+                selectionRestored = false
+            }
             bindDays(viewModel.days.value)
         }
 
@@ -347,6 +355,10 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     override fun onDestroyView() {
+        // Keep leave-off position for Photos → Timeline recreate (fragment-local state dies here).
+        if (viewModel.pendingResumeAssetId == null) {
+            captureResumeState()
+        }
         (parentFragment as? BrowseSupportFragment)?.setBrowseTransitionListener(null)
         focusVideoPreview?.release()
         focusVideoPreview = null
@@ -363,6 +375,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     private fun clearBackground() {
+        Debouncer.cancel(VerticalCardGridFragment.BACKGROUND_DEBOUNCE_KEY)
         val backgroundManager = BackgroundManager.getInstance(activity)
         if (!backgroundManager.isAttached) {
             backgroundManager.attach(requireActivity().window)
@@ -619,11 +632,18 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             }
 
             when {
+                // Side menu owns focus — never requestFocus into the mosaic (auto-enters Timeline).
+                isBrowseShowingHeaders() -> {
+                    selectionRestored = false
+                    beginResumeFocusLock()
+                }
                 scrubberView?.hasFocus() == true -> {
                     selectionRestored = true
                 }
-                anchorAssetId != null && adapter.positionOfAsset(anchorAssetId) >= 0 -> {
-                    // Views were rebound — keep focus on the same asset without jump-scrolling.
+                anchorAssetId != null &&
+                    adapter.positionOfAsset(anchorAssetId) >= 0 &&
+                    recyclerView?.findFocus()?.getTag(R.id.timeline_mosaic_cell_asset_id) != null -> {
+                    // Already browsing the mosaic; rebind kept a focused cell — retain it.
                     selectionRestored = true
                     setFocusScrollSuppressed(true)
                     val cell = adapter.findCellView(recyclerView!!, anchorAssetId)
@@ -652,7 +672,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     private fun captureResumeState() {
-        pendingResumeAssetId = viewModel.lastSelectedAssetId
+        viewModel.pendingResumeAssetId = viewModel.lastSelectedAssetId
     }
 
     private fun setFocusScrollSuppressed(suppressed: Boolean) {
@@ -688,7 +708,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         if (isBrowseShowingHeaders()) return
 
         // Prefer the cell captured when the menu opened — not whatever Leanback focused mid-transition.
-        val assetId = pendingResumeAssetId ?: viewModel.lastSelectedAssetId
+        val assetId = viewModel.pendingResumeAssetId ?: viewModel.lastSelectedAssetId
         if (assetId != null) {
             val position = adapter.positionOfAsset(assetId)
             if (position < 0) {
@@ -703,7 +723,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
             selectionRestored = true
             val rv = recyclerView ?: return
-            val fromMenu = pendingResumeAssetId != null
+            val fromMenu = viewModel.pendingResumeAssetId != null
             // Unblock and focus the saved cell synchronously — no delay, no intermediate cell.
             setFocusScrollSuppressed(true)
             rv.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
@@ -714,11 +734,11 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             val last = lm?.findLastVisibleItemPosition() ?: RecyclerView.NO_POSITION
             val visible = first != RecyclerView.NO_POSITION && position in first..last
             if (fromMenu) {
-                // Menu round-trip: never inch the list — only re-focus.
-                if (cell != null) {
+                // Menu re-entry: keep scroll if already there; otherwise jump once (recreate starts at top).
+                if (cell != null && visible) {
                     cell.requestFocus()
                 } else {
-                    navigator.focusAsset(assetId, adjustScroll = false, lockScroll = true)
+                    navigator.focusAsset(assetId, adjustScroll = true, lockScroll = true)
                 }
             } else if (cell != null && visible) {
                 cell.requestFocus()
@@ -727,7 +747,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 // buckets loaded in the background — jump back to the remembered asset.
                 navigator.focusAsset(assetId, adjustScroll = true, lockScroll = false)
             }
-            pendingResumeAssetId = null
+            viewModel.pendingResumeAssetId = null
             viewModel.rememberSelectionByAssetId(assetId)
             // Re-enable scrubber after focus has landed on the mosaic cell.
             rv.post {

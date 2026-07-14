@@ -56,6 +56,12 @@ class TimelineViewModel(
     var lastSelectedDayKey: String? = null
     var lastSelectedAssetId: String? = null
 
+    /**
+     * Cell to restore after a menu round-trip. Lives on the activity-scoped ViewModel so it
+     * survives TimelineFragment destruction when browsing Photos (etc.) and coming back.
+     */
+    var pendingResumeAssetId: String? = null
+
     suspend fun loadBucketList(eagerMonths: Int = 3) {
         if (_buckets.value.isNotEmpty()) return
         fetchBuckets().fold(
