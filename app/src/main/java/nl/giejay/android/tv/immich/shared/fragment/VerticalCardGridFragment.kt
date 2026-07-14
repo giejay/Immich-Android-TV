@@ -78,6 +78,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     abstract fun onItemSelected(card: Card, indexOf: Int)
     abstract fun onItemClicked(card: Card)
+    open fun getItemDate(item: ITEM): String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,6 +141,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                             .e("Could not load background url")
                     }
                 }
+                updateDateLabel(assets.getOrNull(currentSelectedIndex)?.let { asset -> getItemDate(asset) })
             }
             with(this@VerticalCardGridFragment) {
                 loadNextItemsIfNeeded(adapter.indexOf(item))

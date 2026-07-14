@@ -21,6 +21,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.leanback.app.BrandedSupportFragment
 import androidx.leanback.app.BrowseSupportFragment
@@ -45,6 +46,7 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     private var mOnItemViewClickedListener: OnItemViewClickedListener? = null
     private var mSceneAfterEntranceTransition: Any? = null
     var progressBar: ProgressBar? = null
+    private var dateIndicator: TextView? = null
     private var mSelectedPosition = -1
     private val mMainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
         object : BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {
@@ -154,6 +156,7 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
         super.onViewCreated(view, savedInstanceState)
         val gridDock: ViewGroup = view.findViewById(R.id.browse_grid_dock)
         progressBar = gridDock.findViewById(R.id.browse_progressbar)
+        dateIndicator = view.findViewById(R.id.date_indicator)
         if (hideProgressBar) {
             progressBar?.visibility = View.GONE
         }
@@ -169,12 +172,22 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
 
     override fun onDestroyView() {
         super.onDestroyView()
+        dateIndicator = null
         Timber.i("${this.javaClass.simpleName} got destroyed")
         mGridViewHolder = null
     }
 
     override fun getMainFragmentAdapter(): BrowseSupportFragment.MainFragmentAdapter<*> {
         return mMainFragmentAdapter
+    }
+
+    protected fun updateDateLabel(text: String?) {
+        if (text != null) {
+            dateIndicator?.text = text
+            dateIndicator?.visibility = View.VISIBLE
+        } else {
+            dateIndicator?.visibility = View.GONE
+        }
     }
 
     /**

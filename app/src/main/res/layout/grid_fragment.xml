@@ -24,6 +24,25 @@
                 android:layout_gravity="center"
                 android:indeterminate="true"
                 android:theme="@style/ProgressBar"/>
+
+            <TextView
+                android:id="@+id/date_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/date_indicator_background"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:elevation="8dp"
+                android:focusable="false"
+                android:visibility="gone" />
+
         </FrameLayout>
 
 
