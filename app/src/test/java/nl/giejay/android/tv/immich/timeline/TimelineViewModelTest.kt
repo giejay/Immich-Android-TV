@@ -169,6 +169,34 @@ class TimelineViewModelTest {
     }
 
     @Test
+    fun `nextOlderUnloadedBucket extends past oldest loaded not first global gap`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(
+                    listOf(
+                        TimeBucketSummary("2026-07-01", 1),
+                        TimeBucketSummary("2026-06-01", 1),
+                        TimeBucketSummary("2026-05-01", 1),
+                        TimeBucketSummary("2005-03-01", 1),
+                        TimeBucketSummary("2005-02-01", 1)
+                    )
+                )
+            },
+            fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
+            prefetchDebounceMs = 0
+        )
+
+        vm.loadBucketList(eagerMonths = 1)
+        advanceUntilIdle()
+        vm.loadBucket("2005-03-01")
+        advanceUntilIdle()
+
+        // First global gap is still June 2026, but bottom-of-timeline paging must continue from 2005.
+        assertEquals("2026-06-01", vm.nextUnloadedBucket()?.timeBucket)
+        assertEquals("2005-02-01", vm.nextOlderUnloadedBucket()?.timeBucket)
+    }
+
+    @Test
     fun `monthBucketKey uses first of month`() {
         assertEquals(
             "2026-07-01",

@@ -148,6 +148,27 @@ class TimelineViewModel(
     }
 
     /**
+     * Next older unloaded month after the oldest month we already have assets for.
+     *
+     * Used when the mosaic is near the bottom (farther back in time). Prefer this over
+     * [nextUnloadedBucket], which fills the first gap near "today" and inserts days *above*
+     * the viewport — causing jumpy D-pad navigation deep in the timeline.
+     */
+    fun nextOlderUnloadedBucket(): TimeBucketSummary? {
+        val loaded = _bucketAssets.value.keys
+        if (loaded.isEmpty()) {
+            return _buckets.value.firstOrNull()
+        }
+        val oldestLoadedIndex = _buckets.value.indexOfLast { it.timeBucket in loaded }
+        if (oldestLoadedIndex < 0) {
+            return _buckets.value.firstOrNull { it.timeBucket !in loaded }
+        }
+        return _buckets.value
+            .drop(oldestLoadedIndex + 1)
+            .firstOrNull { it.timeBucket !in loaded }
+    }
+
+    /**
      * Immich UTC month bucket that owns [assetId], if that bucket is loaded.
      * Preferred over local calendar month when syncing the scrubber.
      */

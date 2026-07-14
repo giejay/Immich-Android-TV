@@ -15,7 +15,9 @@ class TimelineFocusNavigator(
     private val recyclerView: RecyclerView,
     private val adapter: TimelineMosaicAdapter,
     private val onFocused: (dayKey: String, assetId: String) -> Unit,
-    private val onExitRightToScrubber: (() -> Unit)? = null
+    private val onExitRightToScrubber: (() -> Unit)? = null,
+    /** Fired when Down is pressed with no neighbor — load older months / extend the list. */
+    private val onReachContentEnd: (() -> Unit)? = null
 ) {
     var neighbors: Map<String, TimelineFocusNeighbors> = emptyMap()
         private set
@@ -40,10 +42,16 @@ class TimelineFocusNavigator(
                 onExitRightToScrubber?.invoke()
                 return true
             }
-            // Let Browse steal Left/Up at the edge; keep Down from wandering.
-            return keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                // End of currently built mosaic — request older months (focus doesn't scroll,
+                // so onScrolled alone never fires load-more here).
+                onReachContentEnd?.invoke()
+                return true
+            }
+            // Let Browse steal Left/Up at the edge.
+            return false
         }
-        focusAsset(targetId)
+        focusAsset(targetId, adjustScroll = false, lockScroll = false)
         return true
     }
 
@@ -51,7 +59,16 @@ class TimelineFocusNavigator(
         onFocused(dayKey, assetId)
     }
 
-    fun focusAsset(assetId: String, smooth: Boolean = true, adjustScroll: Boolean = true) {
+    /**
+     * @param adjustScroll jump-scroll so the asset sits near the upper quarter (slider restore, etc.)
+     * @param lockScroll ignore focus bring-into-view entirely (menu re-entry must not inch)
+     */
+    fun focusAsset(
+        assetId: String,
+        smooth: Boolean = false,
+        adjustScroll: Boolean = false,
+        lockScroll: Boolean = false
+    ) {
         val position = adapter.positionOfAsset(assetId)
         if (position < 0) return
         val lm = recyclerView.layoutManager as? LinearLayoutManager
@@ -61,17 +78,26 @@ class TimelineFocusNavigator(
             } else {
                 lm?.scrollToPositionWithOffset(position, recyclerView.height / 4)
             }
+        } else if (!lockScroll && lm != null) {
+            val first = lm.findFirstVisibleItemPosition()
+            val last = lm.findLastVisibleItemPosition()
+            // Off-screen neighbor has no ViewHolder yet — scroll just enough to bind it so
+            // requestFocus can succeed. On-screen moves rely on requestChildRectangleOnScreen.
+            if (first == RecyclerView.NO_POSITION || position !in first..last) {
+                if (smooth) {
+                    recyclerView.smoothScrollToPosition(position)
+                } else {
+                    lm.scrollToPosition(position)
+                }
+            }
         }
         val mosaicLm = recyclerView.layoutManager as? TimelineMosaicLayoutManager
-        // When adjustScroll is false (e.g. re-entry from the menu), never let focus
-        // requestChildRectangleOnScreen nudge the list — that inches upward every time.
-        val alreadySuppressed = mosaicLm?.suppressFocusScroll == true
-        if (!adjustScroll) {
+        val alreadyLocked = mosaicLm?.suppressFocusScroll == true
+        if (lockScroll) {
             mosaicLm?.suppressFocusScroll = true
         }
-        fun clearSuppress() {
-            // Don't lift a suppress that the caller is holding across a menu round-trip.
-            if (!adjustScroll && !alreadySuppressed) {
+        fun clearLock() {
+            if (lockScroll && !alreadyLocked) {
                 recyclerView.post { mosaicLm?.suppressFocusScroll = false }
             }
         }
@@ -79,11 +105,11 @@ class TimelineFocusNavigator(
             val cell = adapter.findCellView(recyclerView, assetId)
             if (cell != null) {
                 cell.requestFocus()
-                clearSuppress()
+                clearLock()
             } else {
                 recyclerView.post {
                     adapter.findCellView(recyclerView, assetId)?.requestFocus()
-                    clearSuppress()
+                    clearLock()
                 }
             }
         }

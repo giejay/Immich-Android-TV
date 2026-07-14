@@ -581,7 +581,13 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             config,
             { mPager.currentItem },
             { result, position -> transformResults[position] = result },
-            listener
+            listener,
+            restorePagerIndex = { index ->
+                val target = index.coerceIn(0, (config.items.size - 1).coerceAtLeast(0))
+                if (mPager.currentItem != target) {
+                    mPager.setCurrentItem(target, false)
+                }
+            }
         )
 
         try {
@@ -793,8 +799,20 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             // to prevent timing issues when adding + sliding at the same time
             mainHandler.removeCallbacks(goToNextAssetRunnable)
         }
+        // notifyDataSetChanged() + POSITION_NONE recreates pages and can reset the ViewPager
+        // to index 0. That would fire onAssetSelected for a recent item and send the timeline
+        // back to the wrong year when leaving the slider (e.g. after loadMore mid-playback).
+        val current = mPager.currentItem
+        val currentId = config.items.getOrNull(current)?.mainItem?.id
         config.items = items
         pagerAdapter!!.setItems(items)
+        val restored = when {
+            currentId != null -> items.indexOfFirst { it.mainItem.id == currentId }.takeIf { it >= 0 }
+            else -> null
+        } ?: current.coerceIn(0, (items.size - 1).coerceAtLeast(0))
+        if (mPager.currentItem != restored) {
+            mPager.setCurrentItem(restored, false)
+        }
         if (slideShowPlaying && currentItemType() == SliderItemType.IMAGE) {
             startTimerNextAsset()
         }

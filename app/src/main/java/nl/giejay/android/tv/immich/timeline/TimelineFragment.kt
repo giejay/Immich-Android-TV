@@ -207,8 +207,10 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             onFocused = { dayKey, assetId ->
                 viewModel.prefetchAroundDay(dayKey)
                 viewModel.rememberSelection(dayKey, assetId)
+                maybeLoadMoreNearEnd()
             },
-            onExitRightToScrubber = { focusScrubberFromMosaic() }
+            onExitRightToScrubber = { focusScrubberFromMosaic() },
+            onReachContentEnd = { maybeLoadMoreNearEnd() }
         )
 
         rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -245,7 +247,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             }
             when {
                 targetId != null -> {
-                    focusNavigator?.focusAsset(targetId)
+                    focusNavigator?.focusAsset(targetId, adjustScroll = false, lockScroll = false)
                     focused
                 }
                 direction == View.FOCUS_RIGHT -> {
@@ -483,7 +485,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         }
         val position = mosaicAdapter?.positionOfAsset(assetId) ?: RecyclerView.NO_POSITION
         if (position >= 0) {
-            navigator.focusAsset(assetId, smooth = false, adjustScroll = false)
+            navigator.focusAsset(assetId, adjustScroll = false, lockScroll = true)
             return
         }
         returnFocusFromScrubber()
@@ -506,12 +508,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     ?.first
             val assetId = preferredDay?.let { adapter.rightmostAssetIdForDay(it) }
             if (assetId != null) {
-                navigator.focusAsset(assetId, smooth = false, adjustScroll = false)
+                navigator.focusAsset(assetId, adjustScroll = false, lockScroll = true)
                 return
             }
         }
         adapter.firstRowRightmostAssetId()?.let {
-            navigator.focusAsset(it, smooth = false, adjustScroll = false)
+            navigator.focusAsset(it, adjustScroll = false, lockScroll = true)
         }
     }
 
@@ -579,6 +581,22 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             items
         }
 
+        // Anchor scroll to the focused/selected cell so inserting older/newer months in
+        // recomputeDays doesn't yank the viewport when deep in the timeline.
+        val rv = recyclerView
+        val lm = rv?.layoutManager as? LinearLayoutManager
+        val anchorAssetId = rv?.findFocus()?.getTag(R.id.timeline_mosaic_cell_asset_id) as? String
+            ?: viewModel.lastSelectedAssetId
+        val anchorPos = when {
+            anchorAssetId != null -> adapter.positionOfAsset(anchorAssetId)
+            else -> lm?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
+        }
+        val anchorOffset = if (anchorPos != RecyclerView.NO_POSITION) {
+            lm?.findViewByPosition(anchorPos)?.top ?: 0
+        } else {
+            0
+        }
+
         adapter.submitList(itemsWithMemories) {
             if (!isAdded) return@submitList
             if (days.isNotEmpty()) {
@@ -589,12 +607,40 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 }
                 hideBrowseTitle()
             }
-            val hasCellFocus =
-                recyclerView?.findFocus()?.getTag(R.id.timeline_mosaic_cell_asset_id) != null
-            if (!hasCellFocus && scrubberView?.hasFocus() != true) {
-                selectionRestored = false
+
+            val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+            if (anchorAssetId != null && layoutManager != null && scrubberView?.hasFocus() != true) {
+                val newPos = adapter.positionOfAsset(anchorAssetId)
+                if (newPos != RecyclerView.NO_POSITION) {
+                    layoutManager.scrollToPositionWithOffset(newPos, anchorOffset)
+                }
             }
-            restoreSelectionIfNeeded()
+
+            when {
+                scrubberView?.hasFocus() == true -> {
+                    selectionRestored = true
+                }
+                anchorAssetId != null && adapter.positionOfAsset(anchorAssetId) >= 0 -> {
+                    // Views were rebound — keep focus on the same asset without jump-scrolling.
+                    selectionRestored = true
+                    setFocusScrollSuppressed(true)
+                    val cell = adapter.findCellView(recyclerView!!, anchorAssetId)
+                    if (cell != null) {
+                        cell.requestFocus()
+                        setFocusScrollSuppressed(false)
+                    } else {
+                        focusNavigator?.focusAsset(
+                            anchorAssetId,
+                            adjustScroll = false,
+                            lockScroll = true
+                        )
+                    }
+                }
+                else -> {
+                    selectionRestored = false
+                    restoreSelectionIfNeeded()
+                }
+            }
             if (!attemptPendingJumpScroll()) {
                 reanchorStickyJumpIfNeeded()
             }
@@ -654,15 +700,29 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
             selectionRestored = true
             val rv = recyclerView ?: return
+            val fromMenu = pendingResumeAssetId != null
             // Unblock and focus the saved cell synchronously — no delay, no intermediate cell.
             setFocusScrollSuppressed(true)
             rv.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
             scrubberView?.isFocusable = false
             val cell = adapter.findCellView(rv, assetId)
-            if (cell != null) {
+            val lm = rv.layoutManager as? LinearLayoutManager
+            val first = lm?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
+            val last = lm?.findLastVisibleItemPosition() ?: RecyclerView.NO_POSITION
+            val visible = first != RecyclerView.NO_POSITION && position in first..last
+            if (fromMenu) {
+                // Menu round-trip: never inch the list — only re-focus.
+                if (cell != null) {
+                    cell.requestFocus()
+                } else {
+                    navigator.focusAsset(assetId, adjustScroll = false, lockScroll = true)
+                }
+            } else if (cell != null && visible) {
                 cell.requestFocus()
             } else {
-                navigator.focusAsset(assetId, smooth = false, adjustScroll = false)
+                // Returning from the photo slider (etc.): scroll may have been lost while
+                // buckets loaded in the background — jump back to the remembered asset.
+                navigator.focusAsset(assetId, adjustScroll = true, lockScroll = false)
             }
             pendingResumeAssetId = null
             viewModel.rememberSelectionByAssetId(assetId)
@@ -708,26 +768,48 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             rv.post {
                 if (!isAdded) return@post
                 if (adapter.focusFirstMemory(rv)) return@post
-                adapter.firstAssetId()?.let { focusNavigator?.focusAsset(it, smooth = false) }
+                adapter.firstAssetId()?.let {
+                    focusNavigator?.focusAsset(it, adjustScroll = true)
+                }
             }
             return
         }
-        adapter.firstAssetId()?.let { focusNavigator?.focusAsset(it, smooth = false) }
+        adapter.firstAssetId()?.let { focusNavigator?.focusAsset(it, adjustScroll = true) }
     }
 
     private fun maybeLoadMoreNearEnd() {
+        if (loadingNextBucket) return
         val rv = recyclerView ?: return
         val adapter = mosaicAdapter ?: return
-        if (loadingNextBucket) return
         val lm = rv.layoutManager as? LinearLayoutManager ?: return
         val lastVisible = lm.findLastVisibleItemPosition()
-        if (lastVisible == RecyclerView.NO_POSITION) return
-        val remainingDays = adapter.remainingDayHeadersFrom(lastVisible)
-        val nearEnd = remainingDays <= 2 ||
-            lastVisible >= (adapter.itemCount - 4).coerceAtLeast(0)
+        val lastItem = (adapter.itemCount - 1).coerceAtLeast(0)
+        // Also treat "focused on last rows" as near-end — D-pad doesn't always scroll enough
+        // for onScrolled alone to keep loading.
+        val focusedPos = rv.findFocus()?.let { focused ->
+            val id = focused.getTag(R.id.timeline_mosaic_cell_asset_id) as? String
+            id?.let { adapter.positionOfAsset(it) }
+        } ?: RecyclerView.NO_POSITION
+        val remainingFromVisible =
+            if (lastVisible != RecyclerView.NO_POSITION) {
+                adapter.remainingDayHeadersFrom(lastVisible)
+            } else {
+                Int.MAX_VALUE
+            }
+        val remainingFromFocus =
+            if (focusedPos != RecyclerView.NO_POSITION) {
+                adapter.remainingDayHeadersFrom(focusedPos)
+            } else {
+                Int.MAX_VALUE
+            }
+        val nearEnd = remainingFromVisible <= 2 ||
+            remainingFromFocus <= 2 ||
+            (lastVisible != RecyclerView.NO_POSITION && lastVisible >= (lastItem - 4).coerceAtLeast(0)) ||
+            (focusedPos != RecyclerView.NO_POSITION && focusedPos >= (lastItem - 4).coerceAtLeast(0))
         if (!nearEnd) return
 
-        val next = viewModel.nextUnloadedBucket() ?: return
+        // Extend farther back in time — never fill newest-end gaps while at the oldest end.
+        val next = viewModel.nextOlderUnloadedBucket() ?: return
         loadingNextBucket = true
         lifecycleScope.launch(Dispatchers.IO) {
             viewModel.loadBucket(next.timeBucket)
