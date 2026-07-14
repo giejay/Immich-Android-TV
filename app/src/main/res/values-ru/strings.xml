@@ -131,8 +131,8 @@
     <string name="screensaver_type_desc">Что показывать: альбомы, случайные, недавние и т.д.</string>
 
     <!-- Slider/viewer preferences -->
-    <string name="interval_slideshow">Интервал</string>
-    <string name="interval_slideshow_desc">Интервал слайд-шоу</string>
+    <string name="interval_slideshow">Интервал слайд-шоу</string>
+    <string name="interval_slideshow_desc">Секунд на фото в слайд-шоу. Видео воспроизводятся полностью, затем переход дальше.</string>
     <string name="slide_animation_speed_ms">Скорость анимации слайда (мс)</string>
     <string name="slide_animation_speed_desc">Скорость анимации в миллисекундах</string>
     <string name="show_description_slideshow">Показывать описание</string>
@@ -240,8 +240,14 @@
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 секунда</string>
+    <string name="interval_2_seconds">2 секунды</string>
     <string name="interval_3_seconds">3 секунды</string>
+    <string name="interval_4_seconds">4 секунды</string>
     <string name="interval_5_seconds">5 секунд</string>
+    <string name="interval_6_seconds">6 секунд</string>
+    <string name="interval_7_seconds">7 секунд</string>
+    <string name="interval_8_seconds">8 секунд</string>
+    <string name="interval_9_seconds">9 секунд</string>
     <string name="interval_10_seconds">10 секунд</string>
     <string name="interval_20_seconds">20 секунд</string>
     <string name="interval_30_seconds">30 секунд</string>

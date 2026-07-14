@@ -130,8 +130,8 @@
     <string name="screensaver_type_desc">Ce qui doit être affiché : albums, aléatoire, récent, etc.</string>
 
     <!-- Slider/viewer preferences -->
-    <string name="interval_slideshow">Intervalle</string>
-    <string name="interval_slideshow_desc">Intervalle du diaporama</string>
+    <string name="interval_slideshow">Intervalle du diaporama</string>
+    <string name="interval_slideshow_desc">Secondes par photo pendant le diaporama. Les vidéos sont lues entièrement, puis passent à la suivante.</string>
     <string name="slide_animation_speed_ms">Vitesse de l’animation de transition (ms)</string>
     <string name="slide_animation_speed_desc">Vitesse de l’animation de transition en millisecondes</string>
     <string name="show_description_slideshow">Afficher la description</string>
@@ -238,8 +238,14 @@
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 seconde</string>
+    <string name="interval_2_seconds">2 secondes</string>
     <string name="interval_3_seconds">3 secondes</string>
+    <string name="interval_4_seconds">4 secondes</string>
     <string name="interval_5_seconds">5 secondes</string>
+    <string name="interval_6_seconds">6 secondes</string>
+    <string name="interval_7_seconds">7 secondes</string>
+    <string name="interval_8_seconds">8 secondes</string>
+    <string name="interval_9_seconds">9 secondes</string>
     <string name="interval_10_seconds">10 secondes</string>
     <string name="interval_20_seconds">20 secondes</string>
     <string name="interval_30_seconds">30 secondes</string>

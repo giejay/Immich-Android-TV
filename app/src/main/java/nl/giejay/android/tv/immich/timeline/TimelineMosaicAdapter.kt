@@ -233,8 +233,10 @@ class TimelineMosaicAdapter(
                 cellRoot.isFocusableInTouchMode = true
                 cellRoot.setOnClickListener { onCellClick(cell) }
                 cellRoot.setOnFocusChangeListener { v, hasFocus ->
-                    v.animate().scaleX(if (hasFocus) 1.14f else 1f)
-                        .scaleY(if (hasFocus) 1.14f else 1f)
+                    // Scale from the cell center; headers/rows keep padding so taller
+                    // aspect rows (e.g. 4:3 video at full row height) don't cover the date.
+                    v.animate().scaleX(if (hasFocus) FOCUS_SCALE else 1f)
+                        .scaleY(if (hasFocus) FOCUS_SCALE else 1f)
                         .setDuration(120)
                         .start()
                     v.elevation = if (hasFocus) 24f else 0f
@@ -310,5 +312,7 @@ class TimelineMosaicAdapter(
         private const val VIEW_TYPE_HEADER = 1
         private const val VIEW_TYPE_ROW = 2
         private const val VIEW_TYPE_MEMORIES = 3
+        /** Must stay in sync with header/row padding that clears focus overflow. */
+        private const val FOCUS_SCALE = 1.14f
     }
 }

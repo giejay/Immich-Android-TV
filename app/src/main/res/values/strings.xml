@@ -130,8 +130,8 @@
     <string name="screensaver_type_desc">What to show: albums, random, recent etc.</string>
 
     <!-- Slider/viewer preferences -->
-    <string name="interval_slideshow">Interval</string>
-    <string name="interval_slideshow_desc">Interval of the slideshow</string>
+    <string name="interval_slideshow">Slideshow interval</string>
+    <string name="interval_slideshow_desc">Seconds per photo during slideshow. Videos play in full, then advance.</string>
     <string name="slide_animation_speed_ms">Slide animation speed (ms)</string>
     <string name="slide_animation_speed_desc">Slide animation speed in milliseconds</string>
     <string name="show_description_slideshow">Show description</string>
@@ -238,8 +238,14 @@
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 second</string>
+    <string name="interval_2_seconds">2 seconds</string>
     <string name="interval_3_seconds">3 seconds</string>
+    <string name="interval_4_seconds">4 seconds</string>
     <string name="interval_5_seconds">5 seconds</string>
+    <string name="interval_6_seconds">6 seconds</string>
+    <string name="interval_7_seconds">7 seconds</string>
+    <string name="interval_8_seconds">8 seconds</string>
+    <string name="interval_9_seconds">9 seconds</string>
     <string name="interval_10_seconds">10 seconds</string>
     <string name="interval_20_seconds">20 seconds</string>
     <string name="interval_30_seconds">30 seconds</string>

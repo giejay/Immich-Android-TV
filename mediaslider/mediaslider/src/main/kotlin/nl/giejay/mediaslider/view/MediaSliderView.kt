@@ -257,17 +257,14 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     private fun showDetailsOverlay() {
         if (detailsOverlayVisible) return
-        // Memories (and any other autoplay entry) keep advancing while details are open,
-        // which tears down/rebuilds the bottom strip before lazy EXIF can bind. Pause first
-        // so metadata can settle — mosaic never hits this because it does not autoPlay.
-        if (slideShowPlaying) {
-            toggleSlideshow(false)
-        }
+        // Keep slideshow running (memories autoplay included). Metadata is batched per asset
+        // so opening details no longer needs to pause to avoid overlay flicker.
         detailsOverlayVisible = true
         applyDetailsOverlayVisibility()
         refreshOverlayMetadata()
         metaDataLeftAdapter.bind()
         metaDataRightAdapter.bind()
+        syncSlideshowButton()
     }
 
     @OptIn(UnstableApi::class)
@@ -287,6 +284,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         wireSharedVideoControls()
         applyTransportChrome(isVideo = true)
         syncMuteButton()
+        syncSlideshowButton()
         applyDetailsOverlayVisibility()
         videoControls.post {
             val pause = videoControls.findViewById<View>(R.id.exo_pause)
@@ -306,6 +304,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         videoControls.show()
         wireSharedVideoControls()
         applyTransportChrome(isVideo = false)
+        syncSlideshowButton()
         applyDetailsOverlayVisibility()
         videoControls.post {
             videoControls.findViewById<View>(R.id.exo_slideshow)?.requestFocus()
@@ -420,7 +419,8 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             goToNextAsset()
         }
         videoControls.findViewById<ImageButton>(R.id.exo_slideshow)?.setOnClickListener {
-            toggleSlideshow(true)
+            toggleSlideshow(togglePlayButton = false)
+            syncSlideshowButton()
         }
         val timeBar = videoControls.findViewById<View>(R.id.exo_progress)
         val positionView = videoControls.findViewById<TextView>(R.id.exo_position)
@@ -530,8 +530,15 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             // do not start timers for videos, they will continue in the player listener
             if (currentItemType() == SliderItemType.IMAGE) {
                 startTimerNextAsset()
+            } else if (currentItemType() == SliderItemType.VIDEO) {
+                // Resuming slideshow on a finished video: start playback / advance on end.
+                val player = currentPlayerInScope
+                if (player?.playbackState == Player.STATE_ENDED) {
+                    player.seekTo(0)
+                }
+                player?.playWhenReady = true
             }
-            setKeepScreenOnFlags();
+            setKeepScreenOnFlags()
         } else {
             clearKeepScreenOnFlags()
             mainHandler.removeCallbacks(goToNextAssetRunnable)
@@ -543,9 +550,22 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 currentPlayerInScope?.play()
             }
         }
+        syncSlideshowButton()
         if (togglePlayButton) {
             togglePlayButton()
         }
+    }
+
+    /** Play = slideshow stopped (tap to start); Pause = slideshow running (tap to stop). */
+    private fun syncSlideshowButton() {
+        val btn = videoControls.findViewById<ImageButton>(R.id.exo_slideshow) ?: return
+        btn.setImageResource(
+            if (slideShowPlaying) {
+                android.R.drawable.ic_media_pause
+            } else {
+                android.R.drawable.ic_media_play
+            }
+        )
     }
 
     private fun updateVideoRepeatMode() {
@@ -632,6 +652,8 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 }
 
                 if (sliderItem.type == SliderItemType.VIDEO) {
+                    // Photos use the interval timer; videos play to the end then advance.
+                    mainHandler.removeCallbacks(goToNextAssetRunnable)
                     if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible && !videoControllerVisible) {
                         metaDataHolder.background = null
                     }
@@ -641,6 +663,8 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                         Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
                         return
                     }
+                    // Thumbnail over black surface until ExoPlayer paints the first frame.
+                    viewTag.showLoadingPoster(mainItem.thumbnailUrl)
                     currentPlayerView = viewTag.getPlayerView()
                     currentPlayerInScope = viewTag.getPlayer()
                     currentPlayerInScope!!.seekTo(0, 0)

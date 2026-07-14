@@ -100,6 +100,8 @@ class ScreenSlidePagerAdapter(private val context: Context,
                     false
                 }
             }
+            // Cover the black surface immediately; cleared on first decoded frame.
+            view.showLoadingPoster(model.mainItem.thumbnailUrl)
         }
         container.addView(view)
         return view!!

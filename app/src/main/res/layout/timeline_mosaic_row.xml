@@ -6,4 +6,5 @@
     android:clipChildren="false"
     android:clipToPadding="false"
     android:orientation="horizontal"
-    android:paddingBottom="6dp" />
+    android:paddingTop="8dp"
+    android:paddingBottom="12dp" />
