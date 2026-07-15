@@ -120,7 +120,7 @@
             android:name="config"
             app:argType="nl.giejay.mediaslider.config.MediaSliderConfiguration" />
         <argument
-            android:name="autoPlay"
+            android:name="timelineView"
             android:defaultValue="false"
             app:argType="boolean" />
         <action

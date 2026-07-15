@@ -6,15 +6,16 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.animation.LinearInterpolator
 import android.widget.TextView
-import nl.giejay.mediaslider.model.SliderItemType
 import com.zeuskartik.mediaslider.R
+import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.model.SliderItemType
 
 /**
  * Immich timeline / memories slider: story progress strip and Left/Right scrubbing
  * during autoplay without pausing the slideshow.
  *
- * Date chrome + layered EXIF/transport live on [MediaSliderView] / [MediaSliderController];
- * this subclass only adds memories story progress.
+ * Only inflate this view for memories/timeline playback; story progress is always on.
+ * Date chrome + layered EXIF/transport live on [MediaSliderView] / [MediaSliderController].
  */
 class TimelineSliderView(context: Context) : MediaSliderView(context) {
 
@@ -22,12 +23,11 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
     private val storyProgressRow: View = findViewById(R.id.story_progress_row)
     private val storyProgressCount: TextView = findViewById(R.id.story_progress_count)
 
-    private var storyProgressEnabled = false
     private var storyProgressAnimator: ValueAnimator? = null
 
     private val videoStoryProgressRunnable = object : Runnable {
         override fun run() {
-            if (!storyProgressEnabled || !controller.slideShowPlaying) return
+            if (!controller.slideShowPlaying) return
             if (currentSliderItemType() != SliderItemType.VIDEO) return
             // Keep polling until the player is bound and duration is known — first-page
             // memories often start slideshow before ExoPlayer reports duration.
@@ -46,36 +46,21 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
     }
 
     init {
+        storyProgressRow.visibility = View.VISIBLE
         controller.onAssetTimerStarted = { intervalMs ->
-            if (storyProgressEnabled) startStoryProgressAnimation(intervalMs)
+            startStoryProgressAnimation(intervalMs)
         }
         controller.onControllerVisibilityChanged = { _ ->
-            if (storyProgressEnabled) {
-                storyProgressRow.visibility = View.VISIBLE
-            }
+            storyProgressRow.visibility = View.VISIBLE
         }
     }
 
-    override fun loadMediaSliderView(config: nl.giejay.mediaslider.config.MediaSliderConfiguration) {
+    override fun loadMediaSliderView(config: MediaSliderConfiguration) {
         super.loadMediaSliderView(config)
         onPageSettled(mPager.currentItem)
     }
 
-    fun setStoryProgressEnabled(enabled: Boolean) {
-        storyProgressEnabled = enabled
-        if (!enabled) {
-            stopStoryProgressAnimation()
-            storyProgressRow.visibility = View.GONE
-            return
-        }
-        storyProgressRow.visibility = View.VISIBLE
-        if (isConfigReady) {
-            updateStoryProgressChrome(mPager.currentItem.coerceAtLeast(0), progress = 0f)
-        }
-    }
-
     override fun handleSlideshowImageKey(keyCode: Int): Boolean {
-        if (!storyProgressEnabled) return false
         return when (keyCode) {
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
                 controller.skipToNextAndRestartTimer()
@@ -90,27 +75,22 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
     }
 
     /**
-     * Memories call this after load with autoplay. Image pages get story progress via
+     * Memories start autoplay after load. Image pages get story progress via
      * [MediaSliderController.startTimerNextAsset]; video pages must start the Exo-driven
      * poller here — [onPageSettled] already ran while slideshow was still off.
      */
     override fun toggleSlideshow(showPlayIndicator: Boolean) {
         super.toggleSlideshow(showPlayIndicator)
-        if (storyProgressEnabled &&
-            controller.slideShowPlaying &&
-            currentSliderItemType() == SliderItemType.VIDEO
-        ) {
+        if (controller.slideShowPlaying && currentSliderItemType() == SliderItemType.VIDEO) {
             startVideoStoryProgress()
         }
     }
 
     override fun onPageSettled(index: Int) {
         if (!isConfigReady) return
-        if (storyProgressEnabled) {
-            updateStoryProgressChrome(index, progress = 0f)
-            if (controller.slideShowPlaying && currentSliderItemType() == SliderItemType.VIDEO) {
-                startVideoStoryProgress()
-            }
+        updateStoryProgressChrome(index, progress = 0f)
+        if (controller.slideShowPlaying && currentSliderItemType() == SliderItemType.VIDEO) {
+            startVideoStoryProgress()
         }
     }
 
@@ -133,7 +113,7 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
     }
 
     private fun updateStoryProgressChrome(index: Int, progress: Float) {
-        if (!storyProgressEnabled || !isConfigReady) return
+        if (!isConfigReady) return
         val total = config.items.size
         if (total <= 0) {
             storyProgressCount.text = ""
@@ -147,7 +127,6 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
 
     private fun startStoryProgressAnimation(intervalMs: Long) {
         stopStoryProgressAnimation()
-        if (!storyProgressEnabled) return
         val index = mPager.currentItem
         updateStoryProgressChrome(index, progress = 0f)
         storyProgressAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
@@ -162,7 +141,7 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
 
     private fun startVideoStoryProgress() {
         mainHandler.removeCallbacks(videoStoryProgressRunnable)
-        if (!storyProgressEnabled || !controller.slideShowPlaying) return
+        if (!controller.slideShowPlaying) return
         mainHandler.post(videoStoryProgressRunnable)
     }
 
