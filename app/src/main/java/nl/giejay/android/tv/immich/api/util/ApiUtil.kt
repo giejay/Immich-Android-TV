@@ -13,9 +13,9 @@ import java.util.UUID
 
 object ApiUtil {
 
-    fun getThumbnailUrl(assetId: String?, format: String): String? {
+    fun getThumbnailUrl(assetId: String?, format: String, loadEdited: Boolean = false): String? {
         return assetId?.let {
-            "${hostName().lowercase()}/api/assets/${it}/thumbnail?size=${format}"
+            "${hostName().lowercase()}/api/assets/${it}/thumbnail?size=${format}&edited=${loadEdited}"
         }
     }
 

@@ -89,7 +89,7 @@ fun Asset.toSliderItem(): SliderItem {
         itemType,
         this.exifInfo?.orientation ?: if (itemType == SliderItemType.IMAGE) 1 else 6,
         AssetMetaDataMapping.providersFor(this),
-        ApiUtil.getThumbnailUrl(this.id, "preview"),
+        ApiUtil.getThumbnailUrl(this.id, "preview", PreferenceManager.get(SLIDER_LOAD_EDITED_PHOTO)),
         isPanorama = this.isPanoramaImage(),
         isFavorite = this.isFavorite
     )
