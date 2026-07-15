@@ -304,18 +304,7 @@ class MediaSliderController(
             }
 
             updatePlayPauseIcon(playPauseButton, currentPlayer?.isPlaying == true)
-            playPauseButton.setOnClickListener {
-                currentPlayer?.let { player ->
-                    if (player.isPlaying) {
-                        player.pause()
-                    } else {
-                        if (player.currentPosition >= player.contentDuration) {
-                            player.seekToDefaultPosition()
-                        }
-                        player.play()
-                    }
-                }
-            }
+            playPauseButton.setOnClickListener { togglePlayPause() }
 
             // SeekBar: allow the user to seek
             seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -354,6 +343,55 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
     // Player management
     // -------------------------------------------------------------------------
+
+    /**
+     * Seeks the active video by [deltaMs], clamped to the current item duration.
+     * Returns true if a seek was applied.
+     */
+    fun seekBy(deltaMs: Long): Boolean {
+        if (currentItemTypeOrNull() != SliderItemType.VIDEO) return false
+        val player = currentPlayer ?: return false
+        val duration = player.contentDuration.takeIf { it > 0 } ?: player.duration
+        if (duration <= 0) return false
+        val target = (player.currentPosition + deltaMs).coerceIn(0L, duration)
+        player.seekTo(target)
+        if (_isControllerVisible) {
+            updateVideoProgress()
+        }
+        return true
+    }
+
+    /** Remote play/pause — toggles the active ExoPlayer without opening the overlay. */
+    fun togglePlayPause(): Boolean {
+        if (currentItemTypeOrNull() != SliderItemType.VIDEO) return false
+        val player = currentPlayer ?: return false
+        if (player.isPlaying) {
+            player.pause()
+        } else {
+            if (player.contentDuration > 0 && player.currentPosition >= player.contentDuration) {
+                player.seekToDefaultPosition()
+            }
+            player.play()
+        }
+        return true
+    }
+
+    fun playVideo(): Boolean {
+        if (currentItemTypeOrNull() != SliderItemType.VIDEO) return false
+        val player = currentPlayer ?: return false
+        if (player.contentDuration > 0 && player.currentPosition >= player.contentDuration) {
+            player.seekToDefaultPosition()
+        }
+        player.play()
+        return true
+    }
+
+    fun pauseVideo(): Boolean {
+        if (currentItemTypeOrNull() != SliderItemType.VIDEO) return false
+        val player = currentPlayer ?: return false
+        player.pause()
+        return true
+    }
 
     fun stopPlayer() {
         currentPlayer?.let {
@@ -506,8 +544,11 @@ class MediaSliderController(
         return if (idx < config.items.size) config.items[idx] else null
     }
 
-    private companion object {
-        const val PROGRESS_UPDATE_INTERVAL_MS = 500L
-        const val TAG = "MediaSliderController"
+    companion object {
+        /** Default remote FF/RW step (matches common Android TV media players). */
+        const val REMOTE_SEEK_STEP_MS = 10_000L
+
+        private const val PROGRESS_UPDATE_INTERVAL_MS = 500L
+        private const val TAG = "MediaSliderController"
     }
 }

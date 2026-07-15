@@ -111,10 +111,18 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         if (event.action == KeyEvent.ACTION_DOWN) {
             if (context is MediaSliderListener && (context as MediaSliderListener).onButtonPressed(event)) {
                 return false
+            } else if (itemType == SliderItemType.VIDEO &&
+                (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE ||
+                    event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
+                    event.keyCode == KeyEvent.KEYCODE_MEDIA_PAUSE)
+            ) {
+                return when (event.keyCode) {
+                    KeyEvent.KEYCODE_MEDIA_PLAY -> controller.playVideo()
+                    KeyEvent.KEYCODE_MEDIA_PAUSE -> controller.pauseVideo()
+                    else -> controller.togglePlayPause()
+                }
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER
                 || event.keyCode == KeyEvent.KEYCODE_ENTER
-                || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY
-                || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
             ) {
                 // If the unified controller is already visible, let focused buttons handle the click.
                 if (controller.isControllerVisible) {
@@ -131,6 +139,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 // Down-arrow on a video opens the unified controller.
                 if (controller.toggleController()) return true
                 return super.dispatchKeyEvent(event)
+            } else if (itemType == SliderItemType.VIDEO && isRemoteSeekForward(event.keyCode)) {
+                return controller.seekBy(MediaSliderController.REMOTE_SEEK_STEP_MS)
+            } else if (itemType == SliderItemType.VIDEO && isRemoteSeekRewind(event.keyCode)) {
+                return controller.seekBy(-MediaSliderController.REMOTE_SEEK_STEP_MS)
             } else if (controller.slideShowPlaying && itemType == SliderItemType.IMAGE) {
                 if (handleSlideshowImageKey(event.keyCode)) {
                     return true
@@ -169,6 +181,15 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
      * without pausing autoplay — used by memories story progress.
      */
     protected open fun handleSlideshowImageKey(keyCode: Int): Boolean = false
+
+    private fun isRemoteSeekForward(keyCode: Int): Boolean =
+        keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD ||
+            keyCode == KeyEvent.KEYCODE_FORWARD
+
+    private fun isRemoteSeekRewind(keyCode: Int): Boolean =
+        keyCode == KeyEvent.KEYCODE_MEDIA_REWIND ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
 
     open fun loadMediaSliderView(config: MediaSliderConfiguration) {
         this.config = config
