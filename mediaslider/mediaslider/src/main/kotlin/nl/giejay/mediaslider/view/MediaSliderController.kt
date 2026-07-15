@@ -11,14 +11,12 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
-import androidx.annotation.OptIn
 import androidx.core.view.isVisible
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerControlView
 import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -26,22 +24,22 @@ import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.util.MediaSliderListener
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
- * Control logic for the layered details + transport overlay (shared [PlayerControlView]),
- * slideshow, image favorite strip, remote seek/play, and wake-lock.
+ * Control logic for the layered details + shared image/video transport
+ * ([R.id.image_controller]), slideshow, remote seek/play, and wake-lock.
  *
  * [MediaSliderView] owns the pager/metadata shell; timeline/memories chrome lives in
  * [TimelineSliderView].
  */
-@OptIn(UnstableApi::class)
 class MediaSliderController(
     private val context: Context,
     private val mainHandler: Handler,
     private val pager: ViewPager,
     private val playButton: View,
-    private val videoControls: PlayerControlView,
-    private val muteButton: ImageButton,
+    private val sharedControls: View,
     private val metaDataHolder: FrameLayout,
     private val metadataRows: LinearLayout,
     private val dateView: TextView,
@@ -80,10 +78,9 @@ class MediaSliderController(
     var imageTransportVisible = false
         private set
 
-    var isImageControllerVisible = false
-        private set
-
     var suppressTransportEnterUp = false
+
+    private var isSeeking = false
 
     val detailsOverlayToggleEnabled: Boolean
         get() = context !is MediaSliderListener
@@ -92,7 +89,7 @@ class MediaSliderController(
         get() = videoControllerVisible || imageTransportVisible
 
     val isControllerVisible: Boolean
-        get() = videoControllerVisible || isImageControllerVisible
+        get() = transportControlsVisible
 
     /** Fired when the image slideshow timer is armed (interval milliseconds). */
     var onAssetTimerStarted: ((intervalMs: Long) -> Unit)? = null
@@ -103,6 +100,14 @@ class MediaSliderController(
 
     private val goToNextAssetRunnable = Runnable { goToNextAsset() }
     private val hideTransportRunnable = Runnable { hideTransportControls() }
+    private val progressUpdateRunnable = object : Runnable {
+        override fun run() {
+            updateVideoProgress()
+            if (currentPlayer?.isPlaying == true && videoControllerVisible) {
+                mainHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS)
+            }
+        }
+    }
 
     fun initialize(config: MediaSliderConfiguration) {
         this.config = config
@@ -120,13 +125,15 @@ class MediaSliderController(
     }
 
     fun onIsPlayingChanged(isPlaying: Boolean) {
-        videoControls.findViewById<ImageButton>(R.id.exo_pause)
-            ?.setImageResource(
-                if (isPlaying) R.drawable.exo_legacy_controls_pause
-                else R.drawable.exo_legacy_controls_play
-            )
+        sharedControls.findViewById<ImageButton>(R.id.media_play_pause)
+            ?.let { updatePlayPauseIcon(it, isPlaying) }
         if (host.currentItemType() == SliderItemType.VIDEO) {
-            if (isPlaying) setKeepScreenOnFlags() else clearKeepScreenOnFlags()
+            if (isPlaying) {
+                setKeepScreenOnFlags()
+                if (videoControllerVisible) startProgressUpdates()
+            } else {
+                stopProgressUpdates()
+            }
         }
     }
 
@@ -137,6 +144,7 @@ class MediaSliderController(
         if (host.currentItemType() == SliderItemType.VIDEO) {
             clearKeepScreenOnFlags()
         }
+        stopProgressUpdates()
     }
 
     // -------------------------------------------------------------------------
@@ -198,7 +206,12 @@ class MediaSliderController(
     }
 
     fun goToNextAsset() {
-        hideImageController()
+        // During slideshow, keep the shared bar up across advances so the user can
+        // still reach pause before auto-hide / Back. Manual paging without slideshow
+        // still dismisses transport.
+        if (!slideShowPlaying || !transportControlsVisible) {
+            hideTransportControls()
+        }
         if (pager.currentItem < pager.adapter!!.count - 1) {
             pager.setCurrentItem(pager.currentItem + 1, config.enableSlideAnimation)
         } else {
@@ -208,7 +221,9 @@ class MediaSliderController(
     }
 
     fun goToPreviousAsset() {
-        hideImageController()
+        if (!slideShowPlaying || !transportControlsVisible) {
+            hideTransportControls()
+        }
         pager.setCurrentItem(
             (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
             config.enableSlideAnimation
@@ -248,50 +263,42 @@ class MediaSliderController(
             host.updateDateOverlay(host.currentItem().mainItem)
             onDetailsVisibilityChanged?.invoke(true)
         }
-        videoControls.player = player
-        videoControls.showTimeoutMs = 0
-        videoControls.show()
-        wireSharedVideoControls()
+        configureSharedControls(host.currentItem())
         applyTransportChrome(isVideo = true)
         syncMuteButton()
         syncSlideshowButton()
         applyDetailsOverlayVisibility()
         scheduleTransportAutoHide()
+        startProgressUpdates()
         onControllerVisibilityChanged?.invoke(true)
-        videoControls.post {
-            val pause = videoControls.findViewById<View>(R.id.exo_pause)
-            val progress = videoControls.findViewById<View>(R.id.exo_progress)
-            val focusTarget = pause ?: progress
-            focusTarget?.requestFocus()
-            focusTarget?.invalidate()
-        }
+        sharedControls.post { focusSharedTransport(isVideo = true) }
+        // Keep player reference used by SeekBar (player already bound).
+        player.playWhenReady = player.playWhenReady
     }
 
     fun showImageTransportControls() {
-        hideImageController()
         imageTransportVisible = true
         videoControllerVisible = false
-        videoControls.player = null
-        videoControls.showTimeoutMs = 0
-        videoControls.show()
-        wireSharedVideoControls()
+        stopProgressUpdates()
+        if (slideShowPlaying) {
+            // Keep slideshow running; transport is observational chrome.
+        }
+        configureSharedControls(host.currentItem())
         applyTransportChrome(isVideo = false)
         syncSlideshowButton()
         applyDetailsOverlayVisibility()
         scheduleTransportAutoHide()
         onControllerVisibilityChanged?.invoke(true)
-        videoControls.post {
-            videoControls.findViewById<View>(R.id.exo_slideshow)?.requestFocus()
-        }
+        sharedControls.post { focusSharedTransport(isVideo = false) }
     }
 
     fun hideImageTransportControls() {
-        if (!imageTransportVisible && videoControls.visibility != View.VISIBLE) return
+        if (!imageTransportVisible && !sharedControls.isVisible) return
         cancelTransportAutoHide()
         imageTransportVisible = false
         if (!videoControllerVisible) {
-            videoControls.hide()
-            videoControls.player = null
+            sharedControls.visibility = View.GONE
+            stopProgressUpdates()
             onControllerVisibilityChanged?.invoke(false)
         }
         applyDetailsOverlayVisibility()
@@ -300,9 +307,9 @@ class MediaSliderController(
     fun hideVideoController() {
         cancelTransportAutoHide()
         videoControllerVisible = false
+        stopProgressUpdates()
         if (!imageTransportVisible) {
-            videoControls.hide()
-            videoControls.player = null
+            sharedControls.visibility = View.GONE
             onControllerVisibilityChanged?.invoke(false)
         }
         applyDetailsOverlayVisibility()
@@ -315,14 +322,37 @@ class MediaSliderController(
         }
     }
 
+    /**
+     * After a page binds: keep transport during slideshow if it was already up
+     * (re-wire chrome for the new asset), otherwise clear it.
+     */
+    fun onPageMediaBound(sliderItem: SliderItemViewHolder) {
+        configureSharedControls(sliderItem)
+        if (slideShowPlaying && transportControlsVisible) {
+            val isVideo = sliderItem.type == SliderItemType.VIDEO
+            videoControllerVisible = isVideo && currentPlayer != null
+            imageTransportVisible = !videoControllerVisible
+            applyTransportChrome(isVideo = videoControllerVisible)
+            syncMuteButton()
+            syncSlideshowButton()
+            applyDetailsOverlayVisibility()
+            scheduleTransportAutoHide()
+            if (videoControllerVisible) startProgressUpdates() else stopProgressUpdates()
+            sharedControls.post { focusSharedTransport(isVideo) }
+            return
+        }
+        dismissTransportForPageChange()
+    }
+
     /** Clear transport when paging without auto-surfacing a new strip. */
     fun dismissTransportForPageChange() {
         imageTransportVisible = false
-        if (videoControllerVisible) {
-            hideVideoController()
-        } else {
-            applyDetailsOverlayVisibility()
-        }
+        videoControllerVisible = false
+        cancelTransportAutoHide()
+        stopProgressUpdates()
+        sharedControls.visibility = View.GONE
+        applyDetailsOverlayVisibility()
+        onControllerVisibilityChanged?.invoke(false)
     }
 
     fun scheduleTransportAutoHide() {
@@ -340,7 +370,7 @@ class MediaSliderController(
         val showHolder = detailsOn || showTransport
         metaDataHolder.visibility =
             if (showHolder && (hasBottomDetails || showTransport)) View.VISIBLE else View.GONE
-        videoControls.visibility = if (showTransport) View.VISIBLE else View.GONE
+        sharedControls.visibility = if (showTransport) View.VISIBLE else View.GONE
         if (showTransport) {
             applyTransportChrome(isVideo = videoControllerVisible)
         }
@@ -372,134 +402,125 @@ class MediaSliderController(
         }
     }
 
-    fun wireSharedVideoControls() {
-        videoControls.findViewById<ImageButton>(R.id.exo_pause)?.setOnClickListener {
-            val player = currentPlayer ?: return@setOnClickListener
-            if (player.isPlaying) {
-                player.pause()
-            } else {
-                if (player.playbackState == Player.STATE_ENDED ||
-                    player.currentPosition >= player.contentDuration
-                ) {
-                    player.seekToDefaultPosition()
-                }
-                player.play()
-            }
-        }
-        muteButton.setOnClickListener {
-            val player = currentPlayer ?: return@setOnClickListener
-            if (player.volume == 0f) {
-                player.volume = 1f
-                config.isVideoSoundEnable = true
-            } else {
-                player.volume = 0f
-                config.isVideoSoundEnable = false
-            }
-            syncMuteButton()
-        }
-        videoControls.findViewById<ImageButton>(R.id.exo_rewind)?.setOnClickListener {
-            goToPreviousAsset()
-        }
-        videoControls.findViewById<ImageButton>(R.id.exo_forward)?.setOnClickListener {
-            goToNextAsset()
-        }
-        videoControls.findViewById<ImageButton>(R.id.exo_slideshow)?.setOnClickListener {
+    /** Wire listeners + video-only chrome for the current asset on the shared bar. */
+    fun configureSharedControls(sliderItem: SliderItemViewHolder) {
+        val previousButton = sharedControls.findViewById<ImageButton>(R.id.image_previous) ?: return
+        val favoriteButton = sharedControls.findViewById<ImageButton>(R.id.image_favorite) ?: return
+        val slideshowButton = sharedControls.findViewById<ImageButton>(R.id.image_slideshow) ?: return
+        val nextButton = sharedControls.findViewById<ImageButton>(R.id.image_next) ?: return
+        val muteButton = sharedControls.findViewById<ImageButton>(R.id.media_mute)
+        val playPauseButton = sharedControls.findViewById<ImageButton>(R.id.media_play_pause)
+        val progressLayout = sharedControls.findViewById<View>(R.id.media_progress_layout)
+        val seekBar = sharedControls.findViewById<SeekBar>(R.id.media_seek_bar)
+
+        val isVideo = sliderItem.type == SliderItemType.VIDEO
+        val hasSecondaryItem = sliderItem.hasSecondaryItem()
+
+        muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        playPauseButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        progressLayout?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        favoriteButton.visibility = if (hasSecondaryItem) View.GONE else View.VISIBLE
+
+        previousButton.setOnClickListener { goToPreviousAsset() }
+        nextButton.setOnClickListener { goToNextAsset() }
+        slideshowButton.setOnClickListener {
             toggleSlideshow(showPlayIndicator = false)
             syncSlideshowButton()
-        }
-        val timeBar = videoControls.findViewById<View>(R.id.exo_progress)
-        val positionView = videoControls.findViewById<TextView>(R.id.exo_position)
-        val durationView = videoControls.findViewById<TextView>(R.id.exo_duration)
-        timeBar?.setOnFocusChangeListener { _, hasFocus ->
-            val color = if (hasFocus) 0xFFFFFFFF.toInt() else 0xFFBEBEBE.toInt()
-            val sizeSp = if (hasFocus) 18f else 14f
-            positionView?.setTextColor(color)
-            durationView?.setTextColor(color)
-            positionView?.textSize = sizeSp
-            durationView?.textSize = sizeSp
-        }
-    }
-
-    fun syncMuteButton() {
-        muteButton.setImageResource(
-            if (config.isVideoSoundEnable) R.drawable.unmute_icon else R.drawable.mute_icon
-        )
-    }
-
-    fun toggleMute() {
-        muteButton.performClick()
-    }
-
-    // -------------------------------------------------------------------------
-    // Per-page image controller
-    // -------------------------------------------------------------------------
-
-    fun configureImageController(sliderItem: SliderItemViewHolder, sliderItemIndex: Int) {
-        val imageRoot = pager.findViewWithTag<View>("view$sliderItemIndex") ?: run {
-            isImageControllerVisible = false
-            return
-        }
-        val imageController = imageRoot.findViewById<View>(R.id.image_controller) ?: run {
-            isImageControllerVisible = false
-            return
-        }
-        imageController.visibility = View.GONE
-        isImageControllerVisible = false
-        val previousButton = imageRoot.findViewById<ImageButton>(R.id.image_previous) ?: return
-        val favoriteButton = imageRoot.findViewById<ImageButton>(R.id.image_favorite) ?: return
-        val slideshowButton = imageRoot.findViewById<ImageButton>(R.id.image_slideshow) ?: return
-        val nextButton = imageRoot.findViewById<ImageButton>(R.id.image_next) ?: return
-
-        val hasSecondaryItem = sliderItem.hasSecondaryItem()
-        favoriteButton.visibility = if (hasSecondaryItem) View.GONE else View.VISIBLE
-        if (hasSecondaryItem) {
-            previousButton.nextFocusRightId = R.id.image_slideshow
-            slideshowButton.nextFocusLeftId = R.id.image_previous
-        } else {
-            previousButton.nextFocusRightId = R.id.image_favorite
-            slideshowButton.nextFocusLeftId = R.id.image_favorite
         }
 
         updateFavoriteIcon(favoriteButton, sliderItem.mainItem.isFavorite)
         favoriteButton.setOnClickListener {
-            val newFavoriteValue = !sliderItem.mainItem.isFavorite
-            sliderItem.mainItem.isFavorite = newFavoriteValue
-            updateFavoriteIcon(favoriteButton, newFavoriteValue)
-            MediaSliderConfiguration.onFavoriteToggle(sliderItem.mainItem.id, newFavoriteValue)
+            val newValue = !sliderItem.mainItem.isFavorite
+            sliderItem.mainItem.isFavorite = newValue
+            updateFavoriteIcon(favoriteButton, newValue)
+            MediaSliderConfiguration.onFavoriteToggle(sliderItem.mainItem.id, newValue)
         }
-        previousButton.setOnClickListener { goToPreviousAsset() }
-        slideshowButton.setOnClickListener { toggleSlideshow(true) }
-        nextButton.setOnClickListener { goToNextAsset() }
+
+        if (isVideo && muteButton != null && playPauseButton != null) {
+            updateMuteIcon(muteButton, config.isVideoSoundEnable && (currentPlayer?.volume ?: 0f) > 0f)
+            muteButton.setOnClickListener {
+                currentPlayer?.let { player ->
+                    if (player.volume == 0f) {
+                        player.volume = 1f
+                        config.isVideoSoundEnable = true
+                        updateMuteIcon(muteButton, true)
+                    } else {
+                        player.volume = 0f
+                        config.isVideoSoundEnable = false
+                        updateMuteIcon(muteButton, false)
+                    }
+                }
+            }
+
+            updatePlayPauseIcon(playPauseButton, currentPlayer?.isPlaying == true)
+            playPauseButton.setOnClickListener {
+                currentPlayer?.let { player ->
+                    if (player.isPlaying) {
+                        player.pause()
+                    } else {
+                        if (player.playbackState == Player.STATE_ENDED ||
+                            (player.contentDuration > 0 && player.currentPosition >= player.contentDuration)
+                        ) {
+                            player.seekToDefaultPosition()
+                        }
+                        player.play()
+                    }
+                }
+            }
+
+            seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onStartTrackingTouch(seekBar: SeekBar) {
+                    isSeeking = true
+                    cancelTransportAutoHide()
+                }
+
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (fromUser) {
+                        currentPlayer?.seekTo(progress.toLong() * 1000)
+                        scheduleTransportAutoHide()
+                    }
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    isSeeking = false
+                    scheduleTransportAutoHide()
+                }
+            })
+            seekBar?.setOnFocusChangeListener { _, hasFocus ->
+                val color = if (hasFocus) 0xFFFFFFFF.toInt() else 0xFFBEBEBE.toInt()
+                val sizeSp = if (hasFocus) 18f else 14f
+                sharedControls.findViewById<TextView>(R.id.media_position)?.apply {
+                    setTextColor(color)
+                    textSize = sizeSp
+                }
+                sharedControls.findViewById<TextView>(R.id.media_duration)?.apply {
+                    setTextColor(color)
+                    textSize = sizeSp
+                }
+                if (hasFocus) cancelTransportAutoHide() else scheduleTransportAutoHide()
+            }
+        }
+
+        setupFocusNavigation(
+            previousButton,
+            muteButton,
+            playPauseButton,
+            favoriteButton,
+            slideshowButton,
+            nextButton,
+            isVideo,
+            hasSecondaryItem,
+            seekBar
+        )
     }
 
-    fun toggleImageController(): Boolean {
-        val imageRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: return false
-        val imageController = imageRoot.findViewById<View>(R.id.image_controller) ?: return false
-        if (imageController.isVisible) {
-            hideImageController()
-            return true
-        }
-        if (slideShowPlaying) {
-            toggleSlideshow(true)
-        }
-        hideImageTransportControls()
-        imageController.visibility = View.VISIBLE
-        isImageControllerVisible = true
-        val sliderItem = host.currentItem()
-        val initialFocusId = if (sliderItem.hasSecondaryItem()) R.id.image_slideshow else R.id.image_favorite
-        imageRoot.findViewById<ImageButton>(initialFocusId)?.requestFocus()
-        return true
+    fun syncMuteButton() {
+        val muteButton = sharedControls.findViewById<ImageButton>(R.id.media_mute) ?: return
+        updateMuteIcon(muteButton, config.isVideoSoundEnable)
     }
 
-    fun hideImageController() {
-        val imageRoot = pager.findViewWithTag<View>("view${pager.currentItem}") ?: run {
-            isImageControllerVisible = false
-            restorePagerFocus()
-            return
-        }
-        imageRoot.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
-        isImageControllerVisible = false
-        restorePagerFocus()
+    fun toggleMute() {
+        sharedControls.findViewById<ImageButton>(R.id.media_mute)?.performClick()
     }
 
     // -------------------------------------------------------------------------
@@ -567,6 +588,7 @@ class MediaSliderController(
         if (host.currentItemType() == SliderItemType.VIDEO) {
             clearKeepScreenOnFlags()
         }
+        stopProgressUpdates()
     }
 
     fun onDestroy() {
@@ -575,6 +597,7 @@ class MediaSliderController(
         clearKeepScreenOnFlags()
         mainHandler.removeCallbacks(goToNextAssetRunnable)
         cancelTransportAutoHide()
+        stopProgressUpdates()
     }
 
     fun updateVideoRepeatMode() {
@@ -597,16 +620,34 @@ class MediaSliderController(
     }
 
     fun restorePagerFocus() {
+        // Don't steal focus from the shared bar (esp. while slideshow keeps it open).
+        if (transportControlsVisible) return
         pager.post {
-            if (!pager.hasFocus()) {
+            if (!pager.hasFocus() && !transportControlsVisible) {
                 pager.requestFocus()
             }
         }
     }
 
+    private fun focusSharedTransport(isVideo: Boolean) {
+        val target = when {
+            isVideo ->
+                sharedControls.findViewById<View>(R.id.media_play_pause)
+                    ?: sharedControls.findViewById<View>(R.id.media_seek_bar)
+            // During slideshow, land on pause so Left/Right aren't needed to stop.
+            slideShowPlaying -> sharedControls.findViewById<View>(R.id.image_slideshow)
+            host.currentItem().hasSecondaryItem() ->
+                sharedControls.findViewById<View>(R.id.image_slideshow)
+            else -> sharedControls.findViewById<View>(R.id.image_favorite)
+        }
+        target?.requestFocus()
+    }
+
     fun removeNextAssetCallbacks() {
         mainHandler.removeCallbacks(goToNextAssetRunnable)
     }
+
+    fun transportHasFocus(): Boolean = sharedControls.findFocus() != null
 
     // -------------------------------------------------------------------------
     // Private helpers
@@ -614,31 +655,56 @@ class MediaSliderController(
 
     private fun applyTransportChrome(isVideo: Boolean) {
         val videoOnly = if (isVideo) View.VISIBLE else View.GONE
-        muteButton.visibility = videoOnly
-        videoControls.findViewById<View>(R.id.exo_rewind)?.visibility = videoOnly
-        videoControls.findViewById<View>(R.id.exo_pause)?.visibility = videoOnly
-        videoControls.findViewById<View>(R.id.exo_forward)?.visibility = videoOnly
-        videoControls.findViewById<View>(R.id.exo_progress_layout)?.visibility = videoOnly
-        val slideshow = videoControls.findViewById<View>(R.id.exo_slideshow) ?: return
-        slideshow.visibility = View.VISIBLE
-        if (isVideo) {
-            slideshow.nextFocusLeftId = R.id.exo_forward
-            slideshow.nextFocusDownId = R.id.exo_progress
-        } else {
-            slideshow.nextFocusLeftId = View.NO_ID
-            slideshow.nextFocusDownId = View.NO_ID
+        sharedControls.findViewById<View>(R.id.media_mute)?.visibility = videoOnly
+        sharedControls.findViewById<View>(R.id.media_play_pause)?.visibility = videoOnly
+        sharedControls.findViewById<View>(R.id.media_progress_layout)?.visibility = videoOnly
+        val favorite = sharedControls.findViewById<View>(R.id.image_favorite)
+        if (favorite != null && !host.currentItem().hasSecondaryItem()) {
+            favorite.visibility = View.VISIBLE
         }
     }
 
     private fun syncSlideshowButton() {
-        val btn = videoControls.findViewById<ImageButton>(R.id.exo_slideshow) ?: return
+        val btn = sharedControls.findViewById<ImageButton>(R.id.image_slideshow) ?: return
         btn.setImageResource(
             if (slideShowPlaying) {
                 android.R.drawable.ic_media_pause
             } else {
-                android.R.drawable.ic_media_play
+                R.drawable.slideshow
             }
         )
+    }
+
+    private fun setupFocusNavigation(
+        previousButton: ImageButton,
+        muteButton: ImageButton?,
+        playPauseButton: ImageButton?,
+        favoriteButton: ImageButton,
+        slideshowButton: ImageButton,
+        nextButton: ImageButton,
+        isVideo: Boolean,
+        hasSecondaryItem: Boolean,
+        seekBar: SeekBar?
+    ) {
+        val chain = mutableListOf<ImageButton>()
+        if (isVideo) muteButton?.let { chain.add(it) }
+        chain.add(previousButton)
+        if (isVideo) playPauseButton?.let { chain.add(it) }
+        if (!hasSecondaryItem) chain.add(favoriteButton)
+        chain.add(slideshowButton)
+        chain.add(nextButton)
+
+        for (i in chain.indices) {
+            if (i > 0) chain[i].nextFocusLeftId = chain[i - 1].id
+            if (i < chain.size - 1) chain[i].nextFocusRightId = chain[i + 1].id
+            chain[i].nextFocusDownId = View.NO_ID
+            chain[i].nextFocusUpId = View.NO_ID
+        }
+
+        if (isVideo && seekBar != null) {
+            chain.forEach { button -> button.nextFocusDownId = R.id.media_seek_bar }
+            seekBar.nextFocusUpId = (playPauseButton ?: previousButton).id
+        }
     }
 
     private fun showTemporaryPlayIndicator() {
@@ -656,10 +722,62 @@ class MediaSliderController(
         )
     }
 
+    private fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {
+        button.setImageResource(if (soundEnabled) R.drawable.unmute_icon else R.drawable.mute_icon)
+    }
+
+    private fun updatePlayPauseIcon(button: ImageButton, isPlaying: Boolean) {
+        button.setImageResource(
+            if (isPlaying) android.R.drawable.ic_media_pause
+            else android.R.drawable.ic_media_play
+        )
+        button.contentDescription = context.getString(
+            if (isPlaying) R.string.media_pause else R.string.media_play
+        )
+    }
+
+    private fun startProgressUpdates() {
+        mainHandler.removeCallbacks(progressUpdateRunnable)
+        mainHandler.post(progressUpdateRunnable)
+    }
+
+    private fun stopProgressUpdates() {
+        mainHandler.removeCallbacks(progressUpdateRunnable)
+    }
+
+    private fun updateVideoProgress() {
+        val player = currentPlayer ?: return
+        val duration = player.contentDuration
+        if (duration <= 0) return
+
+        val seekBar = sharedControls.findViewById<SeekBar>(R.id.media_seek_bar) ?: return
+        val positionText = sharedControls.findViewById<TextView>(R.id.media_position) ?: return
+        val durationText = sharedControls.findViewById<TextView>(R.id.media_duration) ?: return
+
+        val position = player.currentPosition
+        if (!isSeeking) {
+            val durationInSeconds = (duration / 1000).toInt()
+            if (seekBar.max != durationInSeconds) {
+                seekBar.max = durationInSeconds
+            }
+            seekBar.progress = (position / 1000).toInt()
+        }
+        positionText.text = formatDuration(position)
+        durationText.text = formatDuration(duration)
+    }
+
+    private fun formatDuration(ms: Long): String {
+        val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(ms)
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return String.format(Locale.US, "%d:%02d", minutes, seconds)
+    }
+
     companion object {
         const val REMOTE_SEEK_STEP_MS = 10_000L
         private const val TRANSPORT_AUTO_HIDE_MS = 4_000L
         private const val METADATA_DIMMED_WHILE_TRANSPORT_ALPHA = 0.35f
+        private const val PROGRESS_UPDATE_INTERVAL_MS = 500L
         private const val TAG = "MediaSliderController"
     }
 }

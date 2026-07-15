@@ -123,16 +123,14 @@
                 android:orientation="vertical" />
         </LinearLayout>
 
-        <androidx.media3.ui.PlayerControlView
-            android:id="@+id/slider_video_controls"
+        <!-- Shared image+video transport (main's image_controller), layered over EXIF. -->
+        <include
+            layout="@layout/image_controller"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:elevation="4dp"
-            android:visibility="gone"
-            app:animation_enabled="false"
-            app:controller_layout_id="@layout/exo_player_control_view"
-            app:show_timeout="0" />
+            android:visibility="gone" />
     </FrameLayout>
 
     <ImageView

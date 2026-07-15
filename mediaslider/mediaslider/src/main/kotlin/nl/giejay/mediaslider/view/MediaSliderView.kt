@@ -12,7 +12,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
@@ -27,7 +26,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
-import androidx.media3.ui.PlayerControlView
 import androidx.media3.ui.PlayerView
 import androidx.viewpager.widget.ViewPager
 import com.google.common.collect.Iterables
@@ -71,15 +69,13 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
     private val dateView: TextView = findViewById(R.id.metadata_date)
     private val metaDataHolder: FrameLayout = findViewById(R.id.meta_data_holder)
     private val metadataRows: LinearLayout = findViewById(R.id.metadata_rows)
-    private val videoControls: PlayerControlView = findViewById(R.id.slider_video_controls)
-    private val muteButton: ImageButton = videoControls.findViewById(R.id.exo_mute)
+    private val sharedControls: View = findViewById(R.id.image_controller)
     protected val controller = MediaSliderController(
         context,
         mainHandler,
         mPager,
         playButton,
-        videoControls,
-        muteButton,
+        sharedControls,
         metaDataHolder,
         metadataRows,
         dateView,
@@ -204,7 +200,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER) {
                 if (controller.detailsOverlayToggleEnabled) {
-                    if (videoControls.findFocus() != null) {
+                    if (controller.transportHasFocus()) {
                         return super.dispatchKeyEvent(event)
                     }
                     if (controller.detailsOverlayVisible && itemType == SliderItemType.IMAGE &&
@@ -257,20 +253,13 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                 event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
             ) {
                 if (itemType == SliderItemType.IMAGE) {
-                    if (controller.isImageControllerVisible) {
+                    if (controller.transportControlsVisible) {
                         return super.dispatchKeyEvent(event)
                     }
-                    if (controller.toggleImageController()) {
-                        return true
-                    }
+                    controller.showImageTransportControls()
+                    return true
                 }
                 return false
-            } else if (event.keyCode == KeyEvent.KEYCODE_BACK &&
-                itemType == SliderItemType.IMAGE &&
-                controller.isImageControllerVisible
-            ) {
-                controller.hideImageController()
-                return true
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN &&
                 itemType == SliderItemType.VIDEO &&
                 controller.currentPlayer != null
@@ -292,6 +281,11 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                 controller.hideDetailsOverlay()
                 return true
             } else if (controller.slideShowPlaying && itemType == SliderItemType.IMAGE) {
+                // Shared transport is up: Left/Right must move focus on the bar (e.g. to
+                // pause slideshow), not advance slides.
+                if (controller.transportControlsVisible) {
+                    return super.dispatchKeyEvent(event)
+                }
                 if (handleSlideshowImageKey(event.keyCode)) {
                     return true
                 }
@@ -314,26 +308,14 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                     }
                 }
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                if (itemType == SliderItemType.IMAGE && controller.isImageControllerVisible) {
+                if (controller.transportControlsVisible) {
                     return super.dispatchKeyEvent(event)
-                }
-                if (controller.videoControllerVisible) {
-                    return super.dispatchKeyEvent(event)
-                }
-                if (controller.imageTransportVisible) {
-                    return true
                 }
                 controller.goToNextAsset()
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-                if (itemType == SliderItemType.IMAGE && controller.isImageControllerVisible) {
+                if (controller.transportControlsVisible) {
                     return super.dispatchKeyEvent(event)
-                }
-                if (controller.videoControllerVisible) {
-                    return super.dispatchKeyEvent(event)
-                }
-                if (controller.imageTransportVisible) {
-                    return true
                 }
                 controller.goToPreviousAsset()
                 return false
@@ -346,11 +328,11 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                 return true
             }
         }
-        if (videoControls.findFocus() != null || controller.videoControllerVisible) {
+        if (controller.transportHasFocus() || controller.transportControlsVisible) {
             return super.dispatchKeyEvent(event)
         }
         return if (itemType == SliderItemType.IMAGE) {
-            if (controller.isImageControllerVisible) super.dispatchKeyEvent(event) else false
+            false
         } else {
             super.dispatchKeyEvent(event)
         }
@@ -396,7 +378,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
         )
         metaDataLeftAdapter.attach(columnLeft)
 
-        controller.wireSharedVideoControls()
         controller.applyDetailsOverlayVisibility()
 
         val listener: ExoPlayerListener = object : ExoPlayerListener {
@@ -523,16 +504,14 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                         player.volume = 0f
                     }
                     controller.syncMuteButton()
-                    // Keep details if open, but never auto-surface transport when paging.
-                    controller.dismissTransportForPageChange()
+                    // Keep transport during slideshow if already open; otherwise dismiss.
+                    controller.onPageMediaBound(sliderItem)
                     player.playWhenReady = true
                     if (controller.slideShowPlaying) {
                         onVideoPageBoundWhileSlideshow()
                     }
                 } else {
-                    controller.hideVideoController()
-                    controller.hideImageTransportControls()
-                    controller.configureImageController(sliderItem, sliderItemIndex)
+                    controller.onPageMediaBound(sliderItem)
                     if (!controller.detailsOverlayToggleEnabled && config.isGradiantOverlayVisible) {
                         metaDataHolder.setBackgroundResource(R.drawable.gradient_overlay)
                     } else if (controller.detailsOverlayToggleEnabled) {
@@ -564,7 +543,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                 }
                 refreshOverlayMetadata()
                 bindMetadataAdapters()
-                if (!controller.isImageControllerVisible) {
+                if (!controller.transportControlsVisible) {
                     controller.restorePagerFocus()
                 }
                 onPageSettled(i)

@@ -21,7 +21,7 @@ import nl.giejay.mediaslider.config.MediaSliderConfiguration
 
 /**
  * Fullscreen video surface + ExoPlayer. Transport controls live in [MediaSliderView]'s
- * shared details overlay ([R.id.slider_video_controls]), not inside this view.
+ * shared details/transport overlay in the slider shell, not inside this view.
  *
  * While buffering until the first frame, a full-screen thumbnail covers the black surface
  * with a spinner on top (same idea as the timeline mosaic muted previews).
