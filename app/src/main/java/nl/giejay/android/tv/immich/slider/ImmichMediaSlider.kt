@@ -55,7 +55,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
         loadMediaSliderView(bundle.config)
 
         if (bundle.autoPlay) {
-            // Memories: story progress + auto-advance (ScreenSaver uses toggleSlideshow too).
+            // Memories: story progress + auto-advance (stock shared image/video controls).
             val slider = view as TimelineSliderView
             slider.setStoryProgressEnabled(true)
             slider.toggleSlideshow(false)

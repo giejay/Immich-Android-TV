@@ -13,18 +13,14 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<!-- Dark panel covers EXIF underneath so transport chrome stays readable. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="bottom"
     android:layoutDirection="ltr"
-    android:background="@drawable/transport_controls_scrim"
+    android:background="#99807B7B"
     android:orientation="vertical"
-    android:paddingTop="12dp"
-    android:paddingBottom="30dp"
     tools:targetApi="28">
 
     <LinearLayout
@@ -34,13 +30,15 @@
         android:paddingTop="4dp"
         android:orientation="horizontal">
 
+<!--        <ImageButton android:id="@id/exo_play"-->
+<!--            style="@style/ExoMediaButton.Play"/>-->
+
         <ImageButton android:id="@+id/exo_mute"
             android:scaleType="fitCenter"
             style="@style/TVMediaButton"
-            android:src="@drawable/unmute_icon"
-            android:contentDescription="@string/media_mute"
+            android:src="@drawable/mute_icon"
             android:nextFocusRight="@+id/exo_rewind"
-            android:nextFocusDown="@id/exo_progress" />
+            android:nextFocusDown="@+id/exo_position" />
 
         <ImageButton
             android:id="@+id/exo_rewind"
@@ -48,7 +46,7 @@
             style="@style/TVMediaButton"
             android:nextFocusLeft="@+id/exo_mute"
             android:nextFocusRight="@+id/exo_pause"
-            android:nextFocusDown="@id/exo_progress" />
+            android:nextFocusDown="@+id/exo_progress_placeholder" />
 
         <ImageButton
             android:id="@id/exo_pause"
@@ -56,7 +54,7 @@
             style="@style/TVMediaButton"
             android:nextFocusLeft="@+id/exo_rewind"
             android:nextFocusRight="@+id/exo_forward"
-            android:nextFocusDown="@id/exo_progress" />
+            android:nextFocusDown="@+id/exo_progress_placeholder" />
 
         <ImageButton
             android:id="@+id/exo_forward"
@@ -64,14 +62,14 @@
             style="@style/TVMediaButton"
             android:nextFocusLeft="@+id/exo_pause"
             android:nextFocusRight="@+id/exo_slideshow"
-            android:nextFocusDown="@id/exo_progress" />
+            android:nextFocusDown="@+id/exo_progress_placeholder" />
 
         <ImageButton
             android:id="@+id/exo_slideshow"
             android:src="@drawable/slideshow"
             style="@style/TVMediaButton"
             android:nextFocusLeft="@+id/exo_forward"
-            android:nextFocusDown="@id/exo_progress" />
+            android:nextFocusDown="@+id/exo_duration" />
 
     </LinearLayout>
 
@@ -81,14 +79,11 @@
         android:id="@+id/exo_progress_layout"
         android:layout_marginTop="4dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp">
+        android:orientation="horizontal">
 
         <TextView android:id="@id/exo_position"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:focusable="false"
             android:textSize="14sp"
             android:textStyle="bold"
             android:paddingLeft="4dp"
@@ -96,30 +91,14 @@
             android:includeFontPadding="false"
             android:textColor="#FFBEBEBE"/>
 
-        <!-- Explicit TimeBar (not placeholder) so D-pad nextFocusDown stays valid on TV. -->
-        <androidx.media3.ui.DefaultTimeBar
-            android:id="@id/exo_progress"
+        <View android:id="@id/exo_progress_placeholder"
             android:layout_width="0dp"
-            android:layout_height="40dp"
             android:layout_weight="1"
-            android:background="@drawable/seekbar_focus_background"
-            android:focusable="true"
-            android:nextFocusUp="@id/exo_pause"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            app:bar_height="8dp"
-            app:buffered_color="#99FFFFFF"
-            app:played_color="#FFFFFFFF"
-            app:scrubber_color="#FFFFFFFF"
-            app:scrubber_dragged_size="28dp"
-            app:scrubber_enabled_size="16dp"
-            app:touch_target_height="40dp"
-            app:unplayed_color="#66FFFFFF" />
+            android:layout_height="26dp"/>
 
         <TextView android:id="@id/exo_duration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:focusable="false"
             android:textSize="14sp"
             android:textStyle="bold"
             android:paddingLeft="4dp"
