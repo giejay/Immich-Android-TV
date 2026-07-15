@@ -65,9 +65,9 @@ jobs:
         RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       run: ./gradlew assembleRelease
 
-    - name: Compile sources
+    - name: Build and Test
       if: steps.keystore_check.outputs.available != 'true'
-      run: ./gradlew compileReleaseSources
+      run: ./gradlew assembleDebug test
 
     - name: Upload Artifacts
       if: steps.keystore_check.outputs.available == 'true'
