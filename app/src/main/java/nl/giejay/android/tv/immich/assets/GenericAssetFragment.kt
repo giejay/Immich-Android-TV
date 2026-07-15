@@ -32,6 +32,8 @@ import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     protected lateinit var currentFilter: ContentType
@@ -71,6 +73,11 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
 
     override fun onItemSelected(card: Card, indexOf: Int) {
         // no use case yet
+    }
+
+    override fun getItemDate(item: Asset): String? {
+        val date = item.exifInfo?.dateTimeOriginal ?: item.fileModifiedAt ?: return null
+        return SimpleDateFormat("MMM yyyy", Locale.getDefault(Locale.Category.FORMAT)).format(date)
     }
 
     open fun showMediaCount(): Boolean {

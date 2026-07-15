@@ -272,4 +272,7 @@
     <string name="favorite_removed">Removed from favorites</string>
     <string name="favorite_add_failed">Failed to add to favorites</string>
     <string name="favorite_remove_failed">Failed to remove from favorites</string>
+    <string name="date_jump_title">Jump to month</string>
+    <string name="date_jump_clear_filter">Clear month filter</string>
+    <string name="date_jump_showing_month">Showing: %1$s ↺</string>
 </resources>
