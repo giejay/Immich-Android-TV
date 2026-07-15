@@ -128,7 +128,7 @@ data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.
 }
 
 // slider/viewer
-data object SLIDER_INTERVAL : IntListPref(3, ImmichApplication.appContext!!.getString(R.string.interval_slideshow), ImmichApplication.appContext!!.getString(R.string.interval_slideshow_desc), R.array.interval_titles, R.array.interval_values)
+data object SLIDER_INTERVAL : IntListPref(6, ImmichApplication.appContext!!.getString(R.string.interval_slideshow), ImmichApplication.appContext!!.getString(R.string.interval_slideshow_desc), R.array.interval_titles, R.array.interval_values)
 data object SLIDER_ANIMATION_SPEED : IntListPref(0,
     ImmichApplication.appContext!!.getString(R.string.slide_animation_speed_ms),
     ImmichApplication.appContext!!.getString(R.string.slide_animation_speed_desc),
@@ -330,6 +330,7 @@ data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString
                 ALL_ASSETS_SORTING)
         ),
         PrefCategory(ImmichApplication.appContext!!.getString(R.string.slideshow), listOf(
+            SLIDER_INTERVAL,
             SLIDER_ONLY_USE_THUMBNAILS,
             SLIDER_FORCE_ORIGINAL_VIDEO,
             SLIDER_LOAD_EDITED_PHOTO,
@@ -338,7 +339,6 @@ data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString
             SLIDER_ZOOM_EFFECT,
             SLIDER_PAN_EFFECT,
             SLIDER_METADATA_CUSTOMIZER,
-            SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,
             SLIDER_GLIDE_TRANSFORMATION,
             SLIDER_MAX_CUT_OFF_WIDTH,

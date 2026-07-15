@@ -7,10 +7,14 @@ import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Folder
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
+import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
+import nl.giejay.android.tv.immich.api.model.TimelineAsset
+import nl.giejay.android.tv.immich.api.model.toTimelineAssets
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
@@ -23,6 +27,7 @@ import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -232,9 +237,30 @@ class ApiClient(private val config: ApiClientConfig) {
         }.map { it.filter(excludeByTag()) }
     }
 
+    suspend fun getAsset(id: String): Either<String, Asset> {
+        return executeAPICall(200) { service.getAsset(id) }
+    }
+
     suspend fun updateFavorite(id: String, isFavorite: Boolean): Either<String, Asset> {
         return executeAPICall(200) {
             service.updateAsset(id, UpdateAssetRequest(isFavorite))
         }
     }
+
+    suspend fun getTimeBuckets(): Either<String, List<TimeBucketSummary>> =
+        executeAPICall(200) { service.getTimeBuckets() }
+
+    /**
+     * Fetches all assets for a month bucket.
+     *
+     * V1 gap: [excludeByTag] / EXCLUDE_ASSETS_IN_ALBUM cannot apply here — bucket responses
+     * omit tags and album membership. Filtering those requires a follow-up ID set cross-check.
+     */
+    suspend fun getTimeBucket(timeBucket: String): Either<String, List<TimelineAsset>> =
+        executeAPICall(200) { service.getTimeBucket(timeBucket) }
+            .map { it.toTimelineAssets() }
+
+    /** "On this day" style memories for the current moment (server filters by day-of-year). */
+    suspend fun getMemories(): Either<String, List<Memory>> =
+        executeAPICall(200) { service.getMemories(OffsetDateTime.now().format(dateTimeFormatter)) }
 }

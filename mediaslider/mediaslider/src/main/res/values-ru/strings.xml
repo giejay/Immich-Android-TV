@@ -3,6 +3,9 @@
     <string name="media_count">Кол-во элементов</string>
     <string name="people">Люди</string>
     <string name="favorite">Избранное</string>
+    <string name="media_mute">Без звука</string>
+    <string name="media_play">Воспроизвести</string>
+    <string name="media_pause">Пауза</string>
     <string name="slideshow">Слайд-шоу</string>
     <string name="image_controller_previous">Предыдущий</string>
     <string name="image_controller_next">Следующий</string>

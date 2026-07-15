@@ -48,6 +48,15 @@ class MediaSliderController(
 
     var onControllerVisibilityChanged: ((Boolean) -> Unit)? = null
 
+    /** Fired when the image slideshow timer is armed (interval in milliseconds). */
+    var onAssetTimerStarted: ((intervalMs: Long) -> Unit)? = null
+
+    /** Fired when the slideshow timer is cancelled or slideshow is paused. */
+    var onSlideshowTimerCancelled: (() -> Unit)? = null
+
+    /** Fired when slideshow starts (or continues) on a video page. */
+    var onVideoSlideshowStarted: (() -> Unit)? = null
+
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
         private set
@@ -120,11 +129,14 @@ class MediaSliderController(
         if (slideShowPlaying) {
             if (currentItemTypeOrNull() == SliderItemType.IMAGE) {
                 startTimerNextAsset()
+            } else if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
+                onVideoSlideshowStarted?.invoke()
             }
             setKeepScreenOnFlags()
         } else {
             clearKeepScreenOnFlags()
             mainHandler.removeCallbacks(goToNextAssetRunnable)
+            onSlideshowTimerCancelled?.invoke()
         }
         if (showPlayIndicator) {
             showTemporaryPlayIndicator()
@@ -133,18 +145,27 @@ class MediaSliderController(
 
     fun startTimerNextAsset() {
         mainHandler.removeCallbacks(goToNextAssetRunnable)
-        mainHandler.postDelayed(goToNextAssetRunnable, (config.interval * 1000).toLong())
+        val intervalMs = (config.interval * 1000).toLong()
+        mainHandler.postDelayed(goToNextAssetRunnable, intervalMs)
+        onAssetTimerStarted?.invoke(intervalMs)
     }
 
     /** Cancels any pending auto-advance timer without starting a new one. */
     fun cancelNextAssetTimer() {
         mainHandler.removeCallbacks(goToNextAssetRunnable)
+        onSlideshowTimerCancelled?.invoke()
     }
 
     /** Cancels any pending auto-advance and immediately moves to the next asset. */
     fun skipToNextAndRestartTimer() {
         mainHandler.removeCallbacks(goToNextAssetRunnable)
         goToNextAsset()
+    }
+
+    /** Cancels any pending auto-advance and immediately moves to the previous asset. */
+    fun skipToPreviousAndRestartTimer() {
+        mainHandler.removeCallbacks(goToNextAssetRunnable)
+        goToPreviousAsset()
     }
 
     // -------------------------------------------------------------------------

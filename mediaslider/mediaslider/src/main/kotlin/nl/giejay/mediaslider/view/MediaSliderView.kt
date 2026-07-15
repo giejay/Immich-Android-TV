@@ -47,10 +47,14 @@ import timber.log.Timber
 import java.lang.reflect.Field
 
 
-class MediaSliderView(context: Context) : ConstraintLayout(context) {
+/**
+ * Pager + metadata shell for the media slider. Timeline/memories chrome subclasses
+ * [TimelineSliderView] for the optional story-progress strip.
+ */
+open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     // view elements
-    private var mainHandler: Handler
-    private var mPager: ViewPager
+    protected val mainHandler = Handler(Looper.getMainLooper())
+    protected val mPager: ViewPager
     private val volumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == "android.media.VOLUME_CHANGED_ACTION") {
@@ -67,12 +71,14 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     // config
-    private lateinit var config: MediaSliderConfiguration
+    protected lateinit var config: MediaSliderConfiguration
+        private set
+    protected val isConfigReady: Boolean get() = this::config.isInitialized
     private lateinit var metaDataLeftAdapter: MetaDataAdapter
     private lateinit var metaDataRightAdapter: MetaDataAdapter
 
     // internal
-    private lateinit var controller: MediaSliderController
+    protected val controller: MediaSliderController
     private var defaultExoFactory = DefaultHttpDataSource.Factory()
     private var pagerAdapter: ScreenSlidePagerAdapter? = null
     private var loading = false
@@ -85,7 +91,6 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
         val playButton: View = findViewById(R.id.playPause)
         mPager = findViewById(R.id.pager)
-        mainHandler = Handler(Looper.getMainLooper())
         controller = MediaSliderController(context, mainHandler, mPager, playButton, this)
         playButton.setOnClickListener { controller.toggleSlideshow(true) }
     }
@@ -130,6 +135,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 if (controller.toggleController()) return true
                 return super.dispatchKeyEvent(event)
             } else if (controller.slideShowPlaying && itemType == SliderItemType.IMAGE) {
+                if (handleSlideshowImageKey(event.keyCode)) {
+                    return true
+                }
                 if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
                     controller.toggleSlideshow(true)
                 } else {
@@ -154,7 +162,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         return if (controller.isControllerVisible) super.dispatchKeyEvent(event) else false
     }
 
-    fun loadMediaSliderView(config: MediaSliderConfiguration) {
+    open fun loadMediaSliderView(config: MediaSliderConfiguration) {
         this.config = config
 
         val listViewRight = findViewById<ListView>(R.id.metadata_view_right)
@@ -281,6 +289,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     }
                     player.playWhenReady = true
                     controller.configureController(sliderItem, sliderItemIndex)
+                    if (controller.slideShowPlaying) {
+                        onVideoPageBoundWhileSlideshow()
+                    }
                 } else {
                     controller.setCurrentPlayer(null)
                     controller.configureController(sliderItem, sliderItemIndex)
@@ -298,6 +309,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                         }
                     }
                 }
+                onPageSettled(sliderItemIndex)
             }
 
             private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
@@ -361,12 +373,21 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     private fun currentItem(): SliderItemViewHolder = config.items[mPager.currentItem]
-    private fun currentItemType(): SliderItemType = config.items[mPager.currentItem].type
+    protected fun currentItemType(): SliderItemType = config.items[mPager.currentItem].type
 
     fun isControllerVisible(): Boolean = controller.isControllerVisible
 
     /** Delegates to [MediaSliderController.toggleSlideshow]. Part of the public API for external callers. */
-    fun toggleSlideshow(showPlayIndicator: Boolean) = controller.toggleSlideshow(showPlayIndicator)
+    open fun toggleSlideshow(showPlayIndicator: Boolean) = controller.toggleSlideshow(showPlayIndicator)
+
+    /** Hook for [TimelineSliderView]: Left/Right during image autoplay without pausing. */
+    protected open fun handleSlideshowImageKey(keyCode: Int): Boolean = false
+
+    /** Hook after a page's media/controllers are bound. */
+    protected open fun onPageSettled(index: Int) {}
+
+    /** Hook when a video page is ready while slideshow is already running. */
+    protected open fun onVideoPageBoundWhileSlideshow() {}
 
     companion object {
         @SuppressLint("UnsafeOptInUsageError")

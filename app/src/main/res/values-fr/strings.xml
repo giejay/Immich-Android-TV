@@ -66,6 +66,14 @@
     <string name="people">Personnes</string>
     <string name="recent">Récent</string>
     <string name="albums">Albums</string>
+    <string name="timeline">Chronologie</string>
+    <string name="this_month">Ce mois-ci</string>
+    <string name="today">Aujourd’hui</string>
+    <string name="yesterday">Hier</string>
+    <plurals name="years_ago">
+        <item quantity="one">Il y a %d an</item>
+        <item quantity="other">Il y a %d ans</item>
+    </plurals>
     <string name="server">Serveur</string>
     <string name="screensaver">Écran de veille</string>
     <string name="debug">Débogage</string>
@@ -122,8 +130,8 @@
     <string name="screensaver_type_desc">Ce qui doit être affiché : albums, aléatoire, récent, etc.</string>
 
     <!-- Slider/viewer preferences -->
-    <string name="interval_slideshow">Intervalle</string>
-    <string name="interval_slideshow_desc">Intervalle du diaporama</string>
+    <string name="interval_slideshow">Intervalle du diaporama</string>
+    <string name="interval_slideshow_desc">Secondes par photo pendant le diaporama. Les vidéos sont lues entièrement, puis passent à la suivante.</string>
     <string name="slide_animation_speed_ms">Vitesse de l’animation de transition (ms)</string>
     <string name="slide_animation_speed_desc">Vitesse de l’animation de transition en millisecondes</string>
     <string name="show_description_slideshow">Afficher la description</string>
@@ -146,6 +154,8 @@
     <string name="photo_transformation_desc">Transformation de la photo</string>
     <string name="force_original_video">Forcer la vidéo originale</string>
     <string name="force_original_video_desc">Lire la vidéo originale, même lorsqu’un transcodage est disponible</string>
+    <string name="load_edited_photo">Charger les photos retouchées</string>
+    <string name="load_edited_photo_desc">Charger la version retouchée des photos au lieu de l’originale</string>
     <string name="zoom_scroll_panoramas">Effet de zoom et de panoramique</string>
     <string name="zoom_scroll_panoramas_desc">Pendant les diaporamas, appliquer des effets de zoom et de panoramique aux pages avec une seule photo. Zoomer automatiquement les photos panoramiques pour remplir l’écran et les faire défiler de bas en haut ou de gauche à droite.</string>
     <string name="zoom_effect_percent">Intensité de l’effet de zoom %</string>
@@ -230,8 +240,14 @@
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 seconde</string>
+    <string name="interval_2_seconds">2 secondes</string>
     <string name="interval_3_seconds">3 secondes</string>
+    <string name="interval_4_seconds">4 secondes</string>
     <string name="interval_5_seconds">5 secondes</string>
+    <string name="interval_6_seconds">6 secondes</string>
+    <string name="interval_7_seconds">7 secondes</string>
+    <string name="interval_8_seconds">8 secondes</string>
+    <string name="interval_9_seconds">9 secondes</string>
     <string name="interval_10_seconds">10 secondes</string>
     <string name="interval_20_seconds">20 secondes</string>
     <string name="interval_30_seconds">30 secondes</string>
@@ -252,6 +268,10 @@
 
     <string name="already_added_metadata">Vous avez déjà ajouté toutes les métadonnées possibles</string>
     <string name="no_items_to_play">Aucun élément à lire</string>
+    <string name="favorite_added">Ajouté aux favoris</string>
+    <string name="favorite_removed">Retiré des favoris</string>
+    <string name="favorite_add_failed">Échec de l’ajout aux favoris</string>
+    <string name="favorite_remove_failed">Échec du retrait des favoris</string>
     <string name="no_assets_for_screensaver">Aucun élément à afficher dans l’écran de veille. Veuillez configurer un autre type d’écran de veille dans les paramètres</string>
     <string name="edit_metadata_title">Modifier les métadonnées</string>
     <string name="meta_data_type_dialog_title">Type</string>

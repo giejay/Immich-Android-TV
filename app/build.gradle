@@ -112,8 +112,9 @@ dependencies {
     implementation libs.rxandroid
     implementation libs.rxjava
 
-    // Exoplayer for playback
+    // Exoplayer for playback (timeline focus preview + slider)
     implementation libs.androidx.media3.exoplayer
+    implementation libs.androidx.media3.ui
 
     implementation libs.billing.ktx
 
