@@ -1111,7 +1111,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
                     useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
                 ),
-                autoPlay = true
+                timelineView = true
             )
         )
     }

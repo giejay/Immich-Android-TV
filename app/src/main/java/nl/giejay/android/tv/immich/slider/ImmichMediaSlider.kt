@@ -15,6 +15,7 @@ import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.view.MediaSliderFragment
+import nl.giejay.mediaslider.view.MediaSliderView
 import nl.giejay.mediaslider.view.TimelineSliderView
 import timber.log.Timber
 
@@ -25,7 +26,14 @@ class ImmichMediaSlider : MediaSliderFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View = TimelineSliderView(requireContext())
+    ): View {
+        val args = ImmichMediaSliderArgs.fromBundle(requireArguments())
+        return if (args.timelineView) {
+            TimelineSliderView(requireContext())
+        } else {
+            MediaSliderView(requireContext())
+        }
+    }
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -54,11 +62,9 @@ class ImmichMediaSlider : MediaSliderFragment() {
 
         loadMediaSliderView(bundle.config)
 
-        if (bundle.autoPlay) {
-            // Memories: story progress + auto-advance (stock shared image/video controls).
-            val slider = view as TimelineSliderView
-            slider.setStoryProgressEnabled(true)
-            slider.toggleSlideshow(false)
+        if (bundle.timelineView) {
+            // Memories: TimelineSliderView already enables story progress; start autoplay.
+            (view as MediaSliderView).toggleSlideshow(false)
         }
     }
 }
