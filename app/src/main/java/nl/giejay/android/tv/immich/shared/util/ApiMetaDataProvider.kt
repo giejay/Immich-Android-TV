@@ -2,9 +2,11 @@ package nl.giejay.android.tv.immich.shared.util
 
 import android.os.Parcel
 import android.os.Parcelable
-import android.util.LruCache
 import arrow.core.Either
 import arrow.core.Option
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.api.model.Asset
@@ -15,6 +17,7 @@ import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.mediaslider.model.MetaDataProvider
 import nl.giejay.mediaslider.model.MetaDataType
+import java.util.LinkedHashMap
 
 class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
     constructor(parcel: Parcel) : this(parcel.readString()!!)
@@ -46,9 +49,8 @@ class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
 }
 
 /**
- * Lazy [GET /assets/{id}] metadata for slider details. Used by the timeline mosaic (which only
- * has thin bucket payloads) and by memories (which omit EXIF/people entirely). DATE is usually
- * supplied statically from the list response; when missing, it is resolved here on open.
+ * Lazy [GET /assets/{id}] metadata for slider details. Field projection is delegated to
+ * [AssetMetaDataMapping] so new metadata types are defined in one place.
  */
 class AssetDetailMetaDataProvider(
     private val assetId: String,
@@ -62,27 +64,7 @@ class AssetDetailMetaDataProvider(
 
     override suspend fun getValue(): String? {
         val asset = AssetDetailCache.get(assetId)
-        return when (field) {
-            MetaDataType.DATE -> {
-                val date = asset.exifInfo?.dateTimeOriginal
-                    ?: asset.fileCreatedAt
-                    ?: asset.fileModifiedAt
-                date?.let { formatAssetDate(it) }
-            }
-            MetaDataType.CITY -> asset.exifInfo?.city
-            MetaDataType.COUNTRY -> asset.exifInfo?.country
-            MetaDataType.DESCRIPTION -> asset.exifInfo?.description
-            MetaDataType.FILENAME -> asset.originalFileName
-            MetaDataType.FILEPATH -> asset.originalPath
-            MetaDataType.PEOPLE -> asset.people
-                ?.mapNotNull { it.name }
-                ?.filter { it.isNotBlank() }
-                ?.joinToString(", ")
-            MetaDataType.CAMERA -> listOfNotNull(asset.exifInfo?.make, asset.exifInfo?.model)
-                .joinToString(" ")
-                .ifBlank { null }
-            else -> null
-        }
+        return AssetMetaDataMapping.valueOf(asset, field)
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -100,18 +82,23 @@ class AssetDetailMetaDataProvider(
     }
 }
 
+/**
+ * Completed-result LRU plus in-flight [Deferred] coalescing so concurrent detail requests for
+ * the same asset share one network call (Caffeine-style without a new dependency).
+ */
 object AssetDetailCache {
     /** Cap detail payloads so long timeline/memory sessions cannot grow without bound. */
     private const val MAX_ENTRIES = 100
 
-    private val cache = LruCache<String, Asset>(MAX_ENTRIES)
+    // Access-order LinkedHashMap (not android.util.LruCache) so JVM unit tests can run without Robolectric.
+    private val cache = object : LinkedHashMap<String, Asset>(MAX_ENTRIES, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Asset>?): Boolean =
+            size > MAX_ENTRIES
+    }
+    private val mutex = Mutex()
+    private val inFlight = mutableMapOf<String, CompletableDeferred<Asset>>()
 
-    /**
-     * Returns the asset or throws if the API call fails. Callers should not mark a metadata
-     * field as "fetched" on failure so opening details can retry.
-     */
-    suspend fun get(assetId: String): Asset {
-        cache.get(assetId)?.let { return it }
+    private val defaultFetch: suspend (String) -> Asset = { assetId ->
         val client = ApiClient.getClient(
             ApiClientConfig(
                 PreferenceManager.get(HOST_NAME),
@@ -120,12 +107,52 @@ object AssetDetailCache {
                 PreferenceManager.get(DEBUG_MODE)
             )
         )
-        return client.getAsset(assetId).fold(
+        client.getAsset(assetId).fold(
             { error -> throw IllegalStateException("Failed to load asset $assetId: $error") },
-            { asset ->
-                cache.put(assetId, asset)
-                asset
-            }
+            { it }
         )
+    }
+
+    /** Test seam — production uses [ApiClient.getAsset]. */
+    @Volatile
+    var fetchAsset: suspend (String) -> Asset = defaultFetch
+
+    /**
+     * Returns the asset or throws if the API call fails. Callers should not mark a metadata
+     * field as "fetched" on failure so opening details can retry.
+     */
+    suspend fun get(assetId: String): Asset {
+        mutex.withLock { cache[assetId] }?.let { return it }
+
+        val (deferred, isOwner) = mutex.withLock {
+            cache[assetId]?.let { cached ->
+                return@withLock CompletableDeferred(cached) to false
+            }
+            inFlight[assetId]?.let { return@withLock it to false }
+            val created = CompletableDeferred<Asset>()
+            inFlight[assetId] = created
+            created to true
+        }
+
+        if (isOwner) {
+            try {
+                val asset = fetchAsset(assetId)
+                mutex.withLock { cache[assetId] = asset }
+                deferred.complete(asset)
+            } catch (e: Exception) {
+                deferred.completeExceptionally(e)
+            } finally {
+                mutex.withLock { inFlight.remove(assetId) }
+            }
+        }
+
+        return deferred.await()
+    }
+
+    /** Test helper. */
+    fun clear() {
+        cache.clear()
+        inFlight.clear()
+        fetchAsset = defaultFetch
     }
 }

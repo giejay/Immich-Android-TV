@@ -14,6 +14,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.zeuskartik.mediaslider.R
+import nl.giejay.mediaslider.player.AmlogicSafeRenderersFactory
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
@@ -21,7 +22,6 @@ import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.view.ExoPlayerListener
 import nl.giejay.mediaslider.view.ExoPlayerView
 import nl.giejay.mediaslider.view.TouchImageView
-import nl.giejay.mediaslider.view.createVideoRenderersFactory
 import timber.log.Timber
 
 
@@ -71,15 +71,13 @@ class ScreenSlidePagerAdapter(private val context: Context,
                 loadImageIntoView(view, R.id.right_image, position, model.secondaryItem!!)
             } else {
                 view = inflater.inflate(R.layout.image_item, container, false)
-                view.tag = "view$position"
                 loadImageIntoView(view, R.id.mBigImage, position, model.mainItem)
             }
         } else if (model.type == SliderItemType.VIDEO) {
             // Use texture view for vertical videos OR if this position previously failed with SurfaceView
             val useTextureView = model.mainItem.orientation != 1 || failedPositions.contains(model.url)
             view = ExoPlayerView(context, if (useTextureView) R.layout.video_item_texture_view else R.layout.video_item)
-            view.tag = "view$position"
-            view.setupPlayer(config, createVideoRenderersFactory(context), exoPlayerListener) { player, error ->
+            view.setupPlayer(config, AmlogicSafeRenderersFactory(context), exoPlayerListener) { player, error ->
                 val shouldRetry = !useTextureView && !failedPositions.contains(model.url)
                 Timber.e(error,
                     "Player error at position $position for url ${model.url}. Already failed: ${failedPositions.contains(model.url)}." +
@@ -100,9 +98,8 @@ class ScreenSlidePagerAdapter(private val context: Context,
                     false
                 }
             }
-            // Cover the black surface immediately; cleared on first decoded frame.
-            view.showLoadingPoster(model.mainItem.thumbnailUrl)
         }
+        view?.tag = "view$position"
         container.addView(view)
         return view!!
     }

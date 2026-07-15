@@ -6,8 +6,6 @@ import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
-import nl.giejay.mediaslider.model.MetaDataType
-import nl.giejay.mediaslider.model.StaticMetaDataProvider
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_LOAD_EDITED_PHOTO
@@ -80,9 +78,6 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 
 fun Asset.toSliderItem(): SliderItem {
     val itemType = SliderItemType.valueOf(this.type.uppercase())
-    // Memories (and other thin Asset payloads) omit EXIF/people; match the mosaic slider by
-    // resolving those fields lazily via GET /assets/{id}. Prefer an inline DATE when present.
-    val date = this.exifInfo?.dateTimeOriginal ?: this.fileCreatedAt ?: this.fileModifiedAt
     return SliderItem(
         this.id,
         ApiUtil.getFileUrl(
@@ -93,21 +88,7 @@ fun Asset.toSliderItem(): SliderItem {
         ),
         itemType,
         this.exifInfo?.orientation ?: if (itemType == SliderItemType.IMAGE) 1 else 6,
-        mapOf(
-            MetaDataType.DATE to if (date != null) {
-                StaticMetaDataProvider(formatAssetDate(date))
-            } else {
-                AssetDetailMetaDataProvider(this.id, MetaDataType.DATE)
-            },
-            MetaDataType.CITY to AssetDetailMetaDataProvider(this.id, MetaDataType.CITY),
-            MetaDataType.COUNTRY to AssetDetailMetaDataProvider(this.id, MetaDataType.COUNTRY),
-            MetaDataType.DESCRIPTION to AssetDetailMetaDataProvider(this.id, MetaDataType.DESCRIPTION),
-            MetaDataType.FILENAME to AssetDetailMetaDataProvider(this.id, MetaDataType.FILENAME),
-            MetaDataType.PEOPLE to AssetDetailMetaDataProvider(this.id, MetaDataType.PEOPLE),
-            MetaDataType.FILEPATH to AssetDetailMetaDataProvider(this.id, MetaDataType.FILEPATH),
-            MetaDataType.CAMERA to AssetDetailMetaDataProvider(this.id, MetaDataType.CAMERA),
-            MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)
-        ),
+        AssetMetaDataMapping.providersFor(this),
         ApiUtil.getThumbnailUrl(this.id, "preview"),
         isPanorama = this.isPanoramaImage(),
         isFavorite = this.isFavorite
