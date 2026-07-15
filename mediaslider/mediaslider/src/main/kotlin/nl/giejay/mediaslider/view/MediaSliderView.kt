@@ -411,17 +411,17 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
             }
 
             private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
-                adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
-                    if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
-                        // already have state for this item, no need to fetch again
-                        return@forEachIndexed
-                    }
-                    ioScope.launch {
-                        val value = item.getValue(context, sliderItem, sliderItemIndex, config.items.size)
-                        adapter.updateState(sliderItem.id, metaDataIndex, value)
-                        withContext(Dispatchers.Main) {
-                            adapter.notifyDataSetChanged()
+                ioScope.launch {
+                    adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
+                        if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
+                            // already have state for this item, no need to fetch again
+                            return@forEachIndexed
                         }
+                        val value = item.getValue(context, sliderItem, sliderItemIndex, config.items.size)
+                        adapter.updateState(sliderItem.id, metaDataIndex, value ?: "")
+                    }
+                    withContext(Dispatchers.Main) {
+                        adapter.notifyDataSetChanged()
                     }
                 }
             }

@@ -115,7 +115,7 @@ class MetaDataAdapter(val context: Context,
                       private val portraitMode: () -> Boolean) : BaseAdapter() {
     private val layoutInflater: LayoutInflater = LayoutInflater.from(context)
     private val viewsPerType: MutableMap<MetaDataType, View> = mutableMapOf()
-    private val stateForItem = mutableMapOf<String, String?>()
+    private val stateForItem = mutableMapOf<String, String>()
 
     override fun getCount(): Int {
         return getItemsToShow().size
@@ -140,7 +140,7 @@ class MetaDataAdapter(val context: Context,
     }
 
     override fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
-        val key = getCurrentItem().id + p0
+        val key = resolveKey(p0)
         val value = stateForItem[key]
         if(value.isNullOrBlank()) {
             return View(context).apply {
@@ -163,11 +163,13 @@ class MetaDataAdapter(val context: Context,
         return view
     }
 
-    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String?) {
+    private fun resolveKey(index: Int, assetId: String = getCurrentItem().id): String = assetId + index
+
+    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String) {
         stateForItem[sliderItemId + metaDataIndex] = value
     }
 
-    fun hasStateForItem(id: String, metaDataIndex: Int): Boolean {
-        return !stateForItem[id + metaDataIndex].isNullOrBlank()
+    fun hasStateForItem(assetId: String, metaDataIndex: Int): Boolean {
+        return stateForItem.containsKey(resolveKey(metaDataIndex, assetId))
     }
 }
