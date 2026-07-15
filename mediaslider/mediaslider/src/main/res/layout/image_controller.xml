@@ -2,10 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#D9000000"
+    android:background="#99807B7B"
     android:gravity="center"
-    android:id="@+id/image_controller"
-    android:elevation="20dp"
     android:orientation="vertical"
     android:paddingTop="4dp"
     android:paddingBottom="4dp">
@@ -16,91 +14,35 @@
         android:gravity="center"
         android:orientation="horizontal">
 
-        <!-- Video-only: mute / unmute -->
-        <ImageButton
-            android:id="@+id/media_mute"
-            style="@style/TVMediaButton"
-            android:contentDescription="@string/media_mute"
-            android:src="@drawable/mute_icon"
-            android:visibility="gone" />
-
         <ImageButton
             android:id="@+id/image_previous"
             style="@style/TVMediaButton"
             android:contentDescription="@string/image_controller_previous"
+            android:nextFocusRight="@id/image_favorite"
             android:src="@android:drawable/ic_media_previous" />
-
-        <!-- Video-only: play / pause -->
-        <ImageButton
-            android:id="@+id/media_play_pause"
-            style="@style/TVMediaButton"
-            android:contentDescription="@string/media_play"
-            android:src="@android:drawable/ic_media_pause"
-            android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/image_favorite"
             style="@style/TVMediaButton"
             android:contentDescription="@string/favorite"
+            android:nextFocusLeft="@id/image_previous"
+            android:nextFocusRight="@id/image_slideshow"
             android:src="@drawable/ic_favorite_border" />
 
         <ImageButton
             android:id="@+id/image_slideshow"
             style="@style/TVMediaButton"
             android:contentDescription="@string/slideshow"
+            android:nextFocusLeft="@id/image_favorite"
+            android:nextFocusRight="@id/image_next"
             android:src="@drawable/slideshow" />
 
         <ImageButton
             android:id="@+id/image_next"
             style="@style/TVMediaButton"
             android:contentDescription="@string/image_controller_next"
+            android:nextFocusLeft="@id/image_slideshow"
             android:src="@android:drawable/ic_media_next" />
-
-    </LinearLayout>
-
-    <!-- Video-only: position / progress / duration row -->
-    <LinearLayout
-        android:id="@+id/media_progress_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/media_position"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:paddingEnd="4dp"
-            android:paddingStart="4dp"
-            android:text="0:00"
-            android:textColor="#FFBEBEBE"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <SeekBar
-            android:id="@+id/media_seek_bar"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:focusable="true"
-            android:progress="0" />
-
-        <TextView
-            android:id="@+id/media_duration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:paddingEnd="4dp"
-            android:paddingStart="4dp"
-            android:text="0:00"
-            android:textColor="#FFBEBEBE"
-            android:textSize="14sp"
-            android:textStyle="bold" />
 
     </LinearLayout>
 

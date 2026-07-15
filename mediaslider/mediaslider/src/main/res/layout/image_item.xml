@@ -19,4 +19,12 @@
         android:layout_centerInParent="true"
         android:theme="@style/ProgressBar"/>
 
+    <include
+        android:id="@+id/image_controller"
+        layout="@layout/image_controller"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:visibility="gone" />
+
 </RelativeLayout>

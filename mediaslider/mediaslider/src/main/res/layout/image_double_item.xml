@@ -27,4 +27,12 @@
 
     </LinearLayout>
 
+    <include
+        android:id="@+id/image_controller"
+        layout="@layout/image_controller"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:visibility="gone" />
+
 </FrameLayout>

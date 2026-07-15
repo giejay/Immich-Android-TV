@@ -5,7 +5,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import com.google.gson.JsonObject
@@ -108,68 +108,91 @@ data class MetaDataSliderItem(val metaDataType: MetaDataType, override val align
     }
 }
 
+/**
+ * Binds metadata rows into a vertical [LinearLayout]. Avoids ListView+wrap_content, which
+ * often keeps a stale/collapsed height when rows appear asynchronously.
+ */
 class MetaDataAdapter(val context: Context,
                       val items: List<MetaDataItem>,
                       private val portraitViewItems: List<MetaDataItem>,
                       private val getCurrentItem: () -> SliderItem,
-                      private val portraitMode: () -> Boolean) : BaseAdapter() {
+                      private val portraitMode: () -> Boolean) {
     private val layoutInflater: LayoutInflater = LayoutInflater.from(context)
-    private val viewsPerType: MutableMap<MetaDataType, View> = mutableMapOf()
-    private val stateForItem = mutableMapOf<String, String>()
-
-    override fun getCount(): Int {
-        return getItemsToShow().size
-    }
+    private val stateForItem = mutableMapOf<String, String?>()
+    /** Keys that have completed a fetch (including blank/null results). */
+    private val fetchedKeys = mutableSetOf<String>()
+    private var container: LinearLayout? = null
+    private var boundAssetId: String? = null
 
     fun getItemsToShow(): List<MetaDataItem> = (if (portraitMode()) portraitViewItems else items)
 
-    override fun getItem(p0: Int): Any {
-        return getItemsToShow()[p0]
+    fun attach(container: LinearLayout) {
+        this.container = container
     }
 
-    override fun getItemId(p0: Int): Long {
-        return getItemsToShow()[p0].type.ordinal.toLong()
+    fun isFullyFetched(assetId: String): Boolean {
+        val toShow = getItemsToShow()
+        return toShow.isNotEmpty() && toShow.indices.all { hasStateForItem(assetId, it) }
     }
 
-    override fun isEnabled(position: Int): Boolean {
-        return false
+    fun clearState(assetId: String) {
+        val prefix = "$assetId#"
+        stateForItem.keys.filter { it.startsWith(prefix) }.forEach { stateForItem.remove(it) }
+        fetchedKeys.removeAll { it.startsWith(prefix) }
     }
 
-    override fun areAllItemsEnabled(): Boolean {
-        return false
-    }
-
-    override fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
-        val key = resolveKey(p0)
-        val value = stateForItem[key]
-        if(value.isNullOrBlank()) {
-            return View(context).apply {
-                layoutParams = RelativeLayout.LayoutParams(0, 0)
+    fun bind() {
+        val parent = container ?: return
+        val currentId = try {
+            getCurrentItem().id
+        } catch (_: Exception) {
+            return
+        }
+        val toShow = getItemsToShow()
+        val allFetched = toShow.indices.all { hasStateForItem(currentId, it) }
+        val rows = toShow.mapIndexedNotNull { index, item ->
+            val value = stateForItem[stateKey(currentId, index)]
+            if (value.isNullOrBlank()) null else item to value
+        }
+        // Don't blank the bottom while this asset's EXIF batch is still in flight.
+        if (rows.isEmpty() && !allFetched && parent.childCount > 0 && boundAssetId != currentId) {
+            return
+        }
+        parent.removeAllViews()
+        boundAssetId = currentId
+        rows.forEach { (item, value) ->
+            val view = item.createView(layoutInflater)
+            val textView = view.findViewById<TextView>(item.textViewResourceId)
+            if (item.align == AlignOption.RIGHT) {
+                (textView.layoutParams as? RelativeLayout.LayoutParams)?.let { params ->
+                    textView.gravity = Gravity.RIGHT
+                    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
+                    textView.layoutParams = params
+                }
             }
+            textView.textSize = item.fontSize.toFloat()
+            textView.setPadding(textView.paddingLeft, item.padding, textView.paddingRight, item.padding)
+            item.updateView(textView, value)
+            parent.addView(
+                view,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            )
         }
-        val item = getItem(p0) as MetaDataItem
-        // can't use p1 because the list might differ for every photo/adapter
-        val view = viewsPerType.getOrPut(item.type) { item.createView(layoutInflater) }
-        val textView = view.findViewById<TextView>(item.textViewResourceId)
-        if (item.align == AlignOption.RIGHT) {
-            val params = textView.layoutParams as RelativeLayout.LayoutParams
-            textView.gravity = Gravity.RIGHT
-            params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
-            view.layoutParams = params
-        }
-        textView.textSize = item.fontSize.toFloat()
-        textView.setPadding(textView.paddingLeft, item.padding, textView.paddingRight, item.padding)
-        item.updateView(textView, value)
-        return view
+        parent.requestLayout()
     }
 
-    private fun resolveKey(index: Int, assetId: String = getCurrentItem().id): String = assetId + index
-
-    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String) {
-        stateForItem[sliderItemId + metaDataIndex] = value
+    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String?) {
+        val key = stateKey(sliderItemId, metaDataIndex)
+        stateForItem[key] = value
+        fetchedKeys.add(key)
     }
 
-    fun hasStateForItem(assetId: String, metaDataIndex: Int): Boolean {
-        return stateForItem.containsKey(resolveKey(metaDataIndex, assetId))
+    fun hasStateForItem(id: String, metaDataIndex: Int): Boolean {
+        return stateKey(id, metaDataIndex) in fetchedKeys
     }
+
+    private fun stateKey(assetId: String, metaDataIndex: Int): String = "$assetId#$metaDataIndex"
 }
