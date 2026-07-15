@@ -14,9 +14,12 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.core.view.isVisible
+import androidx.annotation.OptIn
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.SeekParameters
 import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -67,6 +70,24 @@ class MediaSliderController(
     var currentPlayer: ExoPlayer? = null
         private set
 
+    /** Accumulates rapid seek steps while ExoPlayer's reported position lags. */
+    private var pendingSeekTargetMs: Long? = null
+
+    /** Non-zero while a seek key is held; drives the slow continuous scrub ticks. */
+    private var holdSeekStepMs: Long = 0L
+
+    /**
+     * Direction of a possible tap seek. Cleared when hold-scrub engages; applied on key-up
+     * if the press was short enough that continuous scrub never started.
+     */
+    private var pendingSeekTapForward: Boolean? = null
+
+    /** True once the first hold-scrub tick has run (so key-up must not also do a 10s tap). */
+    private var holdSeekEngaged = false
+
+    /** True after hold-scrub starts and we've paused to avoid seek/playback fighting. */
+    private var pausedForHoldSeek = false
+
     var detailsOverlayVisible = false
         private set
 
@@ -100,6 +121,21 @@ class MediaSliderController(
 
     private val goToNextAssetRunnable = Runnable { goToNextAsset() }
     private val hideTransportRunnable = Runnable { hideTransportControls() }
+    private val holdSeekRunnable = object : Runnable {
+        override fun run() {
+            if (holdSeekStepMs == 0L) return
+            if (!holdSeekEngaged) {
+                holdSeekEngaged = true
+                pendingSeekTapForward = null
+            }
+            beginHoldSeekScrub()
+            seekOrSkipBy(holdSeekStepMs, allowAssetSkip = false)
+            if (videoControllerVisible) {
+                updateVideoProgress()
+            }
+            mainHandler.postDelayed(this, HOLD_SEEK_INTERVAL_MS)
+        }
+    }
     private val progressUpdateRunnable = object : Runnable {
         override fun run() {
             updateVideoProgress()
@@ -115,6 +151,8 @@ class MediaSliderController(
     }
 
     fun bindCurrentPlayer(player: ExoPlayer?) {
+        stopHoldSeek()
+        pendingSeekTargetMs = null
         currentPlayer = player
     }
 
@@ -527,12 +565,106 @@ class MediaSliderController(
     // Remote playback
     // -------------------------------------------------------------------------
 
-    fun seekBy(deltaMs: Long): Boolean {
+    /**
+     * Handles FF/RW (or opt-in D-pad seek) for video. A short press seeks
+     * [REMOTE_SEEK_STEP_MS] on key-up; holding past [HOLD_SEEK_START_DELAY_MS] scrubs with
+     * smaller steps and skips the initial 10s jump. Key-repeats are ignored.
+     */
+    fun onVideoSeekKeyDown(forward: Boolean, isRepeat: Boolean): Boolean {
+        if (host.currentItemType() != SliderItemType.VIDEO) return false
+        if (currentPlayer == null) return false
+        if (isRepeat) return true
+        pendingSeekTapForward = forward
+        holdSeekEngaged = false
+        val holdStep = if (forward) HOLD_SEEK_STEP_MS else -HOLD_SEEK_STEP_MS
+        startHoldSeek(holdStep)
+        return true
+    }
+
+    fun onSeekKeyUp(): Boolean {
+        val tapForward = pendingSeekTapForward
+        val engaged = holdSeekEngaged
+        stopHoldSeek()
+        if (!engaged && tapForward != null && host.currentItemType() == SliderItemType.VIDEO) {
+            val tapDelta = if (tapForward) REMOTE_SEEK_STEP_MS else -REMOTE_SEEK_STEP_MS
+            seekOrSkipBy(tapDelta, allowAssetSkip = true)
+            return true
+        }
+        return engaged || tapForward != null
+    }
+
+    fun stopHoldSeek() {
+        holdSeekStepMs = 0L
+        pendingSeekTapForward = null
+        holdSeekEngaged = false
+        mainHandler.removeCallbacks(holdSeekRunnable)
+        endHoldSeekScrub()
+    }
+
+    private fun startHoldSeek(stepMs: Long) {
+        // Cancel pending ticks without endHoldSeekScrub() so a new hold doesn't resume early.
+        holdSeekStepMs = 0L
+        mainHandler.removeCallbacks(holdSeekRunnable)
+        holdSeekStepMs = stepMs
+        mainHandler.postDelayed(holdSeekRunnable, HOLD_SEEK_START_DELAY_MS)
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun beginHoldSeekScrub() {
+        val player = currentPlayer ?: return
+        if (!pausedForHoldSeek) {
+            pausedForHoldSeek = player.isPlaying || player.playWhenReady
+            if (pausedForHoldSeek) {
+                player.pause()
+            }
+            player.setSeekParameters(SeekParameters.CLOSEST_SYNC)
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun endHoldSeekScrub() {
+        val player = currentPlayer
+        if (player != null) {
+            player.setSeekParameters(SeekParameters.DEFAULT)
+            if (pausedForHoldSeek) {
+                player.play()
+            }
+        }
+        pausedForHoldSeek = false
+        // Let Exo catch up; the next progress tick uses the real position.
+        pendingSeekTargetMs = null
+    }
+
+    /**
+     * Seeks within the current video. Asset skip at the edges only when [allowAssetSkip]
+     * is true (fresh key press) — hold scrub stays inside the clip.
+     */
+    fun seekOrSkipBy(deltaMs: Long, allowAssetSkip: Boolean = true): Boolean {
         if (host.currentItemType() != SliderItemType.VIDEO) return false
         val player = currentPlayer ?: return false
         val duration = player.contentDuration.takeIf { it > 0 } ?: player.duration
         if (duration <= 0) return false
-        val target = (player.currentPosition + deltaMs).coerceIn(0L, duration)
+        val position = pendingSeekTargetMs ?: player.currentPosition
+        if (deltaMs > 0) {
+            if (allowAssetSkip && position >= duration - SEEK_EDGE_EPSILON_MS) {
+                pendingSeekTargetMs = null
+                cancelNextAssetTimer()
+                goToNextAsset()
+                return true
+            }
+            val target = (position + deltaMs).coerceAtMost(duration)
+            pendingSeekTargetMs = target
+            player.seekTo(target)
+            return true
+        }
+        if (allowAssetSkip && position <= SEEK_EDGE_EPSILON_MS) {
+            pendingSeekTargetMs = null
+            cancelNextAssetTimer()
+            goToPreviousAsset()
+            return true
+        }
+        val target = (position + deltaMs).coerceAtLeast(0L)
+        pendingSeekTargetMs = target
         player.seekTo(target)
         return true
     }
@@ -582,6 +714,8 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun stopPlayer() {
+        stopHoldSeek()
+        pendingSeekTargetMs = null
         currentPlayer?.let {
             if (it.isPlaying || it.isLoading) it.stop()
         }
@@ -592,6 +726,8 @@ class MediaSliderController(
     }
 
     fun onDestroy() {
+        stopHoldSeek()
+        pendingSeekTargetMs = null
         currentPlayer?.release()
         currentPlayer = null
         clearKeepScreenOnFlags()
@@ -630,15 +766,12 @@ class MediaSliderController(
     }
 
     private fun focusSharedTransport(isVideo: Boolean) {
-        val target = when {
-            isVideo ->
-                sharedControls.findViewById<View>(R.id.media_play_pause)
-                    ?: sharedControls.findViewById<View>(R.id.media_seek_bar)
-            // During slideshow, land on pause so Left/Right aren't needed to stop.
-            slideShowPlaying -> sharedControls.findViewById<View>(R.id.image_slideshow)
-            host.currentItem().hasSecondaryItem() ->
-                sharedControls.findViewById<View>(R.id.image_slideshow)
-            else -> sharedControls.findViewById<View>(R.id.image_favorite)
+        val target = if (isVideo) {
+            sharedControls.findViewById<View>(R.id.media_play_pause)
+                ?: sharedControls.findViewById<View>(R.id.media_seek_bar)
+        } else {
+            // Photos: land on slideshow (play/pause) rather than favorite.
+            sharedControls.findViewById<View>(R.id.image_slideshow)
         }
         target?.requestFocus()
     }
@@ -754,7 +887,7 @@ class MediaSliderController(
         val positionText = sharedControls.findViewById<TextView>(R.id.media_position) ?: return
         val durationText = sharedControls.findViewById<TextView>(R.id.media_duration) ?: return
 
-        val position = player.currentPosition
+        val position = pendingSeekTargetMs ?: player.currentPosition
         if (!isSeeking) {
             val durationInSeconds = (duration / 1000).toInt()
             if (seekBar.max != durationInSeconds) {
@@ -774,7 +907,14 @@ class MediaSliderController(
     }
 
     companion object {
+        /** Single-tap FF/RW jump. */
         const val REMOTE_SEEK_STEP_MS = 10_000L
+        /** Delay after tap before continuous hold scrub starts. */
+        private const val HOLD_SEEK_START_DELAY_MS = 400L
+        /** Fewer, larger ticks reduce ExoPlayer rebuffer churn (~5× media speed). */
+        private const val HOLD_SEEK_INTERVAL_MS = 400L
+        private const val HOLD_SEEK_STEP_MS = 2_000L
+        private const val SEEK_EDGE_EPSILON_MS = 750L
         private const val TRANSPORT_AUTO_HIDE_MS = 4_000L
         private const val METADATA_DIMMED_WHILE_TRANSPORT_ALPHA = 0.35f
         private const val PROGRESS_UPDATE_INTERVAL_MS = 500L

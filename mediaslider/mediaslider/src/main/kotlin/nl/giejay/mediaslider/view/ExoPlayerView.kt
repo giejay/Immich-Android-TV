@@ -56,10 +56,11 @@ class ExoPlayerView @JvmOverloads constructor(context: Context, resourceId: Int,
 
         player?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
+                // Spinner + poster only for the initial first-frame wait. Mid-stream
+                // BUFFERING (seek/rebuffer) would otherwise flash the spinner constantly
+                // during hold-scrub; PlayerView already has show_buffering="never".
                 if (playbackState == Player.STATE_BUFFERING && awaitingFirstFrame) {
                     showPosterOverlay()
-                } else if (playbackState == Player.STATE_BUFFERING) {
-                    loadingView.visibility = View.VISIBLE
                 } else if (playbackState == Player.STATE_READY || playbackState == Player.STATE_ENDED) {
                     if (!awaitingFirstFrame) {
                         loadingView.visibility = View.GONE

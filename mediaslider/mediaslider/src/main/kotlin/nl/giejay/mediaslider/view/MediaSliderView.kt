@@ -235,31 +235,57 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                     return super.dispatchKeyEvent(event)
                 }
                 return false
-            } else if (itemType == SliderItemType.VIDEO &&
-                (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE ||
-                    event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
-                    event.keyCode == KeyEvent.KEYCODE_MEDIA_PAUSE)
+            } else if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE ||
+                event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
+                event.keyCode == KeyEvent.KEYCODE_MEDIA_PAUSE
             ) {
-                return when (event.keyCode) {
-                    KeyEvent.KEYCODE_MEDIA_PLAY -> controller.playVideo()
-                    KeyEvent.KEYCODE_MEDIA_PAUSE -> controller.pauseVideo()
-                    else -> controller.togglePlayPause()
-                }
-            } else if (itemType == SliderItemType.VIDEO && controller.isRemoteSeekForward(event.keyCode)) {
-                return controller.seekBy(MediaSliderController.REMOTE_SEEK_STEP_MS)
-            } else if (itemType == SliderItemType.VIDEO && controller.isRemoteSeekRewind(event.keyCode)) {
-                return controller.seekBy(-MediaSliderController.REMOTE_SEEK_STEP_MS)
-            } else if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
-                event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
-            ) {
-                if (itemType == SliderItemType.IMAGE) {
-                    if (controller.transportControlsVisible) {
-                        return super.dispatchKeyEvent(event)
+                return when (itemType) {
+                    SliderItemType.VIDEO -> when (event.keyCode) {
+                        KeyEvent.KEYCODE_MEDIA_PLAY -> controller.playVideo()
+                        KeyEvent.KEYCODE_MEDIA_PAUSE -> controller.pauseVideo()
+                        else -> controller.togglePlayPause()
                     }
-                    controller.showImageTransportControls()
-                    return true
+                    SliderItemType.IMAGE -> when (event.keyCode) {
+                        KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                            if (!controller.slideShowPlaying) toggleSlideshow(true)
+                            true
+                        }
+                        KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                            if (controller.slideShowPlaying) toggleSlideshow(true)
+                            true
+                        }
+                        else -> {
+                            toggleSlideshow(true)
+                            true
+                        }
+                    }
+                    else -> false
                 }
-                return false
+            } else if (controller.isRemoteSeekForward(event.keyCode)) {
+                return when (itemType) {
+                    SliderItemType.VIDEO ->
+                        controller.onVideoSeekKeyDown(forward = true, isRepeat = event.repeatCount > 0)
+                    SliderItemType.IMAGE -> {
+                        // Key-repeat would otherwise blaze through the library.
+                        if (event.repeatCount > 0) return true
+                        controller.cancelNextAssetTimer()
+                        controller.goToNextAsset()
+                        true
+                    }
+                    else -> false
+                }
+            } else if (controller.isRemoteSeekRewind(event.keyCode)) {
+                return when (itemType) {
+                    SliderItemType.VIDEO ->
+                        controller.onVideoSeekKeyDown(forward = false, isRepeat = event.repeatCount > 0)
+                    SliderItemType.IMAGE -> {
+                        if (event.repeatCount > 0) return true
+                        controller.cancelNextAssetTimer()
+                        controller.goToPreviousAsset()
+                        true
+                    }
+                    else -> false
+                }
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN &&
                 itemType == SliderItemType.VIDEO &&
                 controller.currentPlayer != null
@@ -311,21 +337,45 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                 if (controller.transportControlsVisible) {
                     return super.dispatchKeyEvent(event)
                 }
+                if (itemType == SliderItemType.VIDEO && config.dpadSeeksInVideo) {
+                    return controller.onVideoSeekKeyDown(
+                        forward = true,
+                        isRepeat = event.repeatCount > 0
+                    )
+                }
                 controller.goToNextAsset()
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                 if (controller.transportControlsVisible) {
                     return super.dispatchKeyEvent(event)
                 }
+                if (itemType == SliderItemType.VIDEO && config.dpadSeeksInVideo) {
+                    return controller.onVideoSeekKeyDown(
+                        forward = false,
+                        isRepeat = event.repeatCount > 0
+                    )
+                }
                 controller.goToPreviousAsset()
                 return false
             }
-        } else if (event.action == KeyEvent.ACTION_UP &&
-            (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER)
-        ) {
-            if (controller.suppressTransportEnterUp) {
-                controller.suppressTransportEnterUp = false
-                return true
+        } else if (event.action == KeyEvent.ACTION_UP) {
+            if (controller.isRemoteSeekForward(event.keyCode) ||
+                controller.isRemoteSeekRewind(event.keyCode) ||
+                (config.dpadSeeksInVideo &&
+                    itemType == SliderItemType.VIDEO &&
+                    (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+                        event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT))
+            ) {
+                controller.onSeekKeyUp()
+                if (itemType == SliderItemType.VIDEO) return true
+            }
+            if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                event.keyCode == KeyEvent.KEYCODE_ENTER
+            ) {
+                if (controller.suppressTransportEnterUp) {
+                    controller.suppressTransportEnterUp = false
+                    return true
+                }
             }
         }
         if (controller.transportHasFocus() || controller.transportControlsVisible) {

@@ -155,6 +155,8 @@
     <string name="photo_transformation_desc">Преобразование фото</string>
     <string name="force_original_video">Принудительно оригинальное видео</string>
     <string name="force_original_video_desc">Воспроизводить оригинальное видео, даже если доступна транскодированная версия</string>
+    <string name="dpad_seek_in_video">D-pad перематывает видео</string>
+    <string name="dpad_seek_in_video_desc">Влево/Вправо перематывают видео примерно на 10 с вместо смены медиа. Кнопки перемотки на пульте всегда перематывают. По умолчанию выключено.</string>
     <string name="load_edited_photo">Загружать отредактированные фото</string>
     <string name="load_edited_photo_desc">Загружать отредактированную версию фото вместо оригинала</string>
     <string name="zoom_scroll_panoramas">Эффект увеличения и панорамирования</string>

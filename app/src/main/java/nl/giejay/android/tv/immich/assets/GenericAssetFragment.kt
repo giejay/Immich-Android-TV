@@ -19,6 +19,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_DPAD_SEEK_IN_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
@@ -113,7 +114,8 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                     zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
                     zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
-                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
+                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
+                    dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO)
                 )
             )
         )
