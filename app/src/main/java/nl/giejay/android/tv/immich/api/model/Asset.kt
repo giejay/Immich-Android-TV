@@ -26,10 +26,12 @@ data class Asset(
     val type: String,
     val deviceAssetId: String?,
     val exifInfo: AssetExifInfo?,
+    val fileCreatedAt: Date? = null,
     val fileModifiedAt: Date?,
     val albumName: String?,
     val people: List<Person>?,
     val tags: List<Tag>?,
     val originalPath: String?,
-    val originalFileName: String?
+    val originalFileName: String?,
+    val isFavorite: Boolean = false
 )

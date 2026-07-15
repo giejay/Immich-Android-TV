@@ -88,7 +88,6 @@ private fun intentAvailable(intent: Intent, context: Context): Boolean {
 }
 
 data object SCREENSAVER_INTERVAL : IntListPref(3, ImmichApplication.appContext!!.getString(R.string.interval), ImmichApplication.appContext!!.getString(R.string.screensaver_interval_desc), R.array.interval_titles, R.array.interval_values)
-data object SCREENSAVER_SHOW_MEDIA_COUNT : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_media_count), ImmichApplication.appContext!!.getString(R.string.show_media_count_desc_screensaver))
 data object SCREENSAVER_SHOW_DESCRIPTION : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_description), ImmichApplication.appContext!!.getString(R.string.show_description_screensaver))
 data object SCREENSAVER_SHOW_ALBUM_NAME : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_album_name), ImmichApplication.appContext!!.getString(R.string.show_album_name_desc))
 data object SCREENSAVER_SHOW_DATE : BooleanPref(true, ImmichApplication.appContext!!.getString(R.string.show_date), ImmichApplication.appContext!!.getString(R.string.show_date_screensaver))
@@ -129,7 +128,7 @@ data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.
 }
 
 // slider/viewer
-data object SLIDER_INTERVAL : IntListPref(3, ImmichApplication.appContext!!.getString(R.string.interval_slideshow), ImmichApplication.appContext!!.getString(R.string.interval_slideshow_desc), R.array.interval_titles, R.array.interval_values)
+data object SLIDER_INTERVAL : IntListPref(6, ImmichApplication.appContext!!.getString(R.string.interval_slideshow), ImmichApplication.appContext!!.getString(R.string.interval_slideshow_desc), R.array.interval_titles, R.array.interval_values)
 data object SLIDER_ANIMATION_SPEED : IntListPref(0,
     ImmichApplication.appContext!!.getString(R.string.slide_animation_speed_ms),
     ImmichApplication.appContext!!.getString(R.string.slide_animation_speed_desc),
@@ -164,8 +163,16 @@ data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTr
         return GlideTransformations.valueOfSafe(prefValue, defaultValue)
     }
 }
+data object SLIDER_ZOOM_SCROLL_PANORAMAS : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas), ImmichApplication.appContext!!.getString(R.string.zoom_scroll_panoramas_desc))
+data object SLIDER_ZOOM_EFFECT : IntSeekbarPref(50,
+    ImmichApplication.appContext!!.getString(R.string.zoom_effect_percent),
+    ImmichApplication.appContext!!.getString(R.string.zoom_effect_percent_desc))
+data object SLIDER_PAN_EFFECT : IntSeekbarPref(50,
+    ImmichApplication.appContext!!.getString(R.string.pan_effect_percent),
+    ImmichApplication.appContext!!.getString(R.string.pan_effect_percent_desc))
 
 data object SLIDER_FORCE_ORIGINAL_VIDEO : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.force_original_video), ImmichApplication.appContext!!.getString(R.string.force_original_video_desc))
+data object SLIDER_LOAD_EDITED_PHOTO : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.load_edited_photo), ImmichApplication.appContext!!.getString(R.string.load_edited_photo_desc))
 
 // other
 data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
@@ -323,11 +330,15 @@ data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString
                 ALL_ASSETS_SORTING)
         ),
         PrefCategory(ImmichApplication.appContext!!.getString(R.string.slideshow), listOf(
+            SLIDER_INTERVAL,
             SLIDER_ONLY_USE_THUMBNAILS,
             SLIDER_FORCE_ORIGINAL_VIDEO,
+            SLIDER_LOAD_EDITED_PHOTO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
+            SLIDER_ZOOM_SCROLL_PANORAMAS,
+            SLIDER_ZOOM_EFFECT,
+            SLIDER_PAN_EFFECT,
             SLIDER_METADATA_CUSTOMIZER,
-            SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,
             SLIDER_GLIDE_TRANSFORMATION,
             SLIDER_MAX_CUT_OFF_WIDTH,

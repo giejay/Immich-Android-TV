@@ -254,7 +254,14 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         requireActivity().windowManager.defaultDisplay.getMetrics(mMetrics)
     }
 
+    override fun onPause() {
+        // Cancel pending hover-background loads so they don't paint onto Timeline later.
+        Debouncer.cancel(BACKGROUND_DEBOUNCE_KEY)
+        super.onPause()
+    }
+
     override fun onDestroyView() {
+        Debouncer.cancel(BACKGROUND_DEBOUNCE_KEY)
         super.onDestroyView()
         if (mBackgroundManager?.isAttached == true) {
             mBackgroundManager?.drawable = null
@@ -286,12 +293,17 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     private fun loadBackgroundDebounced(backgroundUrl: String?, onLoadFailed: () -> Unit) {
         if (PreferenceManager.get(LOAD_BACKGROUND_IMAGE)) {
-            Debouncer.debounce("background", { loadBackground(backgroundUrl, onLoadFailed) }, 1, TimeUnit.SECONDS)
+            Debouncer.debounce(
+                BACKGROUND_DEBOUNCE_KEY,
+                { loadBackground(backgroundUrl, onLoadFailed) },
+                1,
+                TimeUnit.SECONDS
+            )
         }
     }
 
     private fun loadBackground(backgroundUrl: String?, onLoadFailed: () -> Unit) {
-        if (!isAdded || !PreferenceManager.get(LOAD_BACKGROUND_IMAGE)) {
+        if (!isAdded || !isResumed || !PreferenceManager.get(LOAD_BACKGROUND_IMAGE)) {
             return
         }
         if (backgroundUrl.isNullOrEmpty()) {
@@ -309,6 +321,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                         resource: Drawable,
                         transition: Transition<in Drawable?>?
                     ) {
+                        // Fragment may already be gone (e.g. user switched to Timeline).
+                        if (!isAdded || !isResumed) return
                         try {
                             mBackgroundManager?.drawable = resource
                         } catch (e: Exception) {
@@ -317,6 +331,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                     }
 
                     override fun onLoadFailed(errorDrawable: Drawable?) {
+                        if (!isAdded || !isResumed) return
                         onLoadFailed()
                     }
                 })
@@ -345,5 +360,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
         const val FETCH_COUNT = 50
         const val FETCH_PAGE_COUNT = FETCH_COUNT
+        /** Shared with Timeline so it can cancel a pending Photos background paint. */
+        const val BACKGROUND_DEBOUNCE_KEY = "background"
     }
 }

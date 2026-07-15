@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/browse_dummy"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false">
+
+    <androidx.leanback.widget.BrowseFrameLayout
+        android:id="@+id/timeline_frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:descendantFocusability="afterDescendants"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
+
+        <FrameLayout
+            android:id="@+id/browse_grid_dock"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <!--
+              Mosaic first for focus order. Elevation keeps the whole timeline above the scrubber's
+              year labels; focused cells/memories therefore cover the rail. Scrubber raises itself
+              only while focused so the MMM yyyy badge can overlay them.
+            -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/timeline_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:elevation="4dp"
+                android:paddingStart="40dp"
+                android:paddingTop="28dp"
+                android:paddingEnd="64dp"
+                android:paddingBottom="48dp" />
+
+            <nl.giejay.android.tv.immich.timeline.TimelineScrubberView
+                android:id="@+id/timeline_scrubber"
+                android:layout_width="112dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:clipToPadding="false"
+                android:elevation="0dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true" />
+
+            <ProgressBar
+                android:id="@+id/browse_progressbar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:elevation="6dp"
+                android:indeterminate="true"
+                android:theme="@style/ProgressBar"
+                android:visibility="visible" />
+        </FrameLayout>
+    </androidx.leanback.widget.BrowseFrameLayout>
+</FrameLayout>

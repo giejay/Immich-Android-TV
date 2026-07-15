@@ -24,6 +24,11 @@ object Debouncer {
         prev?.cancel(true)
     }
 
+    /** Cancels a pending [debounce] for [key], if any. */
+    fun cancel(key: Any) {
+        delayedMap.remove(key)?.cancel(true)
+    }
+
     fun shutdown() {
         scheduler.shutdownNow()
     }

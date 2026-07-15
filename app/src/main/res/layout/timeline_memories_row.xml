@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fixed-size memory cards. End clearance + clipToPadding keep resting cards off the
+  scrubber; clipChildren=false on the parent mosaic still lets focus scale cover the rail.
+  Tighter horizontalMargin packs more of the 280dp cards before the clearance.
+-->
+<androidx.leanback.widget.HorizontalGridView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/timeline_memories_grid"
+    android:layout_width="match_parent"
+    android:layout_height="220dp"
+    android:clipChildren="false"
+    android:clipToPadding="true"
+    android:paddingTop="24dp"
+    android:paddingBottom="24dp"
+    android:paddingEnd="@dimen/timeline_memories_end_clearance"
+    app:focusOutFront="true"
+    app:horizontalMargin="@dimen/timeline_memories_horizontal_margin" />

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Extra bottom padding clears focused mosaic cell scale overflow. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/timeline_day_header"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:focusable="false"
+    android:paddingTop="20dp"
+    android:paddingBottom="20dp"
+    android:textAppearance="?android:attr/textAppearanceMedium"
+    android:textColor="@android:color/white"
+    android:textStyle="bold" />

@@ -1,0 +1,59 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+apply plugin: 'com.android.library'
+apply plugin: 'com.google.devtools.ksp'
+
+android {
+    compileSdk 37
+
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 37
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        // View binding allows efficient, type-safe view access
+        // See more at https://developer.android.com/topic/libraries/view-binding
+        viewBinding = true
+    }
+    namespace 'com.zeuskartik.mediaslider'
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation libs.androidx.appcompat
+    implementation(libs.timber)
+    implementation libs.androidx.core.ktx
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.runner
+    androidTestImplementation libs.androidx.espresso.core
+    implementation libs.glide
+    ksp libs.glide.ksp
+    implementation libs.androidx.media3.exoplayer
+    implementation libs.androidx.media3.exoplayer.dash
+    implementation libs.androidx.media3.ui
+    implementation libs.androidx.constraintlayout
+    implementation libs.gson
+    implementation libs.nextlib.media3ext
+}

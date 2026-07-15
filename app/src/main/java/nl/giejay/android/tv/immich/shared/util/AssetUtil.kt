@@ -6,10 +6,9 @@ import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.card.Card
-import nl.giejay.mediaslider.model.MetaDataType
-import nl.giejay.mediaslider.model.StaticMetaDataProvider
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_LOAD_EDITED_PHOTO
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -78,24 +77,25 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 }
 
 fun Asset.toSliderItem(): SliderItem {
-    return SliderItem(this.id,
-        ApiUtil.getFileUrl(this.id, this.type, PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)),
-        SliderItemType.valueOf(this.type.uppercase()),
-        this.exifInfo?.orientation ?: 1,
-        mapOf(MetaDataType.DATE to this.exifInfo?.dateTimeOriginal?.let { formatDate(it) },
-            MetaDataType.CITY to this.exifInfo?.city,
-            MetaDataType.COUNTRY to this.exifInfo?.country,
-            MetaDataType.DESCRIPTION to this.exifInfo?.description,
-            MetaDataType.FILENAME to this.originalFileName,
-            MetaDataType.PEOPLE to this.people?.map { it.name }?.filter { it?.isNotBlank() == true }?.joinToString(", "),
-            MetaDataType.FILEPATH to this.originalPath,
-            MetaDataType.CAMERA to (listOf(this.exifInfo?.make, this.exifInfo?.model)).filterNotNull().joinToString(" "))
-            .mapValues { StaticMetaDataProvider(it.value) } +
-                mapOf(MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)),
-        ApiUtil.getThumbnailUrl(this.id, "preview"))
+    val itemType = SliderItemType.valueOf(this.type.uppercase())
+    return SliderItem(
+        this.id,
+        ApiUtil.getFileUrl(
+            this.id,
+            this.type,
+            PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
+            PreferenceManager.get(SLIDER_LOAD_EDITED_PHOTO)
+        ),
+        itemType,
+        this.exifInfo?.orientation ?: if (itemType == SliderItemType.IMAGE) 1 else 6,
+        AssetMetaDataMapping.providersFor(this),
+        ApiUtil.getThumbnailUrl(this.id, "preview", PreferenceManager.get(SLIDER_LOAD_EDITED_PHOTO)),
+        isPanorama = this.isPanoramaImage(),
+        isFavorite = this.isFavorite
+    )
 }
 
-private fun formatDate(date: Date): String {
+internal fun formatAssetDate(date: Date): String {
     val calendar = Calendar.getInstance()
     calendar.time = date
     val locale = Locale.getDefault(Locale.Category.FORMAT)
@@ -117,7 +117,20 @@ private fun formatDate(date: Date): String {
 }
 
 fun Asset.isPortraitImage(): Boolean {
-    return (this.exifInfo?.orientation == 6 || (this.exifInfo?.exifImageWidth != null && this.exifInfo.exifImageHeight != null && this.exifInfo.exifImageWidth - 100 < this.exifInfo.exifImageHeight)) && this.type == SliderItemType.IMAGE.toString()
+    val aspectRatio = this.getAspectRatio()
+    return (this.exifInfo?.orientation == 6 || this.exifInfo?.orientation == 8 || (aspectRatio != null && aspectRatio > 0.56 && aspectRatio <= 1.1)) && this.type == SliderItemType.IMAGE.toString()
+}
+
+fun Asset.isPanoramaImage(): Boolean {
+    val aspectRatio = this.getAspectRatio()
+    return (aspectRatio != null && (aspectRatio <= 0.56 || aspectRatio > 2.0)) && this.type == SliderItemType.IMAGE.toString()
+}
+
+fun Asset.getAspectRatio(): Double? {
+    return if(this.exifInfo != null && this.exifInfo.exifImageHeight != null && this.exifInfo.exifImageWidth != null && this.exifInfo.exifImageHeight > 0)
+        this.exifInfo.exifImageWidth.toDouble() / this.exifInfo.exifImageHeight.toDouble()
+    else
+        null
 }
 
 fun List<Asset>.toCards(): List<Card> {
@@ -127,7 +140,7 @@ fun List<Asset>.toCards(): List<Card> {
 }
 
 fun Asset.toCard(): Card {
-    return Card(this.deviceAssetId ?: "",
+    return Card(this.originalFileName ?: this.deviceAssetId ?: "",
         this.exifInfo?.description ?: "",
         this.id,
         ApiUtil.getThumbnailUrl(this.id, "thumbnail"),

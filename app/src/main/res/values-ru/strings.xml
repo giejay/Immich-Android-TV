@@ -66,6 +66,16 @@
     <string name="people">Люди</string>
     <string name="recent">Недавние</string>
     <string name="albums">Альбомы</string>
+    <string name="timeline">Лента</string>
+    <string name="this_month">Этот месяц</string>
+    <string name="today">Сегодня</string>
+    <string name="yesterday">Вчера</string>
+    <plurals name="years_ago">
+        <item quantity="one">%d год назад</item>
+        <item quantity="few">%d года назад</item>
+        <item quantity="many">%d лет назад</item>
+        <item quantity="other">%d года назад</item>
+    </plurals>
     <string name="server">Сервер</string>
     <string name="screensaver">Заставка\n</string>
     <string name="debug">Отладка</string>
@@ -121,8 +131,8 @@
     <string name="screensaver_type_desc">Что показывать: альбомы, случайные, недавние и т.д.</string>
 
     <!-- Slider/viewer preferences -->
-    <string name="interval_slideshow">Интервал</string>
-    <string name="interval_slideshow_desc">Интервал слайд-шоу</string>
+    <string name="interval_slideshow">Интервал слайд-шоу</string>
+    <string name="interval_slideshow_desc">Секунд на фото в слайд-шоу. Видео воспроизводятся полностью, затем переход дальше.</string>
     <string name="slide_animation_speed_ms">Скорость анимации слайда (мс)</string>
     <string name="slide_animation_speed_desc">Скорость анимации в миллисекундах</string>
     <string name="show_description_slideshow">Показывать описание</string>
@@ -145,6 +155,14 @@
     <string name="photo_transformation_desc">Преобразование фото</string>
     <string name="force_original_video">Принудительно оригинальное видео</string>
     <string name="force_original_video_desc">Воспроизводить оригинальное видео, даже если доступна транскодированная версия</string>
+    <string name="load_edited_photo">Загружать отредактированные фото</string>
+    <string name="load_edited_photo_desc">Загружать отредактированную версию фото вместо оригинала</string>
+    <string name="zoom_scroll_panoramas">Эффект увеличения и панорамирования</string>
+    <string name="zoom_scroll_panoramas_desc">Во время слайд-шоу применяйте эффекты увеличения и панорамирования для отдельных страниц фотографии. Автоматически увеличивайте панорамные фотографии, чтобы заполнить экран, и прокручивайте снизу вверх или слева направо.</string>
+    <string name="zoom_effect_percent">Величина эффекта увеличения %</string>
+    <string name="zoom_effect_percent_desc">Регулировка силы эффекта увеличения.</string>
+    <string name="pan_effect_percent">Количество эффекта Пан %</string>
+    <string name="pan_effect_percent_desc">Отрегулируйте силу панорамирования.</string>
 
     <!-- Other preferences -->
     <string name="photos_in_albums">Фото в альбомах</string>
@@ -186,15 +204,15 @@
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Войдите на ваш сервер Immich или попробуйте демо.</string>
-    <string name="server_url_hint">URL сервера (http[s]://...)</string>
+    <string name="server_url_hint">URL сервера (http[s]://…)</string>
     <string name="disable_ssl_verification">Отключить проверку SSL</string>
     <string name="disable_ssl_verification_desc">Используйте это только при проблемах с самоподписанными сертификатами!</string>
     <string name="debug_mode">Режим отладки</string>
     <string name="debug_mode_desc">Включите это, если у вас возникают проблемы с получением данных Immich.</string>
     <string name="submit">Отправить</string>
-    <string name="enter_server_url">Введите URL сервера (https://...)</string>
+    <string name="enter_server_url">Введите URL сервера (https://…)</string>
     <string name="enter_api_key">Введите API-ключ; если уже ввели, попробуйте снова выделить его и нажать Enter/OK, а не Назад</string>
-    <string name="enter_valid_server_url">Введите корректный URL сервера (https://...)</string>
+    <string name="enter_valid_server_url">Введите корректный URL сервера (https://…)</string>
 
     <!-- Auth by phone errors and messages -->
     <string name="or_enter_code_on_auth_url">Или введите код %1$s на %2$s</string>
@@ -224,8 +242,14 @@
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 секунда</string>
+    <string name="interval_2_seconds">2 секунды</string>
     <string name="interval_3_seconds">3 секунды</string>
+    <string name="interval_4_seconds">4 секунды</string>
     <string name="interval_5_seconds">5 секунд</string>
+    <string name="interval_6_seconds">6 секунд</string>
+    <string name="interval_7_seconds">7 секунд</string>
+    <string name="interval_8_seconds">8 секунд</string>
+    <string name="interval_9_seconds">9 секунд</string>
     <string name="interval_10_seconds">10 секунд</string>
     <string name="interval_20_seconds">20 секунд</string>
     <string name="interval_30_seconds">30 секунд</string>
@@ -246,6 +270,10 @@
 
     <string name="already_added_metadata">Все возможные метаданные уже добавлены</string>
     <string name="no_items_to_play">Нет элементов для воспроизвдения</string>
+    <string name="favorite_added">Добавлено в избранное</string>
+    <string name="favorite_removed">Удалено из избранного</string>
+    <string name="favorite_add_failed">Не удалось добавить в избранное</string>
+    <string name="favorite_remove_failed">Не удалось удалить из избранного</string>
     <string name="no_assets_for_screensaver">Нет элементов для отображения заставки. Пожалуйста, настройте другой тип заставки в параметрах.</string>
     <string name="edit_metadata_title">Редактировать метаданные</string>
     <string name="meta_data_type_dialog_title">Тип</string>
