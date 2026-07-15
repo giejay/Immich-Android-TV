@@ -38,13 +38,17 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
         override fun run() {
             if (!storyProgressEnabled || !controller.slideShowPlaying) return
             if (currentSliderItemType() != SliderItemType.VIDEO) return
-            val player = controller.currentPlayer ?: return
-            val duration = player.duration
-            if (duration > 0) {
-                updateStoryProgressChrome(
-                    mPager.currentItem,
-                    player.currentPosition.toFloat() / duration.toFloat()
-                )
+            // Keep polling until the player is bound and duration is known — first-page
+            // memories often start slideshow before ExoPlayer reports duration.
+            val player = controller.currentPlayer
+            if (player != null) {
+                val duration = player.duration
+                if (duration > 0) {
+                    updateStoryProgressChrome(
+                        mPager.currentItem,
+                        player.currentPosition.toFloat() / duration.toFloat()
+                    )
+                }
             }
             mainHandler.postDelayed(this, 50)
         }
@@ -103,6 +107,21 @@ class TimelineSliderView(context: Context) : MediaSliderView(context) {
                 true
             }
             else -> false
+        }
+    }
+
+    /**
+     * Memories call this after load with autoplay. Image pages get story progress via
+     * [MediaSliderController.startTimerNextAsset]; video pages must start the Exo-driven
+     * poller here — [onPageSettled] already ran while slideshow was still off.
+     */
+    override fun toggleSlideshow(showPlayIndicator: Boolean) {
+        super.toggleSlideshow(showPlayIndicator)
+        if (storyProgressEnabled &&
+            controller.slideShowPlaying &&
+            currentSliderItemType() == SliderItemType.VIDEO
+        ) {
+            startVideoStoryProgress()
         }
     }
 

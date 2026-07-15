@@ -401,7 +401,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     fun isControllerVisible(): Boolean = controller.isControllerVisible
 
     /** Delegates to [MediaSliderController.toggleSlideshow]. Part of the public API for external callers. */
-    fun toggleSlideshow(showPlayIndicator: Boolean) = controller.toggleSlideshow(showPlayIndicator)
+    open fun toggleSlideshow(showPlayIndicator: Boolean) = controller.toggleSlideshow(showPlayIndicator)
 
     companion object {
         @SuppressLint("UnsafeOptInUsageError")
