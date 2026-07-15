@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import android.util.Log
+import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -56,6 +57,8 @@ class MediaSliderController(
         fun bindMetadataAdapters()
         fun updateDateOverlay(sliderItem: SliderItem)
         fun applyDetailsOverlayVisibilityIfDetailsOpen()
+        /** Bottom EXIF columns are ready for the current page (or there are none to show). */
+        fun isBottomMetadataReady(): Boolean
         /** Called when slideshow starts on a video page (story progress). */
         fun onVideoSlideshowStarted()
         /** Called when slideshow pauses or the image timer is cancelled. */
@@ -102,6 +105,12 @@ class MediaSliderController(
     var suppressTransportEnterUp = false
 
     private var isSeeking = false
+
+    /**
+     * Last non-zero height of the bottom details holder. Used as [View.setMinimumHeight]
+     * while EXIF rows are cleared/loading so wrap_content doesn't collapse the scrim to 0.
+     */
+    private var detailsHolderMinHeightPx = 0
 
     val detailsOverlayToggleEnabled: Boolean
         get() = context !is MediaSliderListener
@@ -402,17 +411,28 @@ class MediaSliderController(
         mainHandler.removeCallbacks(hideTransportRunnable)
     }
 
+    /** Snapshot holder height before EXIF rows are cleared on page change. */
+    fun preserveDetailsHolderHeight() {
+        val height = metaDataHolder.height
+        if (height > 0) {
+            detailsHolderMinHeightPx = height
+        }
+    }
+
     fun applyDetailsOverlayVisibility() {
         val detailsOn = !detailsOverlayToggleEnabled || detailsOverlayVisible
         val showTransport = transportControlsVisible
-        val showHolder = detailsOn || showTransport
+        val metadataReady = host.isBottomMetadataReady()
+        // Keep the bottom scrim up while EXIF loads; only the rows wait on readiness.
+        val showDetailsArea = detailsOn && hasBottomDetails
+        val showHolder = showDetailsArea || showTransport
         metaDataHolder.visibility =
             if (showHolder && (hasBottomDetails || showTransport)) View.VISIBLE else View.GONE
         sharedControls.visibility = if (showTransport) View.VISIBLE else View.GONE
         if (showTransport) {
             applyTransportChrome(isVideo = videoControllerVisible)
         }
-        metadataRows.visibility = if (detailsOn && hasBottomDetails) View.VISIBLE else View.GONE
+        metadataRows.visibility = if (showDetailsArea && metadataReady) View.VISIBLE else View.GONE
         metadataRows.alpha = if (showTransport) METADATA_DIMMED_WHILE_TRANSPORT_ALPHA else 1f
         metadataRows.descendantFocusability =
             if (showTransport) ViewGroup.FOCUS_BLOCK_DESCENDANTS
@@ -426,11 +446,27 @@ class MediaSliderController(
             isFocusableInTouchMode = false
         }
 
+        // wrap_content collapses to 0 when rows are cleared — lock min height while loading.
+        if (showDetailsArea && !metadataReady) {
+            metaDataHolder.minimumHeight = detailsHolderMinHeightPx.takeIf { it > 0 }
+                ?: defaultDetailsHolderMinHeightPx()
+        } else {
+            metaDataHolder.minimumHeight = 0
+            if (showDetailsArea && metadataReady) {
+                metaDataHolder.post {
+                    val height = metaDataHolder.height
+                    if (height > 0) detailsHolderMinHeightPx = height
+                }
+            }
+        }
+
         if (!detailsOn) {
             dateView.visibility = View.GONE
         } else if (dateView.text.isNotBlank()) {
             dateView.visibility = View.VISIBLE
         }
+        // Empty text while loading: leave visibility as set by updateDateOverlay /
+        // clearMetadataChromeForPageChange (scrim up). Empty after fetch: leave GONE.
         if (showHolder && (hasBottomDetails || showTransport)) {
             if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible && !showTransport) {
                 metaDataHolder.setBackgroundResource(R.drawable.gradient_overlay)
@@ -439,6 +475,13 @@ class MediaSliderController(
             }
         }
     }
+
+    private fun defaultDetailsHolderMinHeightPx(): Int =
+        TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            DETAILS_HOLDER_FALLBACK_MIN_HEIGHT_DP,
+            context.resources.displayMetrics
+        ).toInt()
 
     /** Wire listeners + video-only chrome for the current asset on the shared bar. */
     fun configureSharedControls(sliderItem: SliderItemViewHolder) {
@@ -918,6 +961,7 @@ class MediaSliderController(
         private const val TRANSPORT_AUTO_HIDE_MS = 4_000L
         private const val METADATA_DIMMED_WHILE_TRANSPORT_ALPHA = 0.35f
         private const val PROGRESS_UPDATE_INTERVAL_MS = 500L
+        private const val DETAILS_HOLDER_FALLBACK_MIN_HEIGHT_DP = 120f
         private const val TAG = "MediaSliderController"
     }
 }

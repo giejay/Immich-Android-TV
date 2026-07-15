@@ -132,13 +132,30 @@ class MetaDataAdapter(val context: Context,
 
     fun isFullyFetched(assetId: String): Boolean {
         val toShow = getItemsToShow()
-        return toShow.isNotEmpty() && toShow.indices.all { hasStateForItem(assetId, it) }
+        if (toShow.isEmpty()) return true
+        return toShow.indices.all { hasStateForItem(assetId, it) }
+    }
+
+    /**
+     * True when this column has nothing to show, or when [assetId]'s values are fetched
+     * and the container has been [bind]ed for that asset (not still showing a blank/clear).
+     */
+    fun isReadyFor(assetId: String): Boolean {
+        val toShow = getItemsToShow()
+        if (toShow.isEmpty()) return true
+        return isFullyFetched(assetId) && boundAssetId == assetId
     }
 
     fun clearState(assetId: String) {
         val prefix = "$assetId#"
         stateForItem.keys.filter { it.startsWith(prefix) }.forEach { stateForItem.remove(it) }
         fetchedKeys.removeAll { it.startsWith(prefix) }
+    }
+
+    /** Drop inflated rows immediately (e.g. on page change) so previous EXIF never lingers. */
+    fun clearViews() {
+        container?.removeAllViews()
+        boundAssetId = null
     }
 
     fun bind() {
@@ -149,14 +166,9 @@ class MetaDataAdapter(val context: Context,
             return
         }
         val toShow = getItemsToShow()
-        val allFetched = toShow.indices.all { hasStateForItem(currentId, it) }
         val rows = toShow.mapIndexedNotNull { index, item ->
             val value = stateForItem[stateKey(currentId, index)]
             if (value.isNullOrBlank()) null else item to value
-        }
-        // Don't blank the bottom while this asset's EXIF batch is still in flight.
-        if (rows.isEmpty() && !allFetched && parent.childCount > 0 && boundAssetId != currentId) {
-            return
         }
         parent.removeAllViews()
         boundAssetId = currentId

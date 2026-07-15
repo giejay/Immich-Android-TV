@@ -158,21 +158,39 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
 
     override fun updateDateOverlay(sliderItem: SliderItem) {
         pendingDateAssetId = sliderItem.id
+        // Clear text but keep the date scrim up while loading (matches bottom details).
+        dateView.text = ""
+        val showOverlay = !controller.detailsOverlayToggleEnabled || controller.detailsOverlayVisible
+        dateView.visibility = if (showOverlay) VISIBLE else GONE
         ioScope.launch {
             val value = sliderItem.get(MetaDataType.DATE).orEmpty().trim()
             withContext(Dispatchers.Main) {
                 if (pendingDateAssetId != sliderItem.id) return@withContext
                 dateView.text = value
-                val showOverlay = !controller.detailsOverlayToggleEnabled || controller.detailsOverlayVisible
-                dateView.visibility = if (showOverlay && value.isNotEmpty()) VISIBLE else GONE
+                val stillShow = !controller.detailsOverlayToggleEnabled || controller.detailsOverlayVisible
+                dateView.visibility = when {
+                    !stillShow -> GONE
+                    value.isNotEmpty() -> VISIBLE
+                    else -> GONE
+                }
             }
         }
     }
 
     override fun applyDetailsOverlayVisibilityIfDetailsOpen() {
-        if (controller.detailsOverlayVisible) {
+        if (!controller.detailsOverlayToggleEnabled || controller.detailsOverlayVisible) {
             controller.applyDetailsOverlayVisibility()
         }
+    }
+
+    override fun isBottomMetadataReady(): Boolean {
+        if (!controller.hasBottomDetails) return true
+        if (!this::metaDataLeftAdapter.isInitialized) return false
+        val item = currentSliderItem()
+        val leftId = item.mainItem.id
+        val rightId = if (item.hasSecondaryItem()) item.secondaryItem!!.id else item.mainItem.id
+        return metaDataLeftAdapter.isReadyFor(leftId) &&
+            metaDataRightAdapter.isReadyFor(rightId)
     }
 
     override fun onVideoSlideshowStarted() {
@@ -591,8 +609,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                 if (i in config.items.indices) {
                     config.onAssetSelected(config.items[i])
                 }
+                clearMetadataChromeForPageChange()
                 refreshOverlayMetadata()
                 bindMetadataAdapters()
+                applyDetailsOverlayVisibilityIfDetailsOpen()
                 if (!controller.transportControlsVisible) {
                     controller.restorePagerFocus()
                 }
@@ -610,10 +630,35 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
         onVideoSlideshowStarted()
     }
 
+    /**
+     * Drop previous EXIF rows and hide details chrome until the new asset's fetch completes.
+     * Transport can still show over an empty holder while metadata loads.
+     */
+    private fun clearMetadataChromeForPageChange() {
+        // Capture height before clearing rows — otherwise wrap_content scrim collapses to 0.
+        controller.preserveDetailsHolderHeight()
+        if (this::metaDataLeftAdapter.isInitialized) {
+            metaDataLeftAdapter.clearViews()
+            metaDataRightAdapter.clearViews()
+        }
+        dateView.text = ""
+        val showOverlay = !controller.detailsOverlayToggleEnabled || controller.detailsOverlayVisible
+        dateView.visibility = if (showOverlay) VISIBLE else GONE
+        controller.applyDetailsOverlayVisibility()
+    }
+
     private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
         val items = adapter.getItemsToShow()
-        if (items.isEmpty()) return
-        if (adapter.isFullyFetched(sliderItem.id)) return
+        if (items.isEmpty()) {
+            adapter.bind()
+            applyDetailsOverlayVisibilityIfDetailsOpen()
+            return
+        }
+        if (adapter.isFullyFetched(sliderItem.id)) {
+            adapter.bind()
+            applyDetailsOverlayVisibilityIfDetailsOpen()
+            return
+        }
         ioScope.launch {
             try {
                 val values = items.map { item ->
