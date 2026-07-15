@@ -8,9 +8,11 @@ import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
 import nl.giejay.android.tv.immich.api.model.TimeBucketAssetsResponse
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
+import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PUT
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -23,11 +25,6 @@ interface ApiService {
     @POST("search/random")
     suspend fun randomAssets(@Body searchRequest: SearchRequest): Response<List<Asset>>
 
-    // ALB-01: intentionally sends no shared-albums filter query param. This app never sent the
-    // legacy `shared` param, and v3's `isShared`/`isOwned` are additive, optional params (not
-    // required replacements) per .planning/research/STACK.md's live OpenAPI verification, so
-    // omitting them preserves the existing combined owned+shared album list. Locked in by the
-    // regression test ApiServiceAlbumParamsTest.
     @GET("albums")
     suspend fun listAlbums(@Query("assetId") assetId: String? = null): Response<List<Album>>
 
@@ -39,6 +36,9 @@ interface ApiService {
 
     @GET("people")
     suspend fun listPeople(): Response<PeopleResponse>
+
+    @PUT("assets/{id}")
+    suspend fun updateAsset(@Path("id") id: String, @Body request: UpdateAssetRequest): Response<Asset>
 
     // VIS-02: default visibility=timeline excludes hidden/archived assets, matching listAssets.
     @GET("timeline/buckets")

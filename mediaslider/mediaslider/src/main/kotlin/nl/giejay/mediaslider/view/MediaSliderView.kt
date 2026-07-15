@@ -26,6 +26,7 @@ import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
+import androidx.core.view.isVisible
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -110,6 +111,8 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private var videoControllerVisible = false
     /** Photo transport strip (slideshow button); independent of details so Back can dismiss it first. */
     private var imageTransportVisible = false
+    /** Per-image controller from upstream (favorite / prev / next / slideshow). */
+    private var isImageControllerVisible = false
     /** Ignore Enter/Center ACTION_UP after opening transport so focus doesn't "click" the button. */
     private var suppressTransportEnterUp = false
 
@@ -253,11 +256,20 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
                 if (itemType == SliderItemType.IMAGE) {
-                    toggleSlideshow(true)
+                    // If controls are already visible, let focused buttons consume click events.
+                    if (isImageControllerVisible) {
+                        return super.dispatchKeyEvent(event)
+                    }
+                    if (toggleImageController()) {
+                        return true
+                    }
                 } else if (currentPlayerView != null) {
                     return super.dispatchKeyEvent(event)
                 }
                 return false
+            } else if (event.keyCode == KeyEvent.KEYCODE_BACK && itemType == SliderItemType.IMAGE && isImageControllerVisible) {
+                hideImageController()
+                return true
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && itemType == SliderItemType.VIDEO && currentPlayerInScope != null) {
                 if (!videoControllerVisible) {
                     showVideoController()
@@ -300,6 +312,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     }
                 }
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                if (itemType == SliderItemType.IMAGE && isImageControllerVisible) {
+                    return super.dispatchKeyEvent(event)
+                }
                 if (videoControllerVisible) {
                     return super.dispatchKeyEvent(event)
                 }
@@ -310,6 +325,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 goToNextAsset()
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                if (itemType == SliderItemType.IMAGE && isImageControllerVisible) {
+                    return super.dispatchKeyEvent(event)
+                }
                 if (videoControllerVisible) {
                     return super.dispatchKeyEvent(event)
                 }
@@ -331,7 +349,11 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
         if (videoControls.findFocus() != null || videoControllerVisible) {
             return super.dispatchKeyEvent(event)
         }
-        return if (itemType == SliderItemType.IMAGE) false else super.dispatchKeyEvent(event)
+        return if (itemType == SliderItemType.IMAGE) {
+            if (isImageControllerVisible) super.dispatchKeyEvent(event) else false
+        } else {
+            super.dispatchKeyEvent(event)
+        }
     }
 
     private fun showDetailsOverlay() {
@@ -378,6 +400,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     /** Photos: same overlay strip, only the slideshow control (no mute/seek chrome). */
     private fun showImageTransportControls() {
+        hideImageController()
         imageTransportVisible = true
         videoControllerVisible = false
         videoControls.player = null
@@ -831,6 +854,7 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     // Keep details if open; dismiss any transport so Left/Right stay on assets.
                     hideVideoController()
                     hideImageTransportControls()
+                    configureImageController(sliderItem, sliderItemIndex)
                     if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible) {
                         metaDataHolder.setBackgroundResource(R.drawable.gradient_overlay)
                     } else if (detailsOverlayToggleEnabled) {
@@ -863,6 +887,9 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 metaDataRightAdapter.bind()
                 if (storyProgressEnabled) {
                     updateStoryProgressChrome(i, progress = 0f)
+                }
+                if (!isImageControllerVisible) {
+                    restorePagerFocus()
                 }
             }
 
@@ -1009,7 +1036,96 @@ class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     @OptIn(UnstableApi::class)
     fun isControllerVisible(): Boolean {
-        return videoControllerVisible
+        return videoControllerVisible || isImageControllerVisible
+    }
+
+    private fun configureImageController(sliderItem: SliderItemViewHolder, sliderItemIndex: Int) {
+        val imageRoot = mPager.findViewWithTag<View>("view$sliderItemIndex") ?: run {
+            isImageControllerVisible = false
+            return
+        }
+        val imageController = imageRoot.findViewById<View>(R.id.image_controller) ?: run {
+            isImageControllerVisible = false
+            return
+        }
+        imageController.visibility = GONE
+        isImageControllerVisible = false
+        val previousButton = imageRoot.findViewById<ImageButton>(R.id.image_previous) ?: return
+        val favoriteButton = imageRoot.findViewById<ImageButton>(R.id.image_favorite) ?: return
+        val slideshowButton = imageRoot.findViewById<ImageButton>(R.id.image_slideshow) ?: return
+        val nextButton = imageRoot.findViewById<ImageButton>(R.id.image_next) ?: return
+
+        val hasSecondaryItem = sliderItem.hasSecondaryItem()
+        favoriteButton.visibility = if (hasSecondaryItem) GONE else VISIBLE
+        if (hasSecondaryItem) {
+            // Keep D-pad navigation contiguous when favorite is hidden.
+            previousButton.nextFocusRightId = R.id.image_slideshow
+            slideshowButton.nextFocusLeftId = R.id.image_previous
+        } else {
+            previousButton.nextFocusRightId = R.id.image_favorite
+            slideshowButton.nextFocusLeftId = R.id.image_favorite
+        }
+
+        updateFavoriteIcon(favoriteButton, sliderItem.mainItem.isFavorite)
+        favoriteButton.setOnClickListener {
+            val newFavoriteValue = !sliderItem.mainItem.isFavorite
+            sliderItem.mainItem.isFavorite = newFavoriteValue
+            updateFavoriteIcon(favoriteButton, newFavoriteValue)
+            MediaSliderConfiguration.onFavoriteToggle(sliderItem.mainItem.id, newFavoriteValue)
+        }
+        previousButton.setOnClickListener {
+            goToPreviousAsset()
+        }
+        slideshowButton.setOnClickListener {
+            toggleSlideshow(true)
+        }
+        nextButton.setOnClickListener {
+            goToNextAsset()
+        }
+    }
+
+    private fun toggleImageController(): Boolean {
+        val imageRoot = mPager.findViewWithTag<View>("view${mPager.currentItem}") ?: return false
+        val imageController = imageRoot.findViewById<View>(R.id.image_controller) ?: return false
+        if (imageController.isVisible) {
+            hideImageController()
+            return true
+        }
+        if (slideShowPlaying) {
+            toggleSlideshow(true)
+        }
+        // Hide shared photo transport so we don't stack two control strips.
+        hideImageTransportControls()
+        imageController.visibility = VISIBLE
+        isImageControllerVisible = true
+        val sliderItem = currentItem()
+        val initialFocusId = if (sliderItem.hasSecondaryItem()) R.id.image_slideshow else R.id.image_favorite
+        imageRoot.findViewById<ImageButton>(initialFocusId)?.requestFocus()
+        return true
+    }
+
+    private fun hideImageController() {
+        val imageRoot = mPager.findViewWithTag<View>("view${mPager.currentItem}") ?: run {
+            isImageControllerVisible = false
+            restorePagerFocus()
+            return
+        }
+        imageRoot.findViewById<View>(R.id.image_controller)?.visibility = GONE
+        isImageControllerVisible = false
+        restorePagerFocus()
+    }
+
+    private fun restorePagerFocus() {
+        // Slideshow can leave focus on transient/hidden controls; keep focus on pager for key dispatch.
+        mPager.post {
+            if (!mPager.hasFocus()) {
+                mPager.requestFocus()
+            }
+        }
+    }
+
+    private fun updateFavoriteIcon(favoriteButton: ImageButton, isFavorite: Boolean) {
+        favoriteButton.setImageResource(if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
     }
 
     companion object {

@@ -5,6 +5,7 @@ import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_LOAD_EDITED_PHOTO
 import nl.giejay.android.tv.immich.shared.util.AlbumMetaDataProvider
 import nl.giejay.android.tv.immich.shared.util.AssetDetailMetaDataProvider
 import nl.giejay.mediaslider.model.MetaDataType
@@ -33,7 +34,12 @@ fun TimelineAsset.toSliderItem(): SliderItem {
     val orientation = if (isImage) 1 else 6
     return SliderItem(
         id,
-        ApiUtil.getFileUrl(id, type.name, PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)),
+        ApiUtil.getFileUrl(
+            id,
+            type.name,
+            PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
+            PreferenceManager.get(SLIDER_LOAD_EDITED_PHOTO)
+        ),
         type,
         orientation,
         mapOf(
@@ -48,7 +54,8 @@ fun TimelineAsset.toSliderItem(): SliderItem {
             MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(id)
         ),
         ApiUtil.getThumbnailUrl(id, "preview"),
-        isPanoramaTimeline()
+        isPanorama = isPanoramaTimeline(),
+        isFavorite = isFavorite
     )
 }
 

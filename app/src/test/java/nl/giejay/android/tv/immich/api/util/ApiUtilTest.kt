@@ -1,7 +1,7 @@
 package nl.giejay.android.tv.immich.api.util
 
 import kotlinx.coroutines.runBlocking
-import okhttp3.Headers
+import okhttp3.Headers.Companion.headersOf
 import okhttp3.ResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -22,7 +22,7 @@ class ApiUtilTest {
         val response = mock(Response::class.java) as Response<String>
         `when`(response.code()).thenReturn(403)
         `when`(response.errorBody()).thenReturn(mockBody)
-        `when`(response.headers()).thenReturn(Headers.of())
+        `when`(response.headers()).thenReturn(headersOf())
 
         val result = ApiUtil.executeAPICall(200) { response }
 
@@ -42,7 +42,7 @@ class ApiUtilTest {
         val response = mock(Response::class.java) as Response<String>
         `when`(response.code()).thenReturn(403)
         `when`(response.errorBody()).thenReturn(mockBody)
-        `when`(response.headers()).thenReturn(Headers.of())
+        `when`(response.headers()).thenReturn(headersOf())
 
         val result = ApiUtil.executeAPICall(200) { response }
 

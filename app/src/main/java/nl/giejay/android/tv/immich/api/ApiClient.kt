@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
+import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
@@ -238,6 +239,12 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun getAsset(id: String): Either<String, Asset> {
         return executeAPICall(200) { service.getAsset(id) }
+    }
+
+    suspend fun updateFavorite(id: String, isFavorite: Boolean): Either<String, Asset> {
+        return executeAPICall(200) {
+            service.updateAsset(id, UpdateAssetRequest(isFavorite))
+        }
     }
 
     suspend fun getTimeBuckets(): Either<String, List<TimeBucketSummary>> =

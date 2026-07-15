@@ -172,6 +172,7 @@ data object SLIDER_PAN_EFFECT : IntSeekbarPref(50,
     ImmichApplication.appContext!!.getString(R.string.pan_effect_percent_desc))
 
 data object SLIDER_FORCE_ORIGINAL_VIDEO : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.force_original_video), ImmichApplication.appContext!!.getString(R.string.force_original_video_desc))
+data object SLIDER_LOAD_EDITED_PHOTO : BooleanPref(false, ImmichApplication.appContext!!.getString(R.string.load_edited_photo), ImmichApplication.appContext!!.getString(R.string.load_edited_photo_desc))
 
 // other
 data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
@@ -332,6 +333,7 @@ data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString
             SLIDER_INTERVAL,
             SLIDER_ONLY_USE_THUMBNAILS,
             SLIDER_FORCE_ORIGINAL_VIDEO,
+            SLIDER_LOAD_EDITED_PHOTO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
             SLIDER_ZOOM_SCROLL_PANORAMAS,
             SLIDER_ZOOM_EFFECT,

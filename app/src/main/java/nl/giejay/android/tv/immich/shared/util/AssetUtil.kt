@@ -10,6 +10,7 @@ import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.model.StaticMetaDataProvider
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_LOAD_EDITED_PHOTO
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -84,7 +85,12 @@ fun Asset.toSliderItem(): SliderItem {
     val date = this.exifInfo?.dateTimeOriginal ?: this.fileCreatedAt ?: this.fileModifiedAt
     return SliderItem(
         this.id,
-        ApiUtil.getFileUrl(this.id, this.type, PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)),
+        ApiUtil.getFileUrl(
+            this.id,
+            this.type,
+            PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
+            PreferenceManager.get(SLIDER_LOAD_EDITED_PHOTO)
+        ),
         itemType,
         this.exifInfo?.orientation ?: if (itemType == SliderItemType.IMAGE) 1 else 6,
         mapOf(
@@ -103,7 +109,8 @@ fun Asset.toSliderItem(): SliderItem {
             MetaDataType.ALBUM_NAME to AlbumMetaDataProvider(this.id)
         ),
         ApiUtil.getThumbnailUrl(this.id, "preview"),
-        this.isPanoramaImage()
+        isPanorama = this.isPanoramaImage(),
+        isFavorite = this.isFavorite
     )
 }
 
@@ -152,7 +159,7 @@ fun List<Asset>.toCards(): List<Card> {
 }
 
 fun Asset.toCard(): Card {
-    return Card(this.deviceAssetId ?: "",
+    return Card(this.originalFileName ?: this.deviceAssetId ?: "",
         this.exifInfo?.description ?: "",
         this.id,
         ApiUtil.getThumbnailUrl(this.id, "thumbnail"),

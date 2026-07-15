@@ -129,6 +129,7 @@ class MediaSliderConfiguration : Parcelable {
         var assets: List<SliderItemViewHolder> = emptyList()
         var loadMore: LoadMore? = null
         var onAssetSelected: (SliderItemViewHolder) -> Unit = { _ -> }
+        var onFavoriteToggle: (String, Boolean) -> Unit = { _, _ -> }
 
         @JvmField
         val CREATOR: Parcelable.Creator<MediaSliderConfiguration> =

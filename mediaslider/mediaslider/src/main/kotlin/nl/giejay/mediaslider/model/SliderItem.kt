@@ -27,13 +27,15 @@ class SliderItem : Parcelable {
     val type: SliderItemType
     val orientation: Int
     val isPanorama: Boolean
+    var isFavorite: Boolean
     private val metaData: Map<MetaDataType, MetaDataProvider>
     val thumbnailUrl: String?
 
     constructor(id: String, url: String?, type: SliderItemType,
                 orientation: Int,
                 metaDataProviders: Map<MetaDataType, MetaDataProvider>, thumbnailUrl: String?,
-                isPanorama: Boolean
+                isPanorama: Boolean,
+                isFavorite: Boolean = false
     ) {
         this.id = id
         this.url = url
@@ -42,6 +44,7 @@ class SliderItem : Parcelable {
         this.metaData = metaDataProviders
         this.thumbnailUrl = thumbnailUrl
         this.isPanorama = isPanorama
+        this.isFavorite = isFavorite
     }
 
     private constructor(`in`: Parcel) {
@@ -59,6 +62,7 @@ class SliderItem : Parcelable {
         metaData = metaDataMap
         thumbnailUrl = `in`.readString()!!
         isPanorama = if (`in`.readInt() == 0) false else true
+        isFavorite = if (`in`.readInt() == 0) false else true
     }
 
     suspend fun get(metaDataType: MetaDataType): String? {
@@ -79,6 +83,7 @@ class SliderItem : Parcelable {
         }
         dest.writeString(thumbnailUrl)
         dest.writeInt(if (isPanorama) 1 else 0)
+        dest.writeInt(if (isFavorite) 1 else 0)
     }
 
     override fun equals(other: Any?): Boolean {

@@ -4,16 +4,21 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
+import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.R
-import nl.giejay.mediaslider.view.MediaSliderFragment
-import nl.giejay.mediaslider.view.MediaSliderView
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.view.MediaSliderFragment
+import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
 
 class ImmichMediaSlider : MediaSliderFragment() {
+    private val favoriteService = FavoriteService()
+
     @SuppressLint("UnsafeOptInUsageError")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -32,6 +37,12 @@ class ImmichMediaSlider : MediaSliderFragment() {
             DefaultHttpDataSource.Factory()
                 .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.get(API_KEY)))
         )
+
+        MediaSliderConfiguration.onFavoriteToggle = { assetId, isFavorite ->
+            lifecycleScope.launch {
+                favoriteService.toggleFavorite(assetId, isFavorite)
+            }
+        }
 
         loadMediaSliderView(bundle.config)
 

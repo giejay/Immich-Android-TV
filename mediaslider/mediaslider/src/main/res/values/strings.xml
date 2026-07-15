@@ -11,8 +11,12 @@
     <string name="description">Description</string>
     <string name="filename">Filename</string>
     <string name="filepath">Filepath</string>
+    <string name="favorite">Favorite</string>
     <string name="media_count">Media Count</string>
+    <string name="image_controller_next">Next</string>
     <string name="people">People</string>
+    <string name="image_controller_previous">Previous</string>
+    <string name="slideshow">Slideshow</string>
 
     <string name="api_key" translatable="false">api_key</string>
     <string name="authentication_url" translatable="false">authentication_url</string>

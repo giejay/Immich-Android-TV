@@ -23,7 +23,7 @@ object ApiUtil {
         return PreferenceManager.get(HOST_NAME)
     }
 
-    fun getFileUrl(assetId: String?, type: String, forceOriginal: Boolean = false): String? {
+    fun getFileUrl(assetId: String?, type: String, forceOriginal: Boolean = false, loadEdited: Boolean = false): String? {
         if(forceOriginal){
             return assetId?.let {
                 "${hostName().lowercase()}/api/assets/${it}/original"
@@ -37,7 +37,7 @@ object ApiUtil {
 
             else ->
                 assetId?.let {
-                    "${hostName().lowercase()}/api/assets/${it}/original"
+                    "${hostName().lowercase()}/api/assets/${it}/original?edited=${loadEdited}"
                 }
 
         }
