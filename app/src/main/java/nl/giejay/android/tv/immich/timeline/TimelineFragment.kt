@@ -488,7 +488,33 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         val lm = rv.layoutManager as? LinearLayoutManager ?: return false
         lm.scrollToPositionWithOffset(position, dp(24))
         scrubberView?.setIndicatorMonthKey(monthKey)
+        // Enter keeps focus on the scrubber — update leave-off so Back→menu restores here.
+        rememberLeaveOffForScrubberMonth(monthKey)
         return true
+    }
+
+    /**
+     * Scrubber Enter does not focus a mosaic cell, so [onAssetFocused] never runs.
+     * Pin leave-off to the jump target (right-most cell of the newest day in that month).
+     */
+    private fun rememberLeaveOffForScrubberMonth(monthKey: String) {
+        val target = leaveOffTargetForScrubberMonth(monthKey) ?: return
+        viewModel.lastSelectedMemoryId = null
+        viewModel.rememberSelection(target.first, target.second)
+    }
+
+    /** @return dayKey to assetId for the natural scrubber entry cell, if loaded. */
+    private fun leaveOffTargetForScrubberMonth(monthKey: String?): Pair<String, String>? {
+        if (monthKey.isNullOrBlank()) return null
+        val adapter = mosaicAdapter ?: return null
+        val bucketKey = viewModel.resolveBucketKey(monthKey) ?: monthKey
+        val preferredDay = viewModel.newestDayKeyForBucket(bucketKey)
+            ?: viewModel.flatAssetIndex()
+                .firstOrNull { it.first.startsWith(monthKey.take(7)) }
+                ?.first
+            ?: return null
+        val assetId = adapter.rightmostAssetIdForDay(preferredDay) ?: return null
+        return preferredDay to assetId
     }
 
     private fun finishJumpFocus() {
@@ -711,10 +737,18 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
     private fun captureResumeState() {
         val focused = recyclerView?.findFocus()
+        val focusedMosaicAssetId = focused?.getTag(R.id.timeline_mosaic_cell_asset_id) as? String
+        // Scrubber Enter leaves focus on the rail — treat the jumped month as mosaic leave-off.
+        val scrubberLeaveOffAssetId =
+            if (focusedMosaicAssetId.isNullOrBlank() && scrubberView?.hasFocus() == true) {
+                leaveOffTargetForScrubberMonth(scrubberView?.selectedMonthKey())?.second
+            } else {
+                null
+            }
         viewModel.applyLeaveOffSnapshot(
             TimelineLeaveOff.captureForMenu(
                 focusedMemoryId = focused?.getTag(R.id.timeline_memory_id) as? String,
-                focusedMosaicAssetId = focused?.getTag(R.id.timeline_mosaic_cell_asset_id) as? String,
+                focusedMosaicAssetId = focusedMosaicAssetId ?: scrubberLeaveOffAssetId,
                 // Left from a memory steals focus before this runs — keep the sticky id.
                 stickyMemoryId = viewModel.lastSelectedMemoryId,
                 lastAssetId = viewModel.lastSelectedAssetId
