@@ -135,13 +135,18 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 if (handleSlideshowImageKey(event.keyCode)) {
                     return true
                 }
-                if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    controller.toggleSlideshow(true)
-                } else {
-                    controller.skipToNextAndRestartTimer()
-                    return false
+                when (event.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        controller.skipToNextAndRestartTimer()
+                        return false
+                    }
+                    // Back exits the viewer — don't flash the center pause glyph first.
+                    KeyEvent.KEYCODE_BACK -> return super.dispatchKeyEvent(event)
+                    else -> {
+                        controller.toggleSlideshow(true)
+                        return super.dispatchKeyEvent(event)
+                    }
                 }
-                return super.dispatchKeyEvent(event)
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                 if (controller.isControllerVisible) {
                     return super.dispatchKeyEvent(event)
@@ -286,6 +291,8 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                         Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
                         return
                     }
+                    // Thumbnail over black surface until ExoPlayer paints the first frame.
+                    viewTag.showLoadingPoster(mainItem.thumbnailUrl)
                     val player = viewTag.getPlayer()!!
                     controller.setCurrentPlayer(player)
                     player.seekTo(0, 0)
