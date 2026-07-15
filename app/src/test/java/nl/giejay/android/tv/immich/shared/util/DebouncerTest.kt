@@ -11,11 +11,10 @@ class DebouncerTest {
 
     @Test
     fun `cancel removes pending runnable so it never runs`() {
-        val ran = AtomicBoolean(false)
-        Debouncer.debounce("test-cancel", { ran.set(true) }, 300, TimeUnit.MILLISECONDS)
+        val latch = CountDownLatch(1)
+        Debouncer.debounce("test-cancel", { latch.countDown() }, 50, TimeUnit.MILLISECONDS)
         Debouncer.cancel("test-cancel")
-        Thread.sleep(450)
-        assertFalse(ran.get())
+        assertFalse(latch.await(200, TimeUnit.MILLISECONDS))
     }
 
     @Test

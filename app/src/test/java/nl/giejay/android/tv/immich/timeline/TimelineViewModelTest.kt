@@ -20,6 +20,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.OffsetDateTime
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -417,6 +419,8 @@ class TimelineViewModelTest {
     @Test
     fun `prefetchAroundDay loads focus month plus neighbors`() = runTest {
         val fetches = AtomicInteger(0)
+        // Debouncer + Dispatchers.IO are real threads; wait for the 3 neighbor fetches.
+        val fetchLatch = CountDownLatch(3)
         val vm = TimelineViewModel(
             fetchBuckets = {
                 Either.Right(
@@ -430,7 +434,11 @@ class TimelineViewModelTest {
             },
             fetchBucket = { key ->
                 fetches.incrementAndGet()
-                Either.Right(listOf(asset("$key-a", createdAt = "${key.take(8)}15T12:00:00Z")))
+                try {
+                    Either.Right(listOf(asset("$key-a", createdAt = "${key.take(8)}15T12:00:00Z")))
+                } finally {
+                    fetchLatch.countDown()
+                }
             },
             prefetchDebounceMs = 0
         )
@@ -440,8 +448,7 @@ class TimelineViewModelTest {
         assertEquals(0, fetches.get())
 
         vm.prefetchAroundDay("2026-06-15")
-        // Debouncer runs on its own scheduler; give it a beat then drain Main.
-        Thread.sleep(80)
+        assertTrue(fetchLatch.await(2, TimeUnit.SECONDS))
         advanceUntilIdle()
 
         assertTrue(vm.bucketAssets.value.containsKey("2026-06-01"))

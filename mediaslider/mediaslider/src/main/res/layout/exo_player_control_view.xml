@@ -38,6 +38,7 @@
             android:scaleType="fitCenter"
             style="@style/TVMediaButton"
             android:src="@drawable/unmute_icon"
+            android:contentDescription="@string/media_mute"
             android:nextFocusRight="@+id/exo_rewind"
             android:nextFocusDown="@id/exo_progress" />
 
