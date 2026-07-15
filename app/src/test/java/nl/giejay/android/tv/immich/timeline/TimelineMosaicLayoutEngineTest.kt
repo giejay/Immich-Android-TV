@@ -194,4 +194,40 @@ class TimelineMosaicLayoutEngineTest {
             TimelineMosaicLayoutEngine.isVerticalNeighborAllowed("2026-07-01", "2025-12-01")
         )
     }
+
+    @Test
+    fun `isVerticalNeighborAllowed allows sparse Aug to Jan when nothing unloaded between`() {
+        // Aug → Jan is 7 months (over MAX), but real library sparsity with no holes to load.
+        assertTrue(
+            TimelineMosaicLayoutEngine.isVerticalNeighborAllowed(
+                "2004-08-21",
+                "2004-01-01",
+                hasUnloadedBetween = { _, _ -> false }
+            )
+        )
+        assertFalse(
+            TimelineMosaicLayoutEngine.isVerticalNeighborAllowed(
+                "2004-08-21",
+                "2004-01-01",
+                hasUnloadedBetween = { _, _ -> true }
+            )
+        )
+    }
+
+    @Test
+    fun `buildFocusNeighbors wires Down across sparse Aug to Jan when loading is contiguous`() {
+        val aug = TimelineMosaicItem.Row(
+            "r-aug",
+            "2004-08-21",
+            listOf(TimelineMosaicCell("2004-08-21", asset("aug-vid", 1.0), 100, 100, "r-aug", 0, 0))
+        )
+        val jan = TimelineMosaicItem.Row(
+            "r-jan",
+            "2004-01-01",
+            listOf(TimelineMosaicCell("2004-01-01", asset("jan", 1.0), 100, 100, "r-jan", 0, 0))
+        )
+        val map = TimelineMosaicLayoutEngine.buildFocusNeighbors(listOf(aug, jan)) { _, _ -> false }
+        assertEquals("jan", map["aug-vid"]?.downAssetId)
+        assertEquals("aug-vid", map["jan"]?.upAssetId)
+    }
 }

@@ -227,6 +227,57 @@ class TimelineViewModelTest {
     }
 
     @Test
+    fun `nextOlderUnloadedBucket from day bridges holes under focus not past oldest island`() =
+        runTest {
+            val vm = TimelineViewModel(
+                fetchBuckets = {
+                    Either.Right(
+                        listOf(
+                            TimeBucketSummary("2026-07-01", 1),
+                            TimeBucketSummary("2004-08-01", 1),
+                            TimeBucketSummary("2004-07-01", 1),
+                            TimeBucketSummary("2004-01-01", 1)
+                        )
+                    )
+                },
+                fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
+                prefetchDebounceMs = 0
+            )
+
+            vm.loadBucketList(eagerMonths = 1)
+            advanceUntilIdle()
+            vm.loadBucket("2004-08-01")
+            vm.loadBucket("2004-01-01")
+            advanceUntilIdle()
+
+            // Global oldest-loaded paging would go past January; from-focus must fill July 2004.
+            assertEquals("2004-07-01", vm.nextOlderUnloadedBucket("2004-08-21")?.timeBucket)
+            assertTrue(vm.hasUnloadedBucketBetween("2004-08-21", "2004-01-01"))
+            assertFalse(vm.hasUnloadedBucketBetween("2004-08-21", "2004-08-01"))
+        }
+
+    @Test
+    fun `hasUnloadedBucketBetween is false for true library sparsity`() = runTest {
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(
+                    listOf(
+                        TimeBucketSummary("2004-08-01", 1),
+                        TimeBucketSummary("2004-01-01", 1)
+                    )
+                )
+            },
+            fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
+            prefetchDebounceMs = 0
+        )
+        vm.loadBucketList(eagerMonths = 2)
+        advanceUntilIdle()
+
+        assertFalse(vm.hasUnloadedBucketBetween("2004-08-21", "2004-01-01"))
+        assertNull(vm.nextOlderUnloadedBucket("2004-08-21"))
+    }
+
+    @Test
     fun `nextOlder and nextNewer return null when contiguous island has no gap`() = runTest {
         val vm = TimelineViewModel(
             fetchBuckets = {

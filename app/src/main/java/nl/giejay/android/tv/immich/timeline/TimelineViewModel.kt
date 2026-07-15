@@ -222,6 +222,48 @@ class TimelineViewModel(
     }
 
     /**
+     * Closest unloaded month older than [fromDayKey] (farther back in history).
+     *
+     * Symmetric to [nextNewerUnloadedBucket]: when Down is blocked by an island gap under the
+     * focused day, load holes toward the past instead of only paging past the globally oldest
+     * loaded month (which never bridges Aug → Jan when Jan is already loaded).
+     */
+    fun nextOlderUnloadedBucket(fromDayKey: String): TimeBucketSummary? {
+        val monthKey = monthBucketKey(LocalDate.parse(fromDayKey.take(10)))
+        val resolved = resolveBucketKey(monthKey) ?: monthKey
+        val list = _buckets.value
+        val fromIndex = list.indexOfFirst { it.timeBucket == resolved }
+        if (fromIndex < 0 || fromIndex >= list.lastIndex) return null
+        val loaded = _bucketAssets.value.keys
+        // Newest-first: indices after fromIndex are older. Prefer the closest (smallest index).
+        return list.drop(fromIndex + 1).firstOrNull { it.timeBucket !in loaded }
+    }
+
+    /**
+     * True when at least one Immich month bucket between [fromDayKey] and [toDayKey] is still
+     * unloaded. Missing buckets (library has no assets that month) do not count — those are
+     * real chronological sparsity, not a loading island.
+     */
+    fun hasUnloadedBucketBetween(fromDayKey: String, toDayKey: String): Boolean {
+        val from = runCatching { YearMonth.from(LocalDate.parse(fromDayKey.take(10))) }.getOrNull()
+            ?: return false
+        val to = runCatching { YearMonth.from(LocalDate.parse(toDayKey.take(10))) }.getOrNull()
+            ?: return false
+        val lo = if (from.isBefore(to)) from else to
+        val hi = if (from.isBefore(to)) to else from
+        if (!lo.isBefore(hi)) return false
+        val loaded = _bucketAssets.value.keys
+        return _buckets.value.any { bucket ->
+            val ym = runCatching {
+                YearMonth.from(LocalDate.parse(bucket.timeBucket.take(10)))
+            }.getOrElse {
+                runCatching { YearMonth.parse(bucket.timeBucket.take(7)) }.getOrNull()
+            } ?: return@any false
+            ym.isAfter(lo) && ym.isBefore(hi) && bucket.timeBucket !in loaded
+        }
+    }
+
+    /**
      * Next month bucket after [bucketKey] in the newest-first list (older in calendar time).
      * Used by slider load-more so paging continues from the oldest asset already shown —
      * never from the first global unloaded gap near today.

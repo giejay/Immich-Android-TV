@@ -93,18 +93,26 @@ object TimelineMosaicLayoutEngine {
      * (fallback: closest center X).
      *
      * Vertical neighbors that skip more than [MAX_VERTICAL_MONTH_GAP] calendar months are
-     * refused — sparse loading can leave distant "islands" adjacent in the recycler, and
-     * wiring across them makes rapid Up teleport decades (e.g. 2006 → Feb 2026).
+     * refused when [hasUnloadedBetween] is true (default) — sparse loading can leave distant
+     * "islands" adjacent in the recycler, and wiring across them makes rapid Up teleport
+     * decades (e.g. 2006 → Feb 2026). When the gap is real library sparsity (no unloaded
+     * Immich months between the days), the hop is allowed.
+     *
+     * @param hasUnloadedBetween `(fromDayKey, toDayKey) → true` if an unloaded bucket sits
+     *   strictly between the two days. Defaults to always-true (refuse large gaps) for tests.
      */
-    fun buildFocusNeighbors(items: List<TimelineMosaicItem>): Map<String, TimelineFocusNeighbors> {
+    fun buildFocusNeighbors(
+        items: List<TimelineMosaicItem>,
+        hasUnloadedBetween: (fromDayKey: String, toDayKey: String) -> Boolean = { _, _ -> true }
+    ): Map<String, TimelineFocusNeighbors> {
         val rows = items.filterIsInstance<TimelineMosaicItem.Row>()
         val result = mutableMapOf<String, TimelineFocusNeighbors>()
         rows.forEachIndexed { rowIndex, row ->
             row.cells.forEachIndexed { cellIndex, cell ->
                 val left = row.cells.getOrNull(cellIndex - 1)?.asset?.id
                 val right = row.cells.getOrNull(cellIndex + 1)?.asset?.id
-                val up = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex - 1))
-                val down = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex + 1))
+                val up = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex - 1), hasUnloadedBetween)
+                val down = pickVerticalNeighbor(cell, rows.getOrNull(rowIndex + 1), hasUnloadedBetween)
                 result[cell.asset.id] = TimelineFocusNeighbors(left, right, up, down)
             }
         }
@@ -113,11 +121,14 @@ object TimelineMosaicLayoutEngine {
 
     private fun pickVerticalNeighbor(
         from: TimelineMosaicCell,
-        candidateRow: TimelineMosaicItem.Row?
+        candidateRow: TimelineMosaicItem.Row?,
+        hasUnloadedBetween: (String, String) -> Boolean
     ): String? {
         val candidates = candidateRow?.cells
         if (candidates.isNullOrEmpty()) return null
-        if (!isVerticalNeighborAllowed(from.dayKey, candidateRow.dayKey)) return null
+        if (!isVerticalNeighborAllowed(from.dayKey, candidateRow.dayKey, hasUnloadedBetween)) {
+            return null
+        }
         val fromLeft = from.xPx
         val fromRight = from.xPx + from.widthPx
         val fromCenter = fromLeft + from.widthPx / 2.0
@@ -139,14 +150,25 @@ object TimelineMosaicLayoutEngine {
         return bestId
     }
 
-    /** True when [fromDayKey] and [toDayKey] are close enough to treat as continuous time. */
-    fun isVerticalNeighborAllowed(fromDayKey: String, toDayKey: String): Boolean {
+    /**
+     * True when [fromDayKey] and [toDayKey] are close enough to treat as continuous time,
+     * or when a larger gap has no unloaded Immich months between them (true sparsity).
+     *
+     * [hasUnloadedBetween] defaults to always-true so 2-arg / test callers keep refusing
+     * large gaps unless they pass a ViewModel-backed predicate.
+     */
+    fun isVerticalNeighborAllowed(
+        fromDayKey: String,
+        toDayKey: String,
+        hasUnloadedBetween: (fromDayKey: String, toDayKey: String) -> Boolean = { _, _ -> true }
+    ): Boolean {
         val from = runCatching { LocalDate.parse(fromDayKey.take(10)) }.getOrNull() ?: return false
         val to = runCatching { LocalDate.parse(toDayKey.take(10)) }.getOrNull() ?: return false
         val months = kotlin.math.abs(
             ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to))
         )
-        return months <= MAX_VERTICAL_MONTH_GAP
+        if (months <= MAX_VERTICAL_MONTH_GAP) return true
+        return !hasUnloadedBetween(fromDayKey, toDayKey)
     }
 
     private fun packDay(

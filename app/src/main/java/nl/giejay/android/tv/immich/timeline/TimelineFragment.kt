@@ -227,7 +227,13 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 maybeLoadMoreNearEnd()
             },
             onExitRightToScrubber = { focusScrubberFromMosaic() },
-            onReachContentEnd = { maybeLoadMoreNearEnd() },
+            // Bridge unload holes under focus only when Down is blocked — not on every
+            // focus/scroll (that eagerly loads mid-timeline and makes the mosaic creep).
+            onReachContentEnd = {
+                if (!maybeBridgeOlderFromFocus()) {
+                    maybeLoadMoreNearEnd()
+                }
+            },
             onReachContentStart = { maybeLoadMoreNearStart() }
         )
 
@@ -638,7 +644,9 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 )
             }
         )
-        val neighbors = TimelineMosaicLayoutEngine.buildFocusNeighbors(items)
+        val neighbors = TimelineMosaicLayoutEngine.buildFocusNeighbors(items) { from, to ->
+            viewModel.hasUnloadedBucketBetween(from, to)
+        }
         focusNavigator?.updateNeighbors(neighbors)
 
         val memories = viewModel.memories.value
@@ -907,6 +915,32 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             return
         }
         adapter.firstAssetId()?.let { focusNavigator?.focusAsset(it, adjustScroll = true) }
+    }
+
+    /**
+     * When Down has no neighbor (island gap under focus), load the closest unloaded older
+     * month under that day — same role as [maybeLoadMoreNearStart] for Up.
+     * @return true if a load was started (or already in flight).
+     */
+    private fun maybeBridgeOlderFromFocus(): Boolean {
+        if (loadingNextBucket) return true
+        val rv = recyclerView ?: return false
+        val focused = rv.findFocus() ?: return false
+        val assetId = focused.getTag(R.id.timeline_mosaic_cell_asset_id) as? String ?: return false
+        // Still movable Down — do not fill remote holes under an ordinary mid-timeline cell.
+        if (focusNavigator?.neighbors?.get(assetId)?.downAssetId != null) return false
+        val dayKey = focused.getTag(R.id.timeline_mosaic_cell_day_key) as? String
+            ?: viewModel.lastSelectedDayKey
+            ?: return false
+        val next = viewModel.nextOlderUnloadedBucket(dayKey) ?: return false
+        loadingNextBucket = true
+        lifecycleScope.launch(Dispatchers.IO) {
+            viewModel.loadBucket(next.timeBucket)
+            withContext(Dispatchers.Main) {
+                loadingNextBucket = false
+            }
+        }
+        return true
     }
 
     private fun maybeLoadMoreNearEnd() {
