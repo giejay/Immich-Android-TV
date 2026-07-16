@@ -26,6 +26,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SIMILAR_ASSETS_YEARS_BACK
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -262,5 +263,5 @@ class ApiClient(private val config: ApiClientConfig) {
 
     /** "On this day" style memories for the current moment (server filters by day-of-year). */
     suspend fun getMemories(): Either<String, List<Memory>> =
-        executeAPICall(200) { service.getMemories(OffsetDateTime.now().format(dateTimeFormatter)) }
+        executeAPICall(200) { service.getMemories(LocalDate.now().toString()) }
 }
