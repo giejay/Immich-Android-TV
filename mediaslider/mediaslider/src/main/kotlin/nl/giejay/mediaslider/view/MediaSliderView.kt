@@ -165,8 +165,8 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
 
     override fun bindMetadataAdapters() {
         if (!this::metaDataLeftAdapter.isInitialized) return
-        metaDataLeftAdapter.bind()
-        metaDataRightAdapter.bind()
+        metaDataLeftAdapter.notifyDataSetChanged()
+        metaDataRightAdapter.notifyDataSetChanged()
     }
 
     override fun updateDateOverlay(sliderItem: SliderItem) {
@@ -644,16 +644,12 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
     }
 
     /**
-     * Drop previous EXIF rows and hide details chrome until the new asset's fetch completes.
+     * Hide details chrome until the new asset's fetch completes.
      * Transport can still show over an empty holder while metadata loads.
      */
     private fun clearMetadataChromeForPageChange() {
-        // Capture height before clearing rows — otherwise wrap_content scrim collapses to 0.
+        // Capture height before rows go empty — otherwise wrap_content scrim collapses to 0.
         controller.preserveDetailsHolderHeight()
-        if (this::metaDataLeftAdapter.isInitialized) {
-            metaDataLeftAdapter.clearViews()
-            metaDataRightAdapter.clearViews()
-        }
         dateView.text = ""
         val showOverlay = !controller.detailsOverlayToggleEnabled || controller.detailsOverlayVisible
         dateView.visibility = if (showOverlay) VISIBLE else GONE
@@ -663,12 +659,12 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
     private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
         val items = adapter.getItemsToShow()
         if (items.isEmpty()) {
-            adapter.bind()
+            adapter.notifyDataSetChanged()
             applyDetailsOverlayVisibilityIfDetailsOpen()
             return
         }
         if (adapter.isFullyFetched(sliderItem.id)) {
-            adapter.bind()
+            adapter.notifyDataSetChanged()
             applyDetailsOverlayVisibilityIfDetailsOpen()
             return
         }
@@ -682,7 +678,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
                     values.forEachIndexed { i, value ->
                         adapter.updateState(sliderItem.id, i, value)
                     }
-                    adapter.bind()
+                    adapter.notifyDataSetChanged()
                     applyDetailsOverlayVisibilityIfDetailsOpen()
                 }
             } catch (e: Exception) {

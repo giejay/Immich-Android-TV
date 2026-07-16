@@ -108,24 +108,22 @@ data class MetaDataSliderItem(val metaDataType: MetaDataType, override val align
     }
 }
 
-/**
- * List adapter for EXIF / metadata columns. Only exposes non-blank rows for the
- * currently [bind]ed asset so async fetches do not leave stale or empty rows visible.
- */
 class MetaDataAdapter(val context: Context,
                       val items: List<MetaDataItem>,
                       private val portraitViewItems: List<MetaDataItem>,
                       private val getCurrentItem: () -> SliderItem,
                       private val portraitMode: () -> Boolean) : BaseAdapter() {
     private val layoutInflater: LayoutInflater = LayoutInflater.from(context)
-    private val stateForItem = mutableMapOf<String, String?>()
-    /** Keys that have completed a fetch (including blank/null results). */
-    private val fetchedKeys = mutableSetOf<String>()
-    /** Asset id whose rows are currently shown; null after [clearViews]. */
-    private var boundAssetId: String? = null
+    private val viewsPerType: MutableMap<MetaDataType, View> = mutableMapOf()
+    private val stateForItem = mutableMapOf<String, String>()
+
+    override fun getCount(): Int {
+        return getItemsToShow().size
+    }
 
     fun getItemsToShow(): List<MetaDataItem> = (if (portraitMode()) portraitViewItems else items)
 
+    /** True when every configured row for [assetId] has been written via [updateState]. */
     fun isFullyFetched(assetId: String): Boolean {
         val toShow = getItemsToShow()
         if (toShow.isEmpty()) return true
@@ -133,81 +131,44 @@ class MetaDataAdapter(val context: Context,
     }
 
     /**
-     * True when this column has nothing to show, or when [assetId]'s values are fetched
-     * and the list has been [bind]ed for that asset (not still cleared).
+     * Ready to show EXIF for [assetId] in the layered details shell.
+     * Same as [isFullyFetched]; the shell hides the column until this is true.
      */
-    fun isReadyFor(assetId: String): Boolean {
-        val toShow = getItemsToShow()
-        if (toShow.isEmpty()) return true
-        return isFullyFetched(assetId) && boundAssetId == assetId
+    fun isReadyFor(assetId: String): Boolean = isFullyFetched(assetId)
+
+    override fun getItem(p0: Int): Any {
+        return getItemsToShow()[p0]
     }
 
-    fun clearState(assetId: String) {
-        val prefix = "$assetId#"
-        stateForItem.keys.filter { it.startsWith(prefix) }.forEach { stateForItem.remove(it) }
-        fetchedKeys.removeAll { it.startsWith(prefix) }
+    override fun getItemId(p0: Int): Long {
+        return getItemsToShow()[p0].type.ordinal.toLong()
     }
 
-    /** Hide rows immediately (e.g. on page change) so previous EXIF never lingers. */
-    fun clearViews() {
-        boundAssetId = null
-        notifyDataSetChanged()
+    override fun isEnabled(position: Int): Boolean {
+        return false
     }
 
-    /** Show fetched non-blank rows for the current asset. */
-    fun bind() {
-        boundAssetId = try {
-            getCurrentItem().id
-        } catch (_: Exception) {
-            null
+    override fun areAllItemsEnabled(): Boolean {
+        return false
+    }
+
+    override fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
+        val key = resolveKey(p0)
+        val value = stateForItem[key]
+        if (value.isNullOrBlank()) {
+            return View(context).apply {
+                layoutParams = RelativeLayout.LayoutParams(0, 0)
+            }
         }
-        notifyDataSetChanged()
-    }
-
-    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String?) {
-        val key = stateKey(sliderItemId, metaDataIndex)
-        stateForItem[key] = value
-        fetchedKeys.add(key)
-    }
-
-    fun hasStateForItem(id: String, metaDataIndex: Int): Boolean {
-        return stateKey(id, metaDataIndex) in fetchedKeys
-    }
-
-    private fun visibleRows(): List<Pair<MetaDataItem, String>> {
-        val assetId = boundAssetId ?: return emptyList()
-        return getItemsToShow().mapIndexedNotNull { index, item ->
-            val value = stateForItem[stateKey(assetId, index)]
-            if (value.isNullOrBlank()) null else item to value
-        }
-    }
-
-    override fun getCount(): Int = visibleRows().size
-
-    override fun getItem(position: Int): Any = visibleRows()[position].first
-
-    override fun getItemId(position: Int): Long =
-        visibleRows()[position].first.type.ordinal.toLong()
-
-    override fun getViewTypeCount(): Int = MetaDataType.entries.size.coerceAtLeast(1)
-
-    override fun getItemViewType(position: Int): Int =
-        visibleRows()[position].first.type.ordinal
-
-    override fun isEnabled(position: Int): Boolean = false
-
-    override fun areAllItemsEnabled(): Boolean = false
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val (item, value) = visibleRows()[position]
-        val view = convertView ?: item.createView(layoutInflater)
+        val item = getItem(p0) as MetaDataItem
+        // can't use p1 because the list might differ for every photo/adapter
+        val view = viewsPerType.getOrPut(item.type) { item.createView(layoutInflater) }
         val textView = view.findViewById<TextView>(item.textViewResourceId)
         if (item.align == AlignOption.RIGHT) {
-            (textView.layoutParams as? RelativeLayout.LayoutParams)?.let { params ->
-                textView.gravity = Gravity.RIGHT
-                params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
-                textView.layoutParams = params
-            }
+            val params = textView.layoutParams as RelativeLayout.LayoutParams
+            textView.gravity = Gravity.RIGHT
+            params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
+            view.layoutParams = params
         }
         textView.textSize = item.fontSize.toFloat()
         textView.setPadding(textView.paddingLeft, item.padding, textView.paddingRight, item.padding)
@@ -215,5 +176,13 @@ class MetaDataAdapter(val context: Context,
         return view
     }
 
-    private fun stateKey(assetId: String, metaDataIndex: Int): String = "$assetId#$metaDataIndex"
+    private fun resolveKey(index: Int, assetId: String = getCurrentItem().id): String = assetId + index
+
+    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String?) {
+        stateForItem[sliderItemId + metaDataIndex] = value ?: ""
+    }
+
+    fun hasStateForItem(assetId: String, metaDataIndex: Int): Boolean {
+        return stateForItem.containsKey(resolveKey(metaDataIndex, assetId))
+    }
 }
