@@ -1,7 +1,10 @@
 package nl.giejay.mediaslider.view
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.util.Log
 import android.view.View
@@ -9,6 +12,7 @@ import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -255,17 +259,20 @@ class MediaSliderController(
         val favoriteButton = controllerRootView.findViewById<ImageButton>(R.id.image_favorite) ?: return
         val slideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow) ?: return
         val nextButton = controllerRootView.findViewById<ImageButton>(R.id.image_next) ?: return
+        val externalPlayerButton = controllerRootView.findViewById<ImageButton>(R.id.media_open_external)
         val muteButton = controllerRootView.findViewById<ImageButton>(R.id.media_mute)
         val playPauseButton = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
         val progressLayout = controllerRootView.findViewById<View>(R.id.media_progress_layout)
         val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
 
         val isVideo = sliderItem.type == SliderItemType.VIDEO
+        val canOpenExternally = isVideo && !sliderItem.url.isNullOrBlank()
         val hasSecondaryItem = sliderItem.hasSecondaryItem()
 
         // Show / hide video-specific widgets
         muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
         playPauseButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        externalPlayerButton?.visibility = if (canOpenExternally) View.VISIBLE else View.GONE
         progressLayout?.visibility = if (isVideo) View.VISIBLE else View.GONE
 
         // Favorite is hidden for double-image items; shown for all single items (incl. video)
@@ -320,6 +327,10 @@ class MediaSliderController(
                 }
             }
 
+            externalPlayerButton?.setOnClickListener {
+                openInExternalPlayer(sliderItem.url)
+            }
+
             // SeekBar: allow the user to seek
             seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onStartTrackingTouch(seekBar: SeekBar) {
@@ -340,8 +351,8 @@ class MediaSliderController(
 
         setupFocusNavigation(
             previousButton, muteButton, playPauseButton,
-            favoriteButton, slideshowButton, nextButton,
-            isVideo, hasSecondaryItem,
+            favoriteButton, slideshowButton, externalPlayerButton, nextButton,
+            isVideo, canOpenExternally, hasSecondaryItem,
             seekBar
         )
     }
@@ -384,8 +395,10 @@ class MediaSliderController(
         playPauseButton: ImageButton?,
         favoriteButton: ImageButton,
         slideshowButton: ImageButton,
+        externalPlayerButton: ImageButton?,
         nextButton: ImageButton,
         isVideo: Boolean,
+        canOpenExternally: Boolean,
         hasSecondaryItem: Boolean,
         seekBar: SeekBar? = null
     ) {
@@ -395,6 +408,7 @@ class MediaSliderController(
         if (isVideo) playPauseButton?.let { chain.add(it) }
         if (!hasSecondaryItem) chain.add(favoriteButton)
         chain.add(slideshowButton)
+        if (canOpenExternally) externalPlayerButton?.let { chain.add(it) }
         chain.add(nextButton)
 
         for (i in chain.indices) {
@@ -422,6 +436,27 @@ class MediaSliderController(
             if (isPlaying) android.R.drawable.ic_media_pause
             else android.R.drawable.ic_media_play
         )
+    }
+
+    private fun openInExternalPlayer(videoUrl: String?) {
+        if (videoUrl.isNullOrBlank()) return
+
+        val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(Uri.parse(videoUrl), "video/*")
+        }
+        val chooserIntent = Intent.createChooser(
+            viewIntent,
+            context.getString(R.string.open_in_external_player)
+        )
+        if (context !is Activity) {
+            chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        try {
+            context.startActivity(chooserIntent)
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, R.string.no_external_player_found, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showTemporaryPlayIndicator() {

@@ -51,6 +51,13 @@
             android:src="@drawable/slideshow" />
 
         <ImageButton
+            android:id="@+id/media_open_external"
+            style="@style/TVMediaButton"
+            android:contentDescription="@string/open_in_external_player"
+            android:src="@drawable/ic_open_external"
+            android:visibility="gone" />
+
+        <ImageButton
             android:id="@+id/image_next"
             style="@style/TVMediaButton"
             android:contentDescription="@string/image_controller_next"
