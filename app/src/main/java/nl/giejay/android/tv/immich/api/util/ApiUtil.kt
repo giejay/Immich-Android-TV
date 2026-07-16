@@ -53,22 +53,24 @@ object ApiUtil {
             logCorrelationId(res)
             return when (val code = res.code()) {
                 expectedStatus -> {
-                    return res.body()?.let { Either.Right(it) }
+                    res.body()?.let { Either.Right(it) }
                         ?: Either.Left("Did not receive a input from the server")
                 }
-
-                403 -> {
+                else -> {
                     val bodyString: String? = res.errorBody()?.string()
                     if(bodyString?.contains("required permission: all") == true){
                         Either.Left("API key is missing the permission \"all\". Please adapt your permissions in the Immich web interface.")
                     } else {
                         val parsed = parseErrorBodySafely(bodyString)
-                        val message = parsed?.message?.toDisplayMessage(bodyString ?: "Unknown error") ?: (bodyString ?: "Unknown error")
-                        Either.Left("API key permissions are invalid: $message")
+                        val baseMessage = parsed?.message?.toDisplayMessage(bodyString ?: "Unknown error") ?: (bodyString ?: "Unknown error")
+                        val validationErrors = parsed?.errors?.map { it.message.toDisplayMessage("") }?.filter { it.isNotBlank() }?.joinToString(", ")
+                        val message = if (!validationErrors.isNullOrBlank()) {
+                            "$baseMessage: $validationErrors"
+                        } else {
+                            baseMessage
+                        }
+                        Either.Left("Invalid status ($code) returned by Immich Server: $message")
                     }
-                }
-                else -> {
-                    Either.Left("Invalid status code from API: $code, make sure you are using the latest Immich server release.")
                 }
             }
         } catch (e: HttpException) {

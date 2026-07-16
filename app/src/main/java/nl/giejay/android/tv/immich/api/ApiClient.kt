@@ -272,7 +272,8 @@ class ApiClient(private val config: ApiClientConfig) {
         val primary = executeAPICall(200) { service.getMemories(dateOnly) }
         return primary.fold(
             { err ->
-                if (!err.contains("status code from API: 400")) {
+                // Matches ApiUtil: "Invalid status (400) returned by Immich Server: ..."
+                if (!err.contains("Invalid status (400)")) {
                     Either.Left(err)
                 } else {
                     executeAPICall(200) {
