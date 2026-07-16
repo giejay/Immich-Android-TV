@@ -4,6 +4,7 @@ import arrow.core.Either
 import com.google.gson.Gson
 import nl.giejay.android.tv.immich.api.model.ImmichErrorResponse
 import nl.giejay.android.tv.immich.api.model.toDisplayMessage
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import retrofit2.HttpException
@@ -26,13 +27,15 @@ object ApiUtil {
     fun getFileUrl(assetId: String?, type: String, forceOriginal: Boolean = false, loadEdited: Boolean = false): String? {
         if(forceOriginal){
             return assetId?.let {
-                "${hostName().lowercase()}/api/assets/${it}/original"
+                // api key is added here if the user wants to open a video in an external video player, since the external player will not have access to the api key otherwise
+                "${hostName().lowercase()}/api/assets/${it}/original?apiKey=${PreferenceManager.get(API_KEY)}"
             }
         }
         return when (type) {
             "VIDEO" ->
                 assetId?.let {
-                    "${hostName().lowercase()}/api/assets/${it}/video/playback"
+                    // api key is added here if the user wants to open a video in an external video player, since the external player will not have access to the api key otherwise
+                    "${hostName().lowercase()}/api/assets/${it}/video/playback?apiKey=${PreferenceManager.get(API_KEY)}"
                 }
 
             else ->
