@@ -100,7 +100,7 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) { service.listPeople() }.map { response -> response.people.filter { !it.name.isNullOrBlank() } }
     }
 
-    fun listAssetsFromAlbum(albumIds: List<String>, contentType: ContentType = ContentType.ALL, pageCount: Int = 100): Either<String, List<Asset>> {
+    suspend fun listAssetsFromAlbum(albumIds: List<String>, contentType: ContentType = ContentType.ALL, pageCount: Int = 100): Either<String, List<Asset>> {
         val results = albumIds.pmap { albumId ->
             val album = executeAPICall(200) { service.getAlbum(albumId) }
                 .getOrElse { return@pmap Either.Left(it) }
