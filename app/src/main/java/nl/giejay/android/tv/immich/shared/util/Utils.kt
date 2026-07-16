@@ -21,7 +21,7 @@ import android.view.ViewGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
 import java.io.IOException
 import java.io.InputStream
 import kotlin.math.roundToInt
@@ -31,7 +31,7 @@ import kotlin.math.roundToInt
  */
 object Utils {
 
-    fun <A, B>List<A>.pmap(f: suspend (A) -> B): List<B> = runBlocking {
+    suspend fun <A, B>List<A>.pmap(f: suspend (A) -> B): List<B> = coroutineScope {
         map { async(Dispatchers.IO) { f(it) } }.awaitAll()
     }
 
