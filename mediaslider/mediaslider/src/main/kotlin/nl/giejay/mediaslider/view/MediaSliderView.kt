@@ -30,6 +30,7 @@ import com.zeuskartik.mediaslider.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.mediaslider.adapter.AlignOption
@@ -352,6 +353,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     fun onDestroy() {
+        ioScope.cancel()
         controller.onDestroy()
     }
 

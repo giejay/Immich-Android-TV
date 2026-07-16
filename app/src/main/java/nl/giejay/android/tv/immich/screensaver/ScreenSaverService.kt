@@ -11,6 +11,7 @@ import arrow.core.getOrElse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.R
@@ -54,7 +55,7 @@ internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: 
         .getOrElse { default }
 
 class ScreenSaverService : DreamService(), MediaSliderListener {
-    private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
+    private var ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
     private var mediaSliderView: MediaSliderView? = null
     private var currentPage = 0
@@ -62,6 +63,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
+        ioScope = CoroutineScope(Job() + Dispatchers.IO)
         Timber.i("Starting screensaver")
         if (!PreferenceManager.isLoggedId()) {
             showErrorMessage(getString(R.string.screensaver_not_possible))
@@ -105,6 +107,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     }
 
     override fun onDreamingStopped() {
+        ioScope.cancel()
         mediaSliderView?.onDestroy()
         super.onDreamingStopped()
     }
@@ -152,7 +155,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         }
     }
 
-    private fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): List<Asset> {
+    private suspend fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): List<Asset> {
         val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
         val assets = if (random) {
             val pageCount = (50 / albums.size).coerceAtLeast(1)
