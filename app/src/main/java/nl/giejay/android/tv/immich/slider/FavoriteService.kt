@@ -17,7 +17,7 @@ class FavoriteService(
     private val updateFavorite: suspend (String, Boolean) -> Either<String, Unit> = { assetId, isFavorite ->
         ApiClient.getClient(
             ApiClientConfig(
-                PreferenceManager.get(HOST_NAME),
+                PreferenceManager.hostName,
                 PreferenceManager.get(API_KEY),
                 PreferenceManager.get(DISABLE_SSL_VERIFICATION),
                 PreferenceManager.get(DEBUG_MODE)

@@ -45,6 +45,9 @@ object PreferenceManager {
         return liveContext[key.key()] as T ?: key.getValue(sharedPreference)
     }
 
+    val hostName: String
+        get() = get(HOST_NAME).replace("\\s".toRegex(), "").removeSuffix("/")
+
     fun <T, PREFTYPE> save(key: Pref<T, *, PREFTYPE>, value: T) {
         liveContext[key.key()] = value
         key.save(sharedPreference, value)

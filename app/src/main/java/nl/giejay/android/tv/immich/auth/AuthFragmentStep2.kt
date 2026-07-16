@@ -51,7 +51,7 @@ class AuthFragmentStep2 : GuidedStepSupportFragment() {
             actions,
             ACTION_NAME,
             getString(R.string.server_url_hint),
-            PreferenceManager.get(HOST_NAME),
+            PreferenceManager.hostName,
             InputType.TYPE_CLASS_TEXT
         )
         addEditableAction(

@@ -84,7 +84,7 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
                 PreferenceManager.save(HOST_NAME, hostName)
                 navController.navigate(AuthFragmentStep1Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())
             } else if (SELECTED_OPTION == ACTION_SIGN_IN) {
-                if (PreferenceManager.get(HOST_NAME) == hostName) {
+                if (PreferenceManager.hostName == hostName) {
                     // remove demo instance api key
                     PreferenceManager.removeApiSettings()
                 }

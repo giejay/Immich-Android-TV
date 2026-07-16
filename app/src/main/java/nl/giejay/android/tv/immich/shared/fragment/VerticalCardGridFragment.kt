@@ -86,7 +86,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             apiClient =
                 ApiClient.getClient(
                     ApiClientConfig(
-                        PreferenceManager.get(HOST_NAME),
+                        PreferenceManager.hostName,
                         PreferenceManager.get(API_KEY),
                         PreferenceManager.get(DISABLE_SSL_VERIFICATION),
                         PreferenceManager.get(DEBUG_MODE)

@@ -1,18 +1,3 @@
-/*
- * Copyright 2020 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package nl.giejay.android.tv.immich.auth
 
 import android.graphics.drawable.Drawable
@@ -86,9 +71,11 @@ class AuthByPhoneFragment : Fragment() {
             .asSequence()
             .asFlow()
             .onEach { delay(3_000) } // specify delay
-            .onCompletion {
-                showErrorMessage(getString(R.string.auth_timeout_recreating_qr))
-                rebootQRFlow(findNavController())
+            .onCompletion { cause ->
+                if (cause == null && isAdded) {
+                    showErrorMessage(getString(R.string.auth_timeout_recreating_qr))
+                    rebootQRFlow(findNavController())
+                }
             }
         timer.collect {
             val config = authClient.getConfig(code)
@@ -104,8 +91,14 @@ class AuthByPhoneFragment : Fragment() {
         job?.cancel()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        ioScope.cancel()
+    }
+
     private suspend fun validateConfig(config: DeviceConfigResponse) {
         withContext(Dispatchers.Main) {
+            if (!isAdded) return@withContext
             val findNavController = findNavController()
             if (PreferenceManager.isValid(
                     config.configuration.host,
@@ -136,14 +129,15 @@ class AuthByPhoneFragment : Fragment() {
         }
 
     private suspend fun fetchDeviceCode(callback: (String) -> Unit) = withContext(Dispatchers.IO) {
-        try {
-            val deviceCode = authClient.registerDevice()
-            withContext(Dispatchers.Main) {
-                callback(deviceCode!!.code)
+        val deviceCode = authClient.registerDevice()
+        withContext(Dispatchers.Main) {
+            if (!isAdded) return@withContext
+            if (deviceCode != null) {
+                callback(deviceCode.code)
+            } else {
+                Timber.e("Could not fetch qr: registerDevice returned null")
+                showErrorMessage(getString(R.string.could_not_fetch_qr, "Network error"))
             }
-        } catch (e: Exception) {
-            Timber.e("Could not fetch qr", e)
-            showErrorMessage(getString(R.string.could_not_fetch_qr, e.message))
         }
     }
 

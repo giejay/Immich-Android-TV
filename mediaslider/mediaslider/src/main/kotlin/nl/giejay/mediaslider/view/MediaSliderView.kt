@@ -57,7 +57,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     protected val mPager: ViewPager
     private val volumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == "android.media.VOLUME_CHANGED_ACTION") {
+            if (intent.action == "android.media.VOLUME_CHANGED_ACTION" && isConfigReady) {
                 if (currentItemType() == SliderItemType.VIDEO
                     && controller.currentPlayer?.isPlaying == true
                     && controller.currentPlayer?.volume == 0f
@@ -76,6 +76,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     protected val isConfigReady: Boolean get() = this::config.isInitialized
     private lateinit var metaDataLeftAdapter: MetaDataAdapter
     private lateinit var metaDataRightAdapter: MetaDataAdapter
+    private var isVolumeReceiverRegistered = false
 
     // internal
     protected val controller: MediaSliderController
@@ -97,13 +98,23 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        val filter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
-        context.registerReceiver(volumeReceiver, filter)
+        if (!isVolumeReceiverRegistered) {
+            val filter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
+            context.registerReceiver(volumeReceiver, filter)
+            isVolumeReceiverRegistered = true
+        }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        context.unregisterReceiver(volumeReceiver)
+        if (isVolumeReceiverRegistered) {
+            try {
+                context.unregisterReceiver(volumeReceiver)
+            } catch (e: IllegalArgumentException) {
+                Timber.e(e, "volumeReceiver not registered")
+            }
+            isVolumeReceiverRegistered = false
+        }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -373,7 +384,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     private fun currentItem(): SliderItemViewHolder = config.items[mPager.currentItem]
-    protected fun currentItemType(): SliderItemType = config.items[mPager.currentItem].type
+    protected fun currentItemType(): SliderItemType = currentItem().type
 
     fun isControllerVisible(): Boolean = controller.isControllerVisible
 
