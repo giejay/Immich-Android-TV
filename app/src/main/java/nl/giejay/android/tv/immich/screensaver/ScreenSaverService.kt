@@ -11,6 +11,7 @@ import arrow.core.getOrElse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.R
@@ -55,14 +56,15 @@ internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: 
         .getOrElse { default }
 
 class ScreenSaverService : DreamService(), MediaSliderListener {
-    private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
+    private var ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
-    private lateinit var mediaSliderView: MediaSliderView
+    private var mediaSliderView: MediaSliderView? = null
     private var currentPage = 0
     private var doneLoading: Boolean = false
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
+        ioScope = CoroutineScope(Job() + Dispatchers.IO)
         Timber.i("Starting screensaver")
         if (!PreferenceManager.isLoggedId()) {
             showErrorMessage(getString(R.string.screensaver_not_possible))
@@ -71,14 +73,14 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         }
         val apiKey = PreferenceManager.get(API_KEY)
         val config = ApiClientConfig(
-            PreferenceManager.get(HOST_NAME),
+            PreferenceManager.hostName,
             apiKey,
             PreferenceManager.get(DISABLE_SSL_VERIFICATION),
             PreferenceManager.get(DEBUG_MODE)
         )
         apiClient = ApiClient.getClient(config)
         mediaSliderView = MediaSliderView(this)
-        mediaSliderView.setDefaultExoFactory(
+        mediaSliderView!!.setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
                 .setDefaultRequestProperties(mapOf("x-api-key" to apiKey))
         )
@@ -106,7 +108,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     }
 
     override fun onDreamingStopped() {
-        mediaSliderView.onDestroy()
+        ioScope.cancel()
+        mediaSliderView?.onDestroy()
         super.onDreamingStopped()
     }
 
@@ -153,7 +156,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         }
     }
 
-    private fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): List<Asset> {
+    private suspend fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): List<Asset> {
         val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
         val assets = if (random) {
             val pageCount = (50 / albums.size).coerceAtLeast(1)
@@ -193,7 +196,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                 getString(R.string.no_assets_for_screensaver),
                 Toast.LENGTH_LONG).show()
         } else {
-            mediaSliderView.loadMediaSliderView(
+            mediaSliderView?.loadMediaSliderView(
                 MediaSliderConfiguration(
                     0,
                     PreferenceManager.get(SCREENSAVER_INTERVAL),
@@ -216,7 +219,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO)
                 )
             )
-            mediaSliderView.toggleSlideshow(false)
+            mediaSliderView?.toggleSlideshow(false)
         }
     }
 
@@ -225,7 +228,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     }
 
     override fun onButtonPressed(keyEvent: KeyEvent): Boolean {
-        if ((keyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyEvent.keyCode == KeyEvent.KEYCODE_ENTER) && !mediaSliderView.isControllerVisible()) {
+        if ((keyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyEvent.keyCode == KeyEvent.KEYCODE_ENTER) && mediaSliderView?.isControllerVisible() == false) {
             finish()
             return true
         }

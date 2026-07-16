@@ -20,7 +20,7 @@ object ApiUtil {
     }
 
     private fun hostName(): String {
-        return PreferenceManager.get(HOST_NAME)
+        return PreferenceManager.hostName
     }
 
     fun getFileUrl(assetId: String?, type: String, forceOriginal: Boolean = false, loadEdited: Boolean = false): String? {

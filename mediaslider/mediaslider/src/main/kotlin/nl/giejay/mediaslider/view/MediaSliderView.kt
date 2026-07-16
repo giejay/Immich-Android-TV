@@ -34,6 +34,7 @@ import com.zeuskartik.mediaslider.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.mediaslider.adapter.AlignOption
@@ -84,10 +85,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
 
     private val volumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == "android.media.VOLUME_CHANGED_ACTION") {
-                if (currentItemType() == SliderItemType.VIDEO &&
-                    controller.currentPlayer?.isPlaying == true &&
-                    controller.currentPlayer?.volume == 0f
+            if (intent.action == "android.media.VOLUME_CHANGED_ACTION" && isConfigReady) {
+                if (currentItemType() == SliderItemType.VIDEO
+                    && controller.currentPlayer?.isPlaying == true
+                    && controller.currentPlayer?.volume == 0f
                 ) {
                     Timber.i("Volume changed detected, unmuting video")
                     Toast.makeText(context, "Volume changed detected, unmuting video", Toast.LENGTH_SHORT).show()
@@ -103,6 +104,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
 
     private lateinit var metaDataLeftAdapter: MetaDataAdapter
     private lateinit var metaDataRightAdapter: MetaDataAdapter
+    private var isVolumeReceiverRegistered = false
 
     private var currentPlayerView: PlayerView? = null
     private var defaultExoFactory = DefaultHttpDataSource.Factory()
@@ -119,13 +121,24 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        context.registerReceiver(volumeReceiver, IntentFilter("android.media.VOLUME_CHANGED_ACTION"))
+        if (!isVolumeReceiverRegistered) {
+            val filter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
+            context.registerReceiver(volumeReceiver, filter)
+            isVolumeReceiverRegistered = true
+        }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         controller.cancelTransportAutoHide()
-        context.unregisterReceiver(volumeReceiver)
+        if (isVolumeReceiverRegistered) {
+            try {
+                context.unregisterReceiver(volumeReceiver)
+            } catch (e: IllegalArgumentException) {
+                Timber.e(e, "volumeReceiver not registered")
+            }
+            isVolumeReceiverRegistered = false
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -679,6 +692,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
     }
 
     fun onDestroy() {
+        ioScope.cancel()
         controller.onDestroy()
     }
 

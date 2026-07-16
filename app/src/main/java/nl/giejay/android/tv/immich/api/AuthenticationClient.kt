@@ -9,6 +9,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import timber.log.Timber
 
 class AuthenticationClient {
     private val interceptor: Interceptor = Interceptor { chain ->
@@ -30,10 +31,20 @@ class AuthenticationClient {
     private val authService = retrofit.create(ImmichAuthenticationService::class.java)
 
     suspend fun registerDevice(): DeviceRegisteredResponse? {
-        return authService.registerDevice().body()
+        return try {
+            authService.registerDevice().body()
+        } catch (e: Exception) {
+            Timber.e(e, "Error registering device")
+            null
+        }
     }
 
     suspend fun getConfig(code: String): DeviceConfigResponse? {
-        return authService.getConfig(code).body()
+        return try {
+            authService.getConfig(code).body()
+        } catch (e: Exception) {
+            Timber.e(e, "Error getting config for code $code")
+            null
+        }
     }
 }
