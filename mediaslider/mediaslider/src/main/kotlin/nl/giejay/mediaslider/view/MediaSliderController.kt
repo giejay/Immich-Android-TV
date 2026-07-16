@@ -441,11 +441,11 @@ class MediaSliderController(
         metadataRows.descendantFocusability =
             if (showTransport) ViewGroup.FOCUS_BLOCK_DESCENDANTS
             else ViewGroup.FOCUS_AFTER_DESCENDANTS
-        metaDataHolder.findViewById<LinearLayout>(R.id.metadata_view_left)?.apply {
+        metaDataHolder.findViewById<View>(R.id.metadata_view_left)?.apply {
             isFocusable = false
             isFocusableInTouchMode = false
         }
-        metaDataHolder.findViewById<LinearLayout>(R.id.metadata_view_right)?.apply {
+        metaDataHolder.findViewById<View>(R.id.metadata_view_right)?.apply {
             isFocusable = false
             isFocusableInTouchMode = false
         }

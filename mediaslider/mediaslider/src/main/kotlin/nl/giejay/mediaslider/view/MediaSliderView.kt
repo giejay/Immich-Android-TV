@@ -438,7 +438,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
         val detailsConfig = config.metaDataConfig.filterNot { it.type == MetaDataType.DATE }
         controller.hasBottomDetails = detailsConfig.isNotEmpty()
 
-        val columnRight = findViewById<LinearLayout>(R.id.metadata_view_right)
+        val listViewRight = findViewById<WrapContentListView>(R.id.metadata_view_right)
         metaDataRightAdapter = MetaDataAdapter(
             context,
             detailsConfig.filter { it.align == AlignOption.RIGHT },
@@ -446,9 +446,9 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
             { if (currentSliderItem().hasSecondaryItem()) currentSliderItem().secondaryItem!! else currentSliderItem().mainItem },
             { currentSliderItem().hasSecondaryItem() }
         )
-        metaDataRightAdapter.attach(columnRight)
+        listViewRight.adapter = metaDataRightAdapter
 
-        val columnLeft = findViewById<LinearLayout>(R.id.metadata_view_left)
+        val listViewLeft = findViewById<WrapContentListView>(R.id.metadata_view_left)
         metaDataLeftAdapter = MetaDataAdapter(
             context,
             detailsConfig.filter { it.align == AlignOption.LEFT },
@@ -457,7 +457,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context), MediaS
             { currentSliderItem().mainItem },
             { currentSliderItem().hasSecondaryItem() }
         )
-        metaDataLeftAdapter.attach(columnLeft)
+        listViewLeft.adapter = metaDataLeftAdapter
 
         controller.applyDetailsOverlayVisibility()
 

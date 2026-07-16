@@ -108,19 +108,27 @@
             android:orientation="horizontal"
             android:paddingBottom="30dp">
 
-            <LinearLayout
+            <nl.giejay.mediaslider.view.WrapContentListView
                 android:id="@+id/metadata_view_left"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical" />
+                android:divider="@null"
+                android:dividerHeight="0dp"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:scrollbars="none" />
 
-            <LinearLayout
+            <nl.giejay.mediaslider.view.WrapContentListView
                 android:id="@+id/metadata_view_right"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical" />
+                android:divider="@null"
+                android:dividerHeight="0dp"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:scrollbars="none" />
         </LinearLayout>
 
         <!-- Shared image+video transport (main's image_controller), layered over EXIF. -->

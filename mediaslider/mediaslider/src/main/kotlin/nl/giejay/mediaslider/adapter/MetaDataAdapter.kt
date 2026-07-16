@@ -5,7 +5,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
+import android.widget.BaseAdapter
 import android.widget.RelativeLayout
 import android.widget.TextView
 import com.google.gson.JsonObject
@@ -109,26 +109,22 @@ data class MetaDataSliderItem(val metaDataType: MetaDataType, override val align
 }
 
 /**
- * Binds metadata rows into a vertical [LinearLayout]. Avoids ListView+wrap_content, which
- * often keeps a stale/collapsed height when rows appear asynchronously.
+ * List adapter for EXIF / metadata columns. Only exposes non-blank rows for the
+ * currently [bind]ed asset so async fetches do not leave stale or empty rows visible.
  */
 class MetaDataAdapter(val context: Context,
                       val items: List<MetaDataItem>,
                       private val portraitViewItems: List<MetaDataItem>,
                       private val getCurrentItem: () -> SliderItem,
-                      private val portraitMode: () -> Boolean) {
+                      private val portraitMode: () -> Boolean) : BaseAdapter() {
     private val layoutInflater: LayoutInflater = LayoutInflater.from(context)
     private val stateForItem = mutableMapOf<String, String?>()
     /** Keys that have completed a fetch (including blank/null results). */
     private val fetchedKeys = mutableSetOf<String>()
-    private var container: LinearLayout? = null
+    /** Asset id whose rows are currently shown; null after [clearViews]. */
     private var boundAssetId: String? = null
 
     fun getItemsToShow(): List<MetaDataItem> = (if (portraitMode()) portraitViewItems else items)
-
-    fun attach(container: LinearLayout) {
-        this.container = container
-    }
 
     fun isFullyFetched(assetId: String): Boolean {
         val toShow = getItemsToShow()
@@ -138,7 +134,7 @@ class MetaDataAdapter(val context: Context,
 
     /**
      * True when this column has nothing to show, or when [assetId]'s values are fetched
-     * and the container has been [bind]ed for that asset (not still showing a blank/clear).
+     * and the list has been [bind]ed for that asset (not still cleared).
      */
     fun isReadyFor(assetId: String): Boolean {
         val toShow = getItemsToShow()
@@ -152,48 +148,20 @@ class MetaDataAdapter(val context: Context,
         fetchedKeys.removeAll { it.startsWith(prefix) }
     }
 
-    /** Drop inflated rows immediately (e.g. on page change) so previous EXIF never lingers. */
+    /** Hide rows immediately (e.g. on page change) so previous EXIF never lingers. */
     fun clearViews() {
-        container?.removeAllViews()
         boundAssetId = null
+        notifyDataSetChanged()
     }
 
+    /** Show fetched non-blank rows for the current asset. */
     fun bind() {
-        val parent = container ?: return
-        val currentId = try {
+        boundAssetId = try {
             getCurrentItem().id
         } catch (_: Exception) {
-            return
+            null
         }
-        val toShow = getItemsToShow()
-        val rows = toShow.mapIndexedNotNull { index, item ->
-            val value = stateForItem[stateKey(currentId, index)]
-            if (value.isNullOrBlank()) null else item to value
-        }
-        parent.removeAllViews()
-        boundAssetId = currentId
-        rows.forEach { (item, value) ->
-            val view = item.createView(layoutInflater)
-            val textView = view.findViewById<TextView>(item.textViewResourceId)
-            if (item.align == AlignOption.RIGHT) {
-                (textView.layoutParams as? RelativeLayout.LayoutParams)?.let { params ->
-                    textView.gravity = Gravity.RIGHT
-                    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
-                    textView.layoutParams = params
-                }
-            }
-            textView.textSize = item.fontSize.toFloat()
-            textView.setPadding(textView.paddingLeft, item.padding, textView.paddingRight, item.padding)
-            item.updateView(textView, value)
-            parent.addView(
-                view,
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            )
-        }
-        parent.requestLayout()
+        notifyDataSetChanged()
     }
 
     fun updateState(sliderItemId: String, metaDataIndex: Int, value: String?) {
@@ -204,6 +172,47 @@ class MetaDataAdapter(val context: Context,
 
     fun hasStateForItem(id: String, metaDataIndex: Int): Boolean {
         return stateKey(id, metaDataIndex) in fetchedKeys
+    }
+
+    private fun visibleRows(): List<Pair<MetaDataItem, String>> {
+        val assetId = boundAssetId ?: return emptyList()
+        return getItemsToShow().mapIndexedNotNull { index, item ->
+            val value = stateForItem[stateKey(assetId, index)]
+            if (value.isNullOrBlank()) null else item to value
+        }
+    }
+
+    override fun getCount(): Int = visibleRows().size
+
+    override fun getItem(position: Int): Any = visibleRows()[position].first
+
+    override fun getItemId(position: Int): Long =
+        visibleRows()[position].first.type.ordinal.toLong()
+
+    override fun getViewTypeCount(): Int = MetaDataType.entries.size.coerceAtLeast(1)
+
+    override fun getItemViewType(position: Int): Int =
+        visibleRows()[position].first.type.ordinal
+
+    override fun isEnabled(position: Int): Boolean = false
+
+    override fun areAllItemsEnabled(): Boolean = false
+
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+        val (item, value) = visibleRows()[position]
+        val view = convertView ?: item.createView(layoutInflater)
+        val textView = view.findViewById<TextView>(item.textViewResourceId)
+        if (item.align == AlignOption.RIGHT) {
+            (textView.layoutParams as? RelativeLayout.LayoutParams)?.let { params ->
+                textView.gravity = Gravity.RIGHT
+                params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
+                textView.layoutParams = params
+            }
+        }
+        textView.textSize = item.fontSize.toFloat()
+        textView.setPadding(textView.paddingLeft, item.padding, textView.paddingRight, item.padding)
+        item.updateView(textView, value)
+        return view
     }
 
     private fun stateKey(assetId: String, metaDataIndex: Int): String = "$assetId#$metaDataIndex"
