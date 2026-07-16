@@ -6,6 +6,8 @@
     <string name="media_mute">Без звука</string>
     <string name="media_play">Воспроизвести</string>
     <string name="media_pause">Пауза</string>
+    <string name="open_in_external_player">Открыть во внешнем плеере</string>
+    <string name="no_external_player_found">Внешний плеер не найден</string>
     <string name="slideshow">Слайд-шоу</string>
     <string name="image_controller_previous">Предыдущий</string>
     <string name="image_controller_next">Следующий</string>

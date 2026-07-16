@@ -28,7 +28,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -261,27 +260,7 @@ class ApiClient(private val config: ApiClientConfig) {
         executeAPICall(200) { service.getTimeBucket(timeBucket) }
             .map { it.toTimelineAssets() }
 
-    /**
-     * "On this day" memories for today.
-     *
-     * Immich 3.0.3+ validates `for` as `YYYY-MM-DD`. Older servers accepted a full
-     * ISO-8601 offset datetime — if the date-only call gets 400, retry with datetime.
-     */
-    suspend fun getMemories(): Either<String, List<Memory>> {
-        val dateOnly = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        val primary = executeAPICall(200) { service.getMemories(dateOnly) }
-        return primary.fold(
-            { err ->
-                // Matches ApiUtil: "Invalid status (400) returned by Immich Server: ..."
-                if (!err.contains("Invalid status (400)")) {
-                    Either.Left(err)
-                } else {
-                    executeAPICall(200) {
-                        service.getMemories(OffsetDateTime.now().format(dateTimeFormatter))
-                    }
-                }
-            },
-            { Either.Right(it) }
-        )
-    }
+    /** "On this day" style memories for the current moment (server filters by day-of-year). */
+    suspend fun getMemories(): Either<String, List<Memory>> =
+        executeAPICall(200) { service.getMemories(LocalDate.now().toString()) }
 }

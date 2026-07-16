@@ -21,6 +21,8 @@
     <string name="media_mute">Mute</string>
     <string name="media_play">Play</string>
     <string name="media_pause">Pause</string>
+    <string name="open_in_external_player">Open in external player</string>
+    <string name="no_external_player_found">No external player found</string>
 
     <string name="api_key" translatable="false">api_key</string>
     <string name="authentication_url" translatable="false">authentication_url</string>

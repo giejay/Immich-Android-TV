@@ -1,7 +1,10 @@
 package nl.giejay.mediaslider.view
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.util.Log
 import android.util.TypedValue
@@ -14,6 +17,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.annotation.OptIn
 import androidx.media3.common.PlaybackException
@@ -489,16 +493,19 @@ class MediaSliderController(
         val favoriteButton = sharedControls.findViewById<ImageButton>(R.id.image_favorite) ?: return
         val slideshowButton = sharedControls.findViewById<ImageButton>(R.id.image_slideshow) ?: return
         val nextButton = sharedControls.findViewById<ImageButton>(R.id.image_next) ?: return
+        val externalPlayerButton = sharedControls.findViewById<ImageButton>(R.id.media_open_external)
         val muteButton = sharedControls.findViewById<ImageButton>(R.id.media_mute)
         val playPauseButton = sharedControls.findViewById<ImageButton>(R.id.media_play_pause)
         val progressLayout = sharedControls.findViewById<View>(R.id.media_progress_layout)
         val seekBar = sharedControls.findViewById<SeekBar>(R.id.media_seek_bar)
 
         val isVideo = sliderItem.type == SliderItemType.VIDEO
+        val canOpenExternally = isVideo && !sliderItem.url.isNullOrBlank()
         val hasSecondaryItem = sliderItem.hasSecondaryItem()
 
         muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
         playPauseButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        externalPlayerButton?.visibility = if (canOpenExternally) View.VISIBLE else View.GONE
         progressLayout?.visibility = if (isVideo) View.VISIBLE else View.GONE
         favoriteButton.visibility = if (hasSecondaryItem) View.GONE else View.VISIBLE
 
@@ -515,6 +522,10 @@ class MediaSliderController(
             sliderItem.mainItem.isFavorite = newValue
             updateFavoriteIcon(favoriteButton, newValue)
             MediaSliderConfiguration.onFavoriteToggle(sliderItem.mainItem.id, newValue)
+        }
+
+        externalPlayerButton?.setOnClickListener {
+            openInExternalPlayer(sliderItem.url)
         }
 
         if (isVideo && muteButton != null && playPauseButton != null) {
@@ -588,8 +599,10 @@ class MediaSliderController(
             playPauseButton,
             favoriteButton,
             slideshowButton,
+            externalPlayerButton,
             nextButton,
             isVideo,
+            canOpenExternally,
             hasSecondaryItem,
             seekBar
         )
@@ -857,8 +870,10 @@ class MediaSliderController(
         playPauseButton: ImageButton?,
         favoriteButton: ImageButton,
         slideshowButton: ImageButton,
+        externalPlayerButton: ImageButton?,
         nextButton: ImageButton,
         isVideo: Boolean,
+        canOpenExternally: Boolean,
         hasSecondaryItem: Boolean,
         seekBar: SeekBar?
     ) {
@@ -868,6 +883,7 @@ class MediaSliderController(
         if (isVideo) playPauseButton?.let { chain.add(it) }
         if (!hasSecondaryItem) chain.add(favoriteButton)
         chain.add(slideshowButton)
+        if (canOpenExternally) externalPlayerButton?.let { chain.add(it) }
         chain.add(nextButton)
 
         for (i in chain.indices) {
@@ -910,6 +926,27 @@ class MediaSliderController(
         button.contentDescription = context.getString(
             if (isPlaying) R.string.media_pause else R.string.media_play
         )
+    }
+
+    private fun openInExternalPlayer(videoUrl: String?) {
+        if (videoUrl.isNullOrBlank()) return
+
+        val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(Uri.parse(videoUrl), "video/*")
+        }
+        val chooserIntent = Intent.createChooser(
+            viewIntent,
+            context.getString(R.string.open_in_external_player)
+        )
+        if (context !is Activity) {
+            chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        try {
+            context.startActivity(chooserIntent)
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, R.string.no_external_player_found, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun startProgressUpdates() {
