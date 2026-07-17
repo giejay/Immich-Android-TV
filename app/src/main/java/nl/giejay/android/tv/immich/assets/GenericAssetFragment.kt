@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.assets
 
 import android.os.Bundle
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.getOrElse
@@ -13,16 +14,16 @@ import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.ALL_ASSETS_SORTING
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
-import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
+import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
 import nl.giejay.android.tv.immich.shared.prefs.FILTER_CONTENT_TYPE
 import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
@@ -34,14 +35,17 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
-import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.util.LoadMore
+import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
 
 abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     protected lateinit var currentFilter: ContentType
     protected lateinit var currentSort: PhotosOrder
     private var excludedAssetsLoaded = false
     protected var excludedAssetIds: Set<String> = emptySet()
+
+    private val sliderViewModel: MediaSliderViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val sortingKey = getSortingKey()
@@ -119,31 +123,28 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
             moreAssets.toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
         }
 
-        findNavController().navigate(
-            AlbumDetailsFragmentDirections.actionToPhotoSlider(
-                MediaSliderConfiguration(
-                    toSliderItems.indexOfFirst { it.ids().contains(card.id) },
-                    PreferenceManager.get(SLIDER_INTERVAL),
-                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
-                    isVideoSoundEnable = true,
-                    toSliderItems,
-                    loadMore,
-                    { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) },
-                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
-                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
-                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
-                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
-                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
-                    gradiantOverlay = false,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
-                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
-                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
-                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
-                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
-                )
-            )
+        val config = MediaSliderConfiguration(
+            toSliderItems.indexOfFirst { it.ids().contains(card.id) },
+            PreferenceManager.get(SLIDER_INTERVAL),
+            PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
+            isVideoSoundEnable = true,
+            toSliderItems,
+            loadMore,
+            { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) },
+            animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+            maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+            maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
+            glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+            enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+            gradiantOverlay = false,
+            metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
+            zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+            zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+            panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+            useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
         )
+        sliderViewModel.configuration = config
+        findNavController().navigate(AlbumDetailsFragmentDirections.actionToPhotoSlider())
     }
 
     override fun getBackgroundPicture(it: Asset): String? {

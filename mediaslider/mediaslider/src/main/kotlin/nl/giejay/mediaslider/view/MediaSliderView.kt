@@ -12,7 +12,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
-import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
@@ -37,16 +36,11 @@ import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.MetadataViewPlugin
-import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
-import nl.giejay.mediaslider.plugin.SliderKeyEventResult
-import nl.giejay.mediaslider.plugin.SliderKeyEventState
 import nl.giejay.mediaslider.plugin.SliderViewPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPluginContext
 import nl.giejay.mediaslider.util.FixedSpeedScroller
-import nl.giejay.mediaslider.util.MediaSliderListener
 import timber.log.Timber
 import java.lang.reflect.Field
-
 
 /**
  * Pager + metadata shell for the media slider. Timeline/memories chrome is provided
@@ -85,7 +79,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private data class ViewPluginEntry(val plugin: SliderViewPlugin<Any?>, val state: Any?)
     private val viewPlugins = mutableListOf<ViewPluginEntry>()
-    private val keyEventPlugins = mutableListOf<SliderKeyEventPlugin>()
     private val viewPluginContext by lazy { SliderViewPluginContext(context, this, controller, ioScope) { currentItem() } }
 
     init {
@@ -122,72 +115,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         if (mPager.adapter == null) {
             return super.dispatchKeyEvent(event)
         }
-        val itemType = currentItemType()
-        if (event.action == KeyEvent.ACTION_DOWN) {
-            val pluginState = SliderKeyEventState(
-                isControllerVisible = controller.isControllerVisible,
-                isSlideshowPlaying = controller.slideShowPlaying,
-                currentItemType = itemType,
-                controller = controller
-            )
-            var pluginHandled = false
-            keyEventPlugins.forEach { plugin ->
-                when (plugin.onKeyDown(event, pluginState)) {
-                    SliderKeyEventResult.UNHANDLED -> Unit
-                    SliderKeyEventResult.HANDLED_CONTINUE -> pluginHandled = true
-                    SliderKeyEventResult.HANDLED_CONSUME -> return true
-                    SliderKeyEventResult.DISPATCH_TO_SUPER -> return super.dispatchKeyEvent(event)
-                }
-            }
-            if (pluginHandled) {
-                return true
-            }
-
-            if (context is MediaSliderListener && (context as MediaSliderListener).onButtonPressed(event)) {
-                return false
-            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER
-                || event.keyCode == KeyEvent.KEYCODE_ENTER
-                || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY
-                || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
-            ) {
-                // If the unified controller is already visible, let focused buttons handle the click.
-                if (controller.isControllerVisible) {
-                    return super.dispatchKeyEvent(event)
-                }
-                if (controller.toggleController()) {
-                    return true
-                }
-                return false
-            } else if (event.keyCode == KeyEvent.KEYCODE_BACK && controller.isControllerVisible) {
-                controller.hideController()
-                return true
-            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && !controller.isControllerVisible) {
-                // Down-arrow on a video opens the unified controller.
-                if (controller.toggleController()) return true
-                return super.dispatchKeyEvent(event)
-            } else if (controller.slideShowPlaying && itemType == SliderItemType.IMAGE) {
-                if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    controller.toggleSlideshow(true)
-                } else {
-                    controller.skipToNextAndRestartTimer()
-                    return false
-                }
-                return super.dispatchKeyEvent(event)
-            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                if (controller.isControllerVisible) {
-                    return super.dispatchKeyEvent(event)
-                }
-                controller.goToNextAsset()
-                return false
-            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-                if (controller.isControllerVisible) {
-                    return super.dispatchKeyEvent(event)
-                }
-                controller.goToPreviousAsset()
-                return false
-            }
-        }
-        return if (controller.isControllerVisible) super.dispatchKeyEvent(event) else false
+        return controller.dispatchKeyEvent(event) { super.dispatchKeyEvent(event) }
     }
 
     open fun loadMediaSliderView(config: MediaSliderConfiguration) {
@@ -202,9 +130,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             val typedPlugin = plugin as SliderViewPlugin<Any?>
             viewPlugins.add(ViewPluginEntry(typedPlugin, typedPlugin.createState(viewPluginContext, config)))
         }
-
-        keyEventPlugins.clear()
-        keyEventPlugins.addAll(config.keyEventPlugins)
 
         val listener: ExoPlayerListener = object : ExoPlayerListener {
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -284,11 +209,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
                 config.onAssetSelected(sliderItem)
 
-                val statusLayoutLeft = findViewById<LinearLayout>(R.id.meta_data_holder)
                 if (sliderItem.type == SliderItemType.VIDEO) {
-                    if (config.isGradiantOverlayVisible) {
-                        statusLayoutLeft?.background = null
-                    }
                     val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
                     if (!viewTag.isReady()) {
                         Timber.e("Player is not initialized properly, cannot play video.")
@@ -309,9 +230,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 } else {
                     controller.setCurrentPlayer(null)
                     controller.configureController(sliderItem, sliderItemIndex)
-                    if (config.isGradiantOverlayVisible) {
-                        statusLayoutLeft?.setBackgroundResource(R.drawable.gradient_overlay)
-                    }
                     if (controller.slideShowPlaying) {
                         controller.startTimerNextAsset()
                         val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return

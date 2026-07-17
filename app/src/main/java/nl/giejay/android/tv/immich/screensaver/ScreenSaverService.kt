@@ -42,6 +42,8 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
+import nl.giejay.android.tv.immich.slider.FavoriteButtonControllerPlugin
+import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MediaSliderListener
@@ -56,6 +58,7 @@ internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: 
 class ScreenSaverService : DreamService(), MediaSliderListener {
     private var ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
+    private val favoriteService = FavoriteService()
     private var mediaSliderView: MediaSliderView? = null
     private var currentPage = 0
     private var doneLoading: Boolean = false
@@ -217,15 +220,15 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
                     maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                     maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
-                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
+                    glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
                     metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
                     zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
                     zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
-                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
+                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
+                    controllerPlugins = listOf(FavoriteButtonControllerPlugin(favoriteService, ioScope))
                 )
             )
             mediaSliderView?.toggleSlideshow(false)

@@ -1,6 +1,7 @@
 package nl.giejay.mediaslider.plugin
 
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.ListView
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.zeuskartik.mediaslider.R
@@ -14,9 +15,12 @@ import nl.giejay.mediaslider.adapter.MetaDataClock
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItem
+import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
+import nl.giejay.mediaslider.view.MediaSliderController
 
-class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState> {
+class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControllerPlugin {
+
     override fun createState(context: SliderViewPluginContext, config: MediaSliderConfiguration): MetadataRenderState {
         val rightAdapter = MetaDataAdapter(
             context.context,
@@ -82,6 +86,18 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState> {
         val leftAdapter = currentState.leftAdapter
         val rightAdapter = currentState.rightAdapter
 
+        // Disable the gradient overlay for video items if the config specifies it should be hidden
+        val metaDataHolderView = context.rootView.findViewById<LinearLayout>(R.id.meta_data_holder)
+        if (sliderItem.type == SliderItemType.VIDEO) {
+            if (config.isGradiantOverlayVisible) {
+                metaDataHolderView?.background = null
+            }
+        } else {
+            if (config.isGradiantOverlayVisible) {
+                metaDataHolderView?.setBackgroundResource(R.drawable.gradient_overlay)
+            }
+        }
+
         updateMetaData(context, leftAdapter, sliderItem.mainItem, sliderItemIndex, config)
         updateMetaData(
             context,
@@ -90,6 +106,14 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState> {
             sliderItemIndex,
             config
         )
+    }
+
+    override fun onControllerVisibilityChanged(isVisible: Boolean, rootView: View, controller: MediaSliderController, config: MediaSliderConfiguration) {
+        if(isVisible && config.isGradiantOverlayVisible) {
+            rootView.findViewById<LinearLayout>(R.id.meta_data_holder)?.background = null
+        } else if(!isVisible && config.isGradiantOverlayVisible) {
+            rootView.findViewById<LinearLayout>(R.id.meta_data_holder)?.setBackgroundResource(R.drawable.gradient_overlay)
+        }
     }
 
     override fun onPageSelected(context: SliderViewPluginContext, sliderItemIndex: Int, state: MetadataRenderState?) {

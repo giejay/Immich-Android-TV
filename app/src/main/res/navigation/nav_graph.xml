@@ -117,9 +117,6 @@
         android:name="nl.giejay.android.tv.immich.slider.ImmichMediaSlider"
         android:label="PhotoSlider">
         <argument
-            android:name="config"
-            app:argType="nl.giejay.mediaslider.config.MediaSliderConfiguration" />
-        <argument
             android:name="timelineView"
             android:defaultValue="false"
             app:argType="boolean" />

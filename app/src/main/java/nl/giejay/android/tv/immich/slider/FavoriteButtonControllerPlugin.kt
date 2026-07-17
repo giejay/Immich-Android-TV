@@ -1,12 +1,19 @@
-package nl.giejay.mediaslider.plugin
+package nl.giejay.android.tv.immich.slider
 
 import android.view.View
-import com.zeuskartik.mediaslider.R
-import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import nl.giejay.android.tv.immich.R
+import nl.giejay.mediaslider.plugin.ControllerButtonPlacement
+import nl.giejay.mediaslider.plugin.ControllerButtonSpec
+import nl.giejay.mediaslider.plugin.ControllerPluginContext
+import nl.giejay.mediaslider.plugin.SliderControllerPlugin
 
 class FavoriteButtonControllerPlugin(
+    private val favoriteService: FavoriteService,
+    private val scope: CoroutineScope,
     private val placement: ControllerButtonPlacement = ControllerButtonPlacement.RIGHT_OF,
-    private val anchorViewId: Int = R.id.media_play_pause
+    private val anchorViewId: Int = com.zeuskartik.mediaslider.R.id.media_play_pause
 ) : SliderControllerPlugin {
     override fun provideControllerButton(context: ControllerPluginContext): ControllerButtonSpec? {
         if (context.hasSecondaryItem) {
@@ -29,7 +36,9 @@ class FavoriteButtonControllerPlugin(
             favoriteButton.setImageResource(
                 if (newValue) R.drawable.ic_favorite else R.drawable.ic_favorite_border
             )
-            MediaSliderConfiguration.onFavoriteToggle(context.sliderItem.mainItem.id, newValue)
+            scope.launch {
+                favoriteService.toggleFavorite(context.sliderItem.mainItem.id, newValue)
+            }
         }
         return ControllerButtonSpec(
             button = favoriteButton,

@@ -43,6 +43,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation libs.androidx.appcompat
+    implementation libs.androidx.fragment.ktx
     implementation(libs.timber)
     implementation libs.androidx.core.ktx
     testImplementation libs.junit

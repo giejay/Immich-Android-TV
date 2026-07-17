@@ -3,6 +3,7 @@ package nl.giejay.mediaslider.view
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageButton
@@ -17,14 +18,17 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
-import nl.giejay.mediaslider.plugin.ControllerButtonHost
+import nl.giejay.mediaslider.model.SliderItemType
+import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.ControllerButtonPlacement
 import nl.giejay.mediaslider.plugin.ControllerPluginContext
 import nl.giejay.mediaslider.plugin.ExternalPlayerButtonControllerPlugin
-import nl.giejay.mediaslider.plugin.FavoriteButtonControllerPlugin
+import nl.giejay.mediaslider.plugin.MetadataViewPlugin
 import nl.giejay.mediaslider.plugin.SliderControllerPlugin
-import nl.giejay.mediaslider.model.SliderItemType
-import nl.giejay.mediaslider.model.SliderItemViewHolder
+import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
+import nl.giejay.mediaslider.plugin.SliderKeyEventResult
+import nl.giejay.mediaslider.plugin.SliderKeyEventState
+import nl.giejay.mediaslider.util.MediaSliderListener
 import timber.log.Timber
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -55,32 +59,7 @@ class MediaSliderController(
     val isControllerVisible: Boolean get() = _isControllerVisible
 
     private val controllerPlugins = mutableListOf<SliderControllerPlugin>()
-    private val controllerButtonHost = object : ControllerButtonHost {
-        override fun placeButton(button: ImageButton, placement: ControllerButtonPlacement, anchorViewId: Int?) {
-            val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row) ?: return
-            if (button.parent !== row) {
-                (button.parent as? LinearLayout)?.removeView(button)
-                row.addView(button)
-            }
-            val currentIndex = row.indexOfChild(button)
-            if (currentIndex >= 0) {
-                row.removeViewAt(currentIndex)
-            }
-            val targetIndex = when (placement) {
-                ControllerButtonPlacement.START -> 0
-                ControllerButtonPlacement.END -> row.childCount
-                ControllerButtonPlacement.LEFT_OF -> {
-                    val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
-                    if (anchorIndex >= 0) anchorIndex else row.childCount
-                }
-                ControllerButtonPlacement.RIGHT_OF -> {
-                    val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
-                    if (anchorIndex >= 0) (anchorIndex + 1).coerceAtMost(row.childCount) else row.childCount
-                }
-            }
-            row.addView(button, targetIndex)
-        }
-    }
+    private val keyEventPlugins = mutableListOf<SliderKeyEventPlugin>()
 
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
@@ -107,9 +86,13 @@ class MediaSliderController(
     fun initialize(config: MediaSliderConfiguration) {
         this.config = config
         controllerPlugins.clear()
-        controllerPlugins.add(FavoriteButtonControllerPlugin())
+        // any default plugins that should always be present can be added here, before the user-supplied plugins
         controllerPlugins.add(ExternalPlayerButtonControllerPlugin())
+        controllerPlugins.add(MetadataViewPlugin())
         controllerPlugins.addAll(config.controllerPlugins)
+
+        keyEventPlugins.clear()
+        keyEventPlugins.addAll(config.keyEventPlugins)
     }
 
     fun setCurrentPlayer(player: ExoPlayer?) {
@@ -206,7 +189,7 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun goToNextAsset() {
-        hideController()
+        hideOverlayControls()
         if (pager.currentItem < pager.adapter!!.count - 1) {
             pager.setCurrentItem(pager.currentItem + 1, config.enableSlideAnimation)
         } else {
@@ -216,7 +199,7 @@ class MediaSliderController(
     }
 
     fun goToPreviousAsset() {
-        hideController()
+        hideOverlayControls()
         pager.setCurrentItem(
             (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
             config.enableSlideAnimation
@@ -232,10 +215,10 @@ class MediaSliderController(
      * Toggles the unified overlay controller for the current page.
      * Returns true if the event was consumed (controller shown or already visible).
      */
-    fun toggleController(): Boolean {
+    private fun toggleOverlayControls(): Boolean {
         val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: return false
         if (controller.isVisible) {
-            hideController()
+            hideOverlayControls()
             return true
         }
         if (slideShowPlaying) {
@@ -243,7 +226,7 @@ class MediaSliderController(
         }
         controller.visibility = View.VISIBLE
         _isControllerVisible = true
-        controllerPlugins.forEach { it.onControllerVisibilityChanged(true, this) }
+        controllerPlugins.forEach { it.onControllerVisibilityChanged(true, controllerRootView, this, config) }
 
         requestInitialControllerFocus()
 
@@ -253,10 +236,10 @@ class MediaSliderController(
         return true
     }
 
-    fun hideController() {
+    fun hideOverlayControls() {
         controllerRootView.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
         _isControllerVisible = false
-        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, this) }
+        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this, config) }
         stopProgressUpdates()
         restorePagerFocus()
     }
@@ -274,7 +257,7 @@ class MediaSliderController(
 
         controller.visibility = View.GONE
         _isControllerVisible = false
-        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, this) }
+        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this,config) }
         stopProgressUpdates()
 
         val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
@@ -353,7 +336,7 @@ class MediaSliderController(
         // Let plugins add/remove optional controls for this page before configuring behavior.
         controllerPlugins.forEach { plugin ->
             val buttonSpec = plugin.provideControllerButton(pluginContext) ?: return@forEach
-            controllerButtonHost.placeButton(
+            placeMediaControllerButton(
                 buttonSpec.button,
                 buttonSpec.placement,
                 buttonSpec.anchorViewId
@@ -370,6 +353,75 @@ class MediaSliderController(
 
     fun toggleMute() {
         controllerRootView.findViewById<ImageButton>(R.id.media_mute)?.performClick()
+    }
+
+    fun dispatchKeyEvent(event: KeyEvent, superDispatch: () -> Boolean): Boolean {
+        val itemType = currentItemTypeOrNull()
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            val pluginState = SliderKeyEventState(
+                isControllerVisible = isControllerVisible,
+                isSlideshowPlaying = slideShowPlaying,
+                currentItemType = itemType,
+                controller = this
+            )
+            var pluginHandled = false
+            keyEventPlugins.forEach { plugin ->
+                when (plugin.onKeyDown(event, pluginState)) {
+                    SliderKeyEventResult.UNHANDLED -> Unit
+                    SliderKeyEventResult.HANDLED_CONTINUE -> pluginHandled = true
+                    SliderKeyEventResult.HANDLED_CONSUME -> return true
+                    SliderKeyEventResult.DISPATCH_TO_SUPER -> return superDispatch()
+                }
+            }
+            if (pluginHandled) {
+                return true
+            }
+
+            if (context is MediaSliderListener && (context as MediaSliderListener).onButtonPressed(event)) {
+                return false
+            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER
+                || event.keyCode == KeyEvent.KEYCODE_ENTER
+                || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY
+                || event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
+            ) {
+                // If the unified controller is already visible, let focused buttons handle the click.
+                if (isControllerVisible) {
+                    return superDispatch()
+                }
+                if (toggleOverlayControls()) {
+                    return true
+                }
+                return false
+            } else if (event.keyCode == KeyEvent.KEYCODE_BACK && isControllerVisible) {
+                hideOverlayControls()
+                return true
+            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && !isControllerVisible) {
+                // Down-arrow on a video opens the unified controller.
+                if (toggleOverlayControls()) return true
+                return superDispatch()
+            } else if (slideShowPlaying && itemType == SliderItemType.IMAGE) {
+                if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    toggleSlideshow(true)
+                } else {
+                    skipToNextAndRestartTimer()
+                    return false
+                }
+                return superDispatch()
+            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                if (isControllerVisible) {
+                    return superDispatch()
+                }
+                goToNextAsset()
+                return false
+            } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                if (isControllerVisible) {
+                    return superDispatch()
+                }
+                goToPreviousAsset()
+                return false
+            }
+        }
+        return if (isControllerVisible) superDispatch() else false
     }
 
     // -------------------------------------------------------------------------
@@ -495,6 +547,31 @@ class MediaSliderController(
             playButtonView.visibility = View.GONE
             restorePagerFocus()
         }, 2000)
+    }
+
+    private fun placeMediaControllerButton(button: ImageButton, placement: ControllerButtonPlacement, anchorViewId: Int?) {
+        val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row) ?: return
+        if (button.parent !== row) {
+            (button.parent as? LinearLayout)?.removeView(button)
+            row.addView(button)
+        }
+        val currentIndex = row.indexOfChild(button)
+        if (currentIndex >= 0) {
+            row.removeViewAt(currentIndex)
+        }
+        val targetIndex = when (placement) {
+            ControllerButtonPlacement.START -> 0
+            ControllerButtonPlacement.END -> row.childCount
+            ControllerButtonPlacement.LEFT_OF -> {
+                val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
+                if (anchorIndex >= 0) anchorIndex else row.childCount
+            }
+            ControllerButtonPlacement.RIGHT_OF -> {
+                val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
+                if (anchorIndex >= 0) (anchorIndex + 1).coerceAtMost(row.childCount) else row.childCount
+            }
+        }
+        row.addView(button, targetIndex)
     }
 
     private fun startProgressUpdates() {

@@ -25,10 +25,6 @@ enum class ControllerButtonPlacement {
     RIGHT_OF
 }
 
-interface ControllerButtonHost {
-    fun placeButton(button: ImageButton, placement: ControllerButtonPlacement, anchorViewId: Int? = null)
-}
-
 data class ControllerButtonSpec(
     val button: ImageButton,
     val placement: ControllerButtonPlacement,
@@ -109,7 +105,7 @@ interface SliderControllerPlugin {
     }
 
     fun onConfigureController(context: ControllerPluginContext) {}
-    fun onControllerVisibilityChanged(isVisible: Boolean, controller: MediaSliderController) {}
+    fun onControllerVisibilityChanged(isVisible: Boolean, rootView: View, controller: MediaSliderController, config: MediaSliderConfiguration) {}
     fun onAssetTimerStarted(
         intervalMs: Long,
         controller: MediaSliderController,
