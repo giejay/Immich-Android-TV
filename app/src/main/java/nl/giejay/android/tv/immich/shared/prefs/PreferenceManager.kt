@@ -3,12 +3,20 @@ package nl.giejay.android.tv.immich.shared.prefs
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
+import kotlinx.coroutines.CoroutineScope
+import nl.giejay.android.tv.immich.slider.FavoriteButtonControllerPlugin
+import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.adapter.AlignOption
 import nl.giejay.mediaslider.adapter.MetaDataClock
 import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.adapter.MetaDataSliderItem
 import nl.giejay.mediaslider.model.MetaDataType
+import nl.giejay.mediaslider.plugin.ExternalPlayerButtonControllerPlugin
+import nl.giejay.mediaslider.plugin.MetadataViewPlugin
+import nl.giejay.mediaslider.plugin.SliderControllerPlugin
+import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
+import nl.giejay.mediaslider.plugin.SliderViewPlugin
 import nl.giejay.mediaslider.util.MetaDataConverter
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -158,4 +166,24 @@ object PreferenceManager {
     fun hasMetaDataForScreen(metaDataScreen: MetaDataScreen, align: AlignOption): Boolean {
         return sharedPreference.contains(createKey(metaDataScreen, align))
     }
+
+    fun getEnabledSliderControllerPlugins(scope: CoroutineScope, favoriteService: FavoriteService): List<SliderControllerPlugin> {
+        // for now just static. Can be configured by user later
+        return listOf(
+            FavoriteButtonControllerPlugin(favoriteService, scope),
+            ExternalPlayerButtonControllerPlugin(),
+            MetadataViewPlugin()
+        )
+    }
+
+    fun getEnabledSliderViewPlugins(): List<SliderViewPlugin<*>> {
+        return listOf(
+            MetadataViewPlugin()
+        )
+    }
+
+    fun getEnabledSliderKeyEventPlugins(): List<SliderKeyEventPlugin> {
+        return emptyList()
+    }
+
 }

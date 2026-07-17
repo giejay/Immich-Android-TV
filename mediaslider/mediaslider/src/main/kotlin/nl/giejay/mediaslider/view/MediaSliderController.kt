@@ -58,9 +58,6 @@ class MediaSliderController(
     private var _isControllerVisible = false
     val isControllerVisible: Boolean get() = _isControllerVisible
 
-    private val controllerPlugins = mutableListOf<SliderControllerPlugin>()
-    private val keyEventPlugins = mutableListOf<SliderKeyEventPlugin>()
-
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
         private set
@@ -85,14 +82,6 @@ class MediaSliderController(
 
     fun initialize(config: MediaSliderConfiguration) {
         this.config = config
-        controllerPlugins.clear()
-        // any default plugins that should always be present can be added here, before the user-supplied plugins
-        controllerPlugins.add(ExternalPlayerButtonControllerPlugin())
-        controllerPlugins.add(MetadataViewPlugin())
-        controllerPlugins.addAll(config.controllerPlugins)
-
-        keyEventPlugins.clear()
-        keyEventPlugins.addAll(config.keyEventPlugins)
     }
 
     fun setCurrentPlayer(player: ExoPlayer?) {
@@ -143,14 +132,14 @@ class MediaSliderController(
             if (itemType == SliderItemType.IMAGE) {
                 startTimerNextAsset()
             }
-            controllerPlugins.forEach {
+            config.controllerPlugins.forEach {
                 it.onSlideshowStarted(itemType, this, config, context, mainHandler)
             }
             setKeepScreenOnFlags()
         } else {
             clearKeepScreenOnFlags()
             mainHandler.removeCallbacks(goToNextAssetRunnable)
-            controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
+            config.controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
         }
         if (showPlayIndicator) {
             showTemporaryPlayIndicator()
@@ -161,7 +150,7 @@ class MediaSliderController(
         mainHandler.removeCallbacks(goToNextAssetRunnable)
         val intervalMs = (config.interval * 1000).toLong()
         mainHandler.postDelayed(goToNextAssetRunnable, intervalMs)
-        controllerPlugins.forEach {
+        config.controllerPlugins.forEach {
             it.onAssetTimerStarted(intervalMs, this, config, context, mainHandler)
         }
     }
@@ -169,7 +158,7 @@ class MediaSliderController(
     /** Cancels any pending auto-advance timer without starting a new one. */
     fun cancelNextAssetTimer() {
         mainHandler.removeCallbacks(goToNextAssetRunnable)
-        controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
+        config.controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
     }
 
     /** Cancels any pending auto-advance and immediately moves to the next asset. */
@@ -226,7 +215,7 @@ class MediaSliderController(
         }
         controller.visibility = View.VISIBLE
         _isControllerVisible = true
-        controllerPlugins.forEach { it.onControllerVisibilityChanged(true, controllerRootView, this, config) }
+        config.controllerPlugins.forEach { it.onControllerVisibilityChanged(true, controllerRootView, this, config) }
 
         requestInitialControllerFocus()
 
@@ -239,7 +228,7 @@ class MediaSliderController(
     fun hideOverlayControls() {
         controllerRootView.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
         _isControllerVisible = false
-        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this, config) }
+        config.controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this, config) }
         stopProgressUpdates()
         restorePagerFocus()
     }
@@ -257,7 +246,7 @@ class MediaSliderController(
 
         controller.visibility = View.GONE
         _isControllerVisible = false
-        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this,config) }
+        config.controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this,config) }
         stopProgressUpdates()
 
         val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
@@ -334,7 +323,7 @@ class MediaSliderController(
         )
 
         // Let plugins add/remove optional controls for this page before configuring behavior.
-        controllerPlugins.forEach { plugin ->
+        config.controllerPlugins.forEach { plugin ->
             val buttonSpec = plugin.provideControllerButton(pluginContext) ?: return@forEach
             placeMediaControllerButton(
                 buttonSpec.button,
@@ -342,7 +331,7 @@ class MediaSliderController(
                 buttonSpec.anchorViewId
             )
         }
-        controllerPlugins.forEach { it.onConfigureController(pluginContext) }
+        config.controllerPlugins.forEach { it.onConfigureController(pluginContext) }
 
         setupFocusNavigation(buttonRow, seekBar, isVideo, playPauseButton, previousButton)
     }
@@ -365,7 +354,7 @@ class MediaSliderController(
                 controller = this
             )
             var pluginHandled = false
-            keyEventPlugins.forEach { plugin ->
+            config.keyEventPlugins.forEach { plugin ->
                 when (plugin.onKeyDown(event, pluginState)) {
                     SliderKeyEventResult.UNHANDLED -> Unit
                     SliderKeyEventResult.HANDLED_CONTINUE -> pluginHandled = true
@@ -437,7 +426,7 @@ class MediaSliderController(
     }
 
     fun onDestroy() {
-        controllerPlugins.forEach { it.onDestroy(this) }
+        config.controllerPlugins.forEach { it.onDestroy(this) }
         currentPlayer?.release()
         currentPlayer = null
         clearKeepScreenOnFlags()

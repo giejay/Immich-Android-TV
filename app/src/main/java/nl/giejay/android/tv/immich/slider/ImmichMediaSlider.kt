@@ -55,7 +55,9 @@ class ImmichMediaSlider : MediaSliderFragment() {
             config.keyEventPlugins += timelinePlugin
         }
 
-        config.controllerPlugins += FavoriteButtonControllerPlugin(favoriteService, lifecycleScope)
+        config.controllerPlugins += PreferenceManager.getEnabledSliderControllerPlugins(lifecycleScope, favoriteService)
+        config.keyEventPlugins += PreferenceManager.getEnabledSliderKeyEventPlugins()
+        config.viewPlugins += PreferenceManager.getEnabledSliderViewPlugins()
 
         loadMediaSliderView(config)
 
