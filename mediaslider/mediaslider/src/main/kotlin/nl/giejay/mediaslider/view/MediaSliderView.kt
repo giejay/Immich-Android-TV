@@ -13,7 +13,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.LinearLayout
-import android.widget.ListView
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
@@ -33,15 +32,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import nl.giejay.mediaslider.adapter.AlignOption
-import nl.giejay.mediaslider.adapter.MetaDataAdapter
-import nl.giejay.mediaslider.adapter.MetaDataClock
-import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.adapter.ScreenSlidePagerAdapter
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
-import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
+import nl.giejay.mediaslider.plugin.MetadataViewPlugin
+import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
+import nl.giejay.mediaslider.plugin.SliderKeyEventResult
+import nl.giejay.mediaslider.plugin.SliderKeyEventState
+import nl.giejay.mediaslider.plugin.SliderViewPlugin
+import nl.giejay.mediaslider.plugin.SliderViewPluginContext
 import nl.giejay.mediaslider.util.FixedSpeedScroller
 import nl.giejay.mediaslider.util.MediaSliderListener
 import timber.log.Timber
@@ -49,8 +49,8 @@ import java.lang.reflect.Field
 
 
 /**
- * Pager + metadata shell for the media slider. Timeline/memories chrome subclasses
- * [TimelineSliderView] for the optional story-progress strip.
+ * Pager + metadata shell for the media slider. Timeline/memories chrome is provided
+ * via pluggable view/controller/key plugins.
  */
 open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     // view elements
@@ -75,8 +75,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     protected lateinit var config: MediaSliderConfiguration
         private set
     protected val isConfigReady: Boolean get() = this::config.isInitialized
-    private lateinit var metaDataLeftAdapter: MetaDataAdapter
-    private lateinit var metaDataRightAdapter: MetaDataAdapter
     private var isVolumeReceiverRegistered = false
 
     // internal
@@ -85,8 +83,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private var pagerAdapter: ScreenSlidePagerAdapter? = null
     private var loading = false
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
-    private val transformResults = mutableMapOf<Int, String>()
-    private var currentToast: Toast? = null
+    private data class ViewPluginEntry(val plugin: SliderViewPlugin<Any?>, val state: Any?)
+    private val viewPlugins = mutableListOf<ViewPluginEntry>()
+    private val keyEventPlugins = mutableListOf<SliderKeyEventPlugin>()
+    private val viewPluginContext by lazy { SliderViewPluginContext(context, this, controller, ioScope) { currentItem() } }
 
     init {
         inflate(getContext(), R.layout.slider, this)
@@ -124,6 +124,25 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
         val itemType = currentItemType()
         if (event.action == KeyEvent.ACTION_DOWN) {
+            val pluginState = SliderKeyEventState(
+                isControllerVisible = controller.isControllerVisible,
+                isSlideshowPlaying = controller.slideShowPlaying,
+                currentItemType = itemType,
+                controller = controller
+            )
+            var pluginHandled = false
+            keyEventPlugins.forEach { plugin ->
+                when (plugin.onKeyDown(event, pluginState)) {
+                    SliderKeyEventResult.UNHANDLED -> Unit
+                    SliderKeyEventResult.HANDLED_CONTINUE -> pluginHandled = true
+                    SliderKeyEventResult.HANDLED_CONSUME -> return true
+                    SliderKeyEventResult.DISPATCH_TO_SUPER -> return super.dispatchKeyEvent(event)
+                }
+            }
+            if (pluginHandled) {
+                return true
+            }
+
             if (context is MediaSliderListener && (context as MediaSliderListener).onButtonPressed(event)) {
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER
@@ -147,9 +166,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 if (controller.toggleController()) return true
                 return super.dispatchKeyEvent(event)
             } else if (controller.slideShowPlaying && itemType == SliderItemType.IMAGE) {
-                if (handleSlideshowImageKey(event.keyCode)) {
-                    return true
-                }
                 if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
                     controller.toggleSlideshow(true)
                 } else {
@@ -177,25 +193,18 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     open fun loadMediaSliderView(config: MediaSliderConfiguration) {
         this.config = config
 
-        val listViewRight = findViewById<ListView>(R.id.metadata_view_right)
-        metaDataRightAdapter = MetaDataAdapter(context,
-            config.metaDataConfig.filter { it.align == AlignOption.RIGHT },
-            config.metaDataConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
-            { if (currentItem().hasSecondaryItem()) currentItem().secondaryItem!! else currentItem().mainItem },
-            { currentItem().hasSecondaryItem() })
-        listViewRight.divider = null
-        listViewRight.adapter = metaDataRightAdapter
+        viewPlugins.clear()
+        val allViewPlugins = mutableListOf<SliderViewPlugin<*>>()
+        allViewPlugins.add(MetadataViewPlugin())
+        allViewPlugins.addAll(config.viewPlugins)
+        allViewPlugins.forEach { plugin ->
+            @Suppress("UNCHECKED_CAST")
+            val typedPlugin = plugin as SliderViewPlugin<Any?>
+            viewPlugins.add(ViewPluginEntry(typedPlugin, typedPlugin.createState(viewPluginContext, config)))
+        }
 
-        val listViewLeft = findViewById<ListView>(R.id.metadata_view_left)
-        metaDataLeftAdapter = MetaDataAdapter(context,
-            config.metaDataConfig.filter { it.align == AlignOption.LEFT },
-            // don't show the clock/media count twice in portrait mode and force everything to be left aligned
-            config.metaDataConfig.filterNot { it is MetaDataClock || it is MetaDataMediaCount }
-                .map { it.withAlign(align = AlignOption.LEFT) }.distinct(),
-            { currentItem().mainItem },
-            { currentItem().hasSecondaryItem() })
-        listViewLeft.divider = null
-        listViewLeft.adapter = metaDataLeftAdapter
+        keyEventPlugins.clear()
+        keyEventPlugins.addAll(config.keyEventPlugins)
 
         val listener: ExoPlayerListener = object : ExoPlayerListener {
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -211,6 +220,8 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             }
         }
         controller.initialize(config)
+        viewPlugins.forEach { it.plugin.attachView(this, it.state) }
+        viewPlugins.forEach { it.plugin.onLoadConfig(viewPluginContext, config, it.state) }
         initViewsAndSetAdapter(listener)
     }
 
@@ -234,7 +245,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             config.items,
             config,
             { mPager.currentItem },
-            { result, position -> transformResults[position] = result },
             listener
         )
 
@@ -268,21 +278,16 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 val sliderItem = config.items[sliderItemIndex]
                 val mainItem = sliderItem.mainItem
 
-                updateMetaData(metaDataLeftAdapter, mainItem, sliderItemIndex)
-                updateMetaData(metaDataRightAdapter, if (sliderItem.hasSecondaryItem()) sliderItem.secondaryItem!! else mainItem, sliderItemIndex)
+                viewPlugins.forEach { entry ->
+                    entry.plugin.onPageSettled(viewPluginContext, config, sliderItem, sliderItemIndex, mainHandler, entry.state)
+                }
 
                 config.onAssetSelected(sliderItem)
-                currentToast?.cancel()
-                if (!sliderItem.hasSecondaryItem() && config.debugEnabled && transformResults.contains(sliderItemIndex)) {
-                    currentToast = Toast.makeText(context, transformResults[sliderItemIndex], Toast.LENGTH_LONG)
-                    currentToast!!.show()
-                    transformResults.remove(sliderItemIndex)
-                }
 
                 val statusLayoutLeft = findViewById<LinearLayout>(R.id.meta_data_holder)
                 if (sliderItem.type == SliderItemType.VIDEO) {
                     if (config.isGradiantOverlayVisible) {
-                        statusLayoutLeft.background = null
+                        statusLayoutLeft?.background = null
                     }
                     val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
                     if (!viewTag.isReady()) {
@@ -301,14 +306,11 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     }
                     player.playWhenReady = true
                     controller.configureController(sliderItem, sliderItemIndex)
-                    if (controller.slideShowPlaying) {
-                        onVideoPageBoundWhileSlideshow()
-                    }
                 } else {
                     controller.setCurrentPlayer(null)
                     controller.configureController(sliderItem, sliderItemIndex)
                     if (config.isGradiantOverlayVisible) {
-                        statusLayoutLeft.setBackgroundResource(R.drawable.gradient_overlay)
+                        statusLayoutLeft?.setBackgroundResource(R.drawable.gradient_overlay)
                     }
                     if (controller.slideShowPlaying) {
                         controller.startTimerNextAsset()
@@ -321,28 +323,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                         }
                     }
                 }
-                onPageSettled(sliderItemIndex)
-            }
-
-            private fun updateMetaData(adapter: MetaDataAdapter, sliderItem: SliderItem, sliderItemIndex: Int) {
-                ioScope.launch {
-                    adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
-                        if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
-                            // already have state for this item, no need to fetch again
-                            return@forEachIndexed
-                        }
-                        val value = item.getValue(context, sliderItem, sliderItemIndex, config.items.size)
-                        adapter.updateState(sliderItem.id, metaDataIndex, value ?: "")
-                    }
-                    withContext(Dispatchers.Main) {
-                        adapter.notifyDataSetChanged()
-                    }
-                }
             }
 
             override fun onPageSelected(i: Int) {
-                metaDataRightAdapter.notifyDataSetChanged()
-                metaDataLeftAdapter.notifyDataSetChanged()
+                viewPlugins.forEach { it.plugin.onPageSelected(viewPluginContext, i, it.state) }
                 if (!controller.isControllerVisible) {
                     controller.restorePagerFocus()
                 }
@@ -354,6 +338,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     fun onDestroy() {
         ioScope.cancel()
+        viewPlugins.forEach { it.plugin.onDestroy(viewPluginContext, it.state) }
         controller.onDestroy()
     }
 
@@ -385,7 +370,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
     }
 
-    private fun currentItem(): SliderItemViewHolder = config.items[mPager.currentItem]
+    protected fun currentItem(): SliderItemViewHolder = config.items[mPager.currentItem]
     protected fun currentItemType(): SliderItemType = currentItem().type
 
     fun isControllerVisible(): Boolean = controller.isControllerVisible
@@ -393,14 +378,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     /** Delegates to [MediaSliderController.toggleSlideshow]. Part of the public API for external callers. */
     open fun toggleSlideshow(showPlayIndicator: Boolean) = controller.toggleSlideshow(showPlayIndicator)
 
-    /** Hook for [TimelineSliderView]: Left/Right during image autoplay without pausing. */
-    protected open fun handleSlideshowImageKey(keyCode: Int): Boolean = false
-
-    /** Hook after a page's media/controllers are bound. */
-    protected open fun onPageSettled(index: Int) {}
-
-    /** Hook when a video page is ready while slideshow is already running. */
-    protected open fun onVideoPageBoundWhileSlideshow() {}
 
     companion object {
         @SuppressLint("UnsafeOptInUsageError")

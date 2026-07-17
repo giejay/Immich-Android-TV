@@ -14,9 +14,9 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.plugin.TimelineStoryProgressPlugin
 import nl.giejay.mediaslider.view.MediaSliderFragment
 import nl.giejay.mediaslider.view.MediaSliderView
-import nl.giejay.mediaslider.view.TimelineSliderView
 import timber.log.Timber
 
 class ImmichMediaSlider : MediaSliderFragment() {
@@ -27,12 +27,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val args = ImmichMediaSliderArgs.fromBundle(requireArguments())
-        return if (args.timelineView) {
-            TimelineSliderView(requireContext())
-        } else {
-            MediaSliderView(requireContext())
-        }
+        return MediaSliderView(requireContext())
     }
 
     @SuppressLint("UnsafeOptInUsageError")
@@ -60,10 +55,17 @@ class ImmichMediaSlider : MediaSliderFragment() {
             }
         }
 
+        if (bundle.timelineView) {
+            val timelinePlugin = TimelineStoryProgressPlugin()
+            MediaSliderConfiguration.viewPlugins = bundle.config.viewPlugins + timelinePlugin
+            MediaSliderConfiguration.controllerPlugins = bundle.config.controllerPlugins + timelinePlugin
+            MediaSliderConfiguration.keyEventPlugins = bundle.config.keyEventPlugins + timelinePlugin
+        }
+
         loadMediaSliderView(bundle.config)
 
         if (bundle.timelineView) {
-            // Memories: TimelineSliderView already enables story progress; start autoplay.
+            // Memories: timeline plugin mounts story progress; start autoplay.
             (view as MediaSliderView).toggleSlideshow(false)
         }
     }

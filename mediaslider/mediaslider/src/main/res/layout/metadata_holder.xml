@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/meta_data_holder"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:elevation="10dp"
+    android:gravity="bottom|left"
+    android:paddingBottom="30dp">
+
+    <ListView
+        android:id="@+id/metadata_view_left"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1" />
+
+    <ListView
+        android:id="@+id/metadata_view_right"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1" />
+
+</LinearLayout>
+

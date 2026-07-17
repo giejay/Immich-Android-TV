@@ -4,10 +4,12 @@ import android.os.Parcel
 import android.os.Parcelable
 import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.model.SliderItemViewHolder
+import nl.giejay.mediaslider.plugin.SliderControllerPlugin
+import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
+import nl.giejay.mediaslider.plugin.SliderViewPlugin
 import nl.giejay.mediaslider.transformations.GlideTransformations
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MetaDataConverter
-
 
 class MediaSliderConfiguration : Parcelable {
     val startPosition: Int
@@ -45,7 +47,10 @@ class MediaSliderConfiguration : Parcelable {
                 zoomAndScrollPanorama: Boolean,
                 zoomEffectPercent: Int,
                 panEffectPercent: Int,
-                useLargeVideoBuffer: Boolean = false) {
+                useLargeVideoBuffer: Boolean = false,
+                controllerPlugins: List<SliderControllerPlugin> = emptyList(),
+                viewPlugins: List<SliderViewPlugin<*>> = emptyList(),
+                keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()) {
         this.startPosition = startPosition
         this.interval = interval
         this.isOnlyUseThumbnails = onlyUseThumbnails
@@ -65,6 +70,9 @@ class MediaSliderConfiguration : Parcelable {
         this.zoomEffectPercent = zoomEffectPercent
         this.panEffectPercent = panEffectPercent
         this.useLargeVideoBuffer = useLargeVideoBuffer
+        Companion.controllerPlugins = controllerPlugins
+        Companion.viewPlugins = viewPlugins
+        Companion.keyEventPlugins = keyEventPlugins
     }
 
     private constructor(`in`: Parcel) {
@@ -101,6 +109,15 @@ class MediaSliderConfiguration : Parcelable {
     val onAssetSelected: (SliderItemViewHolder) -> Unit
         get() = Companion.onAssetSelected
 
+    val controllerPlugins: List<SliderControllerPlugin>
+        get() = Companion.controllerPlugins
+
+    val viewPlugins: List<SliderViewPlugin<*>>
+        get() = Companion.viewPlugins
+
+    val keyEventPlugins: List<SliderKeyEventPlugin>
+        get() = Companion.keyEventPlugins
+
     override fun describeContents(): Int {
         return 0
     }
@@ -130,6 +147,9 @@ class MediaSliderConfiguration : Parcelable {
         var loadMore: LoadMore? = null
         var onAssetSelected: (SliderItemViewHolder) -> Unit = { _ -> }
         var onFavoriteToggle: (String, Boolean) -> Unit = { _, _ -> }
+        var controllerPlugins: List<SliderControllerPlugin> = emptyList()
+        var viewPlugins: List<SliderViewPlugin<*>> = emptyList()
+        var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()
 
         @JvmField
         val CREATOR: Parcelable.Creator<MediaSliderConfiguration> =

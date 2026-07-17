@@ -1,18 +1,15 @@
 package nl.giejay.mediaslider.view
 
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Handler
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
-import android.widget.Toast
+import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -20,9 +17,16 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.plugin.ControllerButtonHost
+import nl.giejay.mediaslider.plugin.ControllerButtonPlacement
+import nl.giejay.mediaslider.plugin.ControllerPluginContext
+import nl.giejay.mediaslider.plugin.ExternalPlayerButtonControllerPlugin
+import nl.giejay.mediaslider.plugin.FavoriteButtonControllerPlugin
+import nl.giejay.mediaslider.plugin.SliderControllerPlugin
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import timber.log.Timber
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
@@ -50,16 +54,33 @@ class MediaSliderController(
     private var _isControllerVisible = false
     val isControllerVisible: Boolean get() = _isControllerVisible
 
-    var onControllerVisibilityChanged: ((Boolean) -> Unit)? = null
-
-    /** Fired when the image slideshow timer is armed (interval in milliseconds). */
-    var onAssetTimerStarted: ((intervalMs: Long) -> Unit)? = null
-
-    /** Fired when the slideshow timer is cancelled or slideshow is paused. */
-    var onSlideshowTimerCancelled: (() -> Unit)? = null
-
-    /** Fired when slideshow starts (or continues) on a video page. */
-    var onVideoSlideshowStarted: (() -> Unit)? = null
+    private val controllerPlugins = mutableListOf<SliderControllerPlugin>()
+    private val controllerButtonHost = object : ControllerButtonHost {
+        override fun placeButton(button: ImageButton, placement: ControllerButtonPlacement, anchorViewId: Int?) {
+            val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row) ?: return
+            if (button.parent !== row) {
+                (button.parent as? LinearLayout)?.removeView(button)
+                row.addView(button)
+            }
+            val currentIndex = row.indexOfChild(button)
+            if (currentIndex >= 0) {
+                row.removeViewAt(currentIndex)
+            }
+            val targetIndex = when (placement) {
+                ControllerButtonPlacement.START -> 0
+                ControllerButtonPlacement.END -> row.childCount
+                ControllerButtonPlacement.LEFT_OF -> {
+                    val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
+                    if (anchorIndex >= 0) anchorIndex else row.childCount
+                }
+                ControllerButtonPlacement.RIGHT_OF -> {
+                    val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
+                    if (anchorIndex >= 0) (anchorIndex + 1).coerceAtMost(row.childCount) else row.childCount
+                }
+            }
+            row.addView(button, targetIndex)
+        }
+    }
 
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
@@ -85,6 +106,10 @@ class MediaSliderController(
 
     fun initialize(config: MediaSliderConfiguration) {
         this.config = config
+        controllerPlugins.clear()
+        controllerPlugins.add(FavoriteButtonControllerPlugin())
+        controllerPlugins.add(ExternalPlayerButtonControllerPlugin())
+        controllerPlugins.addAll(config.controllerPlugins)
     }
 
     fun setCurrentPlayer(player: ExoPlayer?) {
@@ -130,17 +155,19 @@ class MediaSliderController(
 
     fun toggleSlideshow(showPlayIndicator: Boolean) {
         slideShowPlaying = !slideShowPlaying
+        val itemType = currentItemTypeOrNull()
         if (slideShowPlaying) {
-            if (currentItemTypeOrNull() == SliderItemType.IMAGE) {
+            if (itemType == SliderItemType.IMAGE) {
                 startTimerNextAsset()
-            } else if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
-                onVideoSlideshowStarted?.invoke()
+            }
+            controllerPlugins.forEach {
+                it.onSlideshowStarted(itemType, this, config, context, mainHandler)
             }
             setKeepScreenOnFlags()
         } else {
             clearKeepScreenOnFlags()
             mainHandler.removeCallbacks(goToNextAssetRunnable)
-            onSlideshowTimerCancelled?.invoke()
+            controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
         }
         if (showPlayIndicator) {
             showTemporaryPlayIndicator()
@@ -151,13 +178,15 @@ class MediaSliderController(
         mainHandler.removeCallbacks(goToNextAssetRunnable)
         val intervalMs = (config.interval * 1000).toLong()
         mainHandler.postDelayed(goToNextAssetRunnable, intervalMs)
-        onAssetTimerStarted?.invoke(intervalMs)
+        controllerPlugins.forEach {
+            it.onAssetTimerStarted(intervalMs, this, config, context, mainHandler)
+        }
     }
 
     /** Cancels any pending auto-advance timer without starting a new one. */
     fun cancelNextAssetTimer() {
         mainHandler.removeCallbacks(goToNextAssetRunnable)
-        onSlideshowTimerCancelled?.invoke()
+        controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
     }
 
     /** Cancels any pending auto-advance and immediately moves to the next asset. */
@@ -214,16 +243,9 @@ class MediaSliderController(
         }
         controller.visibility = View.VISIBLE
         _isControllerVisible = true
-        onControllerVisibilityChanged?.invoke(true)
+        controllerPlugins.forEach { it.onControllerVisibilityChanged(true, this) }
 
-        // Initial focus
-        if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
-            controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)?.requestFocus()
-        } else {
-            val focusId = if (currentItemOrNull()?.hasSecondaryItem() == true)
-                R.id.image_slideshow else R.id.image_favorite
-            controllerRootView.findViewById<ImageButton>(focusId)?.requestFocus()
-        }
+        requestInitialControllerFocus()
 
         if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
             startProgressUpdates()
@@ -234,7 +256,7 @@ class MediaSliderController(
     fun hideController() {
         controllerRootView.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
         _isControllerVisible = false
-        onControllerVisibilityChanged?.invoke(false)
+        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, this) }
         stopProgressUpdates()
         restorePagerFocus()
     }
@@ -252,109 +274,94 @@ class MediaSliderController(
 
         controller.visibility = View.GONE
         _isControllerVisible = false
-        onControllerVisibilityChanged?.invoke(false)
+        controllerPlugins.forEach { it.onControllerVisibilityChanged(false, this) }
         stopProgressUpdates()
 
         val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
-        val favoriteButton = controllerRootView.findViewById<ImageButton>(R.id.image_favorite) ?: return
         val slideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow) ?: return
         val nextButton = controllerRootView.findViewById<ImageButton>(R.id.image_next) ?: return
-        val externalPlayerButton = controllerRootView.findViewById<ImageButton>(R.id.media_open_external)
         val muteButton = controllerRootView.findViewById<ImageButton>(R.id.media_mute)
         val playPauseButton = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
         val progressLayout = controllerRootView.findViewById<View>(R.id.media_progress_layout)
         val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
+        val buttonRow = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row)
+
+        // clear any existing plugin buttons from the previous page before adding new ones for this page
+        buttonRow.children.filter { it.tag == "controller_plugin_button" }.forEach { buttonRow.removeView(it) }
 
         val isVideo = sliderItem.type == SliderItemType.VIDEO
-        val canOpenExternally = isVideo && !sliderItem.url.isNullOrBlank()
         val hasSecondaryItem = sliderItem.hasSecondaryItem()
 
-        // Show / hide video-specific widgets
-        muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
-        playPauseButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
-        externalPlayerButton?.visibility = if (canOpenExternally) View.VISIBLE else View.GONE
-        progressLayout?.visibility = if (isVideo) View.VISIBLE else View.GONE
-
-        // Favorite is hidden for double-image items; shown for all single items (incl. video)
-        favoriteButton.visibility = if (hasSecondaryItem) View.GONE else View.VISIBLE
-
-        // Common navigation listeners
-        previousButton.setOnClickListener { goToNextAsset() } // previousButton.setOnClickListener { goToPreviousAsset() }
+        previousButton.setOnClickListener { goToPreviousAsset() }
         slideshowButton.setOnClickListener { toggleSlideshow(true) }
         nextButton.setOnClickListener { goToNextAsset() }
 
-        // Actually previousButton should go to previous asset
-        previousButton.setOnClickListener { goToPreviousAsset() }
+        muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        playPauseButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        progressLayout?.visibility = if (isVideo) View.VISIBLE else View.GONE
 
-        // Favorite
-        updateFavoriteIcon(favoriteButton, sliderItem.mainItem.isFavorite)
-        favoriteButton.setOnClickListener {
-            val newValue = !sliderItem.mainItem.isFavorite
-            sliderItem.mainItem.isFavorite = newValue
-            updateFavoriteIcon(favoriteButton, newValue)
-            MediaSliderConfiguration.onFavoriteToggle(sliderItem.mainItem.id, newValue)
-        }
-
-        // Video-only controls
-        if (isVideo && muteButton != null && playPauseButton != null) {
+        if (isVideo) {
             val soundEnabled = (currentPlayer?.volume ?: 0f) > 0f
-            updateMuteIcon(muteButton, soundEnabled)
-            muteButton.setOnClickListener {
-                currentPlayer?.let { player ->
-                    if (player.volume == 0f) {
-                        player.volume = 1f
-                        config.isVideoSoundEnable = true
-                        updateMuteIcon(muteButton, true)
-                    } else {
-                        player.volume = 0f
-                        config.isVideoSoundEnable = false
-                        updateMuteIcon(muteButton, false)
-                    }
-                }
-            }
-
-            updatePlayPauseIcon(playPauseButton, currentPlayer?.isPlaying == true)
-            playPauseButton.setOnClickListener {
-                currentPlayer?.let { player ->
-                    if (player.isPlaying) {
-                        player.pause()
-                    } else {
-                        if (player.currentPosition >= player.contentDuration) {
-                            player.seekToDefaultPosition()
+            muteButton?.let { button ->
+                updateMuteIcon(button, soundEnabled)
+                button.setOnClickListener {
+                    currentPlayer?.let { player ->
+                        if (player.volume == 0f) {
+                            player.volume = 1f
+                            config.isVideoSoundEnable = true
+                            updateMuteIcon(button, true)
+                        } else {
+                            player.volume = 0f
+                            config.isVideoSoundEnable = false
+                            updateMuteIcon(button, false)
                         }
-                        player.play()
                     }
                 }
             }
 
-            externalPlayerButton?.setOnClickListener {
-                openInExternalPlayer(sliderItem.url)
-            }
-
-            // SeekBar: allow the user to seek
-            seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onStartTrackingTouch(seekBar: SeekBar) {
-                    isSeeking = true
-                }
-
-                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                    if (fromUser) {
-                        currentPlayer?.seekTo(progress.toLong() * 1000)
+            playPauseButton?.let { button ->
+                updatePlayPauseIcon(button, currentPlayer?.isPlaying == true)
+                button.setOnClickListener {
+                    currentPlayer?.let { player ->
+                        if (player.isPlaying) {
+                            player.pause()
+                        } else {
+                            if (player.currentPosition >= player.contentDuration) {
+                                player.seekToDefaultPosition()
+                            }
+                            player.play()
+                        }
                     }
                 }
-
-                override fun onStopTrackingTouch(seekBar: SeekBar) {
-                    isSeeking = false
-                }
-            })
+            }
+            seekBar?.setOnSeekBarChangeListener(defaultSeekBarChangeListener())
+        } else {
+            seekBar?.setOnSeekBarChangeListener(null)
         }
 
-        setupFocusNavigation(
-            previousButton, muteButton, playPauseButton,
-            favoriteButton, slideshowButton, externalPlayerButton, nextButton,
-            isVideo, canOpenExternally, hasSecondaryItem,
-            seekBar
+        val pluginContext = ControllerPluginContext(
+            context = context,
+            rootView = controllerRootView,
+            config = config,
+            sliderItem = sliderItem,
+            sliderItemIndex = sliderItemIndex,
+            isVideo = isVideo,
+            hasSecondaryItem = hasSecondaryItem,
+            controller = this
         )
+
+        // Let plugins add/remove optional controls for this page before configuring behavior.
+        controllerPlugins.forEach { plugin ->
+            val buttonSpec = plugin.provideControllerButton(pluginContext) ?: return@forEach
+            controllerButtonHost.placeButton(
+                buttonSpec.button,
+                buttonSpec.placement,
+                buttonSpec.anchorViewId
+            )
+        }
+        controllerPlugins.forEach { it.onConfigureController(pluginContext) }
+
+        setupFocusNavigation(buttonRow, seekBar, isVideo, playPauseButton, previousButton)
     }
 
     // -------------------------------------------------------------------------
@@ -378,6 +385,7 @@ class MediaSliderController(
     }
 
     fun onDestroy() {
+        controllerPlugins.forEach { it.onDestroy(this) }
         currentPlayer?.release()
         currentPlayer = null
         clearKeepScreenOnFlags()
@@ -390,26 +398,20 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     private fun setupFocusNavigation(
-        previousButton: ImageButton,
-        muteButton: ImageButton?,
-        playPauseButton: ImageButton?,
-        favoriteButton: ImageButton,
-        slideshowButton: ImageButton,
-        externalPlayerButton: ImageButton?,
-        nextButton: ImageButton,
+        buttonRow: LinearLayout?,
+        seekBar: SeekBar?,
         isVideo: Boolean,
-        canOpenExternally: Boolean,
-        hasSecondaryItem: Boolean,
-        seekBar: SeekBar? = null
+        playPauseButton: ImageButton?,
+        fallbackUpButton: ImageButton
     ) {
+        val row = buttonRow ?: return
         val chain = mutableListOf<ImageButton>()
-        if (isVideo) muteButton?.let { chain.add(it) }
-        chain.add(previousButton)
-        if (isVideo) playPauseButton?.let { chain.add(it) }
-        if (!hasSecondaryItem) chain.add(favoriteButton)
-        chain.add(slideshowButton)
-        if (canOpenExternally) externalPlayerButton?.let { chain.add(it) }
-        chain.add(nextButton)
+        for (i in 0 until row.childCount) {
+            val view = row.getChildAt(i)
+            if (view is ImageButton && view.isVisible) {
+                chain.add(view)
+            }
+        }
 
         for (i in chain.indices) {
             if (i > 0) chain[i].nextFocusLeftId = chain[i - 1].id
@@ -417,45 +419,69 @@ class MediaSliderController(
         }
 
         // Wire up/down navigation between the buttons row and the seekbar
-        if (isVideo && seekBar != null) {
+        if (isVideo && seekBar != null && chain.isNotEmpty()) {
             chain.forEach { button -> button.nextFocusDownId = R.id.media_seek_bar }
-            seekBar.nextFocusUpId = (playPauseButton ?: previousButton).id
+            seekBar.nextFocusUpId = (playPauseButton ?: fallbackUpButton).id
         }
     }
 
-    private fun updateFavoriteIcon(button: ImageButton, isFavorite: Boolean) {
-        button.setImageResource(if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
+    private fun findChildIndexById(row: LinearLayout, viewId: Int): Int {
+        for (i in 0 until row.childCount) {
+            if (row.getChildAt(i).id == viewId) return i
+        }
+        return -1
     }
 
-    private fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {
+    private fun requestInitialControllerFocus() {
+        val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row) ?: return
+        val isVideo = currentItemTypeOrNull() == SliderItemType.VIDEO
+        if (isVideo) {
+            val playPause = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
+            if (playPause?.visibility == View.VISIBLE) {
+                playPause.requestFocus()
+                return
+            }
+        }
+        val slideshow = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow)
+        if (!isVideo && slideshow?.visibility == View.VISIBLE) {
+            slideshow.requestFocus()
+            return
+        }
+        for (i in 0 until row.childCount) {
+            val child = row.getChildAt(i)
+            if (child is ImageButton && child.isVisible) {
+                child.requestFocus()
+                return
+            }
+        }
+    }
+
+    fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {
         button.setImageResource(if (soundEnabled) R.drawable.unmute_icon else R.drawable.mute_icon)
     }
 
-    private fun updatePlayPauseIcon(button: ImageButton, isPlaying: Boolean) {
+    fun updatePlayPauseIcon(button: ImageButton, isPlaying: Boolean) {
         button.setImageResource(
             if (isPlaying) android.R.drawable.ic_media_pause
             else android.R.drawable.ic_media_play
         )
     }
 
-    private fun openInExternalPlayer(videoUrl: String?) {
-        if (videoUrl.isNullOrBlank()) return
+    fun defaultSeekBarChangeListener(): SeekBar.OnSeekBarChangeListener {
+        return object : SeekBar.OnSeekBarChangeListener {
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                isSeeking = true
+            }
 
-        val viewIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(Uri.parse(videoUrl), "video/*")
-        }
-        val chooserIntent = Intent.createChooser(
-            viewIntent,
-            context.getString(R.string.open_in_external_player)
-        )
-        if (context !is Activity) {
-            chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    currentPlayer?.seekTo(progress.toLong() * 1000)
+                }
+            }
 
-        try {
-            context.startActivity(chooserIntent)
-        } catch (_: ActivityNotFoundException) {
-            Toast.makeText(context, R.string.no_external_player_found, Toast.LENGTH_SHORT).show()
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                isSeeking = false
+            }
         }
     }
 
@@ -505,14 +531,14 @@ class MediaSliderController(
         val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(ms)
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
-        return String.format("%d:%02d", minutes, seconds)
+        return String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
     }
 
     fun setKeepScreenOnFlags() {
         if (context is Activity) {
             val window = context.window
             window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            Log.d(TAG, "set FLAG_KEEP_SCREEN_ON")
+            Timber.d("set FLAG_KEEP_SCREEN_ON")
         }
     }
 
@@ -520,7 +546,7 @@ class MediaSliderController(
         if (context is Activity) {
             val window = context.window
             window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            Log.d(TAG, "clear FLAG_KEEP_SCREEN_ON")
+            Timber.d("clear FLAG_KEEP_SCREEN_ON")
         }
     }
 
@@ -538,14 +564,7 @@ class MediaSliderController(
         return if (idx < config.items.size) config.items[idx].type else null
     }
 
-    private fun currentItemOrNull(): SliderItemViewHolder? {
-        if (!::config.isInitialized || config.items.isEmpty()) return null
-        val idx = pager.currentItem
-        return if (idx < config.items.size) config.items[idx] else null
-    }
-
     private companion object {
         const val PROGRESS_UPDATE_INTERVAL_MS = 500L
-        const val TAG = "MediaSliderController"
     }
 }

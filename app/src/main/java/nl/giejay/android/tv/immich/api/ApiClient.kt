@@ -187,16 +187,7 @@ class ApiClient(private val config: ApiClientConfig) {
         } else {
             search(searchRequest).map { it.assets.items }
         }
-        return assetsResult.map { it.filter(excludeByTag()) }.map {
-            val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
-            if (excludedAlbums.isNotEmpty()) {
-                val excludedAssets =
-                    listAssetsFromAlbum(excludedAlbums.toList(), pageCount = pageCount).getOrElse { emptyList() }.map { it.id }.toSet()
-                it.filterNot { asset -> excludedAssets.contains(asset.id) }
-            } else {
-                it
-            }
-        }
+        return assetsResult
     }
 
     private fun excludeByTag() = { asset: Asset ->
@@ -262,6 +253,18 @@ class ApiClient(private val config: ApiClientConfig) {
             .map { it.toTimelineAssets() }
 
     /** "On this day" style memories for the current moment (server filters by day-of-year). */
-    suspend fun getMemories(): Either<String, List<Memory>> =
-        executeAPICall(200) { service.getMemories(LocalDate.now().toString()) }
+    suspend fun getMemories(): Either<String, List<Memory>> {
+        val date = LocalDate.now().toString()
+        return executeAPICall(200) { service.getMemories(date) }.fold(
+            { error ->
+                if (error.contains("(400)")) {
+                    val isoDate = OffsetDateTime.now().format(dateTimeFormatter)
+                    executeAPICall(200) { service.getMemories(isoDate) }
+                } else {
+                    Either.Left(error)
+                }
+            },
+            { Either.Right(it) }
+        )
+    }
 }
