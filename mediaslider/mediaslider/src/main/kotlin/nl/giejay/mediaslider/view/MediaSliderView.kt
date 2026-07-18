@@ -128,11 +128,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     open fun loadMediaSliderView(config: MediaSliderConfiguration) {
         this.config = config
 
-        viewPlugins.clear()
-        val allViewPlugins = mutableListOf<SliderViewPlugin<*>>()
-        allViewPlugins.add(MetadataViewPlugin())
-        allViewPlugins.addAll(config.viewPlugins)
-        allViewPlugins.forEach { plugin ->
+        config.viewPlugins.forEach { plugin ->
             @Suppress("UNCHECKED_CAST")
             val typedPlugin = plugin as SliderViewPlugin<Any?>
             viewPlugins.add(ViewPluginEntry(typedPlugin, typedPlugin.createState(viewPluginContext, config)))

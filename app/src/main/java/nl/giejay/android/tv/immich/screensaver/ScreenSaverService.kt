@@ -228,7 +228,9 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
                     useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
-                    controllerPlugins = listOf(FavoriteButtonControllerPlugin(favoriteService, ioScope))
+                    controllerPlugins = PreferenceManager.getEnabledSliderControllerPlugins(ioScope, favoriteService),
+                    viewPlugins = PreferenceManager.getEnabledSliderViewPlugins(),
+                    keyEventPlugins = PreferenceManager.getEnabledSliderKeyEventPlugins()
                 )
             )
             mediaSliderView?.toggleSlideshow(false)
