@@ -11,6 +11,7 @@
     android:paddingBottom="4dp">
 
     <LinearLayout
+        android:id="@+id/media_controller_button_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -39,23 +40,11 @@
             android:visibility="gone" />
 
         <ImageButton
-            android:id="@+id/image_favorite"
-            style="@style/TVMediaButton"
-            android:contentDescription="@string/favorite"
-            android:src="@drawable/ic_favorite_border" />
-
-        <ImageButton
             android:id="@+id/image_slideshow"
             style="@style/TVMediaButton"
             android:contentDescription="@string/slideshow"
             android:src="@drawable/slideshow" />
 
-        <ImageButton
-            android:id="@+id/media_open_external"
-            style="@style/TVMediaButton"
-            android:contentDescription="@string/open_in_external_player"
-            android:src="@drawable/ic_open_external"
-            android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/image_next"

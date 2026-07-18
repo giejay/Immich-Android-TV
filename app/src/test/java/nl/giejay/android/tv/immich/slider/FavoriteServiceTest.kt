@@ -1,12 +1,19 @@
 package nl.giejay.android.tv.immich.slider
 
 import arrow.core.Either
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.coroutines.CoroutinesTestRule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FavoriteServiceTest {
+
+    @get:Rule
+    val coroutinesRule = CoroutinesTestRule()
 
     @Test
     fun `toggleFavorite success logs info and shows added toast when favorite is enabled`() = runBlocking {

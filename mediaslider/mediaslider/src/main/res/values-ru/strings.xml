@@ -8,6 +8,7 @@
     <string name="media_pause">Пауза</string>
     <string name="open_in_external_player">Открыть во внешнем плеере</string>
     <string name="no_external_player_found">Внешний плеер не найден</string>
+    <string name="story_progress_count">%1$d/%2$d</string>
     <string name="slideshow">Слайд-шоу</string>
     <string name="image_controller_previous">Предыдущий</string>
     <string name="image_controller_next">Следующий</string>

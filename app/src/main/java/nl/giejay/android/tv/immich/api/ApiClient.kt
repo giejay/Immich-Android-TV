@@ -186,16 +186,7 @@ class ApiClient(private val config: ApiClientConfig) {
         } else {
             search(searchRequest).map { it.assets.items }
         }
-        return assetsResult.map { it.filter(excludeByTag()) }.map {
-            val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
-            if (excludedAlbums.isNotEmpty()) {
-                val excludedAssets =
-                    listAssetsFromAlbum(excludedAlbums.toList(), pageCount = pageCount).getOrElse { emptyList() }.map { it.id }.toSet()
-                it.filterNot { asset -> excludedAssets.contains(asset.id) }
-            } else {
-                it
-            }
-        }
+        return assetsResult
     }
 
     private fun excludeByTag() = { asset: Asset ->

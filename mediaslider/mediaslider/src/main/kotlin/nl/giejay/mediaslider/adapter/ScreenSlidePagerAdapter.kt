@@ -29,9 +29,7 @@ class ScreenSlidePagerAdapter(private val context: Context,
                               private var items: List<SliderItemViewHolder>,
                               private val config: MediaSliderConfiguration,
                               private val currentIndex: () -> Int,
-                              private val transformResult: (String, Int) -> Unit,
-                              private val exoPlayerListener: ExoPlayerListener,
-                              private val restorePagerIndex: ((Int) -> Unit)? = null) : PagerAdapter() {
+                              private val exoPlayerListener: ExoPlayerListener) : PagerAdapter() {
     private var imageView: TouchImageView? = null
     private val progressBars: MutableMap<Int, ProgressBar> = HashMap()
     private val failedPositions = mutableSetOf<String>()
@@ -39,12 +37,6 @@ class ScreenSlidePagerAdapter(private val context: Context,
     fun setItems(items: List<SliderItemViewHolder>) {
         this.items = items
         notifyDataSetChanged()
-    }
-
-    private fun notifyDataSetChangedPreservingIndex() {
-        val index = currentIndex()
-        notifyDataSetChanged()
-        restorePagerIndex?.invoke(index)
     }
 
     fun hideProgressBar(position: Int) {
@@ -90,8 +82,8 @@ class ScreenSlidePagerAdapter(private val context: Context,
                     Timber.w("MediaCodec error at position $position, retrying with TextureView")
                     // Release the current player to avoid memory leaks
                     player.release()
-                    // Preserve index — bare notifyDataSetChanged() can reset the pager to 0.
-                    notifyDataSetChangedPreservingIndex()
+                    // Trigger recreation of this item
+                    notifyDataSetChanged()
                     true
                 } else {
                     Toast.makeText(context, "Cannot play video: ${error.message}", Toast.LENGTH_LONG).show()
@@ -115,7 +107,7 @@ class ScreenSlidePagerAdapter(private val context: Context,
         }
         var glideLoader = Glide.with(context)
             .load(if (config.isOnlyUseThumbnails) model.thumbnailUrl else model.url)
-            .transform(config.glideTransformation.transform(context, config) { result -> transformResult(result, position) })
+            .transform(config.glideTransformation.transform(context, config))
             .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(e: GlideException?,
                                           model: Any?,

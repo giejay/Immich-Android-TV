@@ -12,6 +12,7 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.leanback.app.BackgroundManager
 import androidx.leanback.app.BrandedSupportFragment
 import androidx.leanback.app.BrowseSupportFragment
@@ -42,10 +43,10 @@ import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
-import nl.giejay.android.tv.immich.shared.prefs.SLIDER_DPAD_SEEK_IN_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_DPAD_SEEK_IN_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
@@ -58,6 +59,7 @@ import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.LoadMore
+import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
@@ -70,6 +72,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
     private lateinit var apiClient: ApiClient
     private lateinit var viewModel: TimelineViewModel
+    private val sliderViewModel: MediaSliderViewModel by activityViewModels()
 
     private var recyclerView: RecyclerView? = null
     private var progressBar: ProgressBar? = null
@@ -1041,39 +1044,39 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 .map { it.toSliderItemViewHolder() }
         }
 
-        findNavController().navigate(
-            AlbumDetailsFragmentDirections.actionToPhotoSlider(
-                MediaSliderConfiguration(
-                    startIndex,
-                    PreferenceManager.get(SLIDER_INTERVAL),
-                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
-                    isVideoSoundEnable = true,
-                    sliderItems,
-                    loadMore,
-                    { item ->
-                        // Keep leave-off on the asset the user is currently viewing so Back
-                        // lands on that cell — not the one that opened the slider.
-                        viewModel.applyLeaveOffSnapshot(
-                            TimelineLeaveOff.afterOpeningMosaic(item.mainItem.id)
-                        )
-                        viewModel.rememberSelectionByAssetId(item.mainItem.id)
-                    },
-                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
-                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
-                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
-                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
-                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
-                    gradiantOverlay = false,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
-                        .filter { it.type != MetaDataType.MEDIA_COUNT },
-                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
-                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
-                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
-                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
-                    dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO)
+        val config = MediaSliderConfiguration(
+            startIndex,
+            PreferenceManager.get(SLIDER_INTERVAL),
+            PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
+            isVideoSoundEnable = true,
+            sliderItems,
+            loadMore,
+            { item ->
+                // Keep leave-off on the asset the user is currently viewing so Back
+                // lands on that cell — not the one that opened the slider.
+                viewModel.applyLeaveOffSnapshot(
+                    TimelineLeaveOff.afterOpeningMosaic(item.mainItem.id)
                 )
-            )
+                viewModel.rememberSelectionByAssetId(item.mainItem.id)
+            },
+            animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+            maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+            maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
+            glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+            debugEnabled = PreferenceManager.get(DEBUG_MODE),
+            enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+            gradiantOverlay = false,
+            metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                .filter { it.type != MetaDataType.MEDIA_COUNT },
+            zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+            zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+            panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+            useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
+            dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO)
+        )
+        sliderViewModel.configuration = config
+        findNavController().navigate(
+            AlbumDetailsFragmentDirections.actionToPhotoSlider()
         )
     }
 
@@ -1090,30 +1093,31 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             // bind the wrong asset's city/country into the details strip.
             mergePortrait = false
         )
+        val config = MediaSliderConfiguration(
+            0,
+            PreferenceManager.get(SLIDER_INTERVAL),
+            PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
+            isVideoSoundEnable = true,
+            sliderItems,
+            null,
+            animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+            maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+            maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
+            glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+            debugEnabled = PreferenceManager.get(DEBUG_MODE),
+            enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+            gradiantOverlay = false,
+            metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                .filter { it.type != MetaDataType.MEDIA_COUNT },
+            zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+            zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+            panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+            useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
+            dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO)
+        )
+        sliderViewModel.configuration = config
         findNavController().navigate(
             AlbumDetailsFragmentDirections.actionToPhotoSlider(
-                MediaSliderConfiguration(
-                    0,
-                    PreferenceManager.get(SLIDER_INTERVAL),
-                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
-                    isVideoSoundEnable = true,
-                    sliderItems,
-                    null,
-                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
-                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
-                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
-                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
-                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
-                    gradiantOverlay = false,
-                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
-                        .filter { it.type != MetaDataType.MEDIA_COUNT },
-                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
-                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
-                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
-                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
-                    dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO)
-                ),
                 timelineView = true
             )
         )

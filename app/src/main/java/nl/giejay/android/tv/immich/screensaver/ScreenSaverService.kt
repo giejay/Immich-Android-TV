@@ -22,7 +22,7 @@ import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
-import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
+import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
@@ -43,8 +43,9 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
+import nl.giejay.android.tv.immich.slider.FavoriteButtonControllerPlugin
+import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
-import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
@@ -58,9 +59,11 @@ internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: 
 class ScreenSaverService : DreamService(), MediaSliderListener {
     private var ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
+    private val favoriteService = FavoriteService()
     private var mediaSliderView: MediaSliderView? = null
     private var currentPage = 0
     private var doneLoading: Boolean = false
+    private var excludedAssetIds: Set<String> = emptySet()
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
@@ -87,19 +90,33 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         setContentView(mediaSliderView)
         isInteractive = true
         ioScope.launch {
+            val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
+            if (excludedAlbums.isNotEmpty()) {
+                excludedAssetIds = apiClient.listAssetsFromAlbum(excludedAlbums.toList(), pageCount = 5000)
+                    .getOrElse { emptyList() }
+                    .map { it.id }
+                    .toSet()
+            }
+
             if (ScreenSaverType.ALBUMS == PreferenceManager.get(SCREENSAVER_TYPE)) {
                 loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS).toList())
             } else {
-                loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke().map {
+                val screenSaverType = PreferenceManager.get(SCREENSAVER_TYPE)
+                loadRandomImages(screenSaverType).invoke().map {
                     setInitialAssets(it, suspend {
                         if (doneLoading) {
                             emptyList()
                         } else {
                             currentPage += 1
-                            val newAssets = loadRandomImages(PreferenceManager.get(SCREENSAVER_TYPE)).invoke()
-                                .getOrElseLogged("screensaver random/recent/similar loadMore", emptyList())
-                            doneLoading = newAssets.size < PAGE_COUNT
-                            newAssets.toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+                            val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
+                            val result = when (screenSaverType) {
+                                ScreenSaverType.RECENT -> apiClient.recentAssets(currentPage, PAGE_COUNT, contentType = contentType)
+                                ScreenSaverType.SIMILAR_TIME_PERIOD -> apiClient.similarAssets(currentPage, PAGE_COUNT, contentType = contentType)
+                                else -> apiClient.listAssets(currentPage, PAGE_COUNT, true, contentType = contentType)
+                            }
+                            val rawAssets = result.getOrElseLogged("screensaver random/recent/similar loadMore", emptyList())
+                            doneLoading = rawAssets.size < PAGE_COUNT
+                            filterAssets(rawAssets).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
                         }
                     })
                 }
@@ -115,25 +132,13 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
 
     private fun loadRandomImages(screenSaverType: ScreenSaverType): suspend () -> Either<String, List<Asset>> {
         val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
-        when (screenSaverType) {
-            ScreenSaverType.RECENT -> {
-                return suspend {
-                    apiClient.recentAssets(currentPage, PAGE_COUNT, contentType = contentType)
-                }
+        return suspend {
+            val result = when (screenSaverType) {
+                ScreenSaverType.RECENT -> apiClient.recentAssets(currentPage, PAGE_COUNT, contentType = contentType)
+                ScreenSaverType.SIMILAR_TIME_PERIOD -> apiClient.similarAssets(currentPage, PAGE_COUNT, contentType = contentType)
+                else -> apiClient.listAssets(currentPage, PAGE_COUNT, true, contentType = contentType)
             }
-
-            ScreenSaverType.SIMILAR_TIME_PERIOD -> {
-                return suspend {
-                    apiClient.similarAssets(currentPage, PAGE_COUNT, contentType = contentType)
-                }
-            }
-
-            else -> {
-                // random
-                return suspend {
-                    apiClient.listAssets(currentPage, PAGE_COUNT, true, contentType = contentType)
-                }
-            }
+            result.map { filterAssets(it) }
         }
     }
 
@@ -173,7 +178,16 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
             apiClient.listAssetsFromAlbum(albums, contentType, pageCount = 1000).getOrElse { emptyList() }
         }
 
-        return assets.shuffled()
+        return filterAssets(assets).shuffled()
+    }
+
+    private fun filterAssets(assets: List<Asset>): List<Asset> {
+        return assets.filter(excludeByTag())
+            .filterNot { excludedAssetIds.contains(it.id) }
+    }
+
+    private fun excludeByTag() = { asset: Asset ->
+        asset.tags?.none { t -> t.name == "exclude_immich_tv" } ?: true
     }
 
     private suspend fun showErrorMessageMainScope(errorMessage: String) {
@@ -207,7 +221,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
                     maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                     maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
-                    transformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+                    glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
                     debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
@@ -216,7 +230,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
                     useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
-                    dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO)
+                    dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO),
+                    controllerPlugins = listOf(FavoriteButtonControllerPlugin(favoriteService, ioScope))
                 )
             )
             mediaSliderView?.toggleSlideshow(false)

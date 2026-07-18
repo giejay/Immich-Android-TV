@@ -1,7 +1,5 @@
 package nl.giejay.android.tv.immich.shared.util
 
-import android.os.Parcel
-import android.os.Parcelable
 import arrow.core.Either
 import arrow.core.Option
 import kotlinx.coroutines.CompletableDeferred
@@ -13,15 +11,11 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
-import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.mediaslider.model.MetaDataProvider
 import nl.giejay.mediaslider.model.MetaDataType
-import java.util.LinkedHashMap
 
 class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
-    constructor(parcel: Parcel) : this(parcel.readString()!!)
-
     override suspend fun getValue(): String? {
         val map: Either<String, String> = ApiClient.getClient(
             ApiClientConfig(
@@ -35,17 +29,6 @@ class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
         }
         return map.getOrNull()
     }
-
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(assetId)
-    }
-
-    override fun describeContents(): Int = 0
-
-    companion object CREATOR : Parcelable.Creator<AlbumMetaDataProvider> {
-        override fun createFromParcel(parcel: Parcel): AlbumMetaDataProvider = AlbumMetaDataProvider(parcel)
-        override fun newArray(size: Int): Array<AlbumMetaDataProvider?> = arrayOfNulls(size)
-    }
 }
 
 /**
@@ -57,28 +40,9 @@ class AssetDetailMetaDataProvider(
     private val field: MetaDataType
 ) : MetaDataProvider {
 
-    constructor(parcel: Parcel) : this(
-        parcel.readString()!!,
-        MetaDataType.valueOf(parcel.readString()!!)
-    )
-
     override suspend fun getValue(): String? {
         val asset = AssetDetailCache.get(assetId)
         return AssetMetaDataMapping.valueOf(asset, field)
-    }
-
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(assetId)
-        parcel.writeString(field.name)
-    }
-
-    override fun describeContents(): Int = 0
-
-    companion object CREATOR : Parcelable.Creator<AssetDetailMetaDataProvider> {
-        override fun createFromParcel(parcel: Parcel): AssetDetailMetaDataProvider =
-            AssetDetailMetaDataProvider(parcel)
-
-        override fun newArray(size: Int): Array<AssetDetailMetaDataProvider?> = arrayOfNulls(size)
     }
 }
 

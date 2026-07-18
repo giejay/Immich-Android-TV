@@ -23,6 +23,7 @@
     <string name="media_pause">Pause</string>
     <string name="open_in_external_player">Open in external player</string>
     <string name="no_external_player_found">No external player found</string>
+    <string name="story_progress_count">%1$d/%2$d</string>
 
     <string name="api_key" translatable="false">api_key</string>
     <string name="authentication_url" translatable="false">authentication_url</string>
