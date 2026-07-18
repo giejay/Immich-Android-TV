@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.api
 import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
+import arrow.core.flatMap
 import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
@@ -101,7 +102,9 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) { service.listPeople() }.map { response -> response.people.filter { !it.name.isNullOrBlank() } }
     }
 
-    suspend fun listAssetsFromAlbum(albumIds: List<String>, contentType: ContentType = ContentType.ALL, pageCount: Int = 100): Either<String, List<Asset>> {
+    suspend fun listAssetsFromAlbum(albumIds: List<String>,
+                                    contentType: ContentType = ContentType.ALL,
+                                    pageCount: Int = 100): Either<String, List<Asset>> {
         val results = albumIds.pmap { albumId ->
             val album = executeAPICall(200) { service.getAlbum(albumId) }
                 .getOrElse { return@pmap Either.Left(it) }

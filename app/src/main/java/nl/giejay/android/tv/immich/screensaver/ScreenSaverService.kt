@@ -146,9 +146,23 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
             if (albums.isNotEmpty()) {
                 // first load x random assets from each album. Then load all assets from all albums.
                 val initialAssets = loadNextAssetsFromAlbums(albums, random = true)
-                setInitialAssets(initialAssets, suspend {
-                    loadNextAssetsFromAlbums(albums, random = false).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
-                })
+                if(initialAssets.isEmpty()){
+                    // this is a fallback for an issue with the random endpoint where its not able to return shared albums yet
+                    // just retrieve all assets from the albums and show them in the screensaver
+                    Timber.w("No random assets found for albums $albums, falling back to loading all assets from albums")
+                    loadNextAssetsFromAlbums(albums, random = false).let {
+                        if(it.isEmpty()){
+                            showErrorMessageMainScope(getString(R.string.no_assets_for_screensaver))
+                            finish()
+                        } else {
+                            setInitialAssets(it, null)
+                        }
+                    }
+                } else {
+                    setInitialAssets(initialAssets, suspend {
+                        loadNextAssetsFromAlbums(albums, random = false).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+                    })
+                }
             } else {
                 showErrorMessageMainScope(getString(R.string.set_albums_screensaver_error))
                 finish()
