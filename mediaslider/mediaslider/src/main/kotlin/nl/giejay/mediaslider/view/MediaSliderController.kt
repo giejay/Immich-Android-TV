@@ -481,11 +481,13 @@ class MediaSliderController(
             } else if (itemType == SliderItemType.VIDEO && isRemoteSeekRewind(event.keyCode)) {
                 return onVideoSeekKeyDown(forward = false, isRepeat = event.repeatCount > 0)
             } else if (slideShowPlaying && itemType == SliderItemType.IMAGE) {
-                if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    toggleSlideshow(true)
-                } else {
+                if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     skipToNextAndRestartTimer()
                     return false
+                }
+                // Back exits the viewer — don't pause the slideshow (or flash the center glyph) first.
+                if (event.keyCode != KeyEvent.KEYCODE_BACK) {
+                    toggleSlideshow(true)
                 }
                 return superDispatch()
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
