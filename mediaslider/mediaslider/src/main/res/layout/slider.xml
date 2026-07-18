@@ -17,6 +17,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- A container for plugin-provided UI, placed above the pager but behind Arrows/Controls -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/plugin_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <ImageView
         android:id="@+id/left_arrow"
         android:layout_width="50dp"

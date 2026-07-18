@@ -51,13 +51,14 @@ class AuthByPhoneFragment : Fragment() {
         val binding = FragmentAuthByPhoneBinding.inflate(inflater, container, false)
         ioScope.launch {
             fetchDeviceCode { code ->
-                val authUrl = requireContext().resources.getString(R.string.authentication_url)
+                val context = context ?: return@fetchDeviceCode
+                val authUrl = context.getString(R.string.authentication_url)
                 val data = QrData.Url("$authUrl?code=$code")
                 val drawable: Drawable = QrCodeDrawable(data)
                 binding.qr.setImageDrawable(drawable)
                 binding.qr.visibility = View.VISIBLE
                 binding.qrProgressBar.visibility = View.GONE
-                binding.qrText.text = getString(R.string.or_enter_code_on_auth_url, code, authUrl)
+                binding.qrText.text = context.getString(R.string.or_enter_code_on_auth_url, code, authUrl)
                 job = ioScope.launch {
                     pollConfig(code)
                 }
@@ -72,9 +73,20 @@ class AuthByPhoneFragment : Fragment() {
             .asFlow()
             .onEach { delay(3_000) } // specify delay
             .onCompletion { cause ->
-                if (cause == null && isAdded) {
-                    showErrorMessage(getString(R.string.auth_timeout_recreating_qr))
-                    rebootQRFlow(findNavController())
+                if (cause == null) {
+                    withContext(Dispatchers.Main) {
+                        if (isAdded) {
+                            val message = context?.getString(R.string.auth_timeout_recreating_qr)
+                            if (message != null) {
+                                showErrorMessage(message)
+                                try {
+                                    rebootQRFlow(findNavController())
+                                } catch (e: IllegalStateException) {
+                                    Timber.w(e, "Could not navigate: fragment likely detached")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         timer.collect {
@@ -119,14 +131,12 @@ class AuthByPhoneFragment : Fragment() {
         }
     }
 
-    private suspend fun rebootQRFlow(findNavController: NavController) =
-        withContext(Dispatchers.Main) {
-            findNavController.navigate(
-                AuthByPhoneFragmentDirections.actionGlobalSignInByPhoneFragment(),
-                NavOptions.Builder()
-                    .setPopUpTo(R.id.authByPhoneFragment, true).build()
-            )
-        }
+    private fun rebootQRFlow(findNavController: NavController) =
+        findNavController.navigate(
+            AuthByPhoneFragmentDirections.actionGlobalSignInByPhoneFragment(),
+            NavOptions.Builder()
+                .setPopUpTo(R.id.authByPhoneFragment, true).build()
+        )
 
     private suspend fun fetchDeviceCode(callback: (String) -> Unit) = withContext(Dispatchers.IO) {
         val deviceCode = authClient.registerDevice()
@@ -136,7 +146,10 @@ class AuthByPhoneFragment : Fragment() {
                 callback(deviceCode.code)
             } else {
                 Timber.e("Could not fetch qr: registerDevice returned null")
-                showErrorMessage(getString(R.string.could_not_fetch_qr, "Network error"))
+                val message = context?.getString(R.string.could_not_fetch_qr, "Network error")
+                if (message != null) {
+                    showErrorMessage(message)
+                }
             }
         }
     }

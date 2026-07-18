@@ -79,7 +79,14 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private data class ViewPluginEntry(val plugin: SliderViewPlugin<Any?>, val state: Any?)
     private val viewPlugins = mutableListOf<ViewPluginEntry>()
-    private val viewPluginContext by lazy { SliderViewPluginContext(context, this, controller, ioScope) { currentItem() } }
+    private val viewPluginContext by lazy {
+        SliderViewPluginContext(
+            context,
+            findViewById<ConstraintLayout>(R.id.plugin_layer),
+            controller,
+            ioScope
+        ) { currentItem() }
+    }
 
     init {
         inflate(getContext(), R.layout.slider, this)
@@ -145,7 +152,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             }
         }
         controller.initialize(config)
-        viewPlugins.forEach { it.plugin.attachView(this, it.state) }
+        viewPlugins.forEach { it.plugin.attachView(viewPluginContext.rootView, it.state) }
         viewPlugins.forEach { it.plugin.onLoadConfig(viewPluginContext, config, it.state) }
         initViewsAndSetAdapter(listener)
     }
