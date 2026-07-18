@@ -28,6 +28,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -252,6 +253,18 @@ class ApiClient(private val config: ApiClientConfig) {
             .map { it.toTimelineAssets() }
 
     /** "On this day" style memories for the current moment (server filters by day-of-year). */
-    suspend fun getMemories(): Either<String, List<Memory>> =
-        executeAPICall(200) { service.getMemories(LocalDate.now().toString()) }
+    suspend fun getMemories(): Either<String, List<Memory>> {
+        val date = LocalDate.now().toString()
+        return executeAPICall(200) { service.getMemories(date) }.fold(
+            { error ->
+                if (error.contains("(400)")) {
+                    val isoDate = OffsetDateTime.now().format(dateTimeFormatter)
+                    executeAPICall(200) { service.getMemories(isoDate) }
+                } else {
+                    Either.Left(error)
+                }
+            },
+            { Either.Right(it) }
+        )
+    }
 }
