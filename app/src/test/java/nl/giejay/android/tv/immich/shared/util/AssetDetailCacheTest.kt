@@ -1,5 +1,8 @@
 package nl.giejay.android.tv.immich.shared.util
 
+import arrow.core.Either
+import arrow.core.getOrElse
+import arrow.core.right
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -24,7 +27,7 @@ class AssetDetailCacheTest {
         AssetDetailCache.fetchAsset = {
             fetches.incrementAndGet()
             delay(50)
-            asset
+            asset.right()
         }
 
         val first = async { AssetDetailCache.get("a1") }
@@ -32,6 +35,7 @@ class AssetDetailCacheTest {
 
         assertSame(first.await(), second.await())
         assertEquals(1, fetches.get())
+        assertEquals(asset, first.await().getOrElse { null })
     }
 
     @Test
@@ -39,7 +43,7 @@ class AssetDetailCacheTest {
         val fetches = AtomicInteger(0)
         AssetDetailCache.fetchAsset = {
             fetches.incrementAndGet()
-            sampleAsset(it)
+            sampleAsset(it).right()
         }
 
         AssetDetailCache.get("b1")

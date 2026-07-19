@@ -13,6 +13,8 @@ import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.adapter.MetaDataSliderItem
 import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.plugin.ExternalPlayerButtonControllerPlugin
+import nl.giejay.mediaslider.plugin.MediaRemoteControlsKeyEventPlugin
+import nl.giejay.mediaslider.plugin.MetadataViewPlugin
 import nl.giejay.mediaslider.plugin.SliderControllerPlugin
 import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPlugin
@@ -24,6 +26,13 @@ import kotlin.reflect.KClass
 enum class MetaDataScreen {
     SCREENSAVER, VIEWER
 }
+
+/** Default Immich slider plugins with a shared [MetadataViewPlugin] instance. */
+data class EnabledSliderPlugins(
+    val controllerPlugins: List<SliderControllerPlugin>,
+    val viewPlugins: List<SliderViewPlugin<*>>,
+    val keyEventPlugins: List<SliderKeyEventPlugin>
+)
 
 object PreferenceManager {
     lateinit var sharedPreference: SharedPreferences
@@ -166,23 +175,24 @@ object PreferenceManager {
         return sharedPreference.contains(createKey(metaDataScreen, align))
     }
 
-    fun getEnabledSliderControllerPlugins(scope: CoroutineScope, favoriteService: FavoriteService): List<SliderControllerPlugin> {
-        // for now just static. Can be configured by user later
-        // MetadataViewPlugin is registered as a shared view/controller/key instance in ImmichMediaSlider.
-        return listOf(
-            FavoriteButtonControllerPlugin(favoriteService, scope),
-            ExternalPlayerButtonControllerPlugin()
+    /**
+     * Builds a fresh set of Immich slider plugins for one slider session.
+     * [MetadataViewPlugin] is one shared instance across view/controller/key lists.
+     * [MediaRemoteControlsKeyEventPlugin] is registered after metadata so Back can dismiss
+     * details before exiting an autoplay slideshow.
+     */
+    fun createEnabledSliderPlugins(scope: CoroutineScope, favoriteService: FavoriteService): EnabledSliderPlugins {
+        val metadataPlugin = MetadataViewPlugin()
+        val remoteControlsPlugin = MediaRemoteControlsKeyEventPlugin()
+        return EnabledSliderPlugins(
+            controllerPlugins = listOf(
+                FavoriteButtonControllerPlugin(favoriteService, scope),
+                ExternalPlayerButtonControllerPlugin(),
+                metadataPlugin
+            ),
+            viewPlugins = listOf(metadataPlugin),
+            keyEventPlugins = listOf(metadataPlugin, remoteControlsPlugin)
         )
-    }
-
-    fun getEnabledSliderViewPlugins(): List<SliderViewPlugin<*>> {
-        // MetadataViewPlugin is also a view plugin; ImmichMediaSlider registers one shared instance.
-        return emptyList()
-    }
-
-    fun getEnabledSliderKeyEventPlugins(): List<SliderKeyEventPlugin> {
-        // MetadataViewPlugin key handling is registered alongside the shared instance in ImmichMediaSlider.
-        return emptyList()
     }
 
 }

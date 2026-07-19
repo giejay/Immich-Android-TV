@@ -2,6 +2,8 @@ package nl.giejay.android.tv.immich.shared.util
 
 import arrow.core.Either
 import arrow.core.Option
+import arrow.core.left
+import arrow.core.right
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -14,6 +16,7 @@ import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.mediaslider.model.MetaDataProvider
 import nl.giejay.mediaslider.model.MetaDataType
+import timber.log.Timber
 
 class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
     override suspend fun getValue(): String? {
@@ -41,8 +44,13 @@ class AssetDetailMetaDataProvider(
 ) : MetaDataProvider {
 
     override suspend fun getValue(): String? {
-        val asset = AssetDetailCache.get(assetId)
-        return AssetMetaDataMapping.valueOf(asset, field)
+        return AssetDetailCache.get(assetId).fold(
+            { error ->
+                Timber.w("Failed to load asset $assetId for field $field: $error")
+                null
+            },
+            { asset -> AssetMetaDataMapping.valueOf(asset, field) }
+        )
     }
 }
 
@@ -60,9 +68,9 @@ object AssetDetailCache {
             size > MAX_ENTRIES
     }
     private val mutex = Mutex()
-    private val inFlight = mutableMapOf<String, CompletableDeferred<Asset>>()
+    private val inFlight = mutableMapOf<String, CompletableDeferred<Either<String, Asset>>>()
 
-    private val defaultFetch: suspend (String) -> Asset = { assetId ->
+    private val defaultFetch: suspend (String) -> Either<String, Asset> = { assetId ->
         val client = ApiClient.getClient(
             ApiClientConfig(
                 PreferenceManager.hostName,
@@ -71,40 +79,38 @@ object AssetDetailCache {
                 PreferenceManager.get(DEBUG_MODE)
             )
         )
-        client.getAsset(assetId).fold(
-            { error -> throw IllegalStateException("Failed to load asset $assetId: $error") },
-            { it }
-        )
+        client.getAsset(assetId)
     }
 
     /** Test seam — production uses [ApiClient.getAsset]. */
     @Volatile
-    var fetchAsset: suspend (String) -> Asset = defaultFetch
+    var fetchAsset: suspend (String) -> Either<String, Asset> = defaultFetch
 
     /**
-     * Returns the asset or throws if the API call fails. Callers should not mark a metadata
-     * field as "fetched" on failure so opening details can retry.
+     * Returns the asset or an error message if the API call fails.
      */
-    suspend fun get(assetId: String): Asset {
-        mutex.withLock { cache[assetId] }?.let { return it }
+    suspend fun get(assetId: String): Either<String, Asset> {
+        mutex.withLock { cache[assetId] }?.let { return it.right() }
 
         val (deferred, isOwner) = mutex.withLock {
             cache[assetId]?.let { cached ->
-                return@withLock CompletableDeferred(cached) to false
+                return@withLock CompletableDeferred<Either<String, Asset>>(cached.right()) to false
             }
             inFlight[assetId]?.let { return@withLock it to false }
-            val created = CompletableDeferred<Asset>()
+            val created = CompletableDeferred<Either<String, Asset>>()
             inFlight[assetId] = created
             created to true
         }
 
         if (isOwner) {
             try {
-                val asset = fetchAsset(assetId)
-                mutex.withLock { cache[assetId] = asset }
-                deferred.complete(asset)
+                val result = fetchAsset(assetId)
+                result.onRight { asset ->
+                    mutex.withLock { cache[assetId] = asset }
+                }
+                deferred.complete(result)
             } catch (e: Exception) {
-                deferred.completeExceptionally(e)
+                deferred.complete("Unexpected error: ${e.message}".left())
             } finally {
                 mutex.withLock { inFlight.remove(assetId) }
             }

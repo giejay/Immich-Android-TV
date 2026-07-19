@@ -43,7 +43,6 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
-import nl.giejay.android.tv.immich.slider.FavoriteButtonControllerPlugin
 import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
@@ -147,9 +146,23 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
             if (albums.isNotEmpty()) {
                 // first load x random assets from each album. Then load all assets from all albums.
                 val initialAssets = loadNextAssetsFromAlbums(albums, random = true)
-                setInitialAssets(initialAssets, suspend {
-                    loadNextAssetsFromAlbums(albums, random = false).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
-                })
+                if(initialAssets.isEmpty()){
+                    // this is a fallback for an issue with the random endpoint where its not able to return shared albums yet
+                    // just retrieve all assets from the albums and show them in the screensaver
+                    Timber.w("No random assets found for albums $albums, falling back to loading all assets from albums")
+                    loadNextAssetsFromAlbums(albums, random = false).let {
+                        if(it.isEmpty()){
+                            showErrorMessageMainScope(getString(R.string.no_assets_for_screensaver))
+                            finish()
+                        } else {
+                            setInitialAssets(it, null)
+                        }
+                    }
+                } else {
+                    setInitialAssets(initialAssets, suspend {
+                        loadNextAssetsFromAlbums(albums, random = false).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+                    })
+                }
             } else {
                 showErrorMessageMainScope(getString(R.string.set_albums_screensaver_error))
                 finish()
@@ -210,6 +223,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                 getString(R.string.no_assets_for_screensaver),
                 Toast.LENGTH_LONG).show()
         } else {
+            val enabledPlugins = PreferenceManager.createEnabledSliderPlugins(ioScope, favoriteService)
             mediaSliderView?.loadMediaSliderView(
                 MediaSliderConfiguration(
                     0,
@@ -231,7 +245,9 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
                     useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
                     dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO),
-                    controllerPlugins = listOf(FavoriteButtonControllerPlugin(favoriteService, ioScope))
+                    controllerPlugins = enabledPlugins.controllerPlugins,
+                    viewPlugins = enabledPlugins.viewPlugins,
+                    keyEventPlugins = enabledPlugins.keyEventPlugins
                 )
             )
             mediaSliderView?.toggleSlideshow(false)

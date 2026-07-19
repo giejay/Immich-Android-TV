@@ -12,12 +12,9 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.core.view.children
 import androidx.core.view.isVisible
-import androidx.annotation.OptIn
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.SeekParameters
 import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -25,6 +22,10 @@ import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.ControllerButtonPlacement
 import nl.giejay.mediaslider.plugin.ControllerPluginContext
+import nl.giejay.mediaslider.plugin.ExternalPlayerButtonControllerPlugin
+import nl.giejay.mediaslider.plugin.MetadataViewPlugin
+import nl.giejay.mediaslider.plugin.SliderControllerPlugin
+import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
 import nl.giejay.mediaslider.plugin.SliderKeyEventResult
 import nl.giejay.mediaslider.plugin.SliderKeyEventState
 import nl.giejay.mediaslider.util.MediaSliderListener
@@ -57,14 +58,6 @@ class MediaSliderController(
     private var _isControllerVisible = false
     val isControllerVisible: Boolean get() = _isControllerVisible
 
-    /** Enter toggles details overlay (viewer); screensaver keeps details always-on. */
-    val detailsOverlayToggleEnabled: Boolean
-        get() = context !is MediaSliderListener
-
-    var detailsOverlayVisible: Boolean = false
-
-    var hasBottomDetails: Boolean = false
-
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
         private set
@@ -72,18 +65,7 @@ class MediaSliderController(
     /** True while the user is actively dragging the seek bar. */
     private var isSeeking = false
 
-    /** Accumulates rapid seek steps while ExoPlayer's reported position lags. */
-    private var pendingSeekTargetMs: Long? = null
-
-    /** Non-zero while a seek key is held; drives the slow continuous scrub ticks. */
-    private var holdSeekStepMs: Long = 0L
-    private var holdSeekEngaged = false
-    private var pendingSeekTapForward: Boolean? = null
-    private var pausedForHoldSeek = false
-
     private val goToNextAssetRunnable = Runnable { goToNextAsset() }
-
-    private val hideTransportRunnable = Runnable { hideOverlayControls() }
 
     private val progressUpdateRunnable = object : Runnable {
         override fun run() {
@@ -94,30 +76,15 @@ class MediaSliderController(
         }
     }
 
-    private val holdSeekRunnable = object : Runnable {
-        override fun run() {
-            if (holdSeekStepMs == 0L) return
-            holdSeekEngaged = true
-            pendingSeekTapForward = null
-            beginHoldSeekScrub()
-            seekOrSkipBy(holdSeekStepMs, allowAssetSkip = false)
-            mainHandler.postDelayed(this, HOLD_SEEK_TICK_MS)
-        }
-    }
-
     // -------------------------------------------------------------------------
     // Initialisation
     // -------------------------------------------------------------------------
 
     fun initialize(config: MediaSliderConfiguration) {
         this.config = config
-        detailsOverlayVisible = false
-        hasBottomDetails = config.metaDataConfig.any { it.type != nl.giejay.mediaslider.model.MetaDataType.DATE }
     }
 
     fun setCurrentPlayer(player: ExoPlayer?) {
-        stopHoldSeek()
-        pendingSeekTargetMs = null
         currentPlayer = player
     }
 
@@ -211,22 +178,25 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun goToNextAsset() {
-        hideOverlayControls()
         if (pager.currentItem < pager.adapter!!.count - 1) {
             pager.setCurrentItem(pager.currentItem + 1, config.enableSlideAnimation)
         } else {
             pager.setCurrentItem(0, config.enableSlideAnimation)
         }
-        restorePagerFocus()
+        // Keep transport focus if the bar is open (e.g. mid D-pad to pause during slideshow).
+        if (!isControllerVisible) {
+            restorePagerFocus()
+        }
     }
 
     fun goToPreviousAsset() {
-        hideOverlayControls()
         pager.setCurrentItem(
             (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
             config.enableSlideAnimation
         )
-        restorePagerFocus()
+        if (!isControllerVisible) {
+            restorePagerFocus()
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -243,24 +213,11 @@ class MediaSliderController(
             hideOverlayControls()
             return true
         }
-        return showOverlayControlsPublic()
-    }
-
-    /** Shows the unified transport bar (and marks details visible for layered overlay). */
-    fun showOverlayControlsPublic(): Boolean {
-        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: return false
-        if (slideShowPlaying) {
-            toggleSlideshow(true)
-        }
-        if (detailsOverlayToggleEnabled) {
-            detailsOverlayVisible = true
-        }
         controller.visibility = View.VISIBLE
         _isControllerVisible = true
         config.controllerPlugins.forEach { it.onControllerVisibilityChanged(true, controllerRootView, this, config) }
 
         requestInitialControllerFocus()
-        scheduleTransportAutoHide()
 
         if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
             startProgressUpdates()
@@ -269,7 +226,6 @@ class MediaSliderController(
     }
 
     fun hideOverlayControls() {
-        cancelTransportAutoHide()
         controllerRootView.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
         _isControllerVisible = false
         config.controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this, config) }
@@ -277,43 +233,20 @@ class MediaSliderController(
         restorePagerFocus()
     }
 
-    fun scheduleTransportAutoHide() {
-        mainHandler.removeCallbacks(hideTransportRunnable)
-        mainHandler.postDelayed(hideTransportRunnable, TRANSPORT_AUTO_HIDE_MS)
-    }
-
-    fun cancelTransportAutoHide() {
-        mainHandler.removeCallbacks(hideTransportRunnable)
-    }
-
-    fun transportHasFocus(): Boolean =
-        controllerRootView.findViewById<View>(R.id.image_controller)?.findFocus() != null
-
-    fun mediaConfigOrNull(): MediaSliderConfiguration? =
-        if (::config.isInitialized) config else null
-
-    fun controllerRootViewPublic(): View = controllerRootView
-
-    fun currentSliderItemOrNull(): SliderItemViewHolder? {
-        if (!::config.isInitialized || config.items.isEmpty()) return null
-        val idx = pager.currentItem
-        return if (idx in config.items.indices) config.items[idx] else null
-    }
-
     /**
      * Wires up all button listeners for the unified controller embedded in the
-     * view at [sliderItemIndex].  Hides the controller and resets visibility of
-     * video-only widgets based on [sliderItem].
+     * view at [sliderItemIndex]. Resets visibility of video-only widgets based
+     * on [sliderItem]. If the controller was already showing, it stays showing
+     * so D-pad navigation is not interrupted when the page changes.
      */
     fun configureController(sliderItem: SliderItemViewHolder, sliderItemIndex: Int) {
         val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: run {
             _isControllerVisible = false
             return
         }
+        val keepVisible = _isControllerVisible
+        val focusSnapshot = if (keepVisible) captureControllerFocus() else null
 
-        controller.visibility = View.GONE
-        _isControllerVisible = false
-        config.controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this,config) }
         stopProgressUpdates()
 
         val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
@@ -401,6 +334,21 @@ class MediaSliderController(
         config.controllerPlugins.forEach { it.onConfigureController(pluginContext) }
 
         setupFocusNavigation(buttonRow, seekBar, isVideo, playPauseButton, previousButton)
+
+        if (keepVisible) {
+            controller.visibility = View.VISIBLE
+            _isControllerVisible = true
+            config.controllerPlugins.forEach {
+                it.onControllerVisibilityChanged(true, controllerRootView, this, config)
+            }
+            restoreControllerFocus(focusSnapshot)
+            if (isVideo) {
+                startProgressUpdates()
+            }
+        } else {
+            controller.visibility = View.GONE
+            _isControllerVisible = false
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -413,21 +361,28 @@ class MediaSliderController(
 
     fun dispatchKeyEvent(event: KeyEvent, superDispatch: () -> Boolean): Boolean {
         val itemType = currentItemTypeOrNull()
+        val pluginState = SliderKeyEventState(
+            isControllerVisible = isControllerVisible,
+            isSlideshowPlaying = slideShowPlaying,
+            currentItemType = itemType,
+            controller = this,
+            config = config
+        )
         if (event.action == KeyEvent.ACTION_UP) {
-            if (isRemoteSeekForward(event.keyCode) || isRemoteSeekRewind(event.keyCode) ||
-                (config.dpadSeeksInVideo && itemType == SliderItemType.VIDEO &&
-                    (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT))
-            ) {
-                return onSeekKeyUp()
+            var pluginHandled = false
+            config.keyEventPlugins.forEach { plugin ->
+                when (plugin.onKeyUp(event, pluginState)) {
+                    SliderKeyEventResult.UNHANDLED -> Unit
+                    SliderKeyEventResult.HANDLED_CONTINUE -> pluginHandled = true
+                    SliderKeyEventResult.HANDLED_CONSUME -> return true
+                    SliderKeyEventResult.DISPATCH_TO_SUPER -> return superDispatch()
+                }
+            }
+            if (pluginHandled) {
+                return true
             }
         }
         if (event.action == KeyEvent.ACTION_DOWN) {
-            val pluginState = SliderKeyEventState(
-                isControllerVisible = isControllerVisible,
-                isSlideshowPlaying = slideShowPlaying,
-                currentItemType = itemType,
-                controller = this
-            )
             var pluginHandled = false
             config.keyEventPlugins.forEach { plugin ->
                 when (plugin.onKeyDown(event, pluginState)) {
@@ -452,19 +407,6 @@ class MediaSliderController(
                 if (isControllerVisible) {
                     return superDispatch()
                 }
-                // Photos: media play/pause toggles slideshow; Enter still opens overlay.
-                if (itemType == SliderItemType.IMAGE &&
-                    (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
-                        event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-                ) {
-                    toggleSlideshow(true)
-                    return true
-                }
-                if (itemType == SliderItemType.VIDEO &&
-                    event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
-                ) {
-                    return togglePlayPause()
-                }
                 if (toggleOverlayControls()) {
                     return true
                 }
@@ -473,38 +415,30 @@ class MediaSliderController(
                 hideOverlayControls()
                 return true
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && !isControllerVisible) {
-                // Down-arrow opens the unified controller.
+                // Down-arrow on a video opens the unified controller.
                 if (toggleOverlayControls()) return true
                 return superDispatch()
-            } else if (itemType == SliderItemType.VIDEO && isRemoteSeekForward(event.keyCode)) {
-                return onVideoSeekKeyDown(forward = true, isRepeat = event.repeatCount > 0)
-            } else if (itemType == SliderItemType.VIDEO && isRemoteSeekRewind(event.keyCode)) {
-                return onVideoSeekKeyDown(forward = false, isRepeat = event.repeatCount > 0)
             } else if (slideShowPlaying && itemType == SliderItemType.IMAGE) {
-                if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                // Transport bar is up: D-pad must move focus, not pause / skip slides.
+                if (isControllerVisible) {
+                    return superDispatch()
+                }
+                if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    toggleSlideshow(true)
+                } else {
                     skipToNextAndRestartTimer()
                     return false
-                }
-                // Back exits the viewer — don't pause the slideshow (or flash the center glyph) first.
-                if (event.keyCode != KeyEvent.KEYCODE_BACK) {
-                    toggleSlideshow(true)
                 }
                 return superDispatch()
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                 if (isControllerVisible) {
                     return superDispatch()
                 }
-                if (itemType == SliderItemType.VIDEO && config.dpadSeeksInVideo) {
-                    return onVideoSeekKeyDown(forward = true, isRepeat = event.repeatCount > 0)
-                }
                 goToNextAsset()
                 return false
             } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                 if (isControllerVisible) {
                     return superDispatch()
-                }
-                if (itemType == SliderItemType.VIDEO && config.dpadSeeksInVideo) {
-                    return onVideoSeekKeyDown(forward = false, isRepeat = event.repeatCount > 0)
                 }
                 goToPreviousAsset()
                 return false
@@ -518,8 +452,6 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun stopPlayer() {
-        stopHoldSeek()
-        pendingSeekTargetMs = null
         currentPlayer?.let {
             if (it.isPlaying || it.isLoading) it.stop()
         }
@@ -528,8 +460,6 @@ class MediaSliderController(
     }
 
     fun onDestroy() {
-        stopHoldSeek()
-        pendingSeekTargetMs = null
         config.controllerPlugins.forEach { it.onDestroy(this) }
         currentPlayer?.release()
         currentPlayer = null
@@ -537,127 +467,6 @@ class MediaSliderController(
         mainHandler.removeCallbacks(goToNextAssetRunnable)
         stopProgressUpdates()
     }
-
-    // -------------------------------------------------------------------------
-    // Remote FF/RW / opt-in D-pad seek (from feat/mediaslider-controls)
-    // -------------------------------------------------------------------------
-
-    fun onVideoSeekKeyDown(forward: Boolean, isRepeat: Boolean): Boolean {
-        if (currentItemTypeOrNull() != SliderItemType.VIDEO) return false
-        if (currentPlayer == null) return false
-        if (isRepeat) return true
-        pendingSeekTapForward = forward
-        holdSeekEngaged = false
-        startHoldSeek(if (forward) HOLD_SEEK_STEP_MS else -HOLD_SEEK_STEP_MS)
-        return true
-    }
-
-    fun onSeekKeyUp(): Boolean {
-        val tapForward = pendingSeekTapForward
-        val engaged = holdSeekEngaged
-        stopHoldSeek()
-        if (!engaged && tapForward != null && currentItemTypeOrNull() == SliderItemType.VIDEO) {
-            seekOrSkipBy(
-                if (tapForward) REMOTE_SEEK_STEP_MS else -REMOTE_SEEK_STEP_MS,
-                allowAssetSkip = true
-            )
-            return true
-        }
-        return engaged || tapForward != null
-    }
-
-    fun stopHoldSeek() {
-        holdSeekStepMs = 0L
-        pendingSeekTapForward = null
-        holdSeekEngaged = false
-        mainHandler.removeCallbacks(holdSeekRunnable)
-        endHoldSeekScrub()
-    }
-
-    private fun startHoldSeek(stepMs: Long) {
-        holdSeekStepMs = 0L
-        mainHandler.removeCallbacks(holdSeekRunnable)
-        holdSeekStepMs = stepMs
-        mainHandler.postDelayed(holdSeekRunnable, HOLD_SEEK_START_DELAY_MS)
-    }
-
-    @OptIn(UnstableApi::class)
-    private fun beginHoldSeekScrub() {
-        val player = currentPlayer ?: return
-        if (!pausedForHoldSeek) {
-            pausedForHoldSeek = player.isPlaying || player.playWhenReady
-            if (pausedForHoldSeek) {
-                player.pause()
-            }
-            player.setSeekParameters(SeekParameters.CLOSEST_SYNC)
-        }
-    }
-
-    @OptIn(UnstableApi::class)
-    private fun endHoldSeekScrub() {
-        val player = currentPlayer
-        if (player != null) {
-            player.setSeekParameters(SeekParameters.DEFAULT)
-            if (pausedForHoldSeek) {
-                player.play()
-            }
-        }
-        pausedForHoldSeek = false
-        pendingSeekTargetMs = null
-    }
-
-    fun seekOrSkipBy(deltaMs: Long, allowAssetSkip: Boolean = true): Boolean {
-        if (currentItemTypeOrNull() != SliderItemType.VIDEO) return false
-        val player = currentPlayer ?: return false
-        val duration = player.contentDuration.takeIf { it > 0 } ?: player.duration
-        if (duration <= 0) return false
-        val position = pendingSeekTargetMs ?: player.currentPosition
-        if (deltaMs > 0) {
-            if (allowAssetSkip && position >= duration - SEEK_EDGE_EPSILON_MS) {
-                pendingSeekTargetMs = null
-                cancelNextAssetTimer()
-                goToNextAsset()
-                return true
-            }
-            val target = (position + deltaMs).coerceAtMost(duration)
-            pendingSeekTargetMs = target
-            player.seekTo(target)
-            return true
-        }
-        if (allowAssetSkip && position <= SEEK_EDGE_EPSILON_MS) {
-            pendingSeekTargetMs = null
-            cancelNextAssetTimer()
-            goToPreviousAsset()
-            return true
-        }
-        val target = (position + deltaMs).coerceAtLeast(0L)
-        pendingSeekTargetMs = target
-        player.seekTo(target)
-        return true
-    }
-
-    fun togglePlayPause(): Boolean {
-        if (currentItemTypeOrNull() != SliderItemType.VIDEO) return false
-        val player = currentPlayer ?: return false
-        if (player.isPlaying) {
-            player.pause()
-        } else {
-            if (player.contentDuration > 0 && player.currentPosition >= player.contentDuration) {
-                player.seekToDefaultPosition()
-            }
-            player.play()
-        }
-        return true
-    }
-
-    fun isRemoteSeekForward(keyCode: Int): Boolean =
-        keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD ||
-            keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD ||
-            keyCode == KeyEvent.KEYCODE_FORWARD
-
-    fun isRemoteSeekRewind(keyCode: Int): Boolean =
-        keyCode == KeyEvent.KEYCODE_MEDIA_REWIND ||
-            keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD
 
     // -------------------------------------------------------------------------
     // Private helpers
@@ -720,6 +529,90 @@ class MediaSliderController(
                 return
             }
         }
+    }
+
+    /**
+     * Snapshot of which transport control had focus before a page reconfigure.
+     * [viewId] is stable for built-in controls; [index] helps for plugin buttons
+     * that get new generated ids each page.
+     */
+    private data class ControllerFocusSnapshot(val viewId: Int, val index: Int)
+
+    private fun captureControllerFocus(): ControllerFocusSnapshot? {
+        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: return null
+        val focused = controller.findFocus() ?: return null
+        val chain = visibleControllerFocusables()
+        return ControllerFocusSnapshot(focused.id, chain.indexOf(focused))
+    }
+
+    private fun restoreControllerFocus(snapshot: ControllerFocusSnapshot?) {
+        if (snapshot == null) {
+            requestInitialControllerFocus()
+            return
+        }
+
+        fun requestIfFocusable(viewId: Int): Boolean {
+            val view = controllerRootView.findViewById<View>(viewId) ?: return false
+            if (!view.isVisible || !view.isFocusable) return false
+            view.requestFocus()
+            return true
+        }
+
+        // Same control still present (prev/next/slideshow, or seek bar on video→video).
+        if (snapshot.viewId != View.NO_ID && requestIfFocusable(snapshot.viewId)) {
+            return
+        }
+
+        // Photo ↔ video: map play/pause ↔ slideshow; mute/seek → nearest stable control.
+        val semanticFallback = when (snapshot.viewId) {
+            R.id.media_play_pause -> R.id.image_slideshow
+            R.id.image_slideshow -> {
+                val playPause = controllerRootView.findViewById<View>(R.id.media_play_pause)
+                if (playPause != null && playPause.isVisible) R.id.media_play_pause
+                else R.id.image_slideshow
+            }
+            R.id.media_mute -> R.id.image_previous
+            R.id.media_seek_bar -> {
+                val playPause = controllerRootView.findViewById<View>(R.id.media_play_pause)
+                if (playPause != null && playPause.isVisible) R.id.media_play_pause
+                else R.id.image_slideshow
+            }
+            else -> null
+        }
+        if (semanticFallback != null && requestIfFocusable(semanticFallback)) {
+            return
+        }
+
+        // Same slot in the visible focus chain (plugin buttons / relative position).
+        val chain = visibleControllerFocusables()
+        if (chain.isNotEmpty()) {
+            val index = when {
+                snapshot.index >= 0 -> snapshot.index.coerceIn(0, chain.lastIndex)
+                else -> 0
+            }
+            chain[index].requestFocus()
+            return
+        }
+
+        requestInitialControllerFocus()
+    }
+
+    private fun visibleControllerFocusables(): List<View> {
+        val result = mutableListOf<View>()
+        val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row)
+        if (row != null) {
+            for (i in 0 until row.childCount) {
+                val child = row.getChildAt(i)
+                if (child.isVisible && child.isFocusable) {
+                    result.add(child)
+                }
+            }
+        }
+        val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
+        if (seekBar != null && seekBar.isVisible && seekBar.isFocusable) {
+            result.add(seekBar)
+        }
+        return result
     }
 
     fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {
@@ -806,7 +699,7 @@ class MediaSliderController(
         val positionText = controllerRootView.findViewById<TextView>(R.id.media_position) ?: return
         val durationText = controllerRootView.findViewById<TextView>(R.id.media_duration) ?: return
 
-        val position = pendingSeekTargetMs ?: player.currentPosition
+        val position = player.currentPosition
         if (!isSeeking) {
             val durationInSeconds = (duration / 1000).toInt()
             if (seekBar.max != durationInSeconds) {
@@ -857,11 +750,5 @@ class MediaSliderController(
 
     private companion object {
         const val PROGRESS_UPDATE_INTERVAL_MS = 500L
-        const val TRANSPORT_AUTO_HIDE_MS = 4_000L
-        const val REMOTE_SEEK_STEP_MS = 10_000L
-        const val HOLD_SEEK_STEP_MS = 2_000L
-        const val HOLD_SEEK_START_DELAY_MS = 400L
-        const val HOLD_SEEK_TICK_MS = 200L
-        const val SEEK_EDGE_EPSILON_MS = 500L
     }
 }

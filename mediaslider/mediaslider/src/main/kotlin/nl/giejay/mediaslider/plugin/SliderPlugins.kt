@@ -42,11 +42,16 @@ data class SliderKeyEventState(
     val isControllerVisible: Boolean,
     val isSlideshowPlaying: Boolean,
     val currentItemType: SliderItemType?,
-    val controller: MediaSliderController
+    val controller: MediaSliderController,
+    val config: MediaSliderConfiguration
 )
 
 interface SliderKeyEventPlugin {
     fun onKeyDown(event: KeyEvent, state: SliderKeyEventState): SliderKeyEventResult =
+        SliderKeyEventResult.UNHANDLED
+
+    /** Called for [KeyEvent.ACTION_UP]. Needed for tap-vs-hold seek and similar gestures. */
+    fun onKeyUp(event: KeyEvent, state: SliderKeyEventState): SliderKeyEventResult =
         SliderKeyEventResult.UNHANDLED
 }
 

@@ -12,7 +12,6 @@ import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import nl.giejay.mediaslider.plugin.MetadataViewPlugin
 import nl.giejay.mediaslider.plugin.TimelineStoryProgressPlugin
 import nl.giejay.mediaslider.view.MediaSliderFragment
 import nl.giejay.mediaslider.view.MediaSliderView
@@ -56,14 +55,10 @@ class ImmichMediaSlider : MediaSliderFragment() {
             config.keyEventPlugins += timelinePlugin
         }
 
-        val metadataPlugin = MetadataViewPlugin()
-        config.viewPlugins += metadataPlugin
-        config.controllerPlugins += metadataPlugin
-        config.keyEventPlugins += metadataPlugin
-
-        config.controllerPlugins += PreferenceManager.getEnabledSliderControllerPlugins(lifecycleScope, favoriteService)
-        config.keyEventPlugins += PreferenceManager.getEnabledSliderKeyEventPlugins()
-        config.viewPlugins += PreferenceManager.getEnabledSliderViewPlugins()
+        val enabledPlugins = PreferenceManager.createEnabledSliderPlugins(lifecycleScope, favoriteService)
+        config.controllerPlugins += enabledPlugins.controllerPlugins
+        config.viewPlugins += enabledPlugins.viewPlugins
+        config.keyEventPlugins += enabledPlugins.keyEventPlugins
 
         loadMediaSliderView(config)
 
