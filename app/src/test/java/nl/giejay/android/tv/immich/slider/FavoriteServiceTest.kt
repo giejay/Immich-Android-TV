@@ -1,15 +1,22 @@
 package nl.giejay.android.tv.immich.slider
 
 import arrow.core.Either
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.coroutines.CoroutinesTestRule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class FavoriteServiceTest {
 
+    @get:Rule
+    val coroutinesTestRule = CoroutinesTestRule()
+
     @Test
-    fun `toggleFavorite success logs info and shows added toast when favorite is enabled`() = runBlocking {
+    fun `toggleFavorite success logs info and shows added toast when favorite is enabled`() = runTest {
         val toasts = mutableListOf<Int>()
         val infoLogs = mutableListOf<String>()
         val errorLogs = mutableListOf<String>()
@@ -28,7 +35,7 @@ class FavoriteServiceTest {
     }
 
     @Test
-    fun `toggleFavorite failure logs error and shows remove failed toast when unfavorite fails`() = runBlocking {
+    fun `toggleFavorite failure logs error and shows remove failed toast when unfavorite fails`() = runTest {
         val toasts = mutableListOf<Int>()
         val infoLogs = mutableListOf<String>()
         val errorLogs = mutableListOf<String>()
