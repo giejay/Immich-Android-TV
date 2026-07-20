@@ -20,7 +20,6 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
-import nl.giejay.android.tv.immich.settings.MetaDataCustomizerFragmentDirections
 import nl.giejay.mediaslider.transformations.GlideTransformations
 
 // general
@@ -49,7 +48,7 @@ data object HOST_NAME : StringPref("",
 // screensaver
 private val SCREENSAVER_SETTINGS = "android.settings.DREAM_SETTINGS"
 
-data object SCREENSAVER_SET : ActionPref(ImmichApplication.appContext!!.getString(R.string.screensaver_set),
+data object SCREENSAVER_SET : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.screensaver_set),
     ImmichApplication.appContext!!.getString(R.string.screensaver_set),
     { context, navController ->
         if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS && PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()) {
@@ -130,18 +129,19 @@ data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(),
         controller.navigate(
             AlbumFragmentDirections.actionGlobalAlbumFragment(
                 true,
-                SelectionType.SET_SCREENSAVER.toString()
+                SelectionType.SET_SCREENSAVER.toString(),
+                "screensaver"
             )
         )
         return true
     }
 }
 
-data object SCREENSAVER_METADATA_CUSTOMIZER : ActionPref(ImmichApplication.appContext!!.getString(R.string.customize_metadata),
+data object SCREENSAVER_METADATA_CUSTOMIZER : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.customize_metadata),
     ImmichApplication.appContext!!.getString(R.string.configure_metadata_screensaver),
     { _, navController ->
         navController.navigate(
-            MetaDataCustomizerFragmentDirections.actionToMetadataFragment(MetaDataScreen.SCREENSAVER)
+            AlbumFragmentDirections.actionGlobalToSettingsDialog("meta_data_customizer", screen = MetaDataScreen.SCREENSAVER, fullscreen = true)
         )
         true
     })
@@ -196,11 +196,11 @@ data object SLIDER_SHOW_CITY : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.show_city),
     ImmichApplication.appContext!!.getString(R.string.show_city_desc))
 
-data object SLIDER_METADATA_CUSTOMIZER : ActionPref(ImmichApplication.appContext!!.getString(R.string.customize_metadata_viewer),
+data object SLIDER_METADATA_CUSTOMIZER : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.customize_metadata_viewer),
     ImmichApplication.appContext!!.getString(R.string.configure_metadata_viewer),
     { _, navController ->
         navController.navigate(
-            MetaDataCustomizerFragmentDirections.actionToMetadataFragment(MetaDataScreen.VIEWER)
+            AlbumFragmentDirections.actionGlobalToSettingsDialog("meta_data_customizer", screen = MetaDataScreen.VIEWER, fullscreen = true)
         )
         true
     })
@@ -370,7 +370,7 @@ data object LOAD_BACKGROUND_IMAGE : BooleanPref(true,
 
 data object HIDDEN_HOME_ITEMS : StringSetPref(emptySet(), "", "")
 
-data object USER_ID : ActionPref(ImmichApplication.appContext!!.getString(R.string.user_id),
+data object USER_ID : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.user_id),
     ImmichApplication.appContext!!.getString(R.string.user_id_desc),
     { context, _ ->
         val userId = PreferenceManager.get(USER_ID)
@@ -428,8 +428,8 @@ data object EXCLUDE_ASSETS_IN_ALBUM : StringSetPref(emptySet(),
         controller.navigate(
             AlbumFragmentDirections.actionGlobalAlbumFragment(
                 true,
-                SelectionType.EXCLUDED_ALBUMS.toString()
-
+                SelectionType.EXCLUDED_ALBUMS.toString(),
+                "view_content"
             )
         )
         return true
@@ -437,34 +437,100 @@ data object EXCLUDE_ASSETS_IN_ALBUM : StringSetPref(emptySet(),
 }
 
 // Building the view
-data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.view_settings), "view",
+data object ViewSlideshowDisplayPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.display), "view_slideshow_display",
     listOf(
-        PrefCategory(ImmichApplication.appContext!!.getString(R.string.ordering),
-            listOf(
-                ALBUMS_SORTING,
-                PHOTOS_SORTING,
-                ALL_ASSETS_SORTING)
-        ),
-        PrefCategory(ImmichApplication.appContext!!.getString(R.string.slideshow), listOf(
-            SLIDER_INTERVAL,
+        PrefCategory("", listOf(
             SLIDER_ONLY_USE_THUMBNAILS,
             SLIDER_FORCE_ORIGINAL_VIDEO,
             SLIDER_LOAD_EDITED_PHOTO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
+            SLIDER_GLIDE_TRANSFORMATION
+        ))
+    )
+)
+
+data object ViewSlideshowEffectsPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.effects), "view_slideshow_effects",
+    listOf(
+        PrefCategory("", listOf(
             SLIDER_ZOOM_SCROLL_PANORAMAS,
             SLIDER_ZOOM_EFFECT,
             SLIDER_PAN_EFFECT,
-            SLIDER_METADATA_CUSTOMIZER,
-            SLIDER_ANIMATION_SPEED,
-            SLIDER_GLIDE_TRANSFORMATION,
             SLIDER_MAX_CUT_OFF_WIDTH,
-            SLIDER_MAX_CUT_OFF_HEIGHT)),
-        PrefCategory(ImmichApplication.appContext!!.getString(R.string.other), listOf(
+            SLIDER_MAX_CUT_OFF_HEIGHT
+        ))
+    )
+)
+
+data object ViewSlideshowPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.slideshow), "view_slideshow",
+    listOf(
+        PrefCategory("", listOf(
+            ActionPref("view_slideshow_display", ImmichApplication.appContext!!.getString(R.string.display), ImmichApplication.appContext!!.getString(R.string.display_desc)) { _, navController ->
+                navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_slideshow_display"))
+                true
+            },
+            ActionPref("view_slideshow_effects", ImmichApplication.appContext!!.getString(R.string.effects), ImmichApplication.appContext!!.getString(R.string.effects_desc)) { _, navController ->
+                navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_slideshow_effects"))
+                true
+            },
+            SLIDER_INTERVAL,
+            SLIDER_ANIMATION_SPEED,
+            SLIDER_METADATA_CUSTOMIZER
+        ))
+    )
+)
+
+data object ViewContentPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.content), "view_content",
+    listOf(
+        PrefCategory("", listOf(
             SIMILAR_ASSETS_YEARS_BACK,
             SIMILAR_ASSETS_PERIOD_DAYS,
             RECENT_ASSETS_MONTHS_BACK,
-            EXCLUDE_ASSETS_IN_ALBUM,
-            LOAD_BACKGROUND_IMAGE))
+            EXCLUDE_ASSETS_IN_ALBUM
+        ))
+    )
+)
+
+data object ViewGeneralPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.general), "view_general",
+    listOf(
+        PrefCategory("", listOf(
+            LOAD_BACKGROUND_IMAGE
+        ))
+    )
+)
+
+data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.view_settings), "view",
+    listOf(
+        PrefCategory("",
+            listOf(
+                ActionPref("view_general", ImmichApplication.appContext!!.getString(R.string.general), ImmichApplication.appContext!!.getString(R.string.general_desc)) { _, navController ->
+                    navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_general"))
+                    true
+                },
+                ActionPref("view_ordering", ImmichApplication.appContext!!.getString(R.string.ordering), ImmichApplication.appContext!!.getString(R.string.ordering)) { _, navController ->
+                    navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_ordering"))
+                    true
+                },
+                ActionPref("view_slideshow", ImmichApplication.appContext!!.getString(R.string.slideshow), ImmichApplication.appContext!!.getString(R.string.slideshow)) { _, navController ->
+                    navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_slideshow"))
+                    true
+                },
+                ActionPref("view_content", ImmichApplication.appContext!!.getString(R.string.content), ImmichApplication.appContext!!.getString(R.string.content_desc)) { _, navController ->
+                    navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_content"))
+                    true
+                }
+            )
+        )
+    )
+)
+
+data object ViewOrderingPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.ordering), "view_ordering",
+    listOf(
+        PrefCategory("",
+            listOf(
+                ALBUMS_SORTING,
+                PHOTOS_SORTING,
+                ALL_ASSETS_SORTING)
+        )
     )
 )
 

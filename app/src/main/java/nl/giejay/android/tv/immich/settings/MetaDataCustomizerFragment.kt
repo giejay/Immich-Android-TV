@@ -10,7 +10,6 @@ import android.widget.ListView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController.OnDestinationChangedListener
-import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
@@ -36,7 +35,7 @@ class MetaDataCustomizerFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_metadata, container, false)
         this.metaDataScreen = requireArguments().getSerializable("screen") as MetaDataScreen
         this.listener = OnDestinationChangedListener { _, destination, _ ->
-            if (destination is FragmentNavigator.Destination && this@MetaDataCustomizerFragment.javaClass.name == destination.className) {
+            if (destination.id == R.id.settings_dialog_fragment) {
                 // when going back from meta data item dialog
                 setUpViews(view)
             }

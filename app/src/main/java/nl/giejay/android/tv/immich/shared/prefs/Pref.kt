@@ -68,9 +68,12 @@ sealed class NotUserEditableStringPref(title: String, summary: String) : Pref<St
     }
 }
 
-sealed class ActionPref(title: String, summary: String, val onClick: (Context, NavController) -> Boolean) : Pref<String, Preference, String>("",
+open class ActionPref(val keyOverride: String? = null, title: String, summary: String, val onClick: (Context, NavController) -> Boolean) : Pref<String, Preference, String>("",
     title,
     summary) {
+    override fun key(): String {
+        return keyOverride ?: super.key()
+    }
     override fun save(sharedPreferences: SharedPreferences, value: String) {
 
     }

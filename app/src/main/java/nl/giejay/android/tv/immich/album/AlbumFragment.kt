@@ -114,8 +114,10 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
     override fun onDestroyView() {
         super.onDestroyView()
         if(this.selectionMode){
+            val returnTo = arguments?.getString("returnTo")
+            val target = if (returnTo.isNullOrBlank()) ViewPrefScreen.key else returnTo
             findNavController().navigate(
-                HomeFragmentDirections.actionGlobalToSettingsDialog(ViewPrefScreen.key)
+                HomeFragmentDirections.actionGlobalToSettingsDialog(target)
             )
         }
     }

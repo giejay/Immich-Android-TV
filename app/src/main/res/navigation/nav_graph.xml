@@ -189,6 +189,11 @@
         <argument
             android:name="selectionType"
             app:argType="string" />
+
+        <argument
+            android:name="returnTo"
+            android:defaultValue=""
+            app:argType="string" />
     </fragment>
 
     <fragment
@@ -238,6 +243,10 @@
             android:name="screen"
             android:defaultValue="VIEWER"
             app:argType="nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen" />
+        <argument
+            android:name="fullscreen"
+            android:defaultValue="false"
+            app:argType="boolean" />
     </dialog>
 
     <fragment
