@@ -426,7 +426,9 @@ class MediaSliderController(
     }
 
     fun onDestroy() {
-        config.controllerPlugins.forEach { it.onDestroy(this) }
+        if(this::config.isInitialized){
+            config.controllerPlugins.forEach { it.onDestroy(this) }
+        }
         currentPlayer?.release()
         currentPlayer = null
         clearKeepScreenOnFlags()
