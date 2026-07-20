@@ -1,6 +1,8 @@
 package nl.giejay.android.tv.immich.api.service
 
+import nl.giejay.android.tv.immich.api.resolveWithPartners
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import retrofit2.http.Query
 
@@ -29,5 +31,15 @@ class ApiServiceTimelineParamsTest {
             .map { it.value }
 
         assertEquals(listOf("timeBucket", "order", "visibility", "withPartners"), queryParamNames)
+    }
+
+    // Regression test for issue #157: partner-shared photos never showed up in the Timeline
+    // because ApiClient never passed withPartners, even though ApiService already declared the
+    // query param. resolveWithPartners is what ApiClient.getTimeBuckets/getTimeBucket now call,
+    // wired to the SHOW_PARTNER_PHOTOS_IN_TIMELINE preference.
+    @Test
+    fun `resolveWithPartners sends true only when the preference is enabled`() {
+        assertEquals(true, resolveWithPartners(showPartnerPhotosInTimeline = true))
+        assertNull(resolveWithPartners(showPartnerPhotosInTimeline = false))
     }
 }
