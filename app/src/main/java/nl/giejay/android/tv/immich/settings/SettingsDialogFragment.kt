@@ -21,6 +21,7 @@ class SettingsDialogFragment : DialogFragment() {
                               savedInstanceState: Bundle?): View {
         val args = SettingsDialogFragmentArgs.fromBundle(requireArguments())
         val settingsType = args.settingsType
+        val v: View = inflater.inflate(R.layout.fragment_dialog, container, false)
         val fragment = when (settingsType) {
             "album_details" -> {
                 val frag = AlbumDetailsSettingsFragment()
@@ -36,13 +37,23 @@ class SettingsDialogFragment : DialogFragment() {
                 frag.arguments = requireArguments()
                 frag
             }
+            "meta_data_customizer" -> {
+                val frag = MetaDataCustomizerFragment()
+                frag.arguments = requireArguments()
+                frag
+            }
             else -> {
                 val frag = PrefSettingsFragment()
                 frag.arguments = requireArguments()
                 frag
             }
         }
-        val v: View = inflater.inflate(R.layout.fragment_dialog, container, false)
+        if (args.fullscreen) {
+            val holder = v.findViewById<View>(R.id.fragment_settings_holder)
+            val params = holder.layoutParams ?: ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT
+            holder.layoutParams = params
+        }
         childFragmentManager.beginTransaction().add(R.id.fragment_settings_holder, fragment)
             .commit()
         return v
@@ -69,4 +80,11 @@ class SettingsDialogFragment : DialogFragment() {
         return dialog
     }
 
+    override fun onStart() {
+        super.onStart()
+        val args = SettingsDialogFragmentArgs.fromBundle(requireArguments())
+        if (args.fullscreen) {
+            dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        }
+    }
 }

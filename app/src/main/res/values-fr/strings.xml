@@ -187,6 +187,14 @@
 
     <!-- Preference screens and categories -->
     <string name="view_settings">Paramètres d’affichage</string>
+    <string name="display">Affichage</string>
+    <string name="display_desc">Modifier l’affichage des médias</string>
+    <string name="effects">Effets</string>
+    <string name="effects_desc">Effets de zoom, panoramique et recadrage</string>
+    <string name="content">Contenu</string>
+    <string name="content_desc">Configurer le contenu à afficher</string>
+    <string name="general">Général</string>
+    <string name="general_desc">Paramètres généraux</string>
     <string name="ordering">Tri</string>
     <string name="slideshow">Diaporama</string>
     <string name="other">Autre</string>

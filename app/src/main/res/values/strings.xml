@@ -187,6 +187,14 @@
 
     <!-- Preference screens and categories -->
     <string name="view_settings">View Settings</string>
+    <string name="display">Display</string>
+    <string name="display_desc">Change how media is displayed</string>
+    <string name="effects">Effects</string>
+    <string name="effects_desc">Zoom, pan and crop effects</string>
+    <string name="content">Content</string>
+    <string name="content_desc">Configure which content to show</string>
+    <string name="general">General</string>
+    <string name="general_desc">General settings</string>
     <string name="ordering">Ordering</string>
     <string name="slideshow">Slideshow</string>
     <string name="other">Other</string>
