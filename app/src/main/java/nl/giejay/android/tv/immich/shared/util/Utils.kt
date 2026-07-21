@@ -24,6 +24,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.io.IOException
 import java.io.InputStream
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.math.roundToInt
 
 /**
@@ -31,8 +33,11 @@ import kotlin.math.roundToInt
  */
 object Utils {
 
-    suspend fun <A, B>List<A>.pmap(f: suspend (A) -> B): List<B> = coroutineScope {
-        map { async(Dispatchers.IO) { f(it) } }.awaitAll()
+    suspend fun <A, B> List<A>.pmap(
+        context: CoroutineContext = EmptyCoroutineContext,
+        f: suspend (A) -> B
+    ): List<B> = coroutineScope {
+        map { async(context) { f(it) } }.awaitAll()
     }
 
     fun View.getAllChildren(): List<View> {

@@ -54,6 +54,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.util.Debouncer
+import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.MetaDataType
@@ -336,24 +337,32 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 beginResumeFocusLock()
                 selectionRestored = false
             }
-            bindDays(viewModel.days.value)
+
+            viewModel.setLayoutConfig(
+                widthPx = contentWidthPx,
+                rowHeightPx = rowHeightPx,
+                gapPx = gapPx,
+                todayLabel = getString(R.string.today),
+                yesterdayLabel = getString(R.string.yesterday)
+            )
+            viewModel.triggerRecomputeLayout()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.days.collect { days ->
-                        bindDays(days)
+                    viewModel.layout.collect { layout ->
+                        bindLayout(layout)
+                    }
+                }
+                launch {
+                    viewModel.isLoading.collect { loading ->
+                        progressBar?.visibility = if (loading) View.VISIBLE else View.GONE
                     }
                 }
                 launch {
                     viewModel.buckets.collect { buckets ->
                         scrubberView?.setBuckets(buckets)
-                    }
-                }
-                launch {
-                    viewModel.memories.collect {
-                        bindDays(viewModel.days.value)
                     }
                 }
                 launch {
@@ -620,47 +629,22 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         }
     }
 
-    private fun bindDays(days: List<TimelineDay>) {
+    /**
+     * Binds a pre-calculated layout to the mosaic RecyclerView.
+     *
+     * This avoids performing layout and neighbor calculation on the main thread.
+     * It also handles anchoring the scroll position to the currently focused or
+     * last selected asset so that background loads don't cause the viewport to jump.
+     */
+    private fun bindLayout(layout: TimelineLayout) {
         if (!isAdded) return
         val adapter = mosaicAdapter ?: return
-        val width = contentWidthPx
-        if (width <= 0) {
-            recyclerView?.post {
-                contentWidthPx = ((recyclerView?.width ?: 0) -
-                    (recyclerView?.paddingStart ?: 0) -
-                    (recyclerView?.paddingEnd ?: 0)).coerceAtLeast(1)
-                bindDays(viewModel.days.value)
-            }
-            return
-        }
-
-        val items = TimelineMosaicLayoutEngine.layout(
-            days = days,
-            contentWidthPx = width,
-            rowHeightPx = rowHeightPx,
-            gapPx = gapPx,
-            dayLabel = { day ->
-                TimelineDateFormatter.dayLabel(
-                    date = day.date,
-                    todayLabel = getString(R.string.today),
-                    yesterdayLabel = getString(R.string.yesterday)
-                )
-            }
-        )
-        val neighbors = TimelineMosaicLayoutEngine.buildFocusNeighbors(items) { from, to ->
-            viewModel.hasUnloadedBucketBetween(from, to)
-        }
-        focusNavigator?.updateNeighbors(neighbors)
-
-        val memories = viewModel.memories.value
-        val itemsWithMemories = if (memories.isNotEmpty()) {
-            listOf(TimelineMosaicItem.MemoriesRow(memories)) + items
-        } else {
-            items
-        }
+        val days = layout.days
+        val itemsWithMemories = layout.items
+        focusNavigator?.updateNeighbors(layout.neighbors)
 
         // Anchor scroll to the focused/selected cell so inserting older/newer months in
-        // recomputeDays doesn't yank the viewport when deep in the timeline.
+        // recomputeLayout doesn't yank the viewport when deep in the timeline.
         val rv = recyclerView
         val lm = rv?.layoutManager as? LinearLayoutManager
         val anchorAssetId = rv?.findFocus()?.getTag(R.id.timeline_mosaic_cell_asset_id) as? String
@@ -678,7 +662,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         adapter.submitList(itemsWithMemories) {
             if (!isAdded) return@submitList
             if (days.isNotEmpty()) {
-                progressBar?.visibility = View.GONE
                 if (!dataReadyNotified) {
                     mainFragmentAdapter.fragmentHost?.notifyDataReady(mainFragmentAdapter)
                     dataReadyNotified = true
@@ -1018,63 +1001,71 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         selectionRestored = false
         viewModel.applyLeaveOffSnapshot(TimelineLeaveOff.afterOpeningMosaic(assetId))
         viewModel.rememberSelectionByAssetId(assetId)
-        val flat = viewModel.flatAssetIndex()
-        if (flat.isEmpty()) return
-        val sliderItems = flat.map { it.second.toSliderItemViewHolder() }
-        val startIndex = sliderItems.indexOfFirst { it.ids().contains(assetId) }.coerceAtLeast(0)
 
-        // Continue strictly forward in time from the oldest asset already in the slider.
-        // [TimelineViewModel.nextUnloadedBucket] picks the first *gap* in the whole bucket
-        // list — unrelated to where the slider currently is — which was jumping the slider
-        // to an arbitrary month once the locally-loaded assets ran out.
-        var lastBucketKey: String? = flat.lastOrNull()?.let { (_, asset) ->
-            viewModel.bucketKeyForAsset(asset.id)
-        }
+        val bucketKey = viewModel.bucketKeyForAsset(assetId) ?: return
 
-        val loadMore: LoadMore = suspend loadMore@{
-            val afterKey = lastBucketKey ?: return@loadMore emptyList()
-            val next = viewModel.nextBucketAfter(afterKey) ?: return@loadMore emptyList()
-            val knownIds = viewModel.flatAssetIndex().map { it.second.id }.toSet()
-            viewModel.loadBucket(next.timeBucket)
-            lastBucketKey = next.timeBucket
-            viewModel.flatAssetIndex()
-                .map { it.second }
-                .filter { it.id !in knownIds }
-                .map { it.toSliderItemViewHolder() }
-        }
+        progressBar?.visibility = View.VISIBLE
+        lifecycleScope.launch(Dispatchers.Default) {
+            // Seed with just the current bucket and its neighbors for fast startup.
+            val initialAssets = viewModel.assetsAroundBucket(bucketKey)
+            if (initialAssets.isEmpty()) return@launch
 
-        val config = MediaSliderConfiguration(
-            startIndex,
-            PreferenceManager.get(SLIDER_INTERVAL),
-            PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
-            isVideoSoundEnable = true,
-            sliderItems,
-            loadMore,
-            { item ->
-                // Keep leave-off on the asset the user is currently viewing so Back
-                // lands on that cell — not the one that opened the slider.
-                viewModel.applyLeaveOffSnapshot(
-                    TimelineLeaveOff.afterOpeningMosaic(item.mainItem.id)
+            val sliderItems = initialAssets.pmap { it.toSliderItemViewHolder() }
+            val startIndex = sliderItems.indexOfFirst { it.ids().contains(assetId) }.coerceAtLeast(0)
+
+            // Tracks the newest bucket currently in the slider so we can page forwards.
+            var lastBucketKey: String? = initialAssets.lastOrNull()?.let { asset ->
+                viewModel.bucketKeyForAsset(asset.id)
+            }
+
+            val loadMore: LoadMore = suspend loadMore@{
+                val afterKey = lastBucketKey ?: return@loadMore emptyList()
+                val next = viewModel.nextBucketAfter(afterKey) ?: return@loadMore emptyList()
+                val knownIds = initialAssets.map { it.id }.toSet()
+                viewModel.loadBucket(next.timeBucket)
+                lastBucketKey = next.timeBucket
+                viewModel.bucketAssets.value[next.timeBucket].orEmpty()
+                    .filter { it.id !in knownIds }
+                    .pmap { it.toSliderItemViewHolder() }
+            }
+
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
+                progressBar?.visibility = View.GONE
+                val config = MediaSliderConfiguration(
+                    startIndex,
+                    PreferenceManager.get(SLIDER_INTERVAL),
+                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
+                    isVideoSoundEnable = true,
+                    sliderItems,
+                    loadMore,
+                    { item ->
+                        // Keep leave-off on the asset the user is currently viewing so Back
+                        // lands on that cell — not the one that opened the slider.
+                        viewModel.applyLeaveOffSnapshot(
+                            TimelineLeaveOff.afterOpeningMosaic(item.mainItem.id)
+                        )
+                        viewModel.rememberSelectionByAssetId(item.mainItem.id)
+                    },
+                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
+                    glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+                    gradiantOverlay = false,
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
+                        .filter { it.type != MetaDataType.MEDIA_COUNT },
+                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
                 )
-                viewModel.rememberSelectionByAssetId(item.mainItem.id)
-            },
-            animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
-            maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
-            maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
-            glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-            enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
-            gradiantOverlay = false,
-            metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
-                .filter { it.type != MetaDataType.MEDIA_COUNT },
-            zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
-            zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
-            panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
-            useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
-        )
-        sliderViewModel.configuration = config
-        findNavController().navigate(
-            AlbumDetailsFragmentDirections.actionToPhotoSlider()
-        )
+                sliderViewModel.configuration = config
+                findNavController().navigate(
+                    AlbumDetailsFragmentDirections.actionToPhotoSlider()
+                )
+            }
+        }
     }
 
     /** Opens a memory's assets in the slider, auto-playing — bounded set, no [LoadMore]. */

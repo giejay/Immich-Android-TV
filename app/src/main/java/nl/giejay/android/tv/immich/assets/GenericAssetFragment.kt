@@ -1,10 +1,15 @@
 package nl.giejay.android.tv.immich.assets
 
 import android.os.Bundle
+import android.view.View
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.getOrElse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.util.ApiUtil
@@ -114,37 +119,54 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
         )
     }
 
+    /**
+     * Handles clicking an asset card to open the photo slider.
+     *
+     * Similar to the Timeline, preparing the full list of slider items (potentially
+     * thousands) is done on a background thread to keep the UI responsive and
+     * provide immediate visual feedback via a loading spinner.
+     */
     override fun onItemClicked(card: Card) {
-        val toSliderItems = assets.toSliderItems(keepOrder = true, mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
-        val loadMore: LoadMore = suspend {
-            val moreAssets = loadMoreAssets()
-            // also load the data in the overview
-            setDataOnMain(moreAssets)
-            moreAssets.toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
-        }
+        progressBar?.visibility = View.VISIBLE
+        lifecycleScope.launch(Dispatchers.Default) {
+            val toSliderItems = assets.toSliderItems(
+                keepOrder = true,
+                mergePortrait = PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)
+            )
+            val loadMore: LoadMore = suspend {
+                val moreAssets = loadMoreAssets()
+                // also load the data in the overview
+                setDataOnMain(moreAssets)
+                moreAssets.toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+            }
 
-        val config = MediaSliderConfiguration(
-            toSliderItems.indexOfFirst { it.ids().contains(card.id) },
-            PreferenceManager.get(SLIDER_INTERVAL),
-            PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
-            isVideoSoundEnable = true,
-            toSliderItems,
-            loadMore,
-            { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) },
-            animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
-            maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
-            maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
-            glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-            enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
-            gradiantOverlay = false,
-            metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
-            zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
-            zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
-            panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
-            useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
-        )
-        sliderViewModel.configuration = config
-        findNavController().navigate(AlbumDetailsFragmentDirections.actionToPhotoSlider())
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
+                progressBar?.visibility = View.GONE
+                val config = MediaSliderConfiguration(
+                    toSliderItems.indexOfFirst { it.ids().contains(card.id) },
+                    PreferenceManager.get(SLIDER_INTERVAL),
+                    PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
+                    isVideoSoundEnable = true,
+                    toSliderItems,
+                    loadMore,
+                    { item -> manualUpdatePosition(this@GenericAssetFragment.assets.indexOfFirst { item.ids().contains(it.id) }) },
+                    animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
+                    maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
+                    maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
+                    glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
+                    enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+                    gradiantOverlay = false,
+                    metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),
+                    zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),
+                    zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
+                    panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
+                    useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO)
+                )
+                sliderViewModel.configuration = config
+                findNavController().navigate(AlbumDetailsFragmentDirections.actionToPhotoSlider())
+            }
+        }
     }
 
     override fun getBackgroundPicture(it: Asset): String? {

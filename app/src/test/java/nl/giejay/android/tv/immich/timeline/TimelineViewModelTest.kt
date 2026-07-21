@@ -74,6 +74,7 @@ class TimelineViewModelTest {
             },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
 
         vm.loadBucketList(eagerMonths = 3)
         advanceUntilIdle()
@@ -98,6 +99,7 @@ class TimelineViewModelTest {
             },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
 
         val first = async { vm.loadBucket("2026-07-01") }
         val second = async { vm.loadBucket("2026-07-01") }
@@ -132,6 +134,7 @@ class TimelineViewModelTest {
             },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
 
         vm.loadBucketList(eagerMonths = 2)
         advanceUntilIdle()
@@ -165,6 +168,7 @@ class TimelineViewModelTest {
             fetchBucket = { Either.Right(listOf(asset("a"))) },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
 
         vm.loadBucketList(eagerMonths = 1)
         advanceUntilIdle()
@@ -189,6 +193,7 @@ class TimelineViewModelTest {
             fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
 
         vm.loadBucketList(eagerMonths = 1)
         advanceUntilIdle()
@@ -217,6 +222,7 @@ class TimelineViewModelTest {
             fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
 
         vm.loadBucketList(eagerMonths = 1)
         advanceUntilIdle()
@@ -272,6 +278,8 @@ class TimelineViewModelTest {
             fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
+
         vm.loadBucketList(eagerMonths = 2)
         advanceUntilIdle()
 
@@ -294,6 +302,8 @@ class TimelineViewModelTest {
             fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
+
         vm.loadBucketList(eagerMonths = 3)
         advanceUntilIdle()
 
@@ -318,6 +328,8 @@ class TimelineViewModelTest {
             fetchBucket = { key -> Either.Right(listOf(asset("$key-a"))) },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
+
         vm.loadBucketList(eagerMonths = 1)
         advanceUntilIdle()
         vm.loadBucket("2005-03-01")
@@ -347,6 +359,8 @@ class TimelineViewModelTest {
             },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
+
         vm.loadBucketList(eagerMonths = 1)
         advanceUntilIdle()
 
@@ -442,6 +456,8 @@ class TimelineViewModelTest {
             },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
+
         // Do not eager-load; only populate bucket list.
         vm.loadBucketList(eagerMonths = 0)
         advanceUntilIdle()
@@ -560,6 +576,7 @@ class TimelineViewModelTest {
             },
             prefetchDebounceMs = 0
         )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
 
         vm.loadBucketList(eagerMonths = 1)
         advanceUntilIdle()

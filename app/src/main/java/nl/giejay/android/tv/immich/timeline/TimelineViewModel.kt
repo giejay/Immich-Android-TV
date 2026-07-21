@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
@@ -20,6 +21,12 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+
+data class TimelineLayout(
+    val items: List<TimelineMosaicItem> = emptyList(),
+    val neighbors: Map<String, TimelineFocusNeighbors> = emptyMap(),
+    val days: List<TimelineDay> = emptyList()
+)
 
 /**
  * Holds timeline month buckets + lazily-fetched assets, exposed as day rows for the UI.
@@ -47,8 +54,20 @@ class TimelineViewModel(
     private val _days = MutableStateFlow<List<TimelineDay>>(emptyList())
     val days: StateFlow<List<TimelineDay>> = _days.asStateFlow()
 
+    private val _layout = MutableStateFlow(TimelineLayout())
+    val layout: StateFlow<TimelineLayout> = _layout.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private var contentWidthPx: Int = 0
+    private var rowHeightPx: Int = 0
+    private var gapPx: Int = 0
+    private var todayLabel: String = ""
+    private var yesterdayLabel: String = ""
 
     private val inFlight = ConcurrentHashMap<String, Deferred<Either<String, List<TimelineAsset>>>>()
 
@@ -74,15 +93,6 @@ class TimelineViewModel(
      */
     var leaveOffAllowScrollAdjust: Boolean = true
 
-    /** Activity-scoped leave-off snapshot for unit tests and restore. */
-    fun leaveOffSnapshot(): TimelineLeaveOff.Snapshot =
-        TimelineLeaveOff.Snapshot(
-            memoryId = lastSelectedMemoryId,
-            pendingAssetId = pendingResumeAssetId,
-            lastAssetId = lastSelectedAssetId,
-            allowScrollAdjust = leaveOffAllowScrollAdjust
-        )
-
     fun applyLeaveOffSnapshot(snapshot: TimelineLeaveOff.Snapshot) {
         lastSelectedMemoryId = snapshot.memoryId
         pendingResumeAssetId = snapshot.pendingAssetId
@@ -92,27 +102,68 @@ class TimelineViewModel(
         }
     }
 
+    /** Activity-scoped leave-off snapshot for unit tests and restore. */
+    fun leaveOffSnapshot(): TimelineLeaveOff.Snapshot =
+        TimelineLeaveOff.Snapshot(
+            memoryId = lastSelectedMemoryId,
+            pendingAssetId = pendingResumeAssetId,
+            lastAssetId = lastSelectedAssetId,
+            allowScrollAdjust = leaveOffAllowScrollAdjust
+        )
+
+    /**
+     * Sets the configuration for mosaic layout calculation.
+     *
+     * @param widthPx Available width for the mosaic grid.
+     * @param rowHeightPx Target height for each justified row.
+     * @param gapPx Space between mosaic cells.
+     * @param todayLabel localized "Today" string for headers.
+     * @param yesterdayLabel localized "Yesterday" string for headers.
+     */
+    fun setLayoutConfig(
+        widthPx: Int,
+        rowHeightPx: Int,
+        gapPx: Int,
+        todayLabel: String,
+        yesterdayLabel: String
+    ) {
+        this.contentWidthPx = widthPx
+        this.rowHeightPx = rowHeightPx
+        this.gapPx = gapPx
+        this.todayLabel = todayLabel
+        this.yesterdayLabel = yesterdayLabel
+    }
+
     suspend fun loadBucketList(eagerMonths: Int = 3) {
         if (_buckets.value.isNotEmpty()) return
+        _isLoading.value = true
         fetchBuckets().fold(
-            { message -> _error.value = message },
+            { message ->
+                _error.value = message
+                _isLoading.value = false
+            },
             { list ->
                 _buckets.value = list
                 list.take(eagerMonths).forEach { loadBucket(it.timeBucket) }
+                _isLoading.value = false
             }
         )
     }
 
     suspend fun loadMemories() {
+        _isLoading.value = true
         fetchMemories().fold(
             { message ->
                 _error.value = message
                 _memoriesReady.value = true
+                _isLoading.value = false
             },
             { list ->
                 // Mark ready before publishing the list so bindDays/restore sees both together.
                 _memoriesReady.value = true
                 _memories.value = list
+                recomputeLayout()
+                _isLoading.value = false
             }
         )
     }
@@ -141,7 +192,7 @@ class TimelineViewModel(
                             { message -> _error.value = message },
                             { assets ->
                                 _bucketAssets.update { current -> current + (timeBucket to assets) }
-                                recomputeDays()
+                                recomputeLayout()
                             }
                         )
                     }
@@ -151,6 +202,74 @@ class TimelineViewModel(
             }
         }
         return deferred.await()
+    }
+
+    /**
+     * Public way to trigger a re-layout from the fragment after config changes.
+     *
+     * This is needed because layout parameters (like screen width) are owned by the View layer,
+     * but the heavy calculation of justified rows and D-pad neighbors is offloaded here
+     * to a background thread to prevent ANRs.
+     */
+    fun triggerRecomputeLayout() {
+        viewModelScope.launch {
+            recomputeLayout()
+        }
+    }
+
+    /**
+     * Recomputes the entire mosaic layout and focus neighbor map.
+     *
+     * This operation is performed on [Dispatchers.Default] because it is computationally intensive
+     * for large libraries. It handles:
+     * 1. Grouping assets into [TimelineDay]s.
+     * 2. Calculating justified row dimensions (preserving aspect ratios).
+     * 3. Building a 2D neighbor map for D-pad navigation.
+     *
+     * Offloading this prevents the main thread from stalling for several seconds during
+     * large jumps (e.g., using the scrubber).
+     */
+    private suspend fun recomputeLayout() = withContext(Dispatchers.Default) {
+        val loaded = _bucketAssets.value
+        val buckets = _buckets.value
+        val memories = _memories.value
+        val width = contentWidthPx
+        val height = rowHeightPx
+        val gap = gapPx
+        val today = todayLabel
+        val yesterday = yesterdayLabel
+
+        if (width <= 0) return@withContext
+
+        val assets = buckets.flatMap { loaded[it.timeBucket].orEmpty() }
+        val daysList = assets.toTimelineDays()
+        _days.value = daysList
+
+        val items = TimelineMosaicLayoutEngine.layout(
+            days = daysList,
+            contentWidthPx = width,
+            rowHeightPx = height,
+            gapPx = gap,
+            dayLabel = { day ->
+                TimelineDateFormatter.dayLabel(
+                    date = day.date,
+                    todayLabel = today,
+                    yesterdayLabel = yesterday
+                )
+            }
+        )
+
+        val neighbors = TimelineMosaicLayoutEngine.buildFocusNeighbors(items) { from, to ->
+            hasUnloadedBucketBetween(from, to)
+        }
+
+        val itemsWithMemories = if (memories.isNotEmpty()) {
+            listOf(TimelineMosaicItem.MemoriesRow(memories)) + items
+        } else {
+            items
+        }
+
+        _layout.value = TimelineLayout(itemsWithMemories, neighbors, daysList)
     }
 
     /**
@@ -177,6 +296,28 @@ class TimelineViewModel(
 
     fun flatAssetIndex(): List<Pair<String, TimelineAsset>> =
         _days.value.flatMap { day -> day.assets.map { day.dayKey to it } }
+
+    /**
+     * All assets from [bucketKey] and its immediate neighbors (one newer, one older).
+     * Used to seed the photo slider with a small window instead of the entire timeline.
+     *
+     * To keep startup fast, it only includes the older/next neighbor if the current bucket
+     * has fewer than 30 assets.
+     */
+    fun assetsAroundBucket(bucketKey: String): List<TimelineAsset> {
+        val loaded = _bucketAssets.value
+        val buckets = _buckets.value
+        val index = buckets.indexOfFirst { it.timeBucket == bucketKey }
+        if (index < 0) return loaded[bucketKey].orEmpty()
+
+        val current = loaded[bucketKey].orEmpty()
+        val prev = buckets.getOrNull(index - 1)?.timeBucket
+        val next = if (current.size < 30) buckets.getOrNull(index + 1)?.timeBucket else null
+
+        return (loaded[prev].orEmpty() + current + loaded[next].orEmpty())
+            .distinctBy { it.id }
+            .sortedByDescending { it.fileCreatedAt }
+    }
 
     fun nextUnloadedBucket(): TimeBucketSummary? {
         val loaded = _bucketAssets.value
@@ -315,12 +456,6 @@ class TimelineViewModel(
 
     fun clearError() {
         _error.value = null
-    }
-
-    private fun recomputeDays() {
-        val loaded = _bucketAssets.value
-        val assets = _buckets.value.flatMap { loaded[it.timeBucket].orEmpty() }
-        _days.value = assets.toTimelineDays()
     }
 
     companion object {
