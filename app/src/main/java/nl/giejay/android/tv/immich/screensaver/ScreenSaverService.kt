@@ -236,7 +236,6 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                     maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                     glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                    debugEnabled = PreferenceManager.get(DEBUG_MODE),
                     enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                     gradiantOverlay = true,
                     metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),

@@ -112,7 +112,7 @@ MediaSliderConfiguration(
 
 ## Built-in Plugins
 
-- `MetadataViewPlugin`: Layered date/EXIF overlays, transport reparenting, Enter/Back details toggle (register the same instance on view + controller + key lists).
+- `MetadataViewPlugin`: Layered date/EXIF overlays, Enter/Back details toggle (register the same instance on view + controller + key lists).
 - `MediaRemoteControlsKeyEventPlugin`: Remote FF/RW tap-vs-hold seek, photo play/pause slideshow, opt-in D-pad seek, Back-exits-slideshow-without-pausing.
 - `FavoriteButtonControllerPlugin`: Adds a toggle for favoriting assets.
 - `ExternalPlayerButtonControllerPlugin`: Adds a button to open videos in an external player.

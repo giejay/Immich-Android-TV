@@ -1063,7 +1063,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
             maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
             glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-            debugEnabled = PreferenceManager.get(DEBUG_MODE),
             enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
             gradiantOverlay = false,
             metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)
@@ -1104,7 +1103,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
             maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
             glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-            debugEnabled = PreferenceManager.get(DEBUG_MODE),
             enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
             gradiantOverlay = false,
             metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER)

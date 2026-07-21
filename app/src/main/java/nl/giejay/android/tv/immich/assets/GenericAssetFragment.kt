@@ -13,7 +13,6 @@ import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.ALL_ASSETS_SORTING
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
-import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
 import nl.giejay.android.tv.immich.shared.prefs.FILTER_CONTENT_TYPE
@@ -136,7 +135,6 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
             maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
             maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
             glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-            debugEnabled = PreferenceManager.get(DEBUG_MODE),
             enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
             gradiantOverlay = false,
             metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),

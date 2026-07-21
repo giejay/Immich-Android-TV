@@ -11,7 +11,6 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
-import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
@@ -103,7 +102,6 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                 maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
                 maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_WIDTH),
                 glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
-                debugEnabled = PreferenceManager.get(DEBUG_MODE),
                 enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
                 gradiantOverlay = false,
                 metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.VIEWER),

@@ -107,7 +107,7 @@ class TimelineViewModel(
     suspend fun loadMemories() {
         fetchMemories().fold(
             { message ->
-                // Memories are optional chrome — don't toast/fail the whole Timeline.
+                // Memories are optional; don't toast/fail the whole Timeline mosaic.
                 Timber.w("Failed to load memories: %s", message)
                 _memoriesReady.value = true
                 _memories.value = emptyList()

@@ -121,7 +121,7 @@ class TimelineStoryProgressPlugin : SliderViewPlugin<Any>, SliderControllerPlugi
         if (!state.isSlideshowPlaying || state.currentItemType != SliderItemType.IMAGE) {
             return SliderKeyEventResult.UNHANDLED
         }
-        // Transport bar owns D-pad for focus while it's up.
+        // When the image/video controller overlay is open, leave D-pad for focus navigation.
         if (state.isControllerVisible) {
             return SliderKeyEventResult.UNHANDLED
         }

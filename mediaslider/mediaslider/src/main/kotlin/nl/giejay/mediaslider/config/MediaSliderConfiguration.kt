@@ -20,7 +20,6 @@ class MediaSliderConfiguration(
     val maxCutOffHeight: Int,
     val maxCutOffWidth: Int,
     val glideTransformation: GlideTransformations,
-    val debugEnabled: Boolean = false,
     val gradiantOverlay: Boolean,
     val enableSlideAnimation: Boolean,
     val metaDataConfig: List<MetaDataItem>,

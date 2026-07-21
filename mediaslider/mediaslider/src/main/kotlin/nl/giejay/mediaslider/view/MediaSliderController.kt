@@ -183,7 +183,7 @@ class MediaSliderController(
         } else {
             pager.setCurrentItem(0, config.enableSlideAnimation)
         }
-        // Keep transport focus if the bar is open (e.g. mid D-pad to pause during slideshow).
+        // Keep controller focus if the overlay is open (e.g. mid D-pad to pause during slideshow).
         if (!isControllerVisible) {
             restorePagerFocus()
         }
@@ -419,7 +419,7 @@ class MediaSliderController(
                 if (toggleOverlayControls()) return true
                 return superDispatch()
             } else if (slideShowPlaying && itemType == SliderItemType.IMAGE) {
-                // Transport bar is up: D-pad must move focus, not pause / skip slides.
+                // Controller overlay is up: D-pad must move focus, not pause / skip slides.
                 if (isControllerVisible) {
                     return superDispatch()
                 }
@@ -532,7 +532,7 @@ class MediaSliderController(
     }
 
     /**
-     * Snapshot of which transport control had focus before a page reconfigure.
+     * Snapshot of which controller control had focus before a page reconfigure.
      * [viewId] is stable for built-in controls; [index] helps for plugin buttons
      * that get new generated ids each page.
      */
@@ -598,21 +598,15 @@ class MediaSliderController(
     }
 
     private fun visibleControllerFocusables(): List<View> {
-        val result = mutableListOf<View>()
-        val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row)
-        if (row != null) {
-            for (i in 0 until row.childCount) {
-                val child = row.getChildAt(i)
-                if (child.isVisible && child.isFocusable) {
-                    result.add(child)
-                }
-            }
-        }
+        val rowButtons = controllerRootView
+            .findViewById<LinearLayout>(R.id.media_controller_button_row)
+            ?.children
+            ?.filter { it.isVisible && it.isFocusable }
+            ?.toList()
+            .orEmpty()
         val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
-        if (seekBar != null && seekBar.isVisible && seekBar.isFocusable) {
-            result.add(seekBar)
-        }
-        return result
+            ?.takeIf { it.isVisible && it.isFocusable }
+        return if (seekBar != null) rowButtons + seekBar else rowButtons
     }
 
     fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {

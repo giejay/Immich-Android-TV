@@ -123,19 +123,6 @@ class MetaDataAdapter(val context: Context,
 
     fun getItemsToShow(): List<MetaDataItem> = (if (portraitMode()) portraitViewItems else items)
 
-    /** True when every configured row for [assetId] has been written via [updateState]. */
-    fun isFullyFetched(assetId: String): Boolean {
-        val toShow = getItemsToShow()
-        if (toShow.isEmpty()) return true
-        return toShow.indices.all { hasStateForItem(assetId, it) }
-    }
-
-    /**
-     * Ready to show EXIF for [assetId] in the layered details shell.
-     * Same as [isFullyFetched]; the shell hides the column until this is true.
-     */
-    fun isReadyFor(assetId: String): Boolean = isFullyFetched(assetId)
-
     override fun getItem(p0: Int): Any {
         return getItemsToShow()[p0]
     }
@@ -178,8 +165,8 @@ class MetaDataAdapter(val context: Context,
 
     private fun resolveKey(index: Int, assetId: String = getCurrentItem().id): String = assetId + index
 
-    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String?) {
-        stateForItem[sliderItemId + metaDataIndex] = value ?: ""
+    fun updateState(sliderItemId: String, metaDataIndex: Int, value: String) {
+        stateForItem[sliderItemId + metaDataIndex] = value
     }
 
     fun hasStateForItem(assetId: String, metaDataIndex: Int): Boolean {

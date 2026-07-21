@@ -2,11 +2,9 @@ package nl.giejay.mediaslider.plugin
 
 import android.os.Handler
 import android.os.Looper
-import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
@@ -27,14 +25,14 @@ import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderController
 
 /**
- * Layered date + EXIF details overlay (scrims, readiness gate, transport reparented over EXIF).
+ * Layered date + EXIF details overlay (scrims).
+ * Controller overlay stays on the slider shell ([R.id.image_controller]); EXIF dims while it is up.
  * Handles Enter/Back details toggle when not in screensaver ([MediaSliderListener]).
  *
  * Register the **same instance** on view, controller, and key plugin lists so chrome state is shared.
  */
 class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControllerPlugin, SliderKeyEventPlugin {
 
-    private var detailsHolderMinHeightPx = 0
     private var pendingDateAssetId: String? = null
     private var detailsOverlayVisible = false
     private var hasBottomDetails = false
@@ -42,11 +40,10 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
     private var detailsOverlayToggleEnabled = true
     private var pluginLayer: ConstraintLayout? = null
     private var sliderRoot: ViewGroup? = null
-    private var currentItemProvider: (() -> SliderItemViewHolder)? = null
     private var lastConfig: MediaSliderConfiguration? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val hideTransportRunnable = Runnable {
+    private val hideControllerRunnable = Runnable {
         activeController?.hideOverlayControls()
     }
     private var activeController: MediaSliderController? = null
@@ -54,7 +51,6 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
     override fun createState(context: SliderViewPluginContext, config: MediaSliderConfiguration): MetadataRenderState {
         detailsOverlayToggleEnabled = context.context !is MediaSliderListener
         detailsOverlayVisible = !detailsOverlayToggleEnabled
-        currentItemProvider = context.currentItemProvider
         lastConfig = config
         activeController = context.controller
 
@@ -101,7 +97,7 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         }
         rootView.addView(dateView, dateParams)
 
-        val holder = View.inflate(rootView.context, R.layout.metadata_holder, null) as FrameLayout
+        val holder = View.inflate(rootView.context, R.layout.metadata_holder, null)
         val holderParams = ConstraintLayout.LayoutParams(
             ConstraintLayout.LayoutParams.MATCH_CONSTRAINT,
             ConstraintLayout.LayoutParams.WRAP_CONTENT
@@ -111,22 +107,6 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
             bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
         }
         rootView.addView(holder, holderParams)
-
-        // Nest transport over EXIF so the dark panel overlays rows instead of pushing them.
-        val shell = sliderRoot ?: rootView
-        val transport = shell.findViewById<View>(R.id.image_controller)
-        if (transport != null) {
-            (transport.parent as? ViewGroup)?.removeView(transport)
-            holder.addView(
-                transport,
-                FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    android.view.Gravity.BOTTOM
-                )
-            )
-            transport.elevation = 4f
-        }
     }
 
     override fun onLoadConfig(
@@ -139,20 +119,16 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         activeController = context.controller
         context.rootView.findViewById<ListView>(R.id.metadata_view_right)?.adapter = pluginState.rightAdapter
         context.rootView.findViewById<ListView>(R.id.metadata_view_left)?.adapter = pluginState.leftAdapter
-        applyChrome(context.controller, config, metadataReady = false)
+        applyChrome(context.controller, config)
     }
 
     override fun onPageSelected(context: SliderViewPluginContext, sliderItemIndex: Int, state: MetadataRenderState?) {
         val currentState = state ?: return
-        val holder = context.rootView.findViewById<FrameLayout>(R.id.meta_data_holder)
-        if (holder != null && holder.height > 0) {
-            detailsHolderMinHeightPx = holder.height
-        }
         currentState.leftAdapter.notifyDataSetChanged()
         currentState.rightAdapter.notifyDataSetChanged()
         context.rootView.findViewById<TextView>(R.id.metadata_date)?.text = ""
         val config = lastConfig ?: return
-        applyChrome(context.controller, config, metadataReady = false)
+        applyChrome(context.controller, config)
     }
 
     override fun onPageSettled(
@@ -188,28 +164,28 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         if (isVisible && detailsOverlayToggleEnabled) {
             detailsOverlayVisible = true
         }
-        applyChrome(controller, config, metadataReady = isBottomMetadataReady())
+        applyChrome(controller, config)
         if (isVisible) {
-            scheduleTransportAutoHide()
+            scheduleControllerAutoHide()
         } else {
-            cancelTransportAutoHide()
+            cancelControllerAutoHide()
         }
     }
 
     override fun onDestroy(controller: MediaSliderController) {
-        cancelTransportAutoHide()
+        cancelControllerAutoHide()
         activeController = null
     }
 
     override fun onDestroy(context: SliderViewPluginContext, state: MetadataRenderState?) {
-        cancelTransportAutoHide()
+        cancelControllerAutoHide()
     }
 
     override fun onKeyDown(event: KeyEvent, state: SliderKeyEventState): SliderKeyEventResult {
         activeController = state.controller
-        // Idle timeout: any key while the bar is up resets the hide countdown.
+        // Idle timeout: any key while the controller overlay is up resets the hide countdown.
         if (state.isControllerVisible) {
-            scheduleTransportAutoHide()
+            scheduleControllerAutoHide()
         }
         if (!detailsOverlayToggleEnabled) {
             return SliderKeyEventResult.UNHANDLED
@@ -218,22 +194,22 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         when (event.keyCode) {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                 if (controller.isControllerVisible) {
-                    // Let focused transport buttons / main handle Enter.
+                    // Let focused controller buttons / main handle Enter.
                     return SliderKeyEventResult.DISPATCH_TO_SUPER
                 }
-                // Open details; fall through so main shows the shared transport bar.
+                // Open details; fall through so main shows the shared controller overlay.
                 detailsOverlayVisible = true
-                applyChrome(controller, state.config, metadataReady = isBottomMetadataReady())
+                applyChrome(controller, state.config)
                 return SliderKeyEventResult.UNHANDLED
             }
             KeyEvent.KEYCODE_BACK -> {
                 if (controller.isControllerVisible) {
-                    // Main also hides transport on Back; keep chrome in sync after.
+                    // Main also hides the controller on Back; keep chrome in sync after.
                     return SliderKeyEventResult.UNHANDLED
                 }
                 if (detailsOverlayVisible) {
                     detailsOverlayVisible = false
-                    applyChrome(controller, state.config, metadataReady = true)
+                    applyChrome(controller, state.config)
                     return SliderKeyEventResult.HANDLED_CONSUME
                 }
             }
@@ -241,13 +217,13 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         return SliderKeyEventResult.UNHANDLED
     }
 
-    private fun scheduleTransportAutoHide() {
-        cancelTransportAutoHide()
-        mainHandler.postDelayed(hideTransportRunnable, TRANSPORT_AUTO_HIDE_MS)
+    private fun scheduleControllerAutoHide() {
+        cancelControllerAutoHide()
+        mainHandler.postDelayed(hideControllerRunnable, CONTROLLER_AUTO_HIDE_MS)
     }
 
-    private fun cancelTransportAutoHide() {
-        mainHandler.removeCallbacks(hideTransportRunnable)
+    private fun cancelControllerAutoHide() {
+        mainHandler.removeCallbacks(hideControllerRunnable)
     }
 
     private fun updateDateOverlay(context: SliderViewPluginContext, sliderItem: SliderItem) {
@@ -278,85 +254,41 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         sliderItemIndex: Int,
         config: MediaSliderConfiguration
     ) {
-        val items = adapter.getItemsToShow()
-        if (items.isEmpty() || adapter.isFullyFetched(sliderItem.id)) {
-            adapter.notifyDataSetChanged()
-            applyChrome(context.controller, config, metadataReady = isBottomMetadataReady())
-            return
-        }
         context.ioScope.launch {
-            try {
-                val values = items.map { item ->
-                    item.getValue(context.context, sliderItem, sliderItemIndex, config.items.size)
+            adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
+                if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
+                    return@forEachIndexed
                 }
-                withContext(Dispatchers.Main) {
-                    if (!context.currentItemProvider().ids().contains(sliderItem.id)) return@withContext
-                    values.forEachIndexed { i, value ->
-                        adapter.updateState(sliderItem.id, i, value)
-                    }
-                    adapter.notifyDataSetChanged()
-                    applyChrome(context.controller, config, metadataReady = isBottomMetadataReady())
-                }
-            } catch (_: Exception) {
-                // Leave scrim up; rows stay empty.
+                val value = item.getValue(context.context, sliderItem, sliderItemIndex, config.items.size)
+                adapter.updateState(sliderItem.id, metaDataIndex, value ?: "")
+            }
+            withContext(Dispatchers.Main) {
+                adapter.notifyDataSetChanged()
+                applyChrome(context.controller, config)
             }
         }
-    }
-
-    private fun isBottomMetadataReady(): Boolean {
-        if (!hasBottomDetails) return true
-        val root = pluginLayer ?: return false
-        val left = root.findViewById<ListView>(R.id.metadata_view_left)?.adapter as? MetaDataAdapter
-        val right = root.findViewById<ListView>(R.id.metadata_view_right)?.adapter as? MetaDataAdapter
-        if (left == null || right == null) return false
-        val item = try {
-            currentItemProvider?.invoke() ?: return false
-        } catch (_: Exception) {
-            return false
-        }
-        val leftId = item.mainItem.id
-        val rightId = if (item.hasSecondaryItem()) item.secondaryItem!!.id else item.mainItem.id
-        return left.isReadyFor(leftId) && right.isReadyFor(rightId)
     }
 
     private fun applyChrome(
         controller: MediaSliderController,
-        config: MediaSliderConfiguration,
-        metadataReady: Boolean
+        config: MediaSliderConfiguration
     ) {
         val root = pluginLayer ?: return
         val detailsOn = !detailsOverlayToggleEnabled || detailsOverlayVisible
-        val showTransport = controller.isControllerVisible
+        val showController = controller.isControllerVisible
         val showDetailsArea = detailsOn && hasBottomDetails
-        val showHolder = showDetailsArea || showTransport
 
-        val holder = root.findViewById<FrameLayout>(R.id.meta_data_holder)
-        val rows = root.findViewById<LinearLayout>(R.id.metadata_rows)
+        val holder = root.findViewById<LinearLayout>(R.id.meta_data_holder)
         val dateView = root.findViewById<TextView>(R.id.metadata_date)
-        val transport = (sliderRoot ?: root).findViewById<View>(R.id.image_controller)
+        val imageController = (sliderRoot ?: root).findViewById<View>(R.id.image_controller)
 
-        holder?.visibility =
-            if (showHolder && (hasBottomDetails || showTransport)) View.VISIBLE else View.GONE
-        transport?.visibility = if (showTransport) View.VISIBLE else View.GONE
+        holder?.visibility = if (showDetailsArea) View.VISIBLE else View.GONE
+        imageController?.visibility = if (showController) View.VISIBLE else View.GONE
 
-        rows?.visibility = if (showDetailsArea && metadataReady) View.VISIBLE else View.GONE
-        rows?.alpha = if (showTransport) METADATA_DIMMED_WHILE_TRANSPORT_ALPHA else 1f
-        rows?.descendantFocusability =
-            if (showTransport) ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        holder?.alpha = if (showController) METADATA_DIMMED_WHILE_CONTROLLER_ALPHA else 1f
+        holder?.descendantFocusability =
+            if (showController) ViewGroup.FOCUS_BLOCK_DESCENDANTS
             else ViewGroup.FOCUS_AFTER_DESCENDANTS
-
-        if (showDetailsArea && !metadataReady) {
-            holder?.minimumHeight = detailsHolderMinHeightPx.takeIf { it > 0 }
-                ?: defaultMinHeight(root)
-        } else {
-            holder?.minimumHeight = 0
-            if (showDetailsArea && metadataReady) {
-                holder?.post {
-                    val height = holder.height
-                    if (height > 0) detailsHolderMinHeightPx = height
-                }
-            }
-        }
 
         if (!detailsOn) {
             dateView?.visibility = View.GONE
@@ -364,8 +296,8 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
             dateView?.visibility = View.VISIBLE
         }
 
-        if (showHolder && (hasBottomDetails || showTransport)) {
-            if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible && !showTransport) {
+        if (showDetailsArea) {
+            if (!detailsOverlayToggleEnabled && config.isGradiantOverlayVisible && !showController) {
                 holder?.setBackgroundResource(R.drawable.gradient_overlay)
             } else {
                 holder?.setBackgroundResource(R.drawable.metadata_details_scrim)
@@ -373,16 +305,8 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         }
     }
 
-    private fun defaultMinHeight(rootView: View): Int =
-        TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            DETAILS_HOLDER_FALLBACK_MIN_HEIGHT_DP,
-            rootView.resources.displayMetrics
-        ).toInt()
-
     private companion object {
-        const val METADATA_DIMMED_WHILE_TRANSPORT_ALPHA = 0.35f
-        const val DETAILS_HOLDER_FALLBACK_MIN_HEIGHT_DP = 120f
-        const val TRANSPORT_AUTO_HIDE_MS = 4_000L
+        const val METADATA_DIMMED_WHILE_CONTROLLER_ALPHA = 0.35f
+        const val CONTROLLER_AUTO_HIDE_MS = 4_000L
     }
 }
