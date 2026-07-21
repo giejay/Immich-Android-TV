@@ -251,6 +251,11 @@ data object SLIDER_LOAD_EDITED_PHOTO : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.load_edited_photo),
     ImmichApplication.appContext!!.getString(R.string.load_edited_photo_desc))
 
+// timeline
+data object SHOW_PARTNER_PHOTOS_IN_TIMELINE : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.show_partner_photos_in_timeline),
+    ImmichApplication.appContext!!.getString(R.string.show_partner_photos_in_timeline_desc))
+
 // other
 data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
     ImmichApplication.appContext!!.getString(R.string.albums),
@@ -485,7 +490,8 @@ data object ViewContentPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
             SIMILAR_ASSETS_YEARS_BACK,
             SIMILAR_ASSETS_PERIOD_DAYS,
             RECENT_ASSETS_MONTHS_BACK,
-            EXCLUDE_ASSETS_IN_ALBUM
+            EXCLUDE_ASSETS_IN_ALBUM,
+            SHOW_PARTNER_PHOTOS_IN_TIMELINE
         ))
     )
 )
