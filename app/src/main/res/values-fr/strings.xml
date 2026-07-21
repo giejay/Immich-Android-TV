@@ -80,6 +80,8 @@
     <string name="donate">Faire un don</string>
     <string name="use_hd_thumbnails">Utiliser les miniatures haute résolution</string>
     <string name="use_hd_thumbnails_text">Utiliser les miniatures haute résolution au lieu des images natives/complètes. Cela accélérera considérablement le chargement.</string>
+    <string name="show_partner_photos_in_timeline">Afficher les photos du partenaire dans la chronologie</string>
+    <string name="show_partner_photos_in_timeline_desc">Inclure les photos partagées par votre partenaire dans la chronologie principale, en plus des vues photos et recherche.</string>
     <string name="albums_sorting_text">Définir l’ordre d’affichage des albums</string>
     <string name="order">Ordre</string>
     <string name="photos_sorting_text">Définir l’ordre d’affichage des photos</string>

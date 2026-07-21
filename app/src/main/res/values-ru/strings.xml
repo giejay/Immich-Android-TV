@@ -82,6 +82,8 @@
     <string name="donate">Пожертвовать</string>
     <string name="use_hd_thumbnails">Использовать миниатюры высокого разрешения</string>
     <string name="use_hd_thumbnails_text">Использовать миниатюры высокого разрешения вместо полноразмерных изображений. Это значительно ускорит загрузку.</string>
+    <string name="show_partner_photos_in_timeline">Показывать фото партнёра на временной шкале</string>
+    <string name="show_partner_photos_in_timeline_desc">Включить фотографии, которыми поделился ваш партнёр, на основной временной шкале, в дополнение к разделам «Фото» и «Поиск».</string>
     <string name="albums_sorting_text">Задайте порядок отображения альбомов</string>
     <string name="order">Порядок</string>
     <string name="photos_sorting_text">Задайте порядок отображения фотографий</string>
