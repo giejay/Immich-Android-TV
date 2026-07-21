@@ -80,6 +80,8 @@
     <string name="donate">Donate</string>
     <string name="use_hd_thumbnails">Use high resolution thumbnails</string>
     <string name="use_hd_thumbnails_text">Use high resolution thumbnails instead of native/full images. Will dramatically speed up loading.</string>
+    <string name="show_partner_photos_in_timeline">Show partner photos in timeline</string>
+    <string name="show_partner_photos_in_timeline_desc">Include photos shared by your partner in the main timeline, in addition to the photos and search views.</string>
     <string name="albums_sorting_text">Set the order in which albums should appear</string>
     <string name="order">Order</string>
     <string name="photos_sorting_text">Set the order in which photos should appear</string>
