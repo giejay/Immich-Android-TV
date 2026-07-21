@@ -55,9 +55,10 @@ class ImmichMediaSlider : MediaSliderFragment() {
             config.keyEventPlugins += timelinePlugin
         }
 
-        config.controllerPlugins += PreferenceManager.getEnabledSliderControllerPlugins(lifecycleScope, favoriteService)
-        config.keyEventPlugins += PreferenceManager.getEnabledSliderKeyEventPlugins()
-        config.viewPlugins += PreferenceManager.getEnabledSliderViewPlugins()
+        val enabledPlugins = PreferenceManager.createEnabledSliderPlugins(lifecycleScope, favoriteService)
+        config.controllerPlugins += enabledPlugins.controllerPlugins
+        config.viewPlugins += enabledPlugins.viewPlugins
+        config.keyEventPlugins += enabledPlugins.keyEventPlugins
 
         loadMediaSliderView(config)
 

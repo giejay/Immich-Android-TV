@@ -154,6 +154,8 @@
     <string name="photo_transformation_desc">Photo transformation</string>
     <string name="force_original_video">Force original video</string>
     <string name="force_original_video_desc">Play original video, even when transcode is available</string>
+    <string name="dpad_seek_in_video">D-pad seeks in video</string>
+    <string name="dpad_seek_in_video_desc">Left/Right seek ~10s in video instead of changing assets. Fast-forward/rewind on the remote always seek. Off by default.</string>
     <string name="load_edited_photo">Load edited photos</string>
     <string name="load_edited_photo_desc">Load the edited version of photos instead of the original</string>
     <string name="zoom_scroll_panoramas">Zoom and Pan Effect</string>

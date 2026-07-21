@@ -47,7 +47,10 @@ class ApiUtilTest {
         val result = ApiUtil.executeAPICall(200) { response }
 
         assertTrue(result.isLeft())
-        assertTrue((result as arrow.core.Either.Left).value.contains("Invalid status (403) returned by Immich Server: some other error body"))
+        assertEquals(
+            "Invalid status (403) returned by Immich Server: some other error body",
+            (result as arrow.core.Either.Left).value
+        )
         verify(mockBody, times(1)).string()
     }
 }

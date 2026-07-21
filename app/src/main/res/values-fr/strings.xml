@@ -154,6 +154,8 @@
     <string name="photo_transformation_desc">Transformation de la photo</string>
     <string name="force_original_video">Forcer la vidéo originale</string>
     <string name="force_original_video_desc">Lire la vidéo originale, même lorsqu’un transcodage est disponible</string>
+    <string name="dpad_seek_in_video">D-pad : déplacement dans la vidéo</string>
+    <string name="dpad_seek_in_video_desc">Gauche/Droite avancent d’environ 10 s dans la vidéo au lieu de changer de média. Avance/retour rapide sur la télécommande déplacent toujours. Désactivé par défaut.</string>
     <string name="load_edited_photo">Charger les photos retouchées</string>
     <string name="load_edited_photo_desc">Charger la version retouchée des photos au lieu de l’originale</string>
     <string name="zoom_scroll_panoramas">Effet de zoom et de panoramique</string>

@@ -16,6 +16,7 @@ import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import nl.giejay.android.tv.immich.shared.util.Debouncer
+import timber.log.Timber
 import java.time.LocalDate
 import java.time.YearMonth
 import java.util.concurrent.ConcurrentHashMap
@@ -106,8 +107,10 @@ class TimelineViewModel(
     suspend fun loadMemories() {
         fetchMemories().fold(
             { message ->
-                _error.value = message
+                // Memories are optional; don't toast/fail the whole Timeline mosaic.
+                Timber.w("Failed to load memories: %s", message)
                 _memoriesReady.value = true
+                _memories.value = emptyList()
             },
             { list ->
                 // Mark ready before publishing the list so bindDays/restore sees both together.
