@@ -1,15 +1,22 @@
 package nl.giejay.android.tv.immich.shared.fragment
 
+import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.leanback.app.BackgroundManager
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.FocusHighlight
 import androidx.leanback.widget.OnItemViewClickedListener
+import androidx.leanback.widget.OnItemViewSelectedListener
 import androidx.leanback.widget.VerticalGridPresenter
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
+import arrow.core.getOrElse
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
@@ -26,8 +34,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.ImmichApplication
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
+import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.card.CardPresenterSelector
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
@@ -38,8 +48,15 @@ import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.LOAD_BACKGROUND_IMAGE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.Debouncer
+import nl.giejay.android.tv.immich.shared.util.Utils
 import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
+import nl.giejay.android.tv.immich.timeline.TimelineScrubberModel
+import nl.giejay.android.tv.immich.timeline.TimelineScrubberView
+import nl.giejay.android.tv.immich.timeline.TimelineViewModel
 import timber.log.Timber
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 
 
@@ -51,17 +68,20 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private var mBackgroundManager: BackgroundManager? = null
 
     protected lateinit var apiClient: ApiClient
-    private lateinit var keyEvents: KeyEventsViewModel
+    protected lateinit var keyEvents: KeyEventsViewModel
     private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_SMALL
     protected val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
-    private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
+    protected val assetsStillToRender: MutableList<ITEM> = mutableListOf()
     protected var currentPage: Int = startPage
     protected var allPagesLoaded: Boolean = false
     private var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
-    private var currentSelectedIndex: Int = 0
+    protected var currentSelectedIndex: Int = 0
+
+    protected var railContainer: LinearLayout? = null
+    protected var settingsButton: ImageButton? = null
 
     abstract fun sortItems(items: List<ITEM>): List<ITEM>
     abstract suspend fun loadItems(
@@ -105,14 +125,21 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         keyEvents = ViewModelProvider(requireActivity())[KeyEventsViewModel::class.java]
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                keyEvents.state.collect {
-                    // open popup menu on the right side if its the last photo in the row and user presses right button
-                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ((adapter.size() == 0 && allPagesLoaded) || currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size()))) {
-                        openPopUpMenu()
-                    } else if (it?.keyCode == KeyEvent.KEYCODE_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) {
-                        updateManualPositionHandler(adapter.size() - 1)
-                    } else if (it?.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD) {
-                        updateManualPositionHandler((currentSelectedIndex - FETCH_PAGE_COUNT).coerceAtLeast(0))
+                keyEvents.state.collect { event ->
+                    if (event?.action == KeyEvent.ACTION_DOWN) {
+                        when (event.keyCode) {
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                if (currentSelectedIndex >= 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size())) {
+                                    onExitRightFromGrid()
+                                }
+                            }
+                            KeyEvent.KEYCODE_FORWARD, KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                                updateManualPositionHandler(adapter.size() - 1)
+                            }
+                            KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD -> {
+                                updateManualPositionHandler((currentSelectedIndex - FETCH_PAGE_COUNT).coerceAtLeast(0))
+                            }
+                        }
                     }
                 }
             }
@@ -142,14 +169,55 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                 }
             }
             with(this@VerticalCardGridFragment) {
-                loadNextItemsIfNeeded(adapter.indexOf(item))
+                val position = adapter.indexOf(item)
+                loadNextItemsIfNeeded(position)
+                updateOnSelected(position)
             }
         }
         // fetch initial items
         fetchInitialItems()
     }
 
-    protected open fun fetchInitialItems() {
+    protected open fun updateOnSelected(position: Int) {
+        // to implement by children
+    }
+
+    protected open fun onExitRightFromGrid() {
+        if (currentSelectedIndex < COLUMNS) {
+            settingsButton?.post { settingsButton?.requestFocus() }
+        } else if (settingsButton?.visibility == View.VISIBLE) {
+            settingsButton?.post { settingsButton?.requestFocus() }
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        injectRightRail(view)
+    }
+
+    private fun injectRightRail(view: View) {
+        val gridDock: ViewGroup = view.findViewById(R.id.browse_grid_dock)
+        val rail = layoutInflater.inflate(R.layout.right_rail, gridDock, false) as LinearLayout
+        gridDock.addView(rail)
+        rail.bringToFront()
+        
+        railContainer = rail
+        settingsButton = rail.findViewById(R.id.rail_settings_button)
+        settingsButton?.apply {
+            nextFocusDownId = R.id.rail_scrubber
+            setOnFocusChangeListener { v, hasFocus ->
+                if (hasFocus) {
+                    v.animate().scaleX(2.0f).scaleY(2.0f).setDuration(200).start()
+                    v.elevation = Utils.convertDpToPixel(requireContext(), 32).toFloat()
+                } else {
+                    v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+                    v.elevation = 0f
+                }
+            }
+        }
+    }
+
+    protected fun fetchInitialItems() {
         ioScope.launch {
             loadData().fold(
                 { itLeft -> showErrorMessage(itLeft) },

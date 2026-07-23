@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.card.Card
+import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
@@ -132,6 +133,12 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
 
     override fun getBackgroundPicture(it: Item): String? {
         return null
+    }
+
+    override fun openPopUpMenu() {
+        findNavController().navigate(
+            HomeFragmentDirections.actionGlobalToSettingsDialog("view")
+        )
     }
 
     override fun createCard(a: Item): Card {

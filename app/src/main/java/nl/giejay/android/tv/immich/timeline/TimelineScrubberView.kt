@@ -214,14 +214,16 @@ class TimelineScrubberView @JvmOverloads constructor(
             KeyEvent.KEYCODE_DPAD_UP -> {
                 if (selectedIndex > 0) {
                     movePreview(selectedIndex - 1)
+                    return true
                 }
-                return true
+                return false // Let focus bubble up to the settings icon
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (selectedIndex < stops.lastIndex) {
                     movePreview(selectedIndex + 1)
+                    return true
                 }
-                return true
+                return false
             }
             KeyEvent.KEYCODE_DPAD_LEFT -> {
                 commitSelection(exitToMosaic = true)

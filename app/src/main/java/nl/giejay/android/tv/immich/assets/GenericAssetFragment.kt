@@ -15,10 +15,9 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
-import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.fragment.TimelinedVerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.ALL_ASSETS_SORTING
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
-import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
 import nl.giejay.android.tv.immich.shared.prefs.FILTER_CONTENT_TYPE
@@ -43,8 +42,9 @@ import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
+import java.time.OffsetDateTime
 
-abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
+abstract class GenericAssetFragment : TimelinedVerticalCardGridFragment<Asset>() {
     protected lateinit var currentFilter: ContentType
     protected lateinit var currentSort: PhotosOrder
     private var excludedAssetsLoaded = false
@@ -175,5 +175,11 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
 
     override fun createCard(a: Asset): Card {
         return a.toCard()
+    }
+
+    override fun getItemDate(it: Asset): OffsetDateTime? {
+        return it.exifInfo?.dateTimeOriginal?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toOffsetDateTime()
+            ?: it.fileCreatedAt?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toOffsetDateTime()
+            ?: it.fileModifiedAt?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toOffsetDateTime()
     }
 }

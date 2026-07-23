@@ -4,6 +4,7 @@ import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.assets.GenericAssetFragment
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
@@ -12,6 +13,7 @@ import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
 import nl.giejay.android.tv.immich.shared.prefs.FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PHOTOS_SORTING_FOR_SPECIFIC_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
+import java.time.OffsetDateTime
 
 
 class AlbumDetailsFragment : GenericAssetFragment() {
@@ -31,13 +33,27 @@ class AlbumDetailsFragment : GenericAssetFragment() {
     }
 
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
+        val order = if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc"
         return apiClient.listAssets(
             page = page,
             pageCount = pageCount,
-            order = if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc",
+            order = order,
             contentType = currentFilter,
-            albumIds = listOf(albumId)
+            albumIds = listOf(albumId),
+            endDate = if (order == "desc") initialJumpDate else null,
+            fromDate = if (order == "asc") initialJumpDate else null
         ).map { it.map { a -> a.copy(albumName = albumName) } }
+    }
+
+    override suspend fun fetchBuckets(apiClient: ApiClient): Either<String, List<TimeBucketSummary>> {
+        val order = if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc"
+        return apiClient.getTimeBuckets(albumId = albumId, order = order)
+    }
+
+    override fun getItemDate(it: Asset): OffsetDateTime? {
+        return it.exifInfo?.dateTimeOriginal?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toOffsetDateTime()
+            ?: it.fileCreatedAt?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toOffsetDateTime()
+            ?: it.fileModifiedAt?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toOffsetDateTime()
     }
 
     override fun onItemSelected(card: Card, indexOf: Int) {

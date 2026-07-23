@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.timeline
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import arrow.core.Either
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -35,7 +36,9 @@ class TimelineViewModel(
     private val fetchBuckets: suspend () -> Either<String, List<TimeBucketSummary>>,
     private val fetchBucket: suspend (String) -> Either<String, List<TimelineAsset>>,
     private val fetchMemories: suspend () -> Either<String, List<Memory>> = { Either.Right(emptyList()) },
-    private val prefetchDebounceMs: Long = PREFETCH_DEBOUNCE_MS
+    private val prefetchDebounceMs: Long = PREFETCH_DEBOUNCE_MS,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
     private val _buckets = MutableStateFlow<List<TimeBucketSummary>>(emptyList())
@@ -137,35 +140,39 @@ class TimelineViewModel(
     suspend fun loadBucketList(eagerMonths: Int = 3) {
         if (_buckets.value.isNotEmpty()) return
         _isLoading.value = true
-        fetchBuckets().fold(
-            { message ->
-                _error.value = message
-                _isLoading.value = false
-            },
-            { list ->
-                _buckets.value = list
-                list.take(eagerMonths).forEach { loadBucket(it.timeBucket) }
-                _isLoading.value = false
-            }
-        )
+        withContext(ioDispatcher) {
+            fetchBuckets().fold(
+                { message ->
+                    _error.value = message
+                    _isLoading.value = false
+                },
+                { list ->
+                    _buckets.value = list
+                    list.take(eagerMonths).forEach { loadBucket(it.timeBucket) }
+                    _isLoading.value = false
+                }
+            )
+        }
     }
 
     suspend fun loadMemories() {
         _isLoading.value = true
-        fetchMemories().fold(
-            { message ->
-                _error.value = message
-                _memoriesReady.value = true
-                _isLoading.value = false
-            },
-            { list ->
-                // Mark ready before publishing the list so bindDays/restore sees both together.
-                _memoriesReady.value = true
-                _memories.value = list
-                recomputeLayout()
-                _isLoading.value = false
-            }
-        )
+        withContext(ioDispatcher) {
+            fetchMemories().fold(
+                { message ->
+                    _error.value = message
+                    _memoriesReady.value = true
+                    _isLoading.value = false
+                },
+                { list ->
+                    // Mark ready before publishing the list so bindDays/restore sees both together.
+                    _memoriesReady.value = true
+                    _memories.value = list
+                    recomputeLayout()
+                    _isLoading.value = false
+                }
+            )
+        }
     }
 
     fun rememberSelection(dayKey: String, assetId: String) {
@@ -185,7 +192,7 @@ class TimelineViewModel(
         _bucketAssets.value[timeBucket]?.let { return Either.Right(it) }
 
         val deferred = inFlight.computeIfAbsent(timeBucket) {
-            viewModelScope.async(Dispatchers.IO) {
+            viewModelScope.async(ioDispatcher) {
                 try {
                     fetchBucket(timeBucket).also { result ->
                         result.fold(
@@ -220,7 +227,7 @@ class TimelineViewModel(
     /**
      * Recomputes the entire mosaic layout and focus neighbor map.
      *
-     * This operation is performed on [Dispatchers.Default] because it is computationally intensive
+     * This operation is performed on [defaultDispatcher] because it is computationally intensive
      * for large libraries. It handles:
      * 1. Grouping assets into [TimelineDay]s.
      * 2. Calculating justified row dimensions (preserving aspect ratios).
@@ -229,7 +236,7 @@ class TimelineViewModel(
      * Offloading this prevents the main thread from stalling for several seconds during
      * large jumps (e.g., using the scrubber).
      */
-    private suspend fun recomputeLayout() = withContext(Dispatchers.Default) {
+    private suspend fun recomputeLayout() = withContext(defaultDispatcher) {
         val loaded = _bucketAssets.value
         val buckets = _buckets.value
         val memories = _memories.value
@@ -278,7 +285,7 @@ class TimelineViewModel(
     fun prefetchAroundDay(dayKey: String) {
         Debouncer.debounce(PREFETCH_KEY, {
             if (!viewModelScope.isActive) return@debounce
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(ioDispatcher) {
                 val monthKey = monthBucketKey(LocalDate.parse(dayKey))
                 val list = _buckets.value
                 val resolved = resolveBucketKey(monthKey) ?: monthKey

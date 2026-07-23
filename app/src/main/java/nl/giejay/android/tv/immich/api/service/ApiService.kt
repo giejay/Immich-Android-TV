@@ -40,9 +40,9 @@ interface ApiService {
     @PUT("assets/{id}")
     suspend fun updateAsset(@Path("id") id: String, @Body request: UpdateAssetRequest): Response<Asset>
 
-    // VIS-02: default visibility=timeline excludes hidden/archived assets, matching listAssets.
     @GET("timeline/buckets")
     suspend fun getTimeBuckets(
+        @Query("albumId") albumId: String? = null,
         @Query("order") order: String = "desc",
         @Query("visibility") visibility: String? = "timeline",
         @Query("withPartners") withPartners: Boolean? = null

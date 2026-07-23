@@ -250,9 +250,13 @@ class ApiClient(private val config: ApiClientConfig) {
         }
     }
 
-    suspend fun getTimeBuckets(): Either<String, List<TimeBucketSummary>> =
+    suspend fun getTimeBuckets(albumId: String? = null, order: String = "desc"): Either<String, List<TimeBucketSummary>> =
         executeAPICall(200) {
-            service.getTimeBuckets(withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)))
+            service.getTimeBuckets(
+                albumId = albumId,
+                order = order,
+                withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE))
+            )
         }
 
     /**

@@ -44,6 +44,12 @@ class PeopleFragment : VerticalCardGridFragment<Person>() {
         return null
     }
 
+    override fun openPopUpMenu() {
+        findNavController().navigate(
+            HomeFragmentDirections.actionGlobalToSettingsDialog("view")
+        )
+    }
+
     override fun createCard(a: Person): Card {
         return Card(
             a.name ?: "Unknown",
