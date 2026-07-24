@@ -50,22 +50,23 @@ include:
 
 When setting up your API key in Immich, make sure to grant the following permissions for the app to function properly:
 
-- `album.read` - Read album information
 - `activity.read` - Read activity data
+- `album.download` - Download album content
+- `album.read` - Read album information
+- `archive.read` - Read archived items
+- `asset.download` - Download assets for viewing
 - `asset.read` - Read asset metadata
 - `asset.view` - View assets (photos/videos)
-- `asset.download` - Download assets for viewing
-- `album.download` - Download album content
-- `archive.read` - Read archived items
 - `face.read` - Read face detection data
+- `folder.read` - Read folder information
 - `library.read` - Read library information
-- `timeline.read` - Read timeline data
 - `memory.read` - Read memory/moment data
 - `partner.read` - Read partner sharing data
 - `person.read` - Read person/people data
 - `session.read` - Read session information
-- `tag.read` - Read tag information
 - `tag.asset` - Read asset tag associations
+- `tag.read` - Read tag information
+- `timeline.read` - Read timeline data
 
 ## Screenshots
 
