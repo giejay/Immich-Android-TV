@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
@@ -42,6 +43,7 @@ import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
+import nl.giejay.mediaslider.util.LoadMoreResult
 import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
 
 abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
@@ -84,7 +86,8 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
             if (excludedAlbums.isNotEmpty()) {
                 excludedAssetIds = excludedAlbums.toList().pmap {
                     apiClient.listAssetsFromAlbum(listOf(it), pageCount = 1000)
-                        .getOrElse { emptyList() }
+                        .getOrElse { AssetResponse(emptyList(), false) }
+                        .assets
                         .map { it -> it.id }
                 }.flatten().toSet()
             }
@@ -137,7 +140,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
                 val moreAssets = loadMoreAssets()
                 // also load the data in the overview
                 setDataOnMain(moreAssets)
-                moreAssets.toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
+                LoadMoreResult(
+                    moreAssets.toSliderItems(true, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)),
+                    moreAssets.isNotEmpty() && !allPagesLoaded
+                )
             }
 
             withContext(Dispatchers.Main) {

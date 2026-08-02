@@ -39,6 +39,7 @@ import nl.giejay.mediaslider.plugin.MetadataViewPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPluginContext
 import nl.giejay.mediaslider.util.FixedSpeedScroller
+import nl.giejay.mediaslider.util.LoadMoreResult
 import timber.log.Timber
 import java.lang.reflect.Field
 
@@ -194,9 +195,13 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 if (config.loadMore != null && mPager.currentItem > config.items.size - 40 && !loading) {
                     loading = true
                     ioScope.launch {
-                        val nextItems = config.loadMore!!.invoke()
-                        addItemsMain(nextItems)
-                        loading = nextItems.isEmpty()
+                        val loadMore = config.loadMore ?: return@launch
+                        val result: LoadMoreResult = loadMore()
+                        addItemsMain(result.items)
+                        if (!result.canLoadMore) {
+                            config.loadMore = null
+                        }
+                        loading = false
                     }
                 }
                 controller.stopPlayer()
