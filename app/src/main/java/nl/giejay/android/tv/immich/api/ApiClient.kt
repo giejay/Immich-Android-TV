@@ -22,6 +22,7 @@ import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.RECENT_ASSETS_MONTHS_BACK
+import nl.giejay.android.tv.immich.shared.prefs.SHOW_PARTNER_PHOTOS_IN_TIMELINE
 import nl.giejay.android.tv.immich.shared.prefs.SIMILAR_ASSETS_PERIOD_DAYS
 import nl.giejay.android.tv.immich.shared.prefs.SIMILAR_ASSETS_YEARS_BACK
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
@@ -64,6 +65,13 @@ internal fun buildListAssetsSearchRequest(
     // omits it so archived-in-album assets keep showing (VIS-02)
     visibility = if (albumIds.isEmpty()) "timeline" else null
 )
+
+// internal so app/src/test can call it directly without instantiating ApiClient/Retrofit.
+// Server default for withPartners is false/omitted, so only send true when the user opted in -
+// issue #157: partner-shared photos never showed up in the Timeline because this was never wired up.
+internal fun resolveWithPartners(showPartnerPhotosInTimeline: Boolean): Boolean? {
+    return if (showPartnerPhotosInTimeline) true else null
+}
 
 class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
@@ -243,7 +251,9 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     suspend fun getTimeBuckets(): Either<String, List<TimeBucketSummary>> =
-        executeAPICall(200) { service.getTimeBuckets() }
+        executeAPICall(200) {
+            service.getTimeBuckets(withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)))
+        }
 
     /**
      * Fetches all assets for a month bucket.
@@ -252,8 +262,9 @@ class ApiClient(private val config: ApiClientConfig) {
      * omit tags and album membership. Filtering those requires a follow-up ID set cross-check.
      */
     suspend fun getTimeBucket(timeBucket: String): Either<String, List<TimelineAsset>> =
-        executeAPICall(200) { service.getTimeBucket(timeBucket) }
-            .map { it.toTimelineAssets() }
+        executeAPICall(200) {
+            service.getTimeBucket(timeBucket, withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)))
+        }.map { it.toTimelineAssets() }
 
     /** "On this day" style memories for the current moment (server filters by day-of-year). */
     suspend fun getMemories(): Either<String, List<Memory>> {
