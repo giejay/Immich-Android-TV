@@ -50,22 +50,23 @@ include:
 
 When setting up your API key in Immich, make sure to grant the following permissions for the app to function properly:
 
-- `album.read` - Read album information
 - `activity.read` - Read activity data
+- `album.download` - Download album content
+- `album.read` - Read album information
+- `archive.read` - Read archived items
+- `asset.download` - Download assets for viewing
 - `asset.read` - Read asset metadata
 - `asset.view` - View assets (photos/videos)
-- `asset.download` - Download assets for viewing
-- `album.download` - Download album content
-- `archive.read` - Read archived items
 - `face.read` - Read face detection data
+- `folder.read` - Read folder information
 - `library.read` - Read library information
-- `timeline.read` - Read timeline data
 - `memory.read` - Read memory/moment data
 - `partner.read` - Read partner sharing data
 - `person.read` - Read person/people data
 - `session.read` - Read session information
-- `tag.read` - Read tag information
 - `tag.asset` - Read asset tag associations
+- `tag.read` - Read tag information
+- `timeline.read` - Read timeline data
 
 ## Screenshots
 
@@ -79,8 +80,8 @@ When setting up your API key in Immich, make sure to grant the following permiss
 
 1. Clone project with `git clone --recurse git@github.com:giejay/Immich-Android-TV.git`
 2. Create an account at firebase and create a google-services.json file, or
-   `cp apps/google-services.example apps/google-services.json`
-3. copy app/src/strings_other.xml.example to app/src/main/res/values/strings_other.xml and modify
+   `cp app/google-services.example app/google-services.json`
+3. copy app/strings_other.xml.example to app/src/main/res/values/strings_other.xml and modify
    the address and API keys for your demo server.
 4. Build apk with `./gradlew assembleRelease`
 

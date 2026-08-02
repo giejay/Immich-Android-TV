@@ -12,53 +12,50 @@ import nl.giejay.mediaslider.model.StaticMetaDataProvider
  */
 object AssetMetaDataMapping {
 
-    /** Fields the Immich viewer overlay can show for an asset. */
-    private val SLIDER_FIELDS = listOf(
-        MetaDataType.DATE,
-        MetaDataType.CITY,
-        MetaDataType.COUNTRY,
-        MetaDataType.DESCRIPTION,
-        MetaDataType.FILENAME,
-        MetaDataType.PEOPLE,
-        MetaDataType.FILEPATH,
-        MetaDataType.CAMERA,
-        MetaDataType.ALBUM_NAME
+    /**
+     * Maps each supported [MetaDataType] to a lambda that extracts its string value
+     * from an [Asset]. This defines both the available fields and their order.
+     */
+    private val MAPPINGS: Map<MetaDataType, (Asset) -> String?> = mapOf(
+        MetaDataType.DATE to { asset ->
+            val date = asset.exifInfo?.dateTimeOriginal
+                ?: asset.fileCreatedAt
+                ?: asset.fileModifiedAt
+            date?.let { formatAssetDate(it) }
+        },
+        MetaDataType.CITY to { it.exifInfo?.city },
+        MetaDataType.COUNTRY to { it.exifInfo?.country },
+        MetaDataType.DESCRIPTION to { it.exifInfo?.description },
+        MetaDataType.FILENAME to { it.originalFileName },
+        MetaDataType.PEOPLE to { asset ->
+            asset.people
+                ?.mapNotNull { it.name }
+                ?.filter { it.isNotBlank() }
+                ?.joinToString(", ")
+                ?.ifBlank { null }
+        },
+        MetaDataType.FILEPATH to { it.originalPath },
+        MetaDataType.CAMERA to { asset ->
+            listOfNotNull(asset.exifInfo?.make, asset.exifInfo?.model)
+                .joinToString(" ")
+                .ifBlank { null }
+        },
+        MetaDataType.ALBUM_NAME to { it.albumName?.ifBlank { null } }
     )
 
     /**
      * Project a loaded/partial [Asset] to a display string for [field], without network.
      * Returns null when the asset does not carry that field yet.
      */
-    fun valueOf(asset: Asset, field: MetaDataType): String? = when (field) {
-        MetaDataType.DATE -> {
-            val date = asset.exifInfo?.dateTimeOriginal
-                ?: asset.fileCreatedAt
-                ?: asset.fileModifiedAt
-            date?.let { formatAssetDate(it) }
-        }
-        MetaDataType.CITY -> asset.exifInfo?.city
-        MetaDataType.COUNTRY -> asset.exifInfo?.country
-        MetaDataType.DESCRIPTION -> asset.exifInfo?.description
-        MetaDataType.FILENAME -> asset.originalFileName
-        MetaDataType.FILEPATH -> asset.originalPath
-        MetaDataType.PEOPLE -> asset.people
-            ?.mapNotNull { it.name }
-            ?.filter { it.isNotBlank() }
-            ?.joinToString(", ")
-            ?.ifBlank { null }
-        MetaDataType.CAMERA -> listOfNotNull(asset.exifInfo?.make, asset.exifInfo?.model)
-            .joinToString(" ")
-            .ifBlank { null }
-        MetaDataType.ALBUM_NAME -> asset.albumName?.ifBlank { null }
-        else -> null
-    }
+    fun valueOf(asset: Asset, field: MetaDataType): String? =
+        MAPPINGS[field]?.invoke(asset)
 
     /**
      * Build providers for [Asset.toSliderItem]: static when [valueOf] is known, else lazy
      * detail fetch ([AssetDetailMetaDataProvider]) or album list lookup.
      */
     fun providersFor(asset: Asset): Map<MetaDataType, MetaDataProvider> =
-        SLIDER_FIELDS.associateWith { field ->
+        MAPPINGS.keys.associateWith { field ->
             val inline = valueOf(asset, field)
             when {
                 inline != null -> StaticMetaDataProvider(inline)
