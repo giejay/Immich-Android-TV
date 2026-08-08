@@ -29,6 +29,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.toCard
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.util.LoadMoreResult
 import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
 
 data class Item(val item: Any) {
@@ -96,7 +97,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                 PreferenceManager.get(SLIDER_ONLY_USE_THUMBNAILS),
                 isVideoSoundEnable = true,
                 sliderItems,
-                { listOf() },
+                { LoadMoreResult(emptyList(), false) },
                 { item -> manualUpdatePosition(this.assets.indexOfFirst { item.ids().contains(it.id) }) },
                 animationSpeedMillis = PreferenceManager.get(SLIDER_ANIMATION_SPEED),
                 maxCutOffHeight = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
