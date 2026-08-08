@@ -49,6 +49,10 @@
         android:id="@+id/action_to_metadata_fragment"
         app:destination="@id/metaDataCustomizer" />
 
+    <action
+        android:id="@+id/action_global_screensaver_preview"
+        app:destination="@id/screenSaverPreviewFragment" />
+
     <!--    <fragment-->
     <!--        android:id="@+id/playbackFragment"-->
     <!--        android:name="nl.giejay.android.tv.immich.playback.PlaybackFragment"-->
@@ -111,6 +115,11 @@
         android:name="nl.giejay.android.tv.immich.assets.AllAssetFragment"
         android:label="AllAssetsFragment">
     </fragment>
+
+    <fragment
+        android:id="@+id/screenSaverPreviewFragment"
+        android:name="nl.giejay.android.tv.immich.screensaver.ScreenSaverPreviewFragment"
+        android:label="ScreenSaverPreview" />
 
     <fragment
         android:id="@+id/photoSlider"
