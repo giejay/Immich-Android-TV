@@ -7,6 +7,7 @@ import arrow.core.flatMap
 import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.Person
@@ -73,6 +74,12 @@ internal fun resolveWithPartners(showPartnerPhotosInTimeline: Boolean): Boolean?
     return if (showPartnerPhotosInTimeline) true else null
 }
 
+internal fun SearchResponse.toAssetResponse(): AssetResponse =
+    AssetResponse(assets.items, assets.nextPage != null)
+
+internal fun List<Asset>.toRandomAssetResponse(): AssetResponse =
+    AssetResponse(this, true)
+
 class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
@@ -112,7 +119,7 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun listAssetsFromAlbum(albumIds: List<String>,
                                     contentType: ContentType = ContentType.ALL,
-                                    pageCount: Int = 100): Either<String, List<Asset>> {
+                                    pageCount: Int = 100): Either<String, AssetResponse> {
         val results = albumIds.pmap { albumId ->
             val album = executeAPICall(200) { service.getAlbum(albumId) }
                 .getOrElse { return@pmap Either.Left(it) }
@@ -143,19 +150,19 @@ class ApiClient(private val config: ApiClientConfig) {
             val assets = res.getOrElse { return Either.Left(it) }
             allAssets.addAll(assets)
         }
-        return Either.Right(allAssets.filter(excludeByTag()))
+        return Either.Right(AssetResponse(allAssets.filter(excludeByTag()), false))
     }
 
-    suspend fun recentAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, List<Asset>> {
+    suspend fun recentAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
         val now = LocalDateTime.now()
         return listAssets(page, pageCount, true, "desc",
             contentType = contentType, fromDate = now.minusMonths(PreferenceManager.get(RECENT_ASSETS_MONTHS_BACK).toLong()), endDate = now)
-            .map { it.shuffled() }
+            .map { it.copy(assets = it.assets.shuffled()) }
     }
 
-    suspend fun similarAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, List<Asset>> {
+    suspend fun similarAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
         val now = LocalDateTime.now()
-        val map: List<Either<String, List<Asset>>> = (0 until PreferenceManager.get(SIMILAR_ASSETS_YEARS_BACK)).toList().map {
+        val map: List<Either<String, AssetResponse>> = (0 until PreferenceManager.get(SIMILAR_ASSETS_YEARS_BACK)).toList().map {
             listAssets(page,
                 pageCount,
                 true,
@@ -167,7 +174,11 @@ class ApiClient(private val config: ApiClientConfig) {
         if (map.all { it.isLeft() }) {
             return map.first()
         }
-        return Either.Right(map.flatMap { it.getOrElse { emptyList() } }.shuffled())
+        val responses = map.mapNotNull { it.getOrNull() }
+        return Either.Right(AssetResponse(
+            responses.flatMap { it.assets }.shuffled(),
+            responses.any { it.canLoadMore }
+        ))
     }
 
     suspend fun listAssets(page: Int,
@@ -178,7 +189,7 @@ class ApiClient(private val config: ApiClientConfig) {
                            fromDate: LocalDateTime? = null,
                            endDate: LocalDateTime? = null,
                            contentType: ContentType,
-                           albumIds: List<String> = emptyList()): Either<String, List<Asset>> {
+                           albumIds: List<String> = emptyList()): Either<String, AssetResponse> {
         val searchRequest = buildListAssetsSearchRequest(
             page = page,
             pageCount = pageCount,
@@ -195,8 +206,9 @@ class ApiClient(private val config: ApiClientConfig) {
             // stricter request validation rejects unknown properties with a 400, so they must be
             // stripped here rather than sent as on the metadata-search path below.
             executeAPICall(200) { service.randomAssets(searchRequest.copy(page = null, order = null)) }
+                .map { it.toRandomAssetResponse() }
         } else {
-            search(searchRequest).map { it.assets.items }
+            search(searchRequest).map { it.toAssetResponse() }
         }
         return assetsResult
     }

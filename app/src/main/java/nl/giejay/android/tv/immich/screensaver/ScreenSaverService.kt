@@ -6,7 +6,6 @@ import android.view.KeyEvent
 import android.widget.Toast
 import androidx.media3.datasource.DefaultHttpDataSource
 import arrow.core.Either
-import arrow.core.flatten
 import arrow.core.getOrElse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +17,7 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
@@ -46,6 +46,7 @@ import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
+import nl.giejay.mediaslider.util.LoadMoreResult
 import nl.giejay.mediaslider.util.MediaSliderListener
 import nl.giejay.mediaslider.view.MediaSliderView
 import timber.log.Timber
@@ -55,18 +56,25 @@ internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: 
     this.onLeft { error -> Timber.w("Failed to load assets for %s: %s", logContext, error) }
         .getOrElse { default }
 
+internal fun filterExcludedAssets(assets: List<Asset>, excludedAssetIds: Set<String>): List<Asset> =
+    assets.filter { asset -> asset.tags?.none { it.name == "exclude_immich_tv" } ?: true }
+        .filterNot { excludedAssetIds.contains(it.id) }
+
 class ScreenSaverService : DreamService(), MediaSliderListener {
     private var ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private lateinit var apiClient: ApiClient
     private val favoriteService = FavoriteService()
     private var mediaSliderView: MediaSliderView? = null
     private var currentPage = 0
-    private var doneLoading: Boolean = false
     private var excludedAssetIds: Set<String> = emptySet()
+    private val filteredAssetLoader = FilteredAssetLoader(
+        filterAssets = { filterExcludedAssets(it, excludedAssetIds) }
+    )
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun onDreamingStarted() {
         ioScope = CoroutineScope(Job() + Dispatchers.IO)
+        filteredAssetLoader.reset()
         Timber.i("Starting screensaver")
         if (!PreferenceManager.isLoggedId()) {
             showErrorMessage(getString(R.string.screensaver_not_possible))
@@ -92,7 +100,8 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
             val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
             if (excludedAlbums.isNotEmpty()) {
                 excludedAssetIds = apiClient.listAssetsFromAlbum(excludedAlbums.toList(), pageCount = 5000)
-                    .getOrElse { emptyList() }
+                    .getOrElse { AssetResponse(emptyList(), false) }
+                    .assets
                     .map { it.id }
                     .toSet()
             }
@@ -101,23 +110,11 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                 loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS).toList())
             } else {
                 val screenSaverType = PreferenceManager.get(SCREENSAVER_TYPE)
-                loadRandomImages(screenSaverType).invoke().map {
-                    setInitialAssets(it, suspend {
-                        if (doneLoading) {
-                            emptyList()
-                        } else {
-                            currentPage += 1
-                            val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
-                            val result = when (screenSaverType) {
-                                ScreenSaverType.RECENT -> apiClient.recentAssets(currentPage, PAGE_COUNT, contentType = contentType)
-                                ScreenSaverType.SIMILAR_TIME_PERIOD -> apiClient.similarAssets(currentPage, PAGE_COUNT, contentType = contentType)
-                                else -> apiClient.listAssets(currentPage, PAGE_COUNT, true, contentType = contentType)
-                            }
-                            val rawAssets = result.getOrElseLogged("screensaver random/recent/similar loadMore", emptyList())
-                            doneLoading = rawAssets.size < PAGE_COUNT
-                            filterAssets(rawAssets).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
-                        }
-                    })
+                filteredAssetLoader.load { loadNextAssets(screenSaverType) }.map { response ->
+                    setInitialAssets(
+                        response.assets,
+                        if (response.canLoadMore) createLoadMore { loadNextAssets(screenSaverType) } else null
+                    )
                 }
             }
         }
@@ -129,40 +126,58 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         super.onDreamingStopped()
     }
 
-    private fun loadRandomImages(screenSaverType: ScreenSaverType): suspend () -> Either<String, List<Asset>> {
+    private suspend fun loadNextAssets(screenSaverType: ScreenSaverType): Either<String, AssetResponse> {
         val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
-        return suspend {
-            val result = when (screenSaverType) {
-                ScreenSaverType.RECENT -> apiClient.recentAssets(currentPage, PAGE_COUNT, contentType = contentType)
-                ScreenSaverType.SIMILAR_TIME_PERIOD -> apiClient.similarAssets(currentPage, PAGE_COUNT, contentType = contentType)
-                else -> apiClient.listAssets(currentPage, PAGE_COUNT, true, contentType = contentType)
-            }
-            result.map { filterAssets(it) }
+        val page = currentPage
+        currentPage += 1
+        return when (screenSaverType) {
+            ScreenSaverType.RECENT -> apiClient.recentAssets(page, PAGE_COUNT, contentType = contentType)
+            ScreenSaverType.SIMILAR_TIME_PERIOD -> apiClient.similarAssets(page, PAGE_COUNT, contentType = contentType)
+            else -> apiClient.listAssets(page, PAGE_COUNT, true, contentType = contentType)
         }
+    }
+
+    private fun createLoadMore(fetch: suspend () -> Either<String, AssetResponse>): LoadMore = suspend {
+        filteredAssetLoader.load(fetch).fold(
+            { error ->
+                Timber.w("Failed to load more screensaver assets: %s", error)
+                LoadMoreResult(emptyList(), false)
+            },
+            { response ->
+                LoadMoreResult(
+                    response.assets.toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS)),
+                    response.canLoadMore
+                )
+            }
+        )
     }
 
     private suspend fun loadImagesFromAlbums(albums: List<String>) {
         try {
             if (albums.isNotEmpty()) {
-                // first load x random assets from each album. Then load all assets from all albums.
-                val initialAssets = loadNextAssetsFromAlbums(albums, random = true)
-                if(initialAssets.isEmpty()){
-                    // this is a fallback for an issue with the random endpoint where its not able to return shared albums yet
-                    // just retrieve all assets from the albums and show them in the screensaver
-                    Timber.w("No random assets found for albums $albums, falling back to loading all assets from albums")
-                    loadNextAssetsFromAlbums(albums, random = false).let {
-                        if(it.isEmpty()){
-                            showErrorMessageMainScope(getString(R.string.no_assets_for_screensaver))
-                            finish()
-                        } else {
-                            setInitialAssets(it, null)
-                        }
+                var loadRandomAssets = true
+                val initialResponse = filteredAssetLoader.load {
+                    if (loadRandomAssets) {
+                        loadRandomAssets = false
+                        loadNextAssetsFromAlbums(albums, random = true).fold(
+                            {
+                                Timber.w("Could not load random assets for albums $albums, falling back to all album assets")
+                                loadNextAssetsFromAlbums(albums, random = false)
+                            },
+                            { Either.Right(it) }
+                        )
+                    } else {
+                        Timber.w("Random album sample was empty after exclusions for albums $albums, checking their complete asset lists")
+                        loadNextAssetsFromAlbums(albums, random = false)
                     }
-                } else {
-                    setInitialAssets(initialAssets, suspend {
-                        loadNextAssetsFromAlbums(albums, random = false).toSliderItems(false, PreferenceManager.get(SLIDER_MERGE_PORTRAIT_PHOTOS))
-                    })
-                }
+                }.getOrElse { throw IllegalStateException(it) }
+
+                setInitialAssets(
+                    initialResponse.assets,
+                    if (initialResponse.canLoadMore) {
+                        createLoadMore { loadNextAssetsFromAlbums(albums, random = false) }
+                    } else null
+                )
             } else {
                 showErrorMessageMainScope(getString(R.string.set_albums_screensaver_error))
                 finish()
@@ -174,33 +189,27 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
         }
     }
 
-    private suspend fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): List<Asset> {
+    private suspend fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): Either<String, AssetResponse> {
         val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
-        val assets = if (random) {
+        if (random) {
             val pageCount = (50 / albums.size).coerceAtLeast(1)
-            albums.pmap { albumId ->
+            val responses = albums.pmap { albumId ->
                 apiClient.listAssets(
                     page = 1,
                     pageCount = pageCount,
                     random = true,
                     contentType = contentType,
                     albumIds = listOf(albumId)
-                ).getOrElse { emptyList() }
-            }.flatten()
+                )
+            }
+            responses.firstOrNull { it.isLeft() }?.let { return it }
+            return Either.Right(AssetResponse(
+                responses.flatMap { it.getOrElse { AssetResponse(emptyList(), true) }.assets }.shuffled(),
+                true
+            ))
         } else {
-            apiClient.listAssetsFromAlbum(albums, contentType, pageCount = 1000).getOrElse { emptyList() }
+            return apiClient.listAssetsFromAlbum(albums, contentType, pageCount = 1000)
         }
-
-        return filterAssets(assets).shuffled()
-    }
-
-    private fun filterAssets(assets: List<Asset>): List<Asset> {
-        return assets.filter(excludeByTag())
-            .filterNot { excludedAssetIds.contains(it.id) }
-    }
-
-    private fun excludeByTag() = { asset: Asset ->
-        asset.tags?.none { t -> t.name == "exclude_immich_tv" } ?: true
     }
 
     private suspend fun showErrorMessageMainScope(errorMessage: String) {
