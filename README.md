@@ -46,6 +46,20 @@ include:
 | Searching in and for albums                                                    | Todo         |
 | Dependency injection with Hilt/Dagger                                          | Todo         |
 
+## Installation
+
+The app is not on the Play Store, so you install the APK yourself.
+
+1. Download the latest `ImmichTV-x.y.z.apk` from
+   the [releases page](https://github.com/giejay/Immich-Android-TV/releases/latest).
+2. Install it on your Android TV device in one of two ways:
+   - **From a PC with ADB**: enable USB debugging on the device (steps 1-4 of the
+     [screensaver FAQ](#im-not-able-to-set-the-app-as-a-screensaver) below), then run
+     `adb install ImmichTV-x.y.z.apk`.
+   - **On the device**: install a sideload app such as Downloader, then enter the link to the APK.
+3. Open the app from the Android TV home screen and sign in with your server address and an API key
+   (see [Required API Permissions](#required-api-permissions)).
+
 ## Required API Permissions
 
 When setting up your API key in Immich, make sure to grant the following permissions for the app to function properly:
@@ -98,7 +112,7 @@ might consider buying me a coffee or a beer:
 
 ## FAQ
 
-#### I'n not able to set the app as a screensaver
+#### I'm not able to set the app as a screensaver
 
 1. Enable development mode on the device (click the build number or "Android TV OS Build" 7 times in
    the System->About settings).
