@@ -27,6 +27,8 @@ class MediaSliderConfiguration(
     val zoomEffectPercent: Int,
     val panEffectPercent: Int,
     val useLargeVideoBuffer: Boolean = false,
+    /** When true, D-pad Left/Right seek in video; when false (default), they change assets. */
+    val dpadSeeksInVideo: Boolean = false,
     var controllerPlugins: List<SliderControllerPlugin> = emptyList(),
     var viewPlugins: List<SliderViewPlugin<*>> = emptyList(),
     var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()

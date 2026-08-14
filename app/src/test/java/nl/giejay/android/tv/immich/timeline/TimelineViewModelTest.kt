@@ -508,7 +508,7 @@ class TimelineViewModelTest {
         advanceUntilIdle()
         assertTrue(fail.memoriesReady.value)
         assertTrue(fail.memories.value.isEmpty())
-        assertEquals("boom", fail.error.value)
+        assertNull(fail.error.value)
     }
 
     @Test

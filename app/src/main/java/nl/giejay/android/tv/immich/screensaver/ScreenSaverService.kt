@@ -32,6 +32,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_PLAY_SOUND
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ANIMATION_SPEED
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_DPAD_SEEK_IN_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
@@ -42,7 +43,6 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
-import nl.giejay.android.tv.immich.slider.FavoriteButtonControllerPlugin
 import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.util.LoadMore
@@ -227,7 +227,12 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
     }
 
     private suspend fun setInitialAssets(assets: List<Asset>, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
-        if (assets.isNotEmpty()) {
+        if (assets.isEmpty()) {
+            Toast.makeText(this@ScreenSaverService,
+                getString(R.string.no_assets_for_screensaver),
+                Toast.LENGTH_LONG).show()
+        } else {
+            val enabledPlugins = PreferenceManager.createEnabledSliderPlugins(ioScope, favoriteService)
             mediaSliderView?.loadMediaSliderView(
                 MediaSliderConfiguration(
                     0,
@@ -247,9 +252,10 @@ class ScreenSaverService : DreamService(), MediaSliderListener {
                     zoomEffectPercent = PreferenceManager.get(SLIDER_ZOOM_EFFECT),
                     panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
                     useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
-                    controllerPlugins = PreferenceManager.getEnabledSliderControllerPlugins(ioScope, favoriteService),
-                    viewPlugins = PreferenceManager.getEnabledSliderViewPlugins(),
-                    keyEventPlugins = PreferenceManager.getEnabledSliderKeyEventPlugins()
+                    dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO),
+                    controllerPlugins = enabledPlugins.controllerPlugins,
+                    viewPlugins = enabledPlugins.viewPlugins,
+                    keyEventPlugins = enabledPlugins.keyEventPlugins
                 )
             )
             mediaSliderView?.toggleSlideshow(false)

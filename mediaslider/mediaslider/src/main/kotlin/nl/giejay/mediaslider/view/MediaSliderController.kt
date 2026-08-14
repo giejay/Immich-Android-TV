@@ -178,22 +178,25 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun goToNextAsset() {
-        hideOverlayControls()
         if (pager.currentItem < pager.adapter!!.count - 1) {
             pager.setCurrentItem(pager.currentItem + 1, config.enableSlideAnimation)
         } else {
             pager.setCurrentItem(0, config.enableSlideAnimation)
         }
-        restorePagerFocus()
+        // Keep controller focus if the overlay is open (e.g. mid D-pad to pause during slideshow).
+        if (!isControllerVisible) {
+            restorePagerFocus()
+        }
     }
 
     fun goToPreviousAsset() {
-        hideOverlayControls()
         pager.setCurrentItem(
             (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
             config.enableSlideAnimation
         )
-        restorePagerFocus()
+        if (!isControllerVisible) {
+            restorePagerFocus()
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -209,9 +212,6 @@ class MediaSliderController(
         if (controller.isVisible) {
             hideOverlayControls()
             return true
-        }
-        if (slideShowPlaying) {
-            toggleSlideshow(true)
         }
         controller.visibility = View.VISIBLE
         _isControllerVisible = true
@@ -235,18 +235,18 @@ class MediaSliderController(
 
     /**
      * Wires up all button listeners for the unified controller embedded in the
-     * view at [sliderItemIndex].  Hides the controller and resets visibility of
-     * video-only widgets based on [sliderItem].
+     * view at [sliderItemIndex]. Resets visibility of video-only widgets based
+     * on [sliderItem]. If the controller was already showing, it stays showing
+     * so D-pad navigation is not interrupted when the page changes.
      */
     fun configureController(sliderItem: SliderItemViewHolder, sliderItemIndex: Int) {
         val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: run {
             _isControllerVisible = false
             return
         }
+        val keepVisible = _isControllerVisible
+        val focusSnapshot = if (keepVisible) captureControllerFocus() else null
 
-        controller.visibility = View.GONE
-        _isControllerVisible = false
-        config.controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this,config) }
         stopProgressUpdates()
 
         val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
@@ -334,6 +334,21 @@ class MediaSliderController(
         config.controllerPlugins.forEach { it.onConfigureController(pluginContext) }
 
         setupFocusNavigation(buttonRow, seekBar, isVideo, playPauseButton, previousButton)
+
+        if (keepVisible) {
+            controller.visibility = View.VISIBLE
+            _isControllerVisible = true
+            config.controllerPlugins.forEach {
+                it.onControllerVisibilityChanged(true, controllerRootView, this, config)
+            }
+            restoreControllerFocus(focusSnapshot)
+            if (isVideo) {
+                startProgressUpdates()
+            }
+        } else {
+            controller.visibility = View.GONE
+            _isControllerVisible = false
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -346,13 +361,28 @@ class MediaSliderController(
 
     fun dispatchKeyEvent(event: KeyEvent, superDispatch: () -> Boolean): Boolean {
         val itemType = currentItemTypeOrNull()
+        val pluginState = SliderKeyEventState(
+            isControllerVisible = isControllerVisible,
+            isSlideshowPlaying = slideShowPlaying,
+            currentItemType = itemType,
+            controller = this,
+            config = config
+        )
+        if (event.action == KeyEvent.ACTION_UP) {
+            var pluginHandled = false
+            config.keyEventPlugins.forEach { plugin ->
+                when (plugin.onKeyUp(event, pluginState)) {
+                    SliderKeyEventResult.UNHANDLED -> Unit
+                    SliderKeyEventResult.HANDLED_CONTINUE -> pluginHandled = true
+                    SliderKeyEventResult.HANDLED_CONSUME -> return true
+                    SliderKeyEventResult.DISPATCH_TO_SUPER -> return superDispatch()
+                }
+            }
+            if (pluginHandled) {
+                return true
+            }
+        }
         if (event.action == KeyEvent.ACTION_DOWN) {
-            val pluginState = SliderKeyEventState(
-                isControllerVisible = isControllerVisible,
-                isSlideshowPlaying = slideShowPlaying,
-                currentItemType = itemType,
-                controller = this
-            )
             var pluginHandled = false
             config.keyEventPlugins.forEach { plugin ->
                 when (plugin.onKeyDown(event, pluginState)) {
@@ -389,6 +419,10 @@ class MediaSliderController(
                 if (toggleOverlayControls()) return true
                 return superDispatch()
             } else if (slideShowPlaying && itemType == SliderItemType.IMAGE) {
+                // Controller overlay is up: D-pad must move focus, not pause / skip slides.
+                if (isControllerVisible) {
+                    return superDispatch()
+                }
                 if (event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
                     toggleSlideshow(true)
                 } else {
@@ -497,6 +531,84 @@ class MediaSliderController(
                 return
             }
         }
+    }
+
+    /**
+     * Snapshot of which controller control had focus before a page reconfigure.
+     * [viewId] is stable for built-in controls; [index] helps for plugin buttons
+     * that get new generated ids each page.
+     */
+    private data class ControllerFocusSnapshot(val viewId: Int, val index: Int)
+
+    private fun captureControllerFocus(): ControllerFocusSnapshot? {
+        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: return null
+        val focused = controller.findFocus() ?: return null
+        val chain = visibleControllerFocusables()
+        return ControllerFocusSnapshot(focused.id, chain.indexOf(focused))
+    }
+
+    private fun restoreControllerFocus(snapshot: ControllerFocusSnapshot?) {
+        if (snapshot == null) {
+            requestInitialControllerFocus()
+            return
+        }
+
+        fun requestIfFocusable(viewId: Int): Boolean {
+            val view = controllerRootView.findViewById<View>(viewId) ?: return false
+            if (!view.isVisible || !view.isFocusable) return false
+            view.requestFocus()
+            return true
+        }
+
+        // Same control still present (prev/next/slideshow, or seek bar on video→video).
+        if (snapshot.viewId != View.NO_ID && requestIfFocusable(snapshot.viewId)) {
+            return
+        }
+
+        // Photo ↔ video: map play/pause ↔ slideshow; mute/seek → nearest stable control.
+        val semanticFallback = when (snapshot.viewId) {
+            R.id.media_play_pause -> R.id.image_slideshow
+            R.id.image_slideshow -> {
+                val playPause = controllerRootView.findViewById<View>(R.id.media_play_pause)
+                if (playPause != null && playPause.isVisible) R.id.media_play_pause
+                else R.id.image_slideshow
+            }
+            R.id.media_mute -> R.id.image_previous
+            R.id.media_seek_bar -> {
+                val playPause = controllerRootView.findViewById<View>(R.id.media_play_pause)
+                if (playPause != null && playPause.isVisible) R.id.media_play_pause
+                else R.id.image_slideshow
+            }
+            else -> null
+        }
+        if (semanticFallback != null && requestIfFocusable(semanticFallback)) {
+            return
+        }
+
+        // Same slot in the visible focus chain (plugin buttons / relative position).
+        val chain = visibleControllerFocusables()
+        if (chain.isNotEmpty()) {
+            val index = when {
+                snapshot.index >= 0 -> snapshot.index.coerceIn(0, chain.lastIndex)
+                else -> 0
+            }
+            chain[index].requestFocus()
+            return
+        }
+
+        requestInitialControllerFocus()
+    }
+
+    private fun visibleControllerFocusables(): List<View> {
+        val rowButtons = controllerRootView
+            .findViewById<LinearLayout>(R.id.media_controller_button_row)
+            ?.children
+            ?.filter { it.isVisible && it.isFocusable }
+            ?.toList()
+            .orEmpty()
+        val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
+            ?.takeIf { it.isVisible && it.isFocusable }
+        return if (seekBar != null) rowButtons + seekBar else rowButtons
     }
 
     fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {

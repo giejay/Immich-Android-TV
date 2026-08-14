@@ -113,10 +113,13 @@ MediaSliderConfiguration(
 ## Built-in Plugins
 
 - `MetadataViewPlugin`: Renders asset metadata (description, date, etc.).
+- `MediaRemoteControlsKeyEventPlugin`: Remote FF/RW tap-vs-hold seek, photo play/pause slideshow, opt-in D-pad seek, Back exits slideshow without pausing.
 - `FavoriteButtonControllerPlugin`: Adds a toggle for favoriting assets.
 - `ExternalPlayerButtonControllerPlugin`: Adds a button to open videos in an external player.
 - `TimelineStoryProgressPlugin`: Renders a segment-based progress bar (IG/Snapchat style) and manages slideshow timing.
 - `TopRightSlotViewPlugin`: Provides a container in the top-right corner for custom overlays.
+
+Key event plugins may also implement `onKeyUp` (dispatched for `ACTION_UP`) for tap-vs-hold gestures.
 
 ## Implementation Details
 
