@@ -14,6 +14,7 @@ import nl.giejay.mediaslider.adapter.MetaDataAdapter
 import nl.giejay.mediaslider.adapter.MetaDataClock
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
@@ -22,10 +23,12 @@ import nl.giejay.mediaslider.view.MediaSliderController
 class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControllerPlugin {
 
     override fun createState(context: SliderViewPluginContext, config: MediaSliderConfiguration): MetadataRenderState {
+        // DATE is rendered by [DateOverlayViewPlugin] at the top of the slider.
+        val listConfig = config.metaDataConfig.filterNot { it.type == MetaDataType.DATE }
         val rightAdapter = MetaDataAdapter(
             context.context,
-            config.metaDataConfig.filter { it.align == AlignOption.RIGHT },
-            config.metaDataConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
+            listConfig.filter { it.align == AlignOption.RIGHT },
+            listConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
             {
                 val currentItem = context.currentItemProvider()
                 if (currentItem.hasSecondaryItem()) currentItem.secondaryItem!! else currentItem.mainItem
@@ -35,8 +38,8 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
 
         val leftAdapter = MetaDataAdapter(
             context.context,
-            config.metaDataConfig.filter { it.align == AlignOption.LEFT },
-            config.metaDataConfig.filterNot { it is MetaDataClock || it is MetaDataMediaCount }
+            listConfig.filter { it.align == AlignOption.LEFT },
+            listConfig.filterNot { it is MetaDataClock || it is MetaDataMediaCount }
                 .map { it.withAlign(align = AlignOption.LEFT) }
                 .distinct(),
             { context.currentItemProvider().mainItem },

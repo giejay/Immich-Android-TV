@@ -12,6 +12,7 @@ import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.adapter.MetaDataSliderItem
 import nl.giejay.mediaslider.model.MetaDataType
+import nl.giejay.mediaslider.plugin.DateOverlayViewPlugin
 import nl.giejay.mediaslider.plugin.ExternalPlayerButtonControllerPlugin
 import nl.giejay.mediaslider.plugin.MediaRemoteControlsKeyEventPlugin
 import nl.giejay.mediaslider.plugin.MetadataViewPlugin
@@ -178,6 +179,7 @@ object PreferenceManager {
     /**
      * Builds a fresh set of Immich slider plugins for one slider session.
      * [MetadataViewPlugin] is shared across view + controller lists.
+     * [DateOverlayViewPlugin] renders DATE at the top of the slider.
      * [MediaRemoteControlsKeyEventPlugin] handles remote/D-pad seek and related keys.
      */
     fun createEnabledSliderPlugins(scope: CoroutineScope, favoriteService: FavoriteService): EnabledSliderPlugins {
@@ -189,7 +191,7 @@ object PreferenceManager {
                 ExternalPlayerButtonControllerPlugin(),
                 metadataPlugin
             ),
-            viewPlugins = listOf(metadataPlugin),
+            viewPlugins = listOf(metadataPlugin, DateOverlayViewPlugin()),
             keyEventPlugins = listOf(remoteControlsPlugin)
         )
     }
