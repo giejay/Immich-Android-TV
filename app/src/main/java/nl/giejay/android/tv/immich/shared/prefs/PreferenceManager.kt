@@ -177,9 +177,8 @@ object PreferenceManager {
 
     /**
      * Builds a fresh set of Immich slider plugins for one slider session.
-     * [MetadataViewPlugin] is one shared instance across view/controller/key lists.
-     * [MediaRemoteControlsKeyEventPlugin] is registered after metadata so Back can dismiss
-     * details before exiting an autoplay slideshow.
+     * [MetadataViewPlugin] is shared across view + controller lists.
+     * [MediaRemoteControlsKeyEventPlugin] handles remote/D-pad seek and related keys.
      */
     fun createEnabledSliderPlugins(scope: CoroutineScope, favoriteService: FavoriteService): EnabledSliderPlugins {
         val metadataPlugin = MetadataViewPlugin()
@@ -191,7 +190,7 @@ object PreferenceManager {
                 metadataPlugin
             ),
             viewPlugins = listOf(metadataPlugin),
-            keyEventPlugins = listOf(metadataPlugin, remoteControlsPlugin)
+            keyEventPlugins = listOf(remoteControlsPlugin)
         )
     }
 

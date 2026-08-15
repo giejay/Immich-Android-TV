@@ -60,6 +60,7 @@ import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.MetaDataType
 import nl.giejay.mediaslider.util.LoadMore
+import nl.giejay.mediaslider.util.LoadMoreResult
 import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -1020,14 +1021,15 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             }
 
             val loadMore: LoadMore = suspend loadMore@{
-                val afterKey = lastBucketKey ?: return@loadMore emptyList()
-                val next = viewModel.nextBucketAfter(afterKey) ?: return@loadMore emptyList()
+                val afterKey = lastBucketKey ?: return@loadMore LoadMoreResult(emptyList(), false)
+                val next = viewModel.nextBucketAfter(afterKey) ?: return@loadMore LoadMoreResult(emptyList(), false)
                 val knownIds = initialAssets.map { it.id }.toSet()
                 viewModel.loadBucket(next.timeBucket)
                 lastBucketKey = next.timeBucket
-                viewModel.bucketAssets.value[next.timeBucket].orEmpty()
+                val items = viewModel.bucketAssets.value[next.timeBucket].orEmpty()
                     .filter { it.id !in knownIds }
                     .pmap { it.toSliderItemViewHolder() }
+                LoadMoreResult(items, items.isNotEmpty() && viewModel.nextBucketAfter(next.timeBucket) != null)
             }
 
             withContext(Dispatchers.Main) {

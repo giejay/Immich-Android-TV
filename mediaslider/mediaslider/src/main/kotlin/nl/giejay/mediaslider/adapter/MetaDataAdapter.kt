@@ -142,7 +142,7 @@ class MetaDataAdapter(val context: Context,
     override fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
         val key = resolveKey(p0)
         val value = stateForItem[key]
-        if (value.isNullOrBlank()) {
+        if(value.isNullOrBlank()) {
             return View(context).apply {
                 layoutParams = RelativeLayout.LayoutParams(0, 0)
             }

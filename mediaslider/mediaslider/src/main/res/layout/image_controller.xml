@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/transport_controls_scrim"
+    android:background="#D9000000"
     android:gravity="center"
     android:id="@+id/image_controller"
     android:elevation="20dp"

@@ -37,7 +37,7 @@ class AlbumDetailsFragment : GenericAssetFragment() {
             order = if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc",
             contentType = currentFilter,
             albumIds = listOf(albumId)
-        ).map { it.map { a -> a.copy(albumName = albumName) } }
+        ).map { it.assets.map { a -> a.copy(albumName = albumName) } }
     }
 
     override fun onItemSelected(card: Card, indexOf: Int) {

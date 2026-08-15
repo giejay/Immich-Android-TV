@@ -17,9 +17,6 @@ import nl.giejay.mediaslider.view.MediaSliderController
  * - Photo Play/Pause → toggle slideshow
  * - Video Play/Pause → play/pause current player
  * - Back during an active photo slideshow → exit without pausing first
- *
- * Register after [MetadataViewPlugin] on the key-plugin list so Back can dismiss details
- * before this plugin exits an autoplay slideshow.
  */
 class MediaRemoteControlsKeyEventPlugin : SliderKeyEventPlugin {
 
