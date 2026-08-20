@@ -5,10 +5,10 @@ import android.content.SharedPreferences
 import arrow.core.Either
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.Asset
@@ -40,7 +40,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class ScreenSaverAssetLoaderTest {
-    private val mainDispatcher = StandardTestDispatcher()
+    private val mainDispatcher = UnconfinedTestDispatcher()
     private val preferenceValues = mutableMapOf<String, Any?>()
 
     private lateinit var appContext: Context
@@ -141,7 +141,6 @@ class ScreenSaverAssetLoaderTest {
 
         mockConstruction(MediaRemoteControlsKeyEventPlugin::class.java).use {
             loader.start().join()
-            mainDispatcher.scheduler.advanceUntilIdle()
 
             verify(apiClient, times(1)).listAssets(
                 eq(1),
@@ -199,7 +198,7 @@ class ScreenSaverAssetLoaderTest {
             isAccessible = true
         }.get(PreferenceManager) as MutableMap<String, Any?>
         liveContext[pref.key()] = value
-        preferenceValues[pref.key()] = pref.toPrefValue(value as Any) ?: value
+        preferenceValues[pref.key()] = value
     }
 
     private fun asset(id: String) = Asset(
