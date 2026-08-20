@@ -143,6 +143,9 @@
     <string name="show_media_count_slideshow_desc">Afficher le nombre total d’éléments et l’élément actuellement sélectionné</string>
     <string name="show_date_slideshow">Afficher la date</string>
     <string name="show_date_slideshow_desc">Afficher la date de l’élément dans le diaporama</string>
+    <string name="show_date_top_left">Afficher la date en haut à gauche</string>
+    <string name="show_date_top_left_viewer_desc">Affiche la date de l’élément en overlay en haut à gauche dans la visionneuse. Indépendant des métadonnées en bas.</string>
+    <string name="show_date_top_left_screensaver_desc">Affiche la date de l’élément en overlay en haut à gauche dans l’écran de veille. Indépendant des métadonnées en bas.</string>
     <string name="show_city">Afficher la ville</string>
     <string name="show_city_desc">Afficher la ville de l’élément dans le diaporama</string>
     <string name="customize_metadata_viewer">Personnaliser les métadonnées</string>

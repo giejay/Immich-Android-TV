@@ -114,6 +114,10 @@ data object SCREENSAVER_SHOW_DATE : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.show_date),
     ImmichApplication.appContext!!.getString(R.string.show_date_screensaver))
 
+data object SCREENSAVER_SHOW_DATE_TOP_LEFT : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.show_date_top_left),
+    ImmichApplication.appContext!!.getString(R.string.show_date_top_left_screensaver_desc))
+
 data object SCREENSAVER_SHOW_CLOCK : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.show_clock),
     ImmichApplication.appContext!!.getString(R.string.show_clock_screensaver))
@@ -191,6 +195,10 @@ data object SLIDER_SHOW_MEDIA_COUNT : BooleanPref(true,
 data object SLIDER_SHOW_DATE : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.show_date_slideshow),
     ImmichApplication.appContext!!.getString(R.string.show_date_slideshow_desc))
+
+data object SLIDER_SHOW_DATE_TOP_LEFT : BooleanPref(true,
+    ImmichApplication.appContext!!.getString(R.string.show_date_top_left),
+    ImmichApplication.appContext!!.getString(R.string.show_date_top_left_viewer_desc))
 
 data object SLIDER_SHOW_CITY : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.show_city),
@@ -484,6 +492,7 @@ data object ViewSlideshowPrefScreen : PrefScreen(ImmichApplication.appContext!!.
             },
             SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,
+            SLIDER_SHOW_DATE_TOP_LEFT,
             SLIDER_METADATA_CUSTOMIZER
         ))
     )
@@ -553,6 +562,7 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_INTERVAL,
                 SCREENSAVER_TYPE,
                 SCREENSAVER_ALBUMS,
+                SCREENSAVER_SHOW_DATE_TOP_LEFT,
                 SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,
                 SCREENSAVER_PLAY_SOUND,

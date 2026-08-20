@@ -14,8 +14,8 @@ import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 
 /**
- * Top-of-screen date overlay with a dark-to-transparent scrim.
- * DATE is stripped from [MetadataViewPlugin]'s bottom lists so it only appears here.
+ * Optional top-of-screen date overlay with a dark-to-transparent scrim.
+ * Controlled by [MediaSliderConfiguration.showDateTopLeft]; bottom DATE metadata is unchanged.
  */
 class DateOverlayViewPlugin : SliderViewPlugin<Unit?> {
     private var dateView: TextView? = null
@@ -51,6 +51,13 @@ class DateOverlayViewPlugin : SliderViewPlugin<Unit?> {
         handler: Handler,
         state: Unit?
     ) {
+        if (!config.showDateTopLeft) {
+            dateView?.apply {
+                text = ""
+                visibility = View.GONE
+            }
+            return
+        }
         updateDateOverlay(context, sliderItem.mainItem)
     }
 

@@ -179,7 +179,7 @@ object PreferenceManager {
     /**
      * Builds a fresh set of Immich slider plugins for one slider session.
      * [MetadataViewPlugin] is shared across view + controller lists.
-     * [DateOverlayViewPlugin] renders DATE at the top of the slider.
+     * [DateOverlayViewPlugin] optionally renders DATE at the top of the slider.
      * [MediaRemoteControlsKeyEventPlugin] handles remote/D-pad seek and related keys.
      */
     fun createEnabledSliderPlugins(scope: CoroutineScope, favoriteService: FavoriteService): EnabledSliderPlugins {
