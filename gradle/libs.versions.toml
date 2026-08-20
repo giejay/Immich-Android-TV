@@ -32,6 +32,7 @@ lifecycle-extensions1 = "2.2.0"
 media3-exoplayer = "1.10.1"
 mockito-core = "5.23.0"
 mockito-inline = "5.2.0"
+mockito-kotlin = "6.3.0"
 navigation = "2.9.8"
 navigation-safeargs-kotlin = "2.9.8"
 nextlib-media3ext = "1.10.1-0.13.0"
@@ -87,6 +88,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 glide-ksp = { group = "com.github.bumptech.glide", name = "ksp", version.ref = "glide" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito-core" }
 mockito-inline = { group = "org.mockito", name = "mockito-inline", version.ref = "mockito-inline" }
+mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito-kotlin" }
 nextlib-media3ext = { module = "io.github.anilbeesetti:nextlib-media3ext", version.ref = "nextlib-media3ext" }
 okhttp3-integration = { group = "com.github.bumptech.glide", name = "okhttp3-integration", version.ref = "glide" }
 org-eclipse-jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "org-eclipse-jgit" }

@@ -56,18 +56,16 @@ internal class FilteredAssetLoader(
     private val backoff: EmptyFilteredBatchBackoff = EmptyFilteredBatchBackoff(),
     private val wait: suspend (Long) -> Unit = { delay(it) }
 ) {
-    fun reset() {
-        backoff.reset()
-    }
-
-    suspend fun load(fetch: suspend () -> Either<String, AssetResponse>): Either<String, AssetResponse> {
+    suspend fun load(fetch: suspend () -> Either<String, AssetResponse>, retry: suspend () -> Either<String, AssetResponse> = fetch): Either<String, AssetResponse> {
+        var currentFetch = fetch
         while (true) {
             val retryDelayMillis = backoff.delayBeforeNextRequestMillis()
             if (retryDelayMillis > 0) {
                 wait(retryDelayMillis)
             }
 
-            when (val result = fetch()) {
+            val res = currentFetch()
+            when (val result = res) {
                 is Either.Left -> {
                     backoff.reset()
                     return result
@@ -79,6 +77,7 @@ internal class FilteredAssetLoader(
                         backoff.reset()
                         return Either.Right(response.copy(assets = filteredAssets))
                     }
+                    currentFetch = retry
                     backoff.recordEmptyBatch()
                 }
             }

@@ -52,7 +52,7 @@ class FilteredAssetLoaderTest {
             wait = { waits.add(it) }
         )
 
-        val result = loader.load { Either.Right(responses.removeFirst()) }
+        val result = loader.load({ Either.Right(responses.removeFirst()) })
 
         assertThat(result.getOrNull()!!.assets.map { it.id }).containsExactly("included")
         assertThat(waits).containsExactly(1_000L, 2_000L).inOrder()
@@ -67,10 +67,10 @@ class FilteredAssetLoaderTest {
             wait = { waits.add(it) }
         )
 
-        val result = loader.load {
+        val result = loader.load ({
             fetchCount += 1
             Either.Right(AssetResponse(listOf(asset("excluded")), false))
-        }
+        })
 
         assertThat(result.getOrNull()!!.assets).isEmpty()
         assertThat(result.getOrNull()!!.canLoadMore).isFalse()
@@ -88,14 +88,14 @@ class FilteredAssetLoaderTest {
 
         suspend fun loadAfterOneExcludedBatch() {
             var firstRequest = true
-            loader.load {
+            loader.load ({
                 if (firstRequest) {
                     firstRequest = false
                     Either.Right(AssetResponse(listOf(asset("excluded")), true))
                 } else {
                     Either.Right(AssetResponse(listOf(asset("included")), true))
                 }
-            }
+            })
         }
 
         loadAfterOneExcludedBatch()
@@ -112,7 +112,7 @@ class FilteredAssetLoaderTest {
             wait = { waits.add(it) }
         )
 
-        val result = loader.load { Either.Left("request failed") }
+        val result = loader.load ({ Either.Left("request failed") })
 
         assertThat(result.leftOrNull()).isEqualTo("request failed")
         assertThat(waits).isEmpty()
