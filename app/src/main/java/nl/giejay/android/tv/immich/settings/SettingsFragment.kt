@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.settings
 
 import android.app.Activity
+import android.widget.Toast
 import androidx.leanback.app.RowsSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.HeaderItem
@@ -11,8 +12,12 @@ import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.shared.donate.DonateService
 import nl.giejay.android.tv.immich.shared.prefs.DebugPrefScreen
+import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 import nl.giejay.android.tv.immich.shared.prefs.ScreensaverPrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.ViewPrefScreen
 
@@ -75,6 +80,29 @@ class SettingsFragment : RowsSupportFragment() {
                             findNavController().navigate(
                                 HomeFragmentDirections.actionGlobalToSettingsDialog(ScreensaverPrefScreen.key)
                             )
+                        },
+                        SettingsCard(
+                            ImmichApplication.appContext!!.getString(R.string.screensaver_preview),
+                            null,
+                            "screensaver_preview",
+                            "view",
+                            "view"
+                        ) {
+                            // Same guard as SCREENSAVER_SET: previewing albums without albums
+                            // selected would only ever show a black screen.
+                            if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS &&
+                                PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()
+                            ) {
+                                Toast.makeText(
+                                    requireContext(),
+                                    getString(R.string.screensaver_set_select_albums_first),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                findNavController().navigate(
+                                    HomeFragmentDirections.actionGlobalScreensaverPreview()
+                                )
+                            }
                         },
                         SettingsCard(
                             ImmichApplication.appContext!!.getString(R.string.debug),

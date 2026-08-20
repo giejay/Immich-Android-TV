@@ -130,6 +130,7 @@
     <string name="play_sound_screensaver">Lire le son des vidéos pendant l’écran de veille</string>
     <string name="screensaver_type">Type d’écran de veille</string>
     <string name="screensaver_type_desc">Ce qui doit être affiché : albums, aléatoire, récent, etc.</string>
+    <string name="screensaver_preview">Aperçu</string>
 
     <!-- Slider/viewer preferences -->
     <string name="interval_slideshow">Intervalle du diaporama</string>
