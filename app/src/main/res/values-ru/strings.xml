@@ -131,6 +131,7 @@
     <string name="play_sound_screensaver">Проигрывать звук видео в заставке</string>
     <string name="screensaver_type">Тип заставки</string>
     <string name="screensaver_type_desc">Что показывать: альбомы, случайные, недавние и т.д.</string>
+    <string name="screensaver_preview">Предпросмотр</string>
 
     <!-- Slider/viewer preferences -->
     <string name="interval_slideshow">Интервал слайд-шоу</string>

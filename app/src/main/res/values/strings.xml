@@ -130,6 +130,7 @@
     <string name="play_sound_screensaver">Play sound of videos during screensaver</string>
     <string name="screensaver_type">Screensaver type</string>
     <string name="screensaver_type_desc">What to show: albums, random, recent etc.</string>
+    <string name="screensaver_preview">Preview</string>
 
     <!-- Slider/viewer preferences -->
     <string name="interval_slideshow">Slideshow interval</string>
