@@ -38,7 +38,7 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
     private var hasBottomDetails: Boolean = false
 
     override fun createState(context: SliderViewPluginContext, config: MediaSliderConfiguration): MetadataRenderState {
-        detailsToggleEnabled = context.context !is MediaSliderListener
+        detailsToggleEnabled = context.context !is MediaSliderListener && !config.detailsAlwaysOn
         detailsVisible = !detailsToggleEnabled
         hasBottomDetails = config.metaDataConfig.isNotEmpty()
         lastConfig = config
@@ -88,6 +88,10 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
     ) {
         lastConfig = config
         hasBottomDetails = config.metaDataConfig.isNotEmpty()
+        detailsToggleEnabled = context.context !is MediaSliderListener && !config.detailsAlwaysOn
+        if (!detailsToggleEnabled) {
+            detailsVisible = true
+        }
         val pluginState = state ?: return
         val listViewRight = context.rootView.findViewById<ListView>(R.id.metadata_view_right) ?: return
         listViewRight.divider = null

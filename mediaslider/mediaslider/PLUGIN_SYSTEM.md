@@ -112,9 +112,9 @@ MediaSliderConfiguration(
 
 ## Built-in Plugins
 
-- `MetadataViewPlugin`: Renders asset metadata (description, date, etc.).
+- `MetadataViewPlugin`: Renders asset metadata (description, date, etc.). In the viewer, starts hidden unless `MediaSliderConfiguration.detailsAlwaysOn` is true.
 - `DateOverlayViewPlugin`: Optional top-of-screen DATE overlay with a dark scrim (`MediaSliderConfiguration.showDateTopLeft`). Bottom DATE metadata is unchanged.
-- `DetailsOverlayKeyPlugin`: Viewer Enter/Back for bottom details (register before [MediaRemoteControlsKeyEventPlugin] on the key list). Screensaver keeps metadata always on.
+- `DetailsOverlayKeyPlugin`: Viewer Enter/Back for bottom details (register before [MediaRemoteControlsKeyEventPlugin] on the key list). Disabled when `detailsAlwaysOn` is true or in screensaver (metadata always on).
 - `MediaRemoteControlsKeyEventPlugin`: Remote FF/RW tap-vs-hold seek, photo play/pause slideshow, opt-in D-pad seek, Back exits slideshow without pausing.
 - `FavoriteButtonControllerPlugin`: Adds a toggle for favoriting assets.
 - `ExternalPlayerButtonControllerPlugin`: Adds a button to open videos in an external player.

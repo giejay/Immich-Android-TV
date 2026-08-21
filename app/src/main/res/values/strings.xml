@@ -146,6 +146,8 @@
     <string name="show_date_top_left">Show date top-left</string>
     <string name="show_date_top_left_viewer_desc">Show the asset date as a top-left overlay in the photo/video viewer. Independent of bottom metadata.</string>
     <string name="show_date_top_left_screensaver_desc">Show the asset date as a top-left overlay in the screensaver. Independent of bottom metadata.</string>
+    <string name="details_always_on">Always show details</string>
+    <string name="details_always_on_desc">Keep bottom metadata always visible in the viewer. When off, Enter shows details and Back hides them after the media controls.</string>
     <string name="show_city">Show city</string>
     <string name="show_city_desc">Show city of asset in slideshow</string>
     <string name="customize_metadata_viewer">Customize metadata</string>
