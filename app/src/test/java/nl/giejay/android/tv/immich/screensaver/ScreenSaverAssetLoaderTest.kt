@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import arrow.core.Either
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -13,6 +14,7 @@ import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.AssetResponse
+import nl.giejay.android.tv.immich.api.model.Tag
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
@@ -39,6 +41,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ScreenSaverAssetLoaderTest {
     private val mainDispatcher = UnconfinedTestDispatcher()
     private val preferenceValues = mutableMapOf<String, Any?>()
@@ -100,35 +103,175 @@ class ScreenSaverAssetLoaderTest {
     }
 
     @Test
-    fun `start falls back to full album fetch when random album search returns no assets`() = runTest {
+    fun `start falls back to full album fetch when random album search returns no assets`() = runLoaderTest(
+        type = ScreenSaverType.ALBUMS,
+        albums = setOf("shared-album"),
+        setupMocks = { apiClient ->
+            whenever(
+                apiClient.listAssets(
+                    page = any(),
+                    pageCount = any(),
+                    random = eq(true),
+                    order = any(),
+                    personIds = any(),
+                    fromDate = anyOrNull(),
+                    endDate = anyOrNull(),
+                    contentType = eq(ContentType.IMAGE),
+                    albumIds = eq(listOf("shared-album"))
+                )
+            ).thenReturn(Either.Right(AssetResponse(emptyList(), true)))
+
+            whenever(
+                apiClient.listAssetsFromAlbum(
+                    albumIds = eq(listOf("shared-album")),
+                    contentType = eq(ContentType.IMAGE),
+                    pageCount = eq(1000)
+                )
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("shared-asset")), false)))
+        }
+    ) { actual, apiClient ->
+        verify(apiClient, times(1)).listAssets(
+            eq(1),
+            eq(50),
+            eq(true),
+            any(),
+            any(),
+            isNull(),
+            isNull(),
+            eq(ContentType.IMAGE),
+            eq(listOf("shared-album"))
+        )
+        verify(apiClient, times(1)).listAssetsFromAlbum(
+            eq(listOf("shared-album")),
+            eq(ContentType.IMAGE),
+            eq(1000)
+        )
+        assertThat(actual.items.single().ids()).containsExactly("shared-asset")
+    }
+
+    @Test
+    fun `loads random assets when type is RANDOM`() = runLoaderTest(
+        type = ScreenSaverType.RANDOM,
+        setupMocks = { apiClient ->
+            whenever(
+                apiClient.listAssets(
+                    page = any(),
+                    pageCount = any(),
+                    random = any(),
+                    order = any(),
+                    personIds = any(),
+                    fromDate = anyOrNull(),
+                    endDate = anyOrNull(),
+                    contentType = any(),
+                    albumIds = any()
+                )
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("random-asset")), true)))
+        }
+    ) { actual, _ ->
+        assertThat(actual.items.single().ids()).containsExactly("random-asset")
+    }
+
+    @Test
+    fun `loads recent assets when type is RECENT`() = runLoaderTest(
+        type = ScreenSaverType.RECENT,
+        setupMocks = { apiClient ->
+            whenever(
+                apiClient.recentAssets(
+                    page = any(),
+                    pageCount = any(),
+                    contentType = any()
+                )
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("recent-asset")), true)))
+        }
+    ) { actual, _ ->
+        assertThat(actual.items.single().ids()).containsExactly("recent-asset")
+    }
+
+    @Test
+    fun `loads similar assets when type is SIMILAR_TIME_PERIOD`() = runLoaderTest(
+        type = ScreenSaverType.SIMILAR_TIME_PERIOD,
+        setupMocks = { apiClient ->
+            whenever(
+                apiClient.similarAssets(
+                    page = any(),
+                    pageCount = any(),
+                    contentType = any()
+                )
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("similar-asset")), true)))
+        }
+    ) { actual, _ ->
+        assertThat(actual.items.single().ids()).containsExactly("similar-asset")
+    }
+
+    @Test
+    fun `filters out assets from excluded albums`() = runLoaderTest(
+        type = ScreenSaverType.RANDOM,
+        excludedAlbums = setOf("excluded-album"),
+        setupMocks = { apiClient ->
+            whenever(
+                apiClient.listAssetsFromAlbum(
+                    albumIds = eq(listOf("excluded-album")),
+                    contentType = any(),
+                    pageCount = any()
+                )
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("excluded-asset")), false)))
+
+            whenever(
+                apiClient.listAssets(
+                    page = any(),
+                    pageCount = any(),
+                    random = any(),
+                    order = any(),
+                    personIds = any(),
+                    fromDate = anyOrNull(),
+                    endDate = anyOrNull(),
+                    contentType = any(),
+                    albumIds = any()
+                )
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("random-asset"), asset("excluded-asset")), true)))
+        }
+    ) { actual, _ ->
+        assertThat(actual.items.single().ids()).containsExactly("random-asset")
+    }
+
+    @Test
+    fun `filters out assets with exclude tag`() = runLoaderTest(
+        type = ScreenSaverType.RANDOM,
+        setupMocks = { apiClient ->
+            val taggedAsset = asset("tagged-asset").copy(tags = listOf(Tag(null, java.util.Date(), "exclude_immich_tv", "")))
+            whenever(
+                apiClient.listAssets(
+                    page = any(),
+                    pageCount = any(),
+                    random = any(),
+                    order = any(),
+                    personIds = any(),
+                    fromDate = anyOrNull(),
+                    endDate = anyOrNull(),
+                    contentType = any(),
+                    albumIds = any()
+                )
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("normal-asset"), taggedAsset), true)))
+        }
+    ) { actual, _ ->
+        assertThat(actual.items.single().ids()).containsExactly("normal-asset")
+    }
+
+    private fun runLoaderTest(
+        type: ScreenSaverType = ScreenSaverType.RANDOM,
+        albums: Set<String> = emptySet(),
+        excludedAlbums: Set<String> = emptySet(),
+        setupMocks: suspend (ApiClient) -> Unit,
+        verifyResult: suspend (MediaSliderConfiguration, ApiClient) -> Unit
+    ) = runTest {
         setPreference(HOST_NAME, "https://example.com")
         setPreference(API_KEY, "api-key")
-        setPreference(SCREENSAVER_TYPE, ScreenSaverType.ALBUMS)
-        setPreference(SCREENSAVER_ALBUMS, setOf("shared-album"))
-        setPreference(EXCLUDE_ASSETS_IN_ALBUM, emptySet())
+        setPreference(SCREENSAVER_TYPE, type)
+        setPreference(SCREENSAVER_ALBUMS, albums)
+        setPreference(EXCLUDE_ASSETS_IN_ALBUM, excludedAlbums)
 
-        val asset = asset("shared-asset")
         val apiClient = mock<ApiClient>()
-        whenever(
-            apiClient.listAssets(
-                page = any(),
-                pageCount = any(),
-                random = eq(true),
-                order = any(),
-                personIds = any(),
-                fromDate = anyOrNull(),
-                endDate = anyOrNull(),
-                contentType = eq(ContentType.IMAGE),
-                albumIds = eq(listOf("shared-album"))
-            )
-        ).thenReturn(Either.Right(AssetResponse(emptyList(), true)))
-        whenever(
-            apiClient.listAssetsFromAlbum(
-                albumIds = eq(listOf("shared-album")),
-                contentType = eq(ContentType.IMAGE),
-                pageCount = eq(1000)
-            )
-        ).thenReturn(Either.Right(AssetResponse(listOf(asset), false)))
+        setupMocks(apiClient)
 
         val host = mock<ScreenSaverAssetLoader.Host>()
         val favoriteService = mock<FavoriteService>()
@@ -142,53 +285,12 @@ class ScreenSaverAssetLoaderTest {
         mockConstruction(MediaRemoteControlsKeyEventPlugin::class.java).use {
             loader.start().join()
 
-            verify(apiClient, times(1)).listAssets(
-                eq(1),
-                eq(50),
-                eq(true),
-                any(),
-                any(),
-                isNull(),
-                isNull(),
-                eq(ContentType.IMAGE),
-                eq(listOf("shared-album"))
-            )
-            verify(apiClient, times(1)).listAssetsFromAlbum(
-                eq(listOf("shared-album")),
-                eq(ContentType.IMAGE),
-                eq(1000)
-            )
-
             val configurationCaptor = argumentCaptor<MediaSliderConfiguration>()
             verify(host).onScreenSaverConfigurationReady(configurationCaptor.capture())
             verify(host, never()).showScreenSaverMessage(any(), any())
             verify(host, never()).exitScreenSaver()
 
-            val actual = configurationCaptor.firstValue
-            val expected = buildScreenSaverConfiguration(listOf(asset), actual.loadMore, this@runTest, favoriteService)
-
-            assertThat(actual.startPosition).isEqualTo(expected.startPosition)
-            assertThat(actual.interval).isEqualTo(expected.interval)
-            assertThat(actual.isOnlyUseThumbnails).isEqualTo(expected.isOnlyUseThumbnails)
-            assertThat(actual.isVideoSoundEnable).isEqualTo(expected.isVideoSoundEnable)
-            assertThat(actual.animationSpeedMillis).isEqualTo(expected.animationSpeedMillis)
-            assertThat(actual.maxCutOffHeight).isEqualTo(expected.maxCutOffHeight)
-            assertThat(actual.maxCutOffWidth).isEqualTo(expected.maxCutOffWidth)
-            assertThat(actual.glideTransformation).isEqualTo(expected.glideTransformation)
-            assertThat(actual.enableSlideAnimation).isEqualTo(expected.enableSlideAnimation)
-            assertThat(actual.gradiantOverlay).isEqualTo(expected.gradiantOverlay)
-            assertThat(actual.metaDataConfig).containsExactlyElementsIn(expected.metaDataConfig)
-            assertThat(actual.zoomAndScrollPanorama).isEqualTo(expected.zoomAndScrollPanorama)
-            assertThat(actual.zoomEffectPercent).isEqualTo(expected.zoomEffectPercent)
-            assertThat(actual.panEffectPercent).isEqualTo(expected.panEffectPercent)
-            assertThat(actual.useLargeVideoBuffer).isEqualTo(expected.useLargeVideoBuffer)
-            assertThat(actual.dpadSeeksInVideo).isEqualTo(expected.dpadSeeksInVideo)
-            assertThat(actual.items).containsExactlyElementsIn(expected.items)
-            assertThat(actual.items.single().ids()).containsExactly(asset.id)
-            assertThat(actual.loadMore).isNull()
-            assertThat(actual.controllerPlugins).hasSize(expected.controllerPlugins.size)
-            assertThat(actual.viewPlugins).hasSize(expected.viewPlugins.size)
-            assertThat(actual.keyEventPlugins).hasSize(expected.keyEventPlugins.size)
+            verifyResult(configurationCaptor.firstValue, apiClient)
         }
     }
 
