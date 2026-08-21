@@ -149,7 +149,7 @@ class ScreenSaverAssetLoader(
             loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS).toList())
         } else {
             val screenSaverType = PreferenceManager.get(SCREENSAVER_TYPE)
-            filteredAssetLoader.load { loadNextAssets(screenSaverType) }.fold(
+            filteredAssetLoader.load({ loadNextAssets(screenSaverType) }).fold(
                 ifLeft = { error ->
                     Timber.w("Failed to load assets for screensaver type %s: %s", screenSaverType, error)
                     if (host.exitWhenNothingToShow) {
@@ -195,26 +195,27 @@ class ScreenSaverAssetLoader(
     private suspend fun loadImagesFromAlbums(albums: List<String>) {
         try {
             if (albums.isNotEmpty()) {
-                var loadRandomAssets = true
-                val initialResponse = filteredAssetLoader.load {
-                    if (loadRandomAssets) {
-                        loadRandomAssets = false
+                val response = filteredAssetLoader.load(fetch =
+                    {
                         loadNextAssetsFromAlbums(albums, random = true).fold(
                             {
                                 Timber.w("Could not load random assets for albums $albums, falling back to all album assets")
                                 loadNextAssetsFromAlbums(albums, random = false)
                             },
-                            { Either.Right(it) }
+                            {
+                                Either.Right(it)
+                            }
                         )
-                    } else {
-                        Timber.w("Random album sample was empty after exclusions for albums $albums, checking their complete asset lists")
-                        loadNextAssetsFromAlbums(albums, random = false)
-                    }
-                }.getOrElse { throw IllegalStateException(it) }
+                    }, retry = {
+                    // load assets not randomly. This can happen because the logged in User/API key does not have any own photo's, only shared access
+                    // shared photos are not returned yet for the Random endpoint (ongoing feature request).
+                    Timber.w("Random asset search for album was empty for albums $albums, now using the regular search assets in album endpoint")
+                    loadNextAssetsFromAlbums(albums, random = false)
+                }).getOrElse { AssetResponse(emptyList(), false) }
 
                 setInitialAssets(
-                    initialResponse.assets,
-                    if (initialResponse.canLoadMore) {
+                    response.assets.shuffled(),
+                    if (response.canLoadMore) {
                         createLoadMore { loadNextAssetsFromAlbums(albums, random = false) }
                     } else null
                 )
@@ -246,7 +247,7 @@ class ScreenSaverAssetLoader(
                 true
             ))
         } else {
-            return apiClient.listAssetsFromAlbum(albums, contentType, pageCount = 1000)
+            return apiClient.listAssetsFromAlbum(albums, contentType, pageCount = 1000).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
         }
     }
 
@@ -255,7 +256,7 @@ class ScreenSaverAssetLoader(
         host.exitScreenSaver()
     }
 
-    private suspend fun setInitialAssets(assets: List<Asset>, loadMore: LoadMore?) = withContext(Dispatchers.Main) {
+    private suspend fun setInitialAssets(assets: List<Asset>, loadMore: (suspend () -> LoadMoreResult)?) = withContext(Dispatchers.Main) {
         if (assets.isEmpty()) {
             host.showScreenSaverMessage(R.string.no_assets_for_screensaver, longDuration = true)
             if (host.exitWhenNothingToShow) {

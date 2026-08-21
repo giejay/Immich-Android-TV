@@ -20,7 +20,7 @@ import nl.giejay.mediaslider.view.MediaSliderController
  */
 class MediaRemoteControlsKeyEventPlugin : SliderKeyEventPlugin {
 
-    private val mainHandler = Handler(Looper.getMainLooper())
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
     private var pendingSeekTargetMs: Long? = null
     private var holdSeekStepMs: Long = 0L
     private var holdSeekEngaged = false
