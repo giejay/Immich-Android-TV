@@ -29,6 +29,8 @@ class MediaSliderConfiguration(
     val useLargeVideoBuffer: Boolean = false,
     /** When true, D-pad Left/Right seek in video; when false (default), they change assets. */
     val dpadSeeksInVideo: Boolean = false,
+    /** When true, [nl.giejay.mediaslider.plugin.DateOverlayViewPlugin] shows DATE at the top. */
+    val showDateTopLeft: Boolean = false,
     var controllerPlugins: List<SliderControllerPlugin> = emptyList(),
     var viewPlugins: List<SliderViewPlugin<*>> = emptyList(),
     var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()

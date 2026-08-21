@@ -189,7 +189,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
 
         mPager.setAdapter(pagerAdapter)
-        setStartPosition()
         mPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(sliderItemIndex: Int, v: Float, i1: Int) {
                 if (config.loadMore != null && mPager.currentItem > config.items.size - 40 && !loading) {
@@ -260,6 +259,9 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
             override fun onPageScrollStateChanged(i: Int) {}
         })
+        // Register the listener before selecting the start page so the first asset
+        // still gets onPageSelected / onPageSettled (metadata, date overlay, etc.).
+        setStartPosition()
     }
 
     fun onDestroy() {
