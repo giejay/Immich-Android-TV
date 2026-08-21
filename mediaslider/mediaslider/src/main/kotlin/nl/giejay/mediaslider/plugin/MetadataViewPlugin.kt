@@ -1,11 +1,11 @@
 package nl.giejay.mediaslider.plugin
 
-import android.os.Handler
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ListView
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.zeuskartik.mediaslider.R
+import android.os.Handler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
