@@ -14,9 +14,12 @@ import java.util.UUID
 
 object ApiUtil {
 
-    fun getThumbnailUrl(assetId: String?, format: String, loadEdited: Boolean = false): String? {
+    fun getThumbnailUrl(assetId: String?, format: String, loadEdited: Boolean = false, includeApiKey: Boolean = false): String? {
         return assetId?.let {
-            "${hostName().lowercase()}/api/assets/${it}/thumbnail?size=${format}&edited=${loadEdited}"
+            val base = "${hostName().lowercase()}/api/assets/${it}/thumbnail?size=${format}&edited=${loadEdited}"
+            // api key is added here for home screen channel poster art, since the launcher fetches it
+            // in its own process, without our OkHttp interceptor
+            if (includeApiKey) "${base}&apiKey=${PreferenceManager.get(API_KEY)}" else base
         }
     }
 

@@ -69,6 +69,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:configChanges="keyboard|keyboardHidden|navigation">
 
             <!-- Used as the main entry point from the leanback launcher -->
@@ -86,17 +87,29 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
+            <!-- Deep links from home screen channel programs/channels, see homescreenchannels.ChannelDeepLinks -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="immichtv" />
+            </intent-filter>
+
         </activity>
 
         <!-- BroadcastReceiver for setting up the home screen channel -->
-<!--        <receiver-->
-<!--            android:name="nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelReceiver"-->
-<!--            android:exported="true">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.media.tv.action.INITIALIZE_PROGRAMS" />-->
-<!--                <category android:name="android.intent.category.DEFAULT" />-->
-<!--            </intent-filter>-->
-<!--        </receiver>-->
+        <receiver
+            android:name="nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.tv.action.INITIALIZE_PROGRAMS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.media.tv.action.PREVIEW_PROGRAM_BROWSABLE_DISABLED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
 
         <!--
          ~ Options provider class for Cast Connect when CastReceiverContext
