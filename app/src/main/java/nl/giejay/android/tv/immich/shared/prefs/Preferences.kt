@@ -200,6 +200,10 @@ data object SLIDER_SHOW_DATE_TOP_LEFT : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.show_date_top_left),
     ImmichApplication.appContext!!.getString(R.string.show_date_top_left_viewer_desc))
 
+data object SLIDER_DETAILS_ALWAYS_ON : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.details_always_on),
+    ImmichApplication.appContext!!.getString(R.string.details_always_on_desc))
+
 data object SLIDER_SHOW_CITY : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.show_city),
     ImmichApplication.appContext!!.getString(R.string.show_city_desc))
@@ -493,6 +497,7 @@ data object ViewSlideshowPrefScreen : PrefScreen(ImmichApplication.appContext!!.
             SLIDER_INTERVAL,
             SLIDER_ANIMATION_SPEED,
             SLIDER_SHOW_DATE_TOP_LEFT,
+            SLIDER_DETAILS_ALWAYS_ON,
             SLIDER_METADATA_CUSTOMIZER
         ))
     )
