@@ -50,6 +50,14 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!-- Runs before Application.onCreate() and before any other provider with a lower
+             initOrder (FirebaseInitProvider is at 100, this is set higher so it always wins). -->
+        <provider
+            android:name="nl.giejay.android.tv.immich.AppContextInitializer"
+            android:authorities="${applicationId}.appcontextinitializer"
+            android:exported="false"
+            android:initOrder="2147483647" />
+
         <service
             android:name="nl.giejay.android.tv.immich.screensaver.ScreenSaverService"
             android:exported="true"
