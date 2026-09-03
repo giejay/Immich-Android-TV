@@ -209,6 +209,18 @@
     <string name="settings_for">Settings for %1$s</string>
     <string name="filtering">Filtering</string>
 
+    <!-- Home screen channels -->
+    <string name="home_screen_channels">Home screen channels</string>
+    <string name="home_screen_channels_settings">Home screen channel settings</string>
+    <string name="channel_recent_photos">Recent photos</string>
+    <string name="enable_home_screen_channels">Show channels on home screen</string>
+    <string name="enable_home_screen_channels_desc">Publish your recent photos, and any albums you pick below, as channels on the Android TV home screen</string>
+    <string name="set_albums_home_screen_channels">Set albums to publish as channels</string>
+    <string name="set_albums_home_screen_channels_desc">Each selected album shows up as its own row on the Android TV home screen</string>
+    <string name="home_screen_channels_refresh_now">Refresh now</string>
+    <string name="home_screen_channels_refresh_now_desc">Immediately sync the home screen channels instead of waiting for the next automatic refresh</string>
+    <string name="home_screen_channel_error">Could not set up the home screen channel for this album</string>
+
     <!-- Auth step 1 -->
     <string name="auth_sign_in_by_api_key">Sign in by API key</string>
     <string name="auth_sign_in_by_api_key_desc">Login to your Immich instance by entering your API key.</string>

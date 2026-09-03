@@ -15,6 +15,7 @@ import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.shared.donate.DonateService
 import nl.giejay.android.tv.immich.shared.prefs.DebugPrefScreen
+import nl.giejay.android.tv.immich.shared.prefs.HomeScreenChannelsPrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
@@ -103,6 +104,17 @@ class SettingsFragment : RowsSupportFragment() {
                                     HomeFragmentDirections.actionGlobalScreensaverPreview()
                                 )
                             }
+                        },
+                        SettingsCard(
+                            ImmichApplication.appContext!!.getString(R.string.home_screen_channels),
+                            null,
+                            "home_screen_channels",
+                            "ic_settings_settings",
+                            "ic_settings_settings"
+                        ) {
+                            findNavController().navigate(
+                                HomeFragmentDirections.actionGlobalToSettingsDialog(HomeScreenChannelsPrefScreen.key)
+                            )
                         },
                         SettingsCard(
                             ImmichApplication.appContext!!.getString(R.string.debug),
