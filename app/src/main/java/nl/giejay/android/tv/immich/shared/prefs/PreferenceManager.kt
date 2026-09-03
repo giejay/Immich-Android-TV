@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import kotlinx.coroutines.CoroutineScope
+import nl.giejay.android.tv.immich.security.ApiKeyCipher
 import nl.giejay.android.tv.immich.slider.FavoriteButtonControllerPlugin
 import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.adapter.AlignOption
@@ -49,11 +50,21 @@ object PreferenceManager {
     fun init(context: Context) {
         sharedPreference = PreferenceManager.getDefaultSharedPreferences(context)
         liveSharedPreferences = LiveSharedPreferences(sharedPreference)
+        migrateApiKeyIfNeeded()
         subclasses(Pref::class).filter { it.objectInstance != null }.forEach { pref ->
             val prefInstance = pref.objectInstance!! as Pref<Any, *, *>
             liveSharedPreferences.subscribeTyped(prefInstance) { typeValue ->
                 liveContext[prefInstance.key()] = typeValue
             }
+        }
+    }
+
+    // one-time, before the subscription loop below reads it: re-save a legacy-plaintext or
+    // previously-unencryptable API key now that ApiKeyCipher can (re)try encrypting it
+    private fun migrateApiKeyIfNeeded() {
+        val raw = sharedPreference.getString(API_KEY.key(), "") ?: return
+        if (raw.isNotEmpty() && !ApiKeyCipher.isEncrypted(raw)) {
+            API_KEY.save(sharedPreference, ApiKeyCipher.decryptOrAdoptLegacy(raw))
         }
     }
 

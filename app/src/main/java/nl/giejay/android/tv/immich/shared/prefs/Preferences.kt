@@ -20,6 +20,7 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
+import nl.giejay.android.tv.immich.security.ApiKeyCipher
 import nl.giejay.mediaslider.transformations.GlideTransformations
 
 // general
@@ -33,6 +34,21 @@ data object API_KEY : StringPref("",
     ImmichApplication.appContext!!.getString(R.string.api_key_text),
     ImmichApplication.appContext!!.getString(R.string.api_key_text)) {
     override fun key() = "apiKey"
+
+    // Encrypted at rest via ApiKeyCipher; fromPrefValue also needs the override since
+    // PreferenceManager's eager subscription reads raw values through it, bypassing getValue().
+    // Legacy-plaintext migration happens once in PreferenceManager.init(), not here - this stays
+    // a pure decrypt so it's safe to call from a reactive callback.
+    override fun getValue(sharedPreferences: SharedPreferences): String =
+        fromPrefValue(sharedPreferences.getString(key(), defaultValue) ?: defaultValue)
+
+    override fun fromPrefValue(prefValue: String): String = ApiKeyCipher.decryptOrAdoptLegacy(prefValue)
+
+    override fun save(sharedPreferences: SharedPreferences, value: String) {
+        sharedPreferences.edit().putString(key(), toPrefValue(value)).apply()
+    }
+
+    override fun toPrefValue(value: String): String = ApiKeyCipher.encrypt(value)
 }
 
 data object HOST_NAME : StringPref("",
