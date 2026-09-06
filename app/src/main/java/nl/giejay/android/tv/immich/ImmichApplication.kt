@@ -38,6 +38,8 @@ class ImmichApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // AppContextInitializer (initOrder set higher than Firebase's) sets this first;
+        // kept as a cheap no-op for direct Application construction.
         appContext = this
         PreferenceManager.init(this)
 
