@@ -19,6 +19,7 @@ import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
+import nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelManager
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.mediaslider.transformations.GlideTransformations
 
@@ -170,6 +171,33 @@ data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.
         return ScreenSaverType.entries.toTypedArray()
     }
 }
+
+// home screen channels
+data object ENABLE_HOME_SCREEN_CHANNELS : BooleanPref(true,
+    ImmichApplication.appContext!!.getString(R.string.enable_home_screen_channels),
+    ImmichApplication.appContext!!.getString(R.string.enable_home_screen_channels_desc))
+
+data object CHANNEL_ALBUMS : StringSetPref(mutableSetOf(),
+    ImmichApplication.appContext!!.getString(R.string.set_albums_home_screen_channels),
+    ImmichApplication.appContext!!.getString(R.string.set_albums_home_screen_channels_desc)) {
+    override fun onClick(context: Context, controller: NavController): Boolean {
+        controller.navigate(
+            AlbumFragmentDirections.actionGlobalAlbumFragment(
+                true,
+                SelectionType.SET_CHANNEL_ALBUMS.toString(),
+                "home_screen_channels"
+            )
+        )
+        return true
+    }
+}
+
+data object CHANNEL_REFRESH_NOW : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.home_screen_channels_refresh_now),
+    ImmichApplication.appContext!!.getString(R.string.home_screen_channels_refresh_now_desc),
+    { _, _ ->
+        HomeScreenChannelManager.scheduleRefresh("manual")
+        true
+    })
 
 // slider/viewer
 data object SLIDER_INTERVAL : IntListPref(6,
@@ -567,6 +595,17 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_INCLUDE_VIDEOS,
                 SCREENSAVER_PLAY_SOUND,
                 SCREENSAVER_ANIMATE_ASSET_SLIDE)
+        )
+    )
+)
+
+data object HomeScreenChannelsPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.home_screen_channels_settings), "home_screen_channels",
+    listOf(
+        PrefCategory("",
+            listOf(
+                ENABLE_HOME_SCREEN_CHANNELS,
+                CHANNEL_ALBUMS,
+                CHANNEL_REFRESH_NOW)
         )
     )
 )

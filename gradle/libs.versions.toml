@@ -45,6 +45,7 @@ rxjava = "3.1.12"
 test = "1.7.0"
 timber = "5.0.1"
 truth = "1.4.5"
+tvprovider = "1.1.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -66,6 +67,7 @@ androidx-navigation-safe-args-gradle-plugin = { group = "androidx.navigation", n
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
 androidx-rules = { group = "androidx.test", name = "rules", version.ref = "test" }
 androidx-runner = { group = "androidx.test", name = "runner", version.ref = "test" }
+androidx-tvprovider = { group = "androidx.tvprovider", name = "tvprovider", version.ref = "tvprovider" }
 arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow-core" }
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing-ktx" }
 converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit2" }
