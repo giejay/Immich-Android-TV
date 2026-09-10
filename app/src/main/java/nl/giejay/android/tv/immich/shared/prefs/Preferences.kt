@@ -64,6 +64,21 @@ data object SCREENSAVER_SET : ActionPref(null, ImmichApplication.appContext!!.ge
         true
     })
 
+data object SCREENSAVER_START_NOW : ActionPref("screensaver_start_now", ImmichApplication.appContext!!.getString(R.string.screensaver_start_now),
+    ImmichApplication.appContext!!.getString(R.string.screensaver_start_now_desc),
+    { context, navController ->
+        if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS && PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.screensaver_set_select_albums_first),
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            navController.navigate(R.id.action_global_screensaver_preview)
+        }
+        true
+    })
+
 private fun startScreenSaverIntent(context: Context) {
     // Check if the daydream intent is available - some devices (e.g. NVidia Shield) do not support it
     var intent = Intent(SCREENSAVER_SETTINGS);
@@ -586,6 +601,7 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
     listOf(
         PrefCategory("",
             listOf(
+                SCREENSAVER_START_NOW,
                 SCREENSAVER_SET,
                 SCREENSAVER_INTERVAL,
                 SCREENSAVER_TYPE,
