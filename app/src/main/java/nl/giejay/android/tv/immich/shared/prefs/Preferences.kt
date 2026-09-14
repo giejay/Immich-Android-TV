@@ -45,7 +45,7 @@ data object API_KEY : StringPref("",
     override fun fromPrefValue(prefValue: String): String = ApiKeyCipher.decryptOrAdoptLegacy(prefValue)
 
     override fun save(sharedPreferences: SharedPreferences, value: String) {
-        sharedPreferences.edit().putString(key(), toPrefValue(value)).apply()
+        super.save(sharedPreferences, toPrefValue(value))
     }
 
     override fun toPrefValue(value: String): String = ApiKeyCipher.encrypt(value)
