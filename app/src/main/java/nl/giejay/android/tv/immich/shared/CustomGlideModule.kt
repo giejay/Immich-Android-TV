@@ -28,7 +28,7 @@ class CustomGlideModule : AppGlideModule() {
         prefs.listenMultiple(listOf(API_KEY.key(), DEBUG_MODE.key(), DISABLE_SSL_VERIFICATION.key()))
             .observeForever {
                 reloadFactory(
-                    it[API_KEY.key()] as String,
+                    PreferenceManager.get(API_KEY), // listenMultiple's raw value is still encrypted
                     it[DISABLE_SSL_VERIFICATION.key()] == true
                 )
             }
