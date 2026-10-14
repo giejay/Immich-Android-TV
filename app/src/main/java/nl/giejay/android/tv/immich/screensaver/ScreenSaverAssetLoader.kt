@@ -140,7 +140,7 @@ class ScreenSaverAssetLoader(
     fun start(): Job = scope.launch(Dispatchers.IO) {
         val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
         if (excludedAlbums.isNotEmpty()) {
-            excludedAssetIds = apiClient.listAssetsFromAlbum(excludedAlbums.toList(), pageCount = 5000)
+            excludedAssetIds = apiClient.listAssetsFromAlbum(excludedAlbums.toList(), pageCount = 1000)
                 .getOrElse { AssetResponse(emptyList(), false) }
                 .assets
                 .map { it.id }
