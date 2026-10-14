@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
+import nl.giejay.android.tv.immich.api.MAX_SEARCH_PAGE_SIZE
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.util.ApiUtil
@@ -86,7 +87,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
             val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
             if (excludedAlbums.isNotEmpty()) {
                 excludedAssetIds = excludedAlbums.toList().pmap {
-                    apiClient.listAssetsFromAlbum(listOf(it), pageCount = 1000)
+                    apiClient.listAssetsFromAlbum(listOf(it), pageCount = MAX_SEARCH_PAGE_SIZE)
                         .getOrElse { AssetResponse(emptyList(), false) }
                         .assets
                         .map { it -> it.id }
