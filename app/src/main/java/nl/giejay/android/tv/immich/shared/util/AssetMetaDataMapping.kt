@@ -40,7 +40,14 @@ object AssetMetaDataMapping {
                 .joinToString(" ")
                 .ifBlank { null }
         },
-        MetaDataType.ALBUM_NAME to { it.albumName?.ifBlank { null } }
+        MetaDataType.ALBUM_NAME to { it.albumName?.ifBlank { null } },
+        MetaDataType.TIME to {asset ->
+            val date = asset.exifInfo?.dateTimeOriginal
+                ?: asset.fileCreatedAt
+                ?: asset.fileModifiedAt
+            date?.let { formatAssetTime(it) }
+        },
+        MetaDataType.CURRENT_DATE to { null },
     )
 
     /**
@@ -60,6 +67,7 @@ object AssetMetaDataMapping {
             when {
                 inline != null -> StaticMetaDataProvider(inline)
                 field == MetaDataType.ALBUM_NAME -> AlbumMetaDataProvider(asset.id)
+                field == MetaDataType.CURRENT_DATE -> DateMetaDataProvider()
                 else -> AssetDetailMetaDataProvider(asset.id, field)
             }
         }

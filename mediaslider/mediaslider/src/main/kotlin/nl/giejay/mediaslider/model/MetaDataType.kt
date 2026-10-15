@@ -14,7 +14,9 @@ enum class MetaDataType(val titleResId: Int, val defaultFontSize: Int) {
     FILENAME(R.string.filename, 18),
     FILEPATH(R.string.filepath, 18),
     MEDIA_COUNT(R.string.media_count, 18),
-    PEOPLE(R.string.people, 18);
+    PEOPLE(R.string.people, 18),
+    TIME(R.string.time, 18),
+    CURRENT_DATE(R.string.current_date,18);
 
     fun getTitle(context: Context): String {
         return context.getString(titleResId)

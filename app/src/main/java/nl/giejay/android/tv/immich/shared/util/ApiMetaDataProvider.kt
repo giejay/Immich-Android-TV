@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.shared.util
 
+import android.icu.util.Calendar
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.left
@@ -31,6 +32,12 @@ class AlbumMetaDataProvider(private val assetId: String) : MetaDataProvider {
             albums.distinct().joinToString(", ") { it.albumName }
         }
         return map.getOrNull()
+    }
+}
+
+class DateMetaDataProvider() : MetaDataProvider {
+    override suspend fun getValue(): String? {
+        return formatAssetDate(Calendar.getInstance().time)
     }
 }
 

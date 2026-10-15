@@ -116,6 +116,14 @@ internal fun formatAssetDate(date: Date): String {
     return SimpleDateFormat(formatString, locale).format(date)
 }
 
+internal fun formatAssetTime(date: Date): String {
+    val calendar = Calendar.getInstance()
+    calendar.time = date
+    val locale = Locale.getDefault(Locale.Category.FORMAT)
+    val formatString = "H:mm:ss"
+    return SimpleDateFormat(formatString, locale).format(date)
+}
+
 fun Asset.isPortraitImage(): Boolean {
     val aspectRatio = this.getAspectRatio()
     return (this.exifInfo?.orientation == 6 || this.exifInfo?.orientation == 8 || (aspectRatio != null && aspectRatio > 0.56 && aspectRatio <= 1.1)) && this.type == SliderItemType.IMAGE.toString()
