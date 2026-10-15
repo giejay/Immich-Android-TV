@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only arrays whose items are hardcoded text need a localized copy;
+         all other arrays are made of @string references or values and inherit from the default file. -->
+    <string-array name="glide_transformation_labels">
+        <item>居中内缩（保持图片宽高）</item>
+        <item>居中裁剪（铺满屏幕）</item>
+        <item>安全居中裁剪（限制最大裁剪百分比）</item>
+    </string-array>
+</resources>

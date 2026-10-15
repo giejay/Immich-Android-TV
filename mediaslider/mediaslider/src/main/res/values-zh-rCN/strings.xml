@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="album_name">相册名称</string>
+    <string name="camera">相机型号</string>
+    <string name="city">城市</string>
+    <string name="clock">时钟</string>
+    <string name="country">国家/地区</string>
+    <string name="date">日期</string>
+    <string name="description">描述</string>
+    <string name="filename">文件名</string>
+    <string name="filepath">文件路径</string>
+    <string name="favorite">收藏</string>
+    <string name="media_count">媒体数量</string>
+    <string name="image_controller_next">下一张</string>
+    <string name="people">人物</string>
+    <string name="image_controller_previous">上一张</string>
+    <string name="slideshow">幻灯片播放</string>
+
+    <string name="media_mute">静音</string>
+    <string name="media_play">播放</string>
+    <string name="media_pause">暂停</string>
+    <string name="open_in_external_player">在外部播放器中打开</string>
+    <string name="no_external_player_found">未找到外部播放器</string>
+    <string name="story_progress_count">%1$d/%2$d</string>
+</resources>
