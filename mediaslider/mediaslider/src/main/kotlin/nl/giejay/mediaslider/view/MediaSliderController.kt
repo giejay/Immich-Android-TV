@@ -22,10 +22,6 @@ import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.ControllerButtonPlacement
 import nl.giejay.mediaslider.plugin.ControllerPluginContext
-import nl.giejay.mediaslider.plugin.ExternalPlayerButtonControllerPlugin
-import nl.giejay.mediaslider.plugin.MetadataViewPlugin
-import nl.giejay.mediaslider.plugin.SliderControllerPlugin
-import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
 import nl.giejay.mediaslider.plugin.SliderKeyEventResult
 import nl.giejay.mediaslider.plugin.SliderKeyEventState
 import nl.giejay.mediaslider.util.MediaSliderListener
@@ -65,7 +61,9 @@ class MediaSliderController(
     /** True while the user is actively dragging the seek bar. */
     private var isSeeking = false
 
+    private var reverseSlideShowDirection = false
     private val goToNextAssetRunnable = Runnable { goToNextAsset() }
+    private val goToPreviousAssetRunnable = Runnable { goToPreviousAsset() }
 
     private val progressUpdateRunnable = object : Runnable {
         override fun run() {
@@ -94,7 +92,12 @@ class MediaSliderController(
 
     fun onPlaybackStateChanged(playbackState: Int) {
         if (playbackState == Player.STATE_ENDED && slideShowPlaying) {
-            goToNextAsset()
+            if(reverseSlideShowDirection) {
+                goToPreviousAsset()
+            }
+            else{
+                goToNextAsset()
+            }
         }
     }
 
@@ -125,8 +128,9 @@ class MediaSliderController(
     // Slideshow
     // -------------------------------------------------------------------------
 
-    fun toggleSlideshow(showPlayIndicator: Boolean) {
+    fun toggleSlideshow(showPlayIndicator: Boolean, reverseSlideShowDirection: Boolean = false) {
         slideShowPlaying = !slideShowPlaying
+        this.reverseSlideShowDirection = reverseSlideShowDirection
         val itemType = currentItemTypeOrNull()
         if (slideShowPlaying) {
             if (itemType == SliderItemType.IMAGE) {
@@ -138,7 +142,7 @@ class MediaSliderController(
             setKeepScreenOnFlags()
         } else {
             clearKeepScreenOnFlags()
-            mainHandler.removeCallbacks(goToNextAssetRunnable)
+            removeGoToAssetCallbackFromMainHandler()
             config.controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
         }
         if (showPlayIndicator) {
@@ -147,29 +151,42 @@ class MediaSliderController(
     }
 
     fun startTimerNextAsset() {
-        mainHandler.removeCallbacks(goToNextAssetRunnable)
+        removeGoToAssetCallbackFromMainHandler()
         val intervalMs = (config.interval * 1000).toLong()
-        mainHandler.postDelayed(goToNextAssetRunnable, intervalMs)
+        if(reverseSlideShowDirection) {
+            mainHandler.postDelayed(goToPreviousAssetRunnable, intervalMs)
+        }
+        else{
+            mainHandler.postDelayed(goToNextAssetRunnable, intervalMs)
+        }
         config.controllerPlugins.forEach {
             it.onAssetTimerStarted(intervalMs, this, config, context, mainHandler)
+        }
+    }
+    fun removeGoToAssetCallbackFromMainHandler(){
+        if(reverseSlideShowDirection) {
+            mainHandler.removeCallbacks(goToPreviousAssetRunnable)
+        }
+        else{
+            mainHandler.removeCallbacks(goToNextAssetRunnable)
         }
     }
 
     /** Cancels any pending auto-advance timer without starting a new one. */
     fun cancelNextAssetTimer() {
-        mainHandler.removeCallbacks(goToNextAssetRunnable)
+        removeGoToAssetCallbackFromMainHandler()
         config.controllerPlugins.forEach { it.onSlideShowStopped(this, mainHandler) }
     }
 
     /** Cancels any pending auto-advance and immediately moves to the next asset. */
     fun skipToNextAndRestartTimer() {
-        mainHandler.removeCallbacks(goToNextAssetRunnable)
+        removeGoToAssetCallbackFromMainHandler()
         goToNextAsset()
     }
 
     /** Cancels any pending auto-advance and immediately moves to the previous asset. */
     fun skipToPreviousAndRestartTimer() {
-        mainHandler.removeCallbacks(goToNextAssetRunnable)
+        removeGoToAssetCallbackFromMainHandler()
         goToPreviousAsset()
     }
 
@@ -251,6 +268,7 @@ class MediaSliderController(
 
         val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
         val slideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow) ?: return
+        val reverseSlideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow_reverse) ?: return
         val nextButton = controllerRootView.findViewById<ImageButton>(R.id.image_next) ?: return
         val muteButton = controllerRootView.findViewById<ImageButton>(R.id.media_mute)
         val playPauseButton = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
@@ -265,7 +283,8 @@ class MediaSliderController(
         val hasSecondaryItem = sliderItem.hasSecondaryItem()
 
         previousButton.setOnClickListener { goToPreviousAsset() }
-        slideshowButton.setOnClickListener { toggleSlideshow(true) }
+        slideshowButton.setOnClickListener { toggleSlideshow(true, false) }
+        reverseSlideshowButton.setOnClickListener { toggleSlideshow(true, true) }
         nextButton.setOnClickListener { goToNextAsset() }
 
         muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
@@ -466,7 +485,7 @@ class MediaSliderController(
         currentPlayer?.release()
         currentPlayer = null
         clearKeepScreenOnFlags()
-        mainHandler.removeCallbacks(goToNextAssetRunnable)
+        removeGoToAssetCallbackFromMainHandler()
         stopProgressUpdates()
     }
 
@@ -520,8 +539,14 @@ class MediaSliderController(
             }
         }
         val slideshow = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow)
+        val reverseSlideshow = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow_reverse)
         if (!isVideo && slideshow?.visibility == View.VISIBLE) {
-            slideshow.requestFocus()
+            if(reverseSlideShowDirection){
+                reverseSlideshow.requestFocus()
+            }
+            else {
+                slideshow.requestFocus()
+            }
             return
         }
         for (i in 0 until row.childCount) {
