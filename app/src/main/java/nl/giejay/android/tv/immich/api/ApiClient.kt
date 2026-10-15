@@ -55,6 +55,9 @@ data class ApiClientConfig(
     }
 }
 
+// Immich rejects /search/metadata and /search/random requests with a size above 1000 (400 Bad Request)
+const val MAX_SEARCH_PAGE_SIZE = 1000
+
 // internal so app/src/test can call it directly without instantiating ApiClient/Retrofit
 internal fun buildListAssetsSearchRequest(
     page: Int,
@@ -137,13 +140,14 @@ class ApiClient(private val config: ApiClientConfig) {
                 .getOrElse { return@pmap Either.Left(it) }
 
             val total = album.assetCount
-            val numPages = (total + pageCount - 1) / pageCount
+            val size = pageCount.coerceAtMost(MAX_SEARCH_PAGE_SIZE)
+            val numPages = (total + size - 1) / size
             val pages = (1..numPages).toList()
 
             val assetsResults = pages.pmap { page ->
                 search(SearchRequest(
                     page = page,
-                    size = pageCount,
+                    size = size,
                     albumIds = listOf(albumId),
                     type = if (contentType == ContentType.ALL) null else contentType.toString()
                 ))

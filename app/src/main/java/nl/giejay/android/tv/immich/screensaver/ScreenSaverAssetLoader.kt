@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
+import nl.giejay.android.tv.immich.api.MAX_SEARCH_PAGE_SIZE
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
@@ -140,8 +141,8 @@ class ScreenSaverAssetLoader(
     fun start(): Job = scope.launch(Dispatchers.IO) {
         val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
         if (excludedAlbums.isNotEmpty()) {
-            excludedAssetIds = apiClient.listAssetsFromAlbum(excludedAlbums.toList(), pageCount = 5000)
-                .getOrElse { AssetResponse(emptyList(), false) }
+            excludedAssetIds = apiClient.listAssetsFromAlbum(excludedAlbums.toList(), pageCount = MAX_SEARCH_PAGE_SIZE)
+                .getOrElseLogged("excluded albums $excludedAlbums", AssetResponse(emptyList(), false))
                 .assets
                 .map { it.id }
                 .toSet()
@@ -249,7 +250,7 @@ class ScreenSaverAssetLoader(
                 true
             ))
         } else {
-            return apiClient.listAssetsFromAlbum(albums, contentType, pageCount = 1000).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
+            return apiClient.listAssetsFromAlbum(albums, contentType, pageCount = MAX_SEARCH_PAGE_SIZE).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
         }
     }
 
