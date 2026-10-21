@@ -1,3 +1,4 @@
+// Modified on 2026-10-21: opt-in shuffle on playlist repeat.
 package nl.giejay.mediaslider.config
 
 import nl.giejay.mediaslider.adapter.MetaDataItem
@@ -33,7 +34,9 @@ class MediaSliderConfiguration(
     val showDateTopLeft: Boolean = false,
     var controllerPlugins: List<SliderControllerPlugin> = emptyList(),
     var viewPlugins: List<SliderViewPlugin<*>> = emptyList(),
-    var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()
+    var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList(),
+    /** Shuffle a finite playlist when navigation wraps; other viewers keep their order. */
+    val shuffleOnRepeat: Boolean = false
 ) {
     val isGradiantOverlayVisible: Boolean
         get() = (metaDataConfig.isNotEmpty()) && this.gradiantOverlay

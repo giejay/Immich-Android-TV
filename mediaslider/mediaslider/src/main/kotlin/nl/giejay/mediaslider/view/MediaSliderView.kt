@@ -1,3 +1,5 @@
+// Modified on 2026-10-21: reshuffle completed album screensaver playlists on repeat.
+// Original code remains under Apache-2.0; see mediaslider/LICENSE.md.
 package nl.giejay.mediaslider.view
 
 import android.annotation.SuppressLint
@@ -77,6 +79,9 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     private var defaultExoFactory = DefaultHttpDataSource.Factory()
     private var pagerAdapter: ScreenSlidePagerAdapter? = null
     private var loading = false
+    private var changingShuffleRound = false
+    private var presentedShufflePage: View? = null
+    private var destroyed = false
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private data class ViewPluginEntry(val plugin: SliderViewPlugin<Any?>, val state: Any?)
     private val viewPlugins = mutableListOf<ViewPluginEntry>()
@@ -94,7 +99,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
         val playButton: View = findViewById(R.id.playPause)
         mPager = findViewById(R.id.pager)
-        controller = MediaSliderController(context, mainHandler, mPager, playButton, this)
+        controller = MediaSliderController(context, mainHandler, mPager, playButton, this, ::repeatPlaylist)
         playButton.setOnClickListener { controller.toggleSlideshow(true) }
     }
 
@@ -191,6 +196,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         mPager.setAdapter(pagerAdapter)
         mPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(sliderItemIndex: Int, v: Float, i1: Int) {
+                if (changingShuffleRound || destroyed) return
                 if (config.loadMore != null && mPager.currentItem > config.items.size - 40 && !loading) {
                     loading = true
                     ioScope.launch {
@@ -203,54 +209,11 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                         loading = false
                     }
                 }
-                controller.stopPlayer()
-                if (sliderItemIndex != mPager.currentItem) {
-                    return
-                }
-                val sliderItem = config.items[sliderItemIndex]
-                val mainItem = sliderItem.mainItem
-
-                viewPlugins.forEach { entry ->
-                    entry.plugin.onPageSettled(viewPluginContext, config, sliderItem, sliderItemIndex, mainHandler, entry.state)
-                }
-
-                config.onAssetSelected(sliderItem)
-
-                if (sliderItem.type == SliderItemType.VIDEO) {
-                    val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
-                    if (!viewTag.isReady()) {
-                        Timber.e("Player is not initialized properly, cannot play video.")
-                        Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
-                        return
-                    }
-                    val player = viewTag.getPlayer()!!
-                    controller.setCurrentPlayer(player)
-                    player.seekTo(0, 0)
-                    if (player.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
-                        prepareMedia(sliderItem.url!!, player, defaultExoFactory)
-                    }
-                    if (!config.isVideoSoundEnable) {
-                        player.volume = 0f
-                    }
-                    player.playWhenReady = true
-                    controller.configureController(sliderItem, sliderItemIndex)
-                } else {
-                    controller.setCurrentPlayer(null)
-                    controller.configureController(sliderItem, sliderItemIndex)
-                    if (controller.slideShowPlaying) {
-                        controller.startTimerNextAsset()
-                        val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return
-                        val touchImageView = viewTag.children.first() as? TouchImageView
-                        if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
-                            touchImageView.zoomAndScrollPanorama(config, sliderItem)
-                        } else if (touchImageView != null && config.zoomAndScrollPanorama && !mainItem.isPanorama) {
-                            touchImageView.zoomAndPanEffect(config, sliderItem)
-                        }
-                    }
-                }
+                presentPage(sliderItemIndex)
             }
 
             override fun onPageSelected(i: Int) {
+                if (changingShuffleRound || destroyed) return
                 viewPlugins.forEach { it.plugin.onPageSelected(viewPluginContext, i, it.state) }
                 if (!controller.isControllerVisible) {
                     controller.restorePagerFocus()
@@ -262,9 +225,103 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         // Register the listener before selecting the start page so the first asset
         // still gets onPageSelected / onPageSettled (metadata, date overlay, etc.).
         setStartPosition()
+        if (config.shuffleOnRepeat) {
+            // Selecting the already-current index 0 need not dispatch a pager event.
+            mPager.post { if (!destroyed) presentPage(mPager.currentItem) }
+        }
+    }
+
+    private fun presentPage(sliderItemIndex: Int) {
+        if (changingShuffleRound || destroyed) return
+        if (!config.shuffleOnRepeat) controller.stopPlayer()
+        if (sliderItemIndex != mPager.currentItem) {
+            return
+        }
+        if (config.shuffleOnRepeat) {
+            val page = mPager.findViewWithTag<View>("view$sliderItemIndex") ?: return
+            if (presentedShufflePage === page) return
+            presentedShufflePage = page
+            controller.stopPlayer()
+        }
+        val sliderItem = config.items[sliderItemIndex]
+        val mainItem = sliderItem.mainItem
+
+        viewPlugins.forEach { entry ->
+            entry.plugin.onPageSettled(viewPluginContext, config, sliderItem, sliderItemIndex, mainHandler, entry.state)
+        }
+
+        config.onAssetSelected(sliderItem)
+
+        if (sliderItem.type == SliderItemType.VIDEO) {
+            val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
+            if (!viewTag.isReady()) {
+                presentedShufflePage = null
+                Timber.e("Player is not initialized properly, cannot play video.")
+                Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
+                return
+            }
+            val player = viewTag.getPlayer()!!
+            controller.setCurrentPlayer(player)
+            player.seekTo(0, 0)
+            if (player.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
+                prepareMedia(sliderItem.url!!, player, defaultExoFactory)
+            }
+            if (!config.isVideoSoundEnable) {
+                player.volume = 0f
+            }
+            player.playWhenReady = true
+            controller.configureController(sliderItem, sliderItemIndex)
+        } else {
+            controller.setCurrentPlayer(null)
+            controller.configureController(sliderItem, sliderItemIndex)
+            if (controller.slideShowPlaying) {
+                controller.startTimerNextAsset()
+                val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return
+                val touchImageView = viewTag.children.first() as? TouchImageView
+                if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
+                    touchImageView.zoomAndScrollPanorama(config, sliderItem)
+                } else if (touchImageView != null && config.zoomAndScrollPanorama && !mainItem.isPanorama) {
+                    touchImageView.zoomAndPanEffect(config, sliderItem)
+                }
+            }
+        }
+    }
+
+    private fun repeatPlaylist(reverse: Boolean): Boolean {
+        // Keep the bootstrap/load-more behavior until the full album response has arrived.
+        if (config.loadMore != null || config.items.isEmpty()) return false
+        if (changingShuffleRound) return true
+        changingShuffleRound = true
+        controller.cancelNextAssetTimer()
+        val previous = currentItem()
+        val player = controller.currentPlayer
+        controller.setCurrentPlayer(null)
+        player?.stop()
+        val shuffled = config.items.shuffled().toMutableList()
+        val start = if (reverse) shuffled.lastIndex else 0
+        if (shuffled.size > 1 && shuffled[start] == previous) {
+            val other = if (reverse) 0 else shuffled.lastIndex
+            shuffled[start] = shuffled[other].also { shuffled[other] = shuffled[start] }
+        }
+        // Release old video pages before changing the data they refer to.
+        mPager.adapter = null
+        config.items = shuffled
+        pagerAdapter!!.setItems(shuffled)
+        mPager.adapter = pagerAdapter
+        mPager.setCurrentItem(start, false)
+        presentedShufflePage = null
+        mPager.post {
+            if (destroyed) return@post
+            changingShuffleRound = false
+            val index = mPager.currentItem
+            viewPlugins.forEach { it.plugin.onPageSelected(viewPluginContext, index, it.state) }
+            presentPage(index)
+        }
+        return true
     }
 
     fun onDestroy() {
+        destroyed = true
         ioScope.cancel()
         viewPlugins.forEach { it.plugin.onDestroy(viewPluginContext, it.state) }
         controller.onDestroy()

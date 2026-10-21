@@ -1,3 +1,4 @@
+// Modified on 2026-10-21: optional playlist repeat callback and stale video event guards.
 package nl.giejay.mediaslider.view
 
 import android.app.Activity
@@ -44,7 +45,8 @@ class MediaSliderController(
     private val pager: ViewPager,
     /** The centre play/pause overlay indicator shown briefly on slideshow toggle. */
     private val playButtonView: View,
-    private val controllerRootView: View
+    private val controllerRootView: View,
+    private val onRepeat: (reverse: Boolean) -> Boolean = { false }
 ) {
     private lateinit var config: MediaSliderConfiguration
 
@@ -92,6 +94,11 @@ class MediaSliderController(
 
     fun onPlaybackStateChanged(playbackState: Int) {
         if (playbackState == Player.STATE_ENDED && slideShowPlaying) {
+            // A released page may still deliver a queued end event during a reshuffle.
+            if (config.shuffleOnRepeat) {
+                if (currentPlayer?.playbackState != Player.STATE_ENDED) return
+                currentPlayer = null
+            }
             if(reverseSlideShowDirection) {
                 goToPreviousAsset()
             }
@@ -116,6 +123,7 @@ class MediaSliderController(
     }
 
     fun onPlayerError(error: PlaybackException) {
+        if (config.shuffleOnRepeat && currentPlayer?.playerError !== error) return
         Timber.e(error, "Player error")
         if (slideShowPlaying) {
             goToNextAsset()
@@ -197,7 +205,7 @@ class MediaSliderController(
     fun goToNextAsset() {
         if (pager.currentItem < pager.adapter!!.count - 1) {
             pager.setCurrentItem(pager.currentItem + 1, config.enableSlideAnimation)
-        } else {
+        } else if (!config.shuffleOnRepeat || !onRepeat(false)) {
             pager.setCurrentItem(0, config.enableSlideAnimation)
         }
         // Keep controller focus if the overlay is open (e.g. mid D-pad to pause during slideshow).
@@ -207,10 +215,12 @@ class MediaSliderController(
     }
 
     fun goToPreviousAsset() {
-        pager.setCurrentItem(
-            (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
-            config.enableSlideAnimation
-        )
+        if (pager.currentItem != 0 || !config.shuffleOnRepeat || !onRepeat(true)) {
+            pager.setCurrentItem(
+                (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
+                config.enableSlideAnimation
+            )
+        }
         if (!isControllerVisible) {
             restorePagerFocus()
         }

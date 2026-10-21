@@ -14,6 +14,7 @@ import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.MAX_SEARCH_PAGE_SIZE
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.AssetExifInfo
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Tag
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
@@ -24,6 +25,7 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.Pref
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
 import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.plugin.MediaRemoteControlsKeyEventPlugin
@@ -128,7 +130,7 @@ class ScreenSaverAssetLoaderTest {
                     contentType = eq(ContentType.IMAGE),
                     pageCount = eq(1000)
                 )
-            ).thenReturn(Either.Right(AssetResponse(listOf(asset("shared-asset")), false)))
+            ).thenReturn(Either.Right(AssetResponse(listOf(asset("shared-asset"), asset("shared-asset")), false)))
         }
     ) { actual, apiClient ->
         verify(apiClient, times(1)).listAssets(
@@ -148,6 +150,53 @@ class ScreenSaverAssetLoaderTest {
             eq(1000)
         )
         assertThat(actual.items.single().ids()).containsExactly("shared-asset")
+    }
+
+    @Test
+    fun `overlapping portrait albums are deduplicated before pairing and appending`() = runLoaderTest(
+        type = ScreenSaverType.ALBUMS,
+        albums = setOf("album-a", "album-b"),
+        mergePortrait = true,
+        setupMocks = { apiClient ->
+            whenever(apiClient.listAssets(any(), any(), eq(true), any(), any(), anyOrNull(),
+                anyOrNull(), any(), any())).thenReturn(
+                Either.Right(AssetResponse(listOf(portrait("a"), portrait("b")), true)),
+                Either.Right(AssetResponse(listOf(portrait("b"), portrait("c")), true))
+            )
+            whenever(apiClient.listAssetsFromAlbum(any(), any(), any())).thenReturn(
+                Either.Right(AssetResponse(listOf(portrait("a"), portrait("b"), portrait("c"),
+                    portrait("c"), portrait("d"), portrait("e")), false))
+            )
+        }
+    ) { actual, apiClient ->
+        // The full fetch must remain deferred until after the random bootstrap is playable.
+        verify(apiClient, never()).listAssetsFromAlbum(any(), any(), any())
+        val initialIds = actual.items.flatMap { it.ids() }
+        assertThat(initialIds).containsExactly("a", "b", "c")
+        val more = actual.loadMore!!.invoke()
+        assertThat(more.canLoadMore).isFalse()
+        assertThat(more.items.flatMap { it.ids() }).containsExactly("d", "e")
+        assertThat(initialIds + more.items.flatMap { it.ids() })
+            .containsExactly("a", "b", "c", "d", "e")
+    }
+
+    @Test
+    fun `a full album containing only bootstrap assets finishes without appending duplicates`() = runLoaderTest(
+        type = ScreenSaverType.ALBUMS,
+        albums = setOf("album"),
+        setupMocks = { apiClient ->
+            whenever(apiClient.listAssets(any(), any(), eq(true), any(), any(), anyOrNull(),
+                anyOrNull(), any(), any())).thenReturn(
+                Either.Right(AssetResponse(listOf(asset("a")), true))
+            )
+            whenever(apiClient.listAssetsFromAlbum(any(), any(), any())).thenReturn(
+                Either.Right(AssetResponse(listOf(asset("a")), false))
+            )
+        }
+    ) { actual, _ ->
+        val more = actual.loadMore!!.invoke()
+        assertThat(more.items).isEmpty()
+        assertThat(more.canLoadMore).isFalse()
     }
 
     @Test
@@ -266,6 +315,7 @@ class ScreenSaverAssetLoaderTest {
         type: ScreenSaverType = ScreenSaverType.RANDOM,
         albums: Set<String> = emptySet(),
         excludedAlbums: Set<String> = emptySet(),
+        mergePortrait: Boolean = false,
         setupMocks: suspend (ApiClient) -> Unit,
         verifyResult: suspend (MediaSliderConfiguration, ApiClient) -> Unit
     ) = runTest {
@@ -274,6 +324,7 @@ class ScreenSaverAssetLoaderTest {
         setPreference(SCREENSAVER_TYPE, type)
         setPreference(SCREENSAVER_ALBUMS, albums)
         setPreference(EXCLUDE_ASSETS_IN_ALBUM, excludedAlbums)
+        setPreference(SLIDER_MERGE_PORTRAIT_PHOTOS, mergePortrait)
 
         val apiClient = mock<ApiClient>()
         setupMocks(apiClient)
@@ -295,6 +346,8 @@ class ScreenSaverAssetLoaderTest {
             verify(host, never()).showScreenSaverMessage(any(), any())
             verify(host, never()).exitScreenSaver()
 
+            assertThat(configurationCaptor.firstValue.shuffleOnRepeat).isEqualTo(type == ScreenSaverType.ALBUMS)
+
             verifyResult(configurationCaptor.firstValue, apiClient)
         }
     }
@@ -307,6 +360,10 @@ class ScreenSaverAssetLoaderTest {
         liveContext[pref.key()] = value
         preferenceValues[pref.key()] = value
     }
+
+    private fun portrait(id: String) = asset(id).copy(exifInfo = AssetExifInfo(
+        null, 6, 720, 1280, null, null, null, null, null
+    ))
 
     private fun asset(id: String) = Asset(
         id = id,

@@ -97,7 +97,8 @@ internal fun buildScreenSaverConfiguration(
         showDateTopLeft = PreferenceManager.get(SCREENSAVER_SHOW_DATE_TOP_LEFT),
         controllerPlugins = enabledPlugins.controllerPlugins,
         viewPlugins = enabledPlugins.viewPlugins,
-        keyEventPlugins = enabledPlugins.keyEventPlugins
+        keyEventPlugins = enabledPlugins.keyEventPlugins,
+        shuffleOnRepeat = PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS
     )
 }
 
@@ -133,6 +134,8 @@ class ScreenSaverAssetLoader(
     }
 
     private var currentPage = 0
+    // Filter before portrait pairing: the same asset can belong to different page pairs.
+    private val loadedAlbumAssetIds = mutableSetOf<String>()
     private var excludedAssetIds: Set<String> = emptySet()
     private val filteredAssetLoader = FilteredAssetLoader(
         filterAssets = { filterExcludedAssets(it, excludedAssetIds) }
@@ -233,7 +236,7 @@ class ScreenSaverAssetLoader(
 
     private suspend fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): Either<String, AssetResponse> {
         val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
-        if (random) {
+        val response = if (random) {
             val pageCount = (50 / albums.size).coerceAtLeast(1)
             val responses = albums.pmap { albumId ->
                 apiClient.listAssets(
@@ -245,13 +248,14 @@ class ScreenSaverAssetLoader(
                 )
             }
             responses.firstOrNull { it.isLeft() }?.let { return it }
-            return Either.Right(AssetResponse(
+            Either.Right(AssetResponse(
                 responses.flatMap { it.getOrElse { AssetResponse(emptyList(), true) }.assets }.shuffled(),
                 true
             ))
         } else {
-            return apiClient.listAssetsFromAlbum(albums, contentType, pageCount = MAX_SEARCH_PAGE_SIZE).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
+            apiClient.listAssetsFromAlbum(albums, contentType, pageCount = MAX_SEARCH_PAGE_SIZE).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
         }
+        return response.map { it.copy(assets = it.assets.filter { asset -> loadedAlbumAssetIds.add(asset.id) }) }
     }
 
     private suspend fun failAndExit(@StringRes messageRes: Int) = withContext(Dispatchers.Main) {
