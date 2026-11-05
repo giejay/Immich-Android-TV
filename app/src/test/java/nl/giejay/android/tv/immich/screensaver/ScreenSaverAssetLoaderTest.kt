@@ -244,7 +244,7 @@ class ScreenSaverAssetLoaderTest {
     ) { actual, apiClient ->
         // Immich rejects search page sizes above 1000; a larger value silently disabled album exclusion
         val pageCountCaptor = argumentCaptor<Int>()
-        verify(apiClient).listAssetsFromAlbum(eq(listOf("excluded-album")), any(), pageCountCaptor.capture())
+        verify(apiClient).listAssetsFromAlbum(eq(listOf("excluded-album")), any(), pageCountCaptor.capture(), any())
         assertThat(pageCountCaptor.firstValue).isAtMost(MAX_SEARCH_PAGE_SIZE)
         assertThat(actual.items.single().ids()).containsExactly("random-asset")
     }
