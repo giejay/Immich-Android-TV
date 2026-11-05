@@ -128,7 +128,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.listAssetsFromAlbum(
                     albumIds = eq(listOf("shared-album")),
                     contentType = eq(ContentType.IMAGE),
-                    pageCount = eq(1000)
+                    pageCount = eq(1000),
+                    isFavorite = eq(false)
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("shared-asset")), false)))
         }
@@ -148,7 +149,8 @@ class ScreenSaverAssetLoaderTest {
         verify(apiClient, times(1)).listAssetsFromAlbum(
             eq(listOf("shared-album")),
             eq(ContentType.IMAGE),
-            eq(1000)
+            eq(1000),
+            isFavorite = eq(false)
         )
         assertThat(actual.items.single().ids()).containsExactly("shared-asset")
     }
@@ -184,7 +186,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.recentAssets(
                     page = any(),
                     pageCount = any(),
-                    contentType = any()
+                    contentType = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("recent-asset")), true)))
         }
@@ -200,7 +203,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.similarAssets(
                     page = any(),
                     pageCount = any(),
-                    contentType = any()
+                    contentType = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("similar-asset")), true)))
         }
@@ -217,7 +221,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.listAssetsFromAlbum(
                     albumIds = eq(listOf("excluded-album")),
                     contentType = any(),
-                    pageCount = any()
+                    pageCount = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("excluded-asset")), false)))
 
