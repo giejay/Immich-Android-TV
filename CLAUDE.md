@@ -38,7 +38,7 @@ Two Gradle modules: `:app` and `:mediaslider:mediaslider` (slideshow/viewer libr
 
 Firebase, Play Billing (donate) and play-services-auth have been removed; release builds use a plain logcat Timber tree.
 
-No Compose is in the project yet; UI is Leanback (`Theme.AppCompat.Leanback`, flat gray background, many PNG icons).
+Compose for TV (`androidx.tv:tv-material`) is set up under `ui/` (`ImmichTheme`, `ImmichIcons`, `ImmichFocus`; `immichComposeView` hosts Compose in Leanback/View code). UI is still mostly Leanback (`Theme.AppCompat.Leanback`, PNG icons) until the later steps. A debug-only `ThemeGalleryActivity` shows the theme: `adb shell am start -n <applicationId>/nl.giejay.android.tv.immich.ui.ThemeGalleryActivity`.
 
 ## Working rules for this fork
 

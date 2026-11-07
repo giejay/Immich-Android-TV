@@ -5,6 +5,7 @@ plugins {
     id 'kotlin-parcelize'
     alias libs.plugins.navigation.safeargs.kotlin
     alias libs.plugins.google.devtools.ksp
+    alias libs.plugins.kotlin.compose
 }
 
 android {
@@ -47,6 +48,7 @@ android {
         // See more at https://developer.android.com/topic/libraries/view-binding
         viewBinding = true
         buildConfig = true
+        compose = true
     }
 
     compileOptions {
@@ -90,6 +92,15 @@ dependencies {
     implementation libs.androidx.navigation.ui.ktx
     implementation libs.androidx.leanback.preference
     implementation libs.arrow.core
+
+    // Compose for TV (coexists with Leanback during the migration)
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.foundation
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.compose.material.icons.extended
+    implementation libs.androidx.tv.material
+    debugImplementation libs.androidx.compose.ui.tooling
 
     // Cast library used for Cast Connect feature
 //    implementation "com.google.android.gms:play-services-cast-tv:$cast_tv_version"

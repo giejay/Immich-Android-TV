@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug-only gallery of the Compose theme; start with:
+             adb shell am start -n <applicationId>/nl.giejay.android.tv.immich.ui.ThemeGalleryActivity -->
+        <activity
+            android:name="nl.giejay.android.tv.immich.ui.ThemeGalleryActivity"
+            android:exported="true" />
+    </application>
+</manifest>
