@@ -2,7 +2,9 @@ package nl.giejay.android.tv.immich.ui.theme
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
@@ -38,6 +40,7 @@ object ImmichIcons {
     val Recent: ImageVector get() = Icons.Filled.History
     val Seasonal: ImageVector get() = Icons.Filled.Event
     val Folders: ImageVector get() = Icons.Filled.Folder
+    val FolderUp: ImageVector get() = Icons.Filled.ArrowUpward
     val Edit: ImageVector get() = Icons.Filled.Edit
     val Settings: ImageVector get() = Icons.Filled.Settings
 
@@ -49,6 +52,7 @@ object ImmichIcons {
     val Debug: ImageVector get() = Icons.Filled.BugReport
 
     // Actions
+    val Selected: ImageVector get() = Icons.Filled.CheckCircle
     val Add: ImageVector get() = Icons.Filled.Add
     val Remove: ImageVector get() = Icons.Filled.Remove
     val Save: ImageVector get() = Icons.Filled.Save

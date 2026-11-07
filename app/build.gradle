@@ -124,6 +124,7 @@ dependencies {
 
     implementation libs.gson
     implementation libs.glide
+    implementation libs.glide.compose
     implementation libs.okhttp3.integration
 
     // Retrofit for HTTP requests

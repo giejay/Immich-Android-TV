@@ -15,6 +15,8 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import nl.giejay.android.tv.immich.card.Card
+import nl.giejay.android.tv.immich.ui.card.ImmichCard
 import nl.giejay.android.tv.immich.ui.theme.ImmichIcons
 
 /** Debug-only: shows typography, icons and focusable buttons to check the theme on a real TV. */
@@ -39,6 +41,11 @@ private fun Gallery() {
                 ImmichIcons.People, ImmichIcons.Recent, ImmichIcons.Seasonal, ImmichIcons.Folders,
                 ImmichIcons.Settings,
             ).forEach { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+        }
+        Row {
+            ImmichCard(Card("Folder card", "unfocused", "1", "folder", null), focused = false)
+            ImmichCard(Card("Focused card", "scaled + border", "2", "folder_up", null), focused = true)
+            ImmichCard(Card("Selected card", "check badge", "3", "folder", null, selected = true), focused = false)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Button(onClick = {}) { Text("First") }

@@ -12,6 +12,7 @@ desugar_jdk_libs = "2.1.5"
 diffplug-spotless = "8.8.0"
 fragment = "1.8.9"
 glide = "5.0.9"
+glide-compose = "1.0.0-beta10"
 google-api-client = "2.9.0"
 google-api-services-androidpublisher = "v3-rev20260706-2.0.0"
 google-auth-library-oauth2-http = "1.49.0"
@@ -85,6 +86,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
+glide-compose = { group = "com.github.bumptech.glide", name = "compose", version.ref = "glide-compose" }
 glide-ksp = { group = "com.github.bumptech.glide", name = "ksp", version.ref = "glide" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito-core" }
 mockito-inline = { group = "org.mockito", name = "mockito-inline", version.ref = "mockito-inline" }

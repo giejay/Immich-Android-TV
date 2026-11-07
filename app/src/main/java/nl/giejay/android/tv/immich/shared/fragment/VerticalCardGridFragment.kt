@@ -52,7 +52,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     protected lateinit var apiClient: ApiClient
     private lateinit var keyEvents: KeyEventsViewModel
-    private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_SMALL
+    // The Compose card animates its own focus scale and border, so Leanback must not zoom as well.
+    private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_NONE
     protected val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
