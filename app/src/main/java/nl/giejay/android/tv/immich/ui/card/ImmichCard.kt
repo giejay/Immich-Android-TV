@@ -4,7 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -12,10 +12,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -52,7 +63,7 @@ fun ImmichCard(card: ICard, focused: Boolean, modifier: Modifier = Modifier) {
         animationSpec = tween(ImmichFocus.AnimationMillis),
         label = "cardScale",
     )
-    val borderColor by animateColorAsState(
+    val borderColor = animateColorAsState(
         targetValue = when {
             focused -> MaterialTheme.colorScheme.border
             card.selected -> MaterialTheme.colorScheme.primaryContainer
@@ -76,7 +87,7 @@ fun ImmichCard(card: ICard, focused: Boolean, modifier: Modifier = Modifier) {
                 .size(ImmichCardDefaults.ImageWidth, ImmichCardDefaults.ImageHeight)
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(ImmichFocus.BorderWidth, borderColor, shape),
+                .animatedBorder(borderColor, ImmichFocus.BorderWidth, shape),
         ) {
             CardImage(card.thumbnailUrl)
             if (card.selected) {
@@ -137,4 +148,47 @@ private fun BoxScope.CardImage(thumbnailUrl: String?) {
 private fun iconForName(name: String) = when (name) {
     "folder_up" -> ImmichIcons.FolderUp
     else -> ImmichIcons.Folders
+}
+
+/**
+ * Border whose colour animates in the draw phase, so focus changes do not recompose the card.
+ * The parent clips to [shape], so a stroke centered on the edge only shows its inner half; it is
+ * drawn twice as wide to get a visible border of [width].
+ */
+private fun Modifier.animatedBorder(color: State<Color>, width: Dp, shape: Shape): Modifier =
+    drawWithContent {
+        drawContent()
+        val c = color.value
+        if (c != Color.Transparent) {
+            val outline = shape.createOutline(Size(size.width, size.height), layoutDirection, this)
+            drawOutline(outline, c, style = Stroke(width.toPx() * 2))
+        }
+    }
+
+/**
+ * [ImmichCard] that takes Compose focus and clicks, for native Compose grids.
+ * [onFocused] fires when the card gains focus.
+ */
+@Composable
+fun ImmichFocusableCard(
+    card: ICard,
+    onClick: () -> Unit,
+    onFocused: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var focused by remember { mutableStateOf(false) }
+    ImmichCard(
+        card = card,
+        focused = focused,
+        modifier = modifier
+            .onFocusChanged {
+                focused = it.isFocused
+                if (it.isFocused) onFocused()
+            }
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                onClick = onClick,
+            ),
+    )
 }
