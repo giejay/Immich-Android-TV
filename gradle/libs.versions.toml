@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.1"
+agp = "9.5.1"
 appcompat = "1.7.1"
 arrow-core = "2.2.3"
 billing-ktx = "9.1.0"
