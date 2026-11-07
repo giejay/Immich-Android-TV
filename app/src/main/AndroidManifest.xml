@@ -19,9 +19,6 @@
 
     <!-- Access internet-based media -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Donation -->
-    <uses-permission android:name="com.android.vending.BILLING" />
-
     <!-- For writing to home screen channels -->
     <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
 
@@ -51,8 +48,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!-- Runs before Application.onCreate() and before any other provider with a lower
-             initOrder (FirebaseInitProvider is at 100, this is set higher so it always wins). -->
+        <!-- Runs before Application.onCreate() and before any other provider. -->
         <provider
             android:name="nl.giejay.android.tv.immich.AppContextInitializer"
             android:authorities="${applicationId}.appcontextinitializer"
@@ -89,12 +85,6 @@
 <!--                <category android:name="android.intent.category.HOME" />-->
             </intent-filter>
 
-            <intent-filter>
-                <action android:name="com.google.android.gms.cast.tv.action.LAUNCH" />
-                <action android:name="com.google.android.gms.cast.tv.action.LOAD"/>
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
 
             <!-- Deep links from home screen channel programs/channels, see homescreenchannels.ChannelDeepLinks -->
             <intent-filter>
@@ -120,14 +110,6 @@
             </intent-filter>
         </receiver>
 
-        <!--
-         ~ Options provider class for Cast Connect when CastReceiverContext
-         ~ is initialised. More information can be found at -
-         ~ https://developers.google.com/cast/docs/android_tv_receiver/core_features#specify_receiver_options_provider
-        -->
-        <meta-data
-            android:name="com.google.android.gms.cast.tv.RECEIVER_OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="nl.giejay.android.tv.immich.castconnect.CastReceiverOptionsProvider" />
 
     </application>
 

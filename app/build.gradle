@@ -2,8 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias libs.plugins.android.application
-    alias libs.plugins.google.gms.google.services
-    alias libs.plugins.google.firebase.crashlytics
     id 'kotlin-parcelize'
     alias libs.plugins.navigation.safeargs.kotlin
     alias libs.plugins.google.devtools.ksp
@@ -93,10 +91,6 @@ dependencies {
     implementation libs.androidx.leanback.preference
     implementation libs.arrow.core
 
-    implementation platform(libs.firebase.bom)
-    implementation libs.firebase.analytics
-    implementation libs.firebase.crashlytics
-
     // Cast library used for Cast Connect feature
 //    implementation "com.google.android.gms:play-services-cast-tv:$cast_tv_version"
 //    implementation "com.google.android.gms:play-services-cast:$cast_version"
@@ -117,14 +111,9 @@ dependencies {
     implementation libs.androidx.media3.exoplayer
     implementation libs.androidx.media3.ui
 
-    implementation libs.billing.ktx
-
     implementation libs.gson
     implementation libs.glide
     implementation libs.okhttp3.integration
-
-    // Google Play Services for identity
-    implementation libs.play.services.auth
 
     // Retrofit for HTTP requests
     implementation libs.retrofit

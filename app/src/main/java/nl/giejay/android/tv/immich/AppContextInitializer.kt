@@ -21,7 +21,7 @@ import android.database.Cursor
 import android.net.Uri
 
 // Runs before Application.onCreate() and before any other provider with a lower initOrder
-// (FirebaseInitProvider is at 100, this is set higher in the manifest so it always wins).
+// (set to the maximum in the manifest so it always wins).
 class AppContextInitializer : ContentProvider() {
 
     override fun onCreate(): Boolean {

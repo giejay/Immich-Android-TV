@@ -171,7 +171,7 @@ class MainActivity : FragmentActivity() {
     }
 
     /**
-     * Chooses whether to show the browse screen or the "no Firebase" notice
+     * Chooses whether to show the authentication or the browse screen
      */
     private fun loadStartingPage() {
         if (!PreferenceManager.isLoggedId()) {

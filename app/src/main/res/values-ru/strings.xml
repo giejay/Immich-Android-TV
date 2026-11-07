@@ -79,7 +79,6 @@
     <string name="server">Сервер</string>
     <string name="screensaver">Заставка\n</string>
     <string name="debug">Отладка</string>
-    <string name="donate">Пожертвовать</string>
     <string name="use_hd_thumbnails">Использовать миниатюры высокого разрешения</string>
     <string name="use_hd_thumbnails_text">Использовать миниатюры высокого разрешения вместо полноразмерных изображений. Это значительно ускорит загрузку.</string>
     <string name="show_partner_photos_in_timeline">Показывать фото партнёра на временной шкале</string>
@@ -243,11 +242,6 @@
     <string name="could_not_load_assets">Не удалось загрузить элементы из Immich</string>
     <string name="albums_order_asset_count">Количество элементов</string>
 
-    <!-- Donate -->
-    <string name="donation_title">Пожертвование</string>
-    <string name="donation_subtitle">Разработка этого приложения требует больших усилий. Если хотите выразить признательность, вы можете пожертвовать, используя следующие варианты.</string>
-    <string name="donation_exhausted">Вы исчерпали варианты пожертвований, спасибо!</string>
-    <string name="donation_init_failed">Не удалось инициализировать сервис пожертвований</string>
 
     <!-- Ordering -->
     <string name="order_alphabetically_az">По алфавиту (А–Я)</string>
