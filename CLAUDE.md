@@ -16,7 +16,7 @@ Requires JDK 17, Android SDK (`local.properties` with `sdk.dir=/home/daniii/Andr
 ./gradlew :app:testDebugUnitTest --tests "nl.giejay.android.tv.immich.timeline.TimelineViewModelTest"   # single class
 ```
 
-- Untracked local files needed to build (git-ignored, must stay placeholders and never be committed): `app/google-services.json` (copy of `app/google-services.example`) and `app/src/main/res/values/strings_other.xml` (copy of `app/strings_other.xml.example`).
+- Untracked local file needed to build (git-ignored, must stay a placeholder and never be committed): `app/src/main/res/values/strings_other.xml` (copy of `app/strings_other.xml.example`).
 - Spotless/ktlint is configured but `enforceCheck false`; don't expect it to gate builds.
 - `gradle/gradle-daemon-jvm.properties` requests toolchain 25; the environment has JDK 17 (build works regardless).
 - CI: `.github/workflows/android.yml` (build) and `release.yml` (signed APK + GitHub release; keystore via env vars).
@@ -36,7 +36,7 @@ Two Gradle modules: `:app` and `:mediaslider:mediaslider` (slideshow/viewer libr
 - `screensaver/`: `ScreenSaverService` (DreamService) with asset loaders; `slider/ImmichMediaSlider` bridges the app to the mediaslider module.
 - `ImmichApplication` / `AppContextInitializer`: static `appContext` is used widely (including inside `Pref` object initializers), so it must be set before preferences are touched.
 
-Currently coupled to Google/Firebase (to be removed): Firebase Crashlytics in `ImmichApplication` (`CrashReportingTree`, `setUserId`), `shared/donate/*` (Play Billing), `play-services-auth`, `google-services`/`crashlytics` Gradle plugins, `BILLING` permission, `nav_graph.xml` donate destination, `SettingsFragment` donate card. `AndroidManifest.xml` references a non-existent `castconnect.CastReceiverOptionsProvider` (Cast is out of scope).
+Firebase, Play Billing (donate) and play-services-auth have been removed; release builds use a plain logcat Timber tree.
 
 No Compose is in the project yet; UI is Leanback (`Theme.AppCompat.Leanback`, flat gray background, many PNG icons).
 
@@ -48,6 +48,6 @@ No Compose is in the project yet; UI is Leanback (`Theme.AppCompat.Leanback`, fl
 - D-Pad navigation must work at every step: everything focusable, visible focus state, sensible Back behavior.
 - Ask before removing features or swapping dependencies that were not explicitly listed.
 - Keep license/copyright headers and the `LICENSE` file unchanged.
-- Never commit secrets, API keys or real server data; `google-services.json` and `strings_other.xml` stay placeholders and out of the repo.
+- Never commit secrets, API keys or real server data; `strings_other.xml` stays a placeholder and out of the repo.
 - Do not push; the user pushes.
 - Test targets: Android TV emulator and a real TV via adb.
