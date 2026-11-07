@@ -37,9 +37,8 @@ import timber.log.Timber
 /**
  * A page that renders [Card]s in a Compose grid.
  *
- * It is still a Leanback page (a [BrandedSupportFragment] that provides a main fragment adapter),
- * so [androidx.leanback.app.BrowseSupportFragment] can host it and manage header <-> content focus
- * until the navigation is migrated. Only the grid itself is Compose.
+ * Hosted by [nl.giejay.android.tv.immich.home.HomeFragment] or pushed on the nav graph. It keeps
+ * the Leanback [BrandedSupportFragment] title view; only the grid itself is Compose.
  */
 open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
     private var manuallySelectedPosition: Int = -1

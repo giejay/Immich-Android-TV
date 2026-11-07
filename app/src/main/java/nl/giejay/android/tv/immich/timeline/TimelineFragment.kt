@@ -54,6 +54,8 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DATE_TOP_LEFT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
+import nl.giejay.android.tv.immich.home.HomeNavHost
+import nl.giejay.android.tv.immich.home.NavTransitionListener
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.util.Debouncer
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
@@ -300,8 +302,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         // Host is attached by now; keep Browse from flashing/animating the "Timeline" title.
         hideBrowseTitle()
 
-        (parentFragment as? BrowseSupportFragment)?.setBrowseTransitionListener(
-            object : BrowseSupportFragment.BrowseTransitionListener() {
+        (parentFragment as? HomeNavHost)?.setNavTransitionListener(
+            object : NavTransitionListener() {
                 override fun onHeadersTransitionStart(withHeaders: Boolean) {
                     if (!isAdded) return
                     if (withHeaders) {
@@ -406,7 +408,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     override fun onDestroyView() {
         // Do not captureResumeState here — focus is already cleared and would wipe a sticky
         // memory/mosaic leave-off set when opening the slider. Menu open already snapshots.
-        (parentFragment as? BrowseSupportFragment)?.setBrowseTransitionListener(null)
+        (parentFragment as? HomeNavHost)?.setNavTransitionListener(null)
         focusVideoPreview?.release()
         focusVideoPreview = null
         super.onDestroyView()
@@ -878,13 +880,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     }
 
     private fun isBrowseShowingHeaders(): Boolean =
-        (parentFragment as? BrowseSupportFragment)?.isShowingHeaders == true
+        (parentFragment as? HomeNavHost)?.isNavFocused == true
 
     /** Timeline has no page title — hide immediately so Leanback cannot flash/animate one. */
     private fun hideBrowseTitle() {
         showTitle(false)
         mainFragmentAdapter.fragmentHost?.showTitleView(false)
-        (parentFragment as? BrowseSupportFragment)?.showTitle(false)
     }
 
     /** Prefer the first memory card; fall back to the first mosaic cell. */
