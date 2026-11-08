@@ -38,6 +38,7 @@ import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.controller.SliderControllerBar
 import nl.giejay.mediaslider.controller.SliderControllerUiState
 import nl.giejay.mediaslider.overlay.createOverlayView
+import nl.giejay.mediaslider.pager.ViewPagerSliderPager
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.MetadataViewPlugin
@@ -104,7 +105,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         mPager = findViewById(R.id.pager)
         val controllerHost = findViewById<android.widget.FrameLayout>(R.id.controller_host)
         controllerHost.addView(createOverlayView(context) { SliderControllerBar(controllerState) })
-        controller = MediaSliderController(context, mainHandler, mPager, playButton, this, controllerState)
+        controller = MediaSliderController(context, mainHandler, ViewPagerSliderPager(mPager), playButton, this, controllerState)
         playButton.setOnClickListener { controller.toggleSlideshow(true) }
     }
 

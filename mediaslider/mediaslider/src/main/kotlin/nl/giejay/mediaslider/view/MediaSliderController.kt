@@ -9,7 +9,6 @@ import android.view.WindowManager
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.controller.ControllerFocusRequest
@@ -17,6 +16,8 @@ import nl.giejay.mediaslider.controller.ControllerLayout
 import nl.giejay.mediaslider.controller.SliderControllerUiState
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
+import nl.giejay.mediaslider.pager.SliderPager
+import nl.giejay.mediaslider.pager.SliderPaging
 import nl.giejay.mediaslider.plugin.ControllerPluginContext
 import nl.giejay.mediaslider.plugin.SliderKeyEventResult
 import nl.giejay.mediaslider.plugin.SliderKeyEventState
@@ -35,7 +36,7 @@ import timber.log.Timber
 class MediaSliderController(
     private val context: Context,
     private val mainHandler: Handler,
-    private val pager: ViewPager,
+    private val pager: SliderPager,
     /** The centre play/pause overlay indicator shown briefly on slideshow toggle. */
     private val playButtonView: View,
     private val controllerRootView: View,
@@ -187,11 +188,7 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun goToNextAsset() {
-        if (pager.currentItem < pager.adapter!!.count - 1) {
-            pager.setCurrentItem(pager.currentItem + 1, config.enableSlideAnimation)
-        } else {
-            pager.setCurrentItem(0, config.enableSlideAnimation)
-        }
+        pager.scrollTo(SliderPaging.next(pager.currentIndex, pager.itemCount), config.enableSlideAnimation)
         // Keep controller focus if the overlay is open (e.g. mid D-pad to pause during slideshow).
         if (!isControllerVisible) {
             restorePagerFocus()
@@ -199,10 +196,7 @@ class MediaSliderController(
     }
 
     fun goToPreviousAsset() {
-        pager.setCurrentItem(
-            (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
-            config.enableSlideAnimation
-        )
+        pager.scrollTo(SliderPaging.previous(pager.currentIndex, pager.itemCount), config.enableSlideAnimation)
         if (!isControllerVisible) {
             restorePagerFocus()
         }
@@ -498,17 +492,11 @@ class MediaSliderController(
         }
     }
 
-    fun restorePagerFocus() {
-        pager.post {
-            if (!pager.hasFocus()) {
-                pager.requestFocus()
-            }
-        }
-    }
+    fun restorePagerFocus() = pager.restoreFocus()
 
     private fun currentItemTypeOrNull(): SliderItemType? {
         if (!::config.isInitialized || config.items.isEmpty()) return null
-        val idx = pager.currentItem
+        val idx = pager.currentIndex
         return if (idx < config.items.size) config.items[idx].type else null
     }
 
