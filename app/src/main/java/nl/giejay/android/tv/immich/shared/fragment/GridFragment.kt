@@ -115,6 +115,14 @@ open class GridFragment(val hideProgressBar: Boolean = false) : Fragment() {
         }
     }
 
+    /** Shows [content] in a header slot above the grid (e.g. a search field); call from onViewCreated. */
+    protected fun setHeader(content: @androidx.compose.runtime.Composable () -> Unit) {
+        val host = view?.findViewById<ViewGroup>(R.id.grid_header) ?: return
+        host.removeAllViews()
+        host.addView(immichComposeView(requireContext(), content))
+        host.visibility = View.VISIBLE
+    }
+
     /** Sets (or clears with null) the artwork drawn dimmed behind the grid. */
     protected fun setBackgroundArtwork(drawable: Drawable?) {
         pendingBackground = drawable

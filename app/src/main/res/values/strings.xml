@@ -323,6 +323,13 @@
     <string name="transition_parallax">Parallax</string>
     <string name="transition_cube">Cube</string>
     <string name="transition_random">Random</string>
+    <string name="search">Search</string>
+    <string name="search_placeholder">Search photos and videos</string>
+    <string name="search_hint">Search by what is in the picture (for example "beach"), by place, file name or person.</string>
+    <string name="search_people">People</string>
+    <string name="search_recent">Recent searches</string>
+    <string name="search_loading">Searching…</string>
+    <string name="search_no_results">Nothing found for "%1$s"</string>
     <string name="classic_timeline">Classic timeline (compatibility)</string>
     <string name="classic_timeline_desc">Use the older timeline if the new one misbehaves on your device. Takes effect the next time the Timeline page opens.</string>
     <string name="nav_brand" translatable="false">Immich Next</string>

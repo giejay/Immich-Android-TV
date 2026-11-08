@@ -5,6 +5,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
@@ -33,6 +35,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 object ImmichIcons {
     // Home navigation
     val Timeline: ImageVector get() = Icons.Filled.Timeline
+    val Search: ImageVector get() = Icons.Filled.Search
+    val Clear: ImageVector get() = Icons.Filled.Close
     val Albums: ImageVector get() = Icons.Filled.PhotoAlbum
     val Photos: ImageVector get() = Icons.Filled.PhotoLibrary
     val Random: ImageVector get() = Icons.Filled.Shuffle

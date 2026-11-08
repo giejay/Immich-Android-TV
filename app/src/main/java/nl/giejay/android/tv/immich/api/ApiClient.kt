@@ -14,6 +14,7 @@ import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
+import nl.giejay.android.tv.immich.api.model.SmartSearchRequest
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import nl.giejay.android.tv.immich.api.model.toTimelineAssets
@@ -97,6 +98,8 @@ internal fun List<Asset>.toRandomAssetResponse(): AssetResponse =
 
 class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
+        private const val SMART_SEARCH_RETRY_MILLIS = 5 * 60 * 1000L
+
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
         fun getClient(config: ApiClientConfig): nl.giejay.android.tv.immich.api.ApiClient {
             if (config != apiClient?.config) {
@@ -122,6 +125,39 @@ class ApiClient(private val config: ApiClientConfig) {
 
     private suspend fun search(searchRequest: SearchRequest): Either<String, SearchResponse> {
         return executeAPICall(200) { service.listAssets(searchRequest) }
+    }
+
+    /** Until when smart search is assumed to be unavailable (no machine learning on the server); 0 = not known to fail. */
+    @Volatile private var smartSearchUnavailableUntil = 0L
+
+    /**
+     * Search by text: by image content when the server has machine learning (smart search), otherwise by
+     * file name, description, city and country. A failed smart search falls back for a while so the
+     * slower double request does not happen on every query.
+     */
+    suspend fun searchAssets(query: String, page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
+        val type = if (contentType == ContentType.ALL) null else contentType.toString()
+        val size = pageCount.coerceAtMost(MAX_SEARCH_PAGE_SIZE)
+        if (System.currentTimeMillis() >= smartSearchUnavailableUntil) {
+            val smart = executeAPICall(200) { service.smartSearch(SmartSearchRequest(query = query, page = page, size = size, type = type)) }
+            if (smart.isRight()) {
+                return smart.map { it.toAssetResponse() }.map { it.copy(assets = it.assets.filter(excludeByTag())) }
+            }
+            smartSearchUnavailableUntil = System.currentTimeMillis() + SMART_SEARCH_RETRY_MILLIS
+        }
+        val responses = buildMetadataSearchRequests(query, page, size, type).pmap { search(it) }
+        if (responses.all { it.isLeft() }) {
+            return responses.first().map { it.toAssetResponse() }
+        }
+        val ok = responses.mapNotNull { it.getOrNull() }
+        return Either.Right(AssetResponse(
+            mergeSearchResults(ok.map { it.assets.items }).filter(excludeByTag()),
+            ok.any { it.assets.nextPage != null }
+        ))
+    }
+
+    suspend fun searchPeople(name: String): Either<String, List<Person>> {
+        return executeAPICall(200) { service.searchPeople(name) }.map { people -> people.filter { !it.name.isNullOrBlank() } }
     }
 
     suspend fun listAlbums(assetId: Option<String> = None): Either<String, List<Album>> {
