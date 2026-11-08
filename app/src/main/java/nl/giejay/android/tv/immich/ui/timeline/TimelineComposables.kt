@@ -60,7 +60,7 @@ import nl.giejay.android.tv.immich.ui.theme.ImmichFocus
 object TimelineMosaicDefaults {
     /** Same scale the View mosaic uses, so rows keep the padding that clears the focus overflow. */
     const val FocusScale = 1.14f
-    val CellCorner = 2.dp
+    val CellCorner = 8.dp
 }
 
 /** Date heading above the rows of one day. */
