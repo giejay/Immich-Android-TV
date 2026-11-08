@@ -94,11 +94,24 @@ class SearchFragment : GenericAssetFragment() {
     /** Keep the order of relevance (smart search) or recency (metadata search) instead of the grid sorting. */
     override fun sortItems(items: List<Asset>): List<Asset> = items
 
-    override fun setTitle(response: List<Asset>) {
+    override fun setTitle(response: List<Asset>) = updateStatus()
+
+    override fun setData(assets: List<Asset>) {
+        super.setData(assets)
+        updateStatus()
+    }
+
+    /**
+     * What the header says follows what is really shown: results as soon as any are in the grid (also when
+     * they come from a later page), "nothing found" only once every page is loaded, searching in between.
+     */
+    private fun updateStatus() {
         status = when {
             submittedQuery.isBlank() && selectedPerson == null -> SearchStatus.IDLE
-            response.isEmpty() -> SearchStatus.NO_RESULTS
-            else -> SearchStatus.RESULTS
+            assets.isNotEmpty() -> SearchStatus.RESULTS
+            status == SearchStatus.ERROR -> SearchStatus.ERROR
+            allPagesLoaded -> SearchStatus.NO_RESULTS
+            else -> SearchStatus.LOADING
         }
     }
 
