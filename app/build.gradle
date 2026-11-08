@@ -11,11 +11,11 @@ plugins {
 android {
     compileSdk = 37
     defaultConfig {
-        applicationId "io.github.daniii.immichtvnext"
+        applicationId "io.github.daniii88.immichtvnext"
         minSdkVersion 24
         targetSdkVersion 37
-        versionCode 148
-        versionName "6.2.0"
+        versionCode 1
+        versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
