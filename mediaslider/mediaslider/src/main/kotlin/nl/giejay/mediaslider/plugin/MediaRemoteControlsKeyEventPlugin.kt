@@ -54,10 +54,16 @@ class MediaRemoteControlsKeyEventPlugin : SliderKeyEventPlugin {
             return SliderKeyEventResult.DISPATCH_TO_SUPER
         }
 
-        if (itemType == SliderItemType.IMAGE &&
-            (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
-                event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+        val isPlayPauseKey = event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY ||
+            event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
+        if (isPlayPauseKey && event.repeatCount > 0 &&
+            (itemType == SliderItemType.IMAGE || itemType == SliderItemType.VIDEO)
         ) {
+            // A held (or bouncing) key repeats; toggling on every repeat flips pause/play back and forth.
+            return SliderKeyEventResult.HANDLED_CONSUME
+        }
+
+        if (itemType == SliderItemType.IMAGE && isPlayPauseKey) {
             controller.toggleSlideshow(true)
             return SliderKeyEventResult.HANDLED_CONSUME
         }
