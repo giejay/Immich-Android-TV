@@ -179,9 +179,12 @@ class HomeFragment : Fragment(), HomeNavHost {
     }
 
     private fun onItemFocused(key: String) {
-        if (editMode || key == selectedKey) return
+        if (editMode) return
         // Moving over items must not build heavy pages (Timeline) for every item passed.
+        // Always drop an older pending switch, also when focus came back to the shown page.
         pendingSelect?.let { handler.removeCallbacks(it) }
+        pendingSelect = null
+        if (key == selectedKey) return
         pendingSelect = Runnable { selectNow(key) }.also { handler.postDelayed(it, SELECT_DELAY_MS) }
     }
 
