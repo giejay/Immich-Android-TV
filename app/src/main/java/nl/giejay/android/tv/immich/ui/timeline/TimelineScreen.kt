@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.ui.timeline
 
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -43,7 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.util.ApiUtil
+import nl.giejay.android.tv.immich.timeline.TimelineLeaveOff
 import nl.giejay.android.tv.immich.timeline.MemoriesRowAdapter
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicCell
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicItem
@@ -65,6 +69,11 @@ fun TimelineScreen(
     gapPx: Int,
     todayLabel: String,
     yesterdayLabel: String,
+    onOpenAsset: (String) -> Unit,
+    onOpenMemory: (Memory) -> Unit,
+    /** Bumped by the host (resume, side navigation closed) to put focus back where the user left off. */
+    restoreRequest: Int,
+    isNavFocused: () -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val layout by viewModel.layout.collectAsState()
@@ -76,17 +85,56 @@ fun TimelineScreen(
     // Cells register their FocusRequester while composed, so the neighbor map can target them.
     val requesters = remember { mutableMapOf<String, FocusRequester>() }
     val loadingNewer = remember { mutableStateOf(false) }
+    val memoriesState = rememberLazyListState()
+    var pendingRestore by remember { mutableStateOf(false) }
 
     /** Focuses [key] (an asset id or "memory:<id>"), scrolling its item into composition first. */
     suspend fun focusKey(key: String, itemPosition: Int) {
         if (requesters[key] == null && itemPosition >= 0) {
             listState.scrollToItem(itemPosition)
+            if (key.startsWith("memory:")) {
+                // the card sits in the horizontal row: scroll that row to it so the card is composed
+                val memories = (currentLayout.items.firstOrNull() as? TimelineMosaicItem.MemoriesRow)?.memories.orEmpty()
+                val index = memories.indexOfFirst { "memory:${it.id}" == key }
+                if (index >= 0) memoriesState.scrollToItem(index)
+            }
             repeat(6) {
                 if (requesters[key] != null) return@repeat
                 withFrameNanos { }
             }
         }
         runCatching { requesters[key]?.requestFocus() }
+    }
+
+    LaunchedEffect(restoreRequest) { if (restoreRequest > 0) pendingRestore = true }
+    LaunchedEffect(pendingRestore, restoreRequest, layout.items.size) {
+        if (!pendingRestore || layout.items.isEmpty() || isNavFocused()) return@LaunchedEffect
+        when (val target = TimelineLeaveOff.resolveRestore(viewModel.leaveOffSnapshot())) {
+            is TimelineLeaveOff.Target.Memory -> {
+                if (!TimelineMosaicIndex.hasMemoriesRow(layout.items)) return@LaunchedEffect
+                // clear the flag only after focusing: it keys this effect, so clearing it first would cancel the focus
+                focusKey("memory:${target.id}", 0)
+                pendingRestore = false
+            }
+            is TimelineLeaveOff.Target.Mosaic -> {
+                val position = TimelineMosaicIndex.positionOfAsset(layout.items, target.assetId)
+                if (position < 0) {
+                    // the month of the leave-off asset is not loaded (yet): load it and retry on the next layout
+                    viewModel.lastSelectedDayKey?.let { day ->
+                        withContext(Dispatchers.IO) {
+                            viewModel.loadBucket(TimelineViewModel.monthBucketKey(java.time.LocalDate.parse(day)))
+                        }
+                    }
+                    return@LaunchedEffect
+                }
+                focusKey(target.assetId, position)
+                viewModel.pendingResumeAssetId = null
+                viewModel.rememberSelectionByAssetId(target.assetId)
+                viewModel.leaveOffAllowScrollAdjust = true
+                pendingRestore = false
+            }
+            TimelineLeaveOff.Target.None -> pendingRestore = false
+        }
     }
 
     fun focusMemories() {
@@ -197,9 +245,12 @@ fun TimelineScreen(
                                     .onFocusChanged {
                                         if (it.isFocused) {
                                             focusedAssetId = cell.asset.id
-                                            viewModel.lastSelectedMemoryId = null
                                             viewModel.prefetchAroundDay(cell.dayKey)
-                                            viewModel.rememberSelection(cell.dayKey, cell.asset.id)
+                                            // stray focus before the restore has run must not overwrite the leave-off
+                                            if (!pendingRestore) {
+                                                viewModel.lastSelectedMemoryId = null
+                                                viewModel.rememberSelection(cell.dayKey, cell.asset.id)
+                                            }
                                         } else if (focusedAssetId == cell.asset.id) {
                                             focusedAssetId = null
                                         }
@@ -207,12 +258,14 @@ fun TimelineScreen(
                                     .onPreviewKeyEvent { event ->
                                         event.type == KeyEventType.KeyDown && onCellKey(cell, event.key.nativeKeyCode)
                                     }
-                                    .focusable(),
+                                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                                        onOpenAsset(cell.asset.id)
+                                    },
                             )
                         }
                     }
                 }
-                is TimelineMosaicItem.MemoriesRow -> MemoriesRow(item, requesters, viewModel)
+                is TimelineMosaicItem.MemoriesRow -> MemoriesRow(item, requesters, viewModel, onOpenMemory, memoriesState, liveLeaveOff = !pendingRestore)
             }
         }
     }
@@ -223,10 +276,14 @@ private fun MemoriesRow(
     row: TimelineMosaicItem.MemoriesRow,
     requesters: MutableMap<String, FocusRequester>,
     viewModel: TimelineViewModel,
+    onOpenMemory: (Memory) -> Unit,
+    state: LazyListState,
+    liveLeaveOff: Boolean,
 ) {
     val context = LocalContext.current
     var focusedId by remember { mutableStateOf<String?>(null) }
     LazyRow(
+        state = state,
         // The row clips its content: start it left of the mosaic and pad it back, so the focus
         // scale of the first card has room to grow instead of being cut off.
         contentPadding = PaddingValues(start = FocusOverflow, top = 24.dp, bottom = 24.dp, end = 120.dp),
@@ -248,12 +305,14 @@ private fun MemoriesRow(
                     .onFocusChanged {
                         if (it.isFocused) {
                             focusedId = memory.id
-                            viewModel.lastSelectedMemoryId = memory.id
+                            if (liveLeaveOff) viewModel.lastSelectedMemoryId = memory.id
                         } else if (focusedId == memory.id) {
                             focusedId = null
                         }
                     }
-                    .focusable(),
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        onOpenMemory(memory)
+                    },
             )
         }
     }

@@ -7,9 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.ImmichApplication
@@ -17,12 +22,15 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+import nl.giejay.android.tv.immich.home.HomeNavHost
+import nl.giejay.android.tv.immich.home.NavTransitionListener
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.ui.immichComposeView
 import nl.giejay.android.tv.immich.ui.timeline.TimelineScreen
+import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
 import kotlin.math.roundToInt
 
 /**
@@ -32,6 +40,10 @@ import kotlin.math.roundToInt
  */
 class TimelineComposeFragment : Fragment() {
     private lateinit var viewModel: TimelineViewModel
+    private val sliderViewModel: MediaSliderViewModel by activityViewModels()
+    private lateinit var sliderLauncher: TimelineSliderLauncher
+    private var restoreRequest by mutableIntStateOf(0)
+    private var loadingSlider by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +70,37 @@ class TimelineComposeFragment : Fragment() {
             requireActivity(),
             TimelineViewModelFactory(apiClient)
         )["timeline-$clientKey", TimelineViewModel::class.java]
+        sliderLauncher = TimelineSliderLauncher(
+            viewModel = viewModel,
+            sliderViewModel = sliderViewModel,
+            scope = lifecycleScope,
+            isActive = { isAdded },
+            navigate = { findNavController().navigate(it) },
+            setLoading = { loadingSlider = it },
+        )
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // Back from the side navigation: put focus back on the cell the user left.
+        (parentFragment as? HomeNavHost)?.setNavTransitionListener(
+            object : NavTransitionListener() {
+                override fun onHeadersTransitionStop(withHeaders: Boolean) {
+                    if (isAdded && !withHeaders) restoreRequest++
+                }
+            }
+        )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Back from the slider (or the app): land on the cell that was last viewed.
+        restoreRequest++
+    }
+
+    override fun onDestroyView() {
+        (parentFragment as? HomeNavHost)?.setNavTransitionListener(null)
+        super.onDestroyView()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -76,6 +119,10 @@ class TimelineComposeFragment : Fragment() {
                 gapPx = dp(6),
                 todayLabel = getString(R.string.today),
                 yesterdayLabel = getString(R.string.yesterday),
+                onOpenAsset = { sliderLauncher.openAsset(it) },
+                onOpenMemory = { sliderLauncher.openMemory(it) },
+                restoreRequest = restoreRequest,
+                isNavFocused = { (parentFragment as? HomeNavHost)?.isNavFocused == true },
             )
         }
     }
