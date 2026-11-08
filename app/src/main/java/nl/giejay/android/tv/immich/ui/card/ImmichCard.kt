@@ -147,6 +147,11 @@ private fun BoxScope.CardImage(thumbnailUrl: String?) {
 
 private fun iconForName(name: String) = when (name) {
     "folder_up" -> ImmichIcons.FolderUp
+    "server" -> ImmichIcons.Server
+    "view_settings" -> ImmichIcons.ViewSettings
+    "screensaver" -> ImmichIcons.Screensaver
+    "home_screen_channels" -> ImmichIcons.HomeChannels
+    "debug" -> ImmichIcons.Debug
     else -> ImmichIcons.Folders
 }
 

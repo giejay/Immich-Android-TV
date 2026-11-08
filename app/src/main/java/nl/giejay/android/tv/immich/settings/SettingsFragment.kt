@@ -1,115 +1,44 @@
 package nl.giejay.android.tv.immich.settings
 
-import android.app.Activity
-import androidx.leanback.app.RowsSupportFragment
-import androidx.leanback.widget.ArrayObjectAdapter
-import androidx.leanback.widget.HeaderItem
-import androidx.leanback.widget.ListRow
-import androidx.leanback.widget.ListRowPresenter
-import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.navigation.fragment.findNavController
-import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+import nl.giejay.android.tv.immich.shared.fragment.GridFragment
 import nl.giejay.android.tv.immich.shared.prefs.DebugPrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.HomeScreenChannelsPrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.ScreensaverPrefScreen
 import nl.giejay.android.tv.immich.shared.prefs.ViewPrefScreen
 
+/** Settings page: one card per settings screen, rendered by the Compose grid. */
+class SettingsFragment : GridFragment(hideProgressBar = true) {
+    override val columns: Int = 5
 
-class SettingsFragment : RowsSupportFragment() {
-    private val mRowsAdapter: ArrayObjectAdapter
-
-    init {
-        val selector = ListRowPresenter()
-        selector.setNumRows(1)
-        mRowsAdapter = ArrayObjectAdapter(selector)
-        onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
-            val card = item as SettingsCard
-            card.onClick()
-        }
-        adapter = mRowsAdapter
-    }
-
-    override fun onAttach(activity: Activity) {
-        super.onAttach(activity)
-        loadData()
-    }
-
-    private fun loadData() {
-        if (isAdded) {
-            mRowsAdapter.add(
-                createCardRow(
-                    listOf(
-                        SettingsCard(
-                            ImmichApplication.appContext!!.getString(R.string.server),
-                            null,
-                            "server",
-                            "ic_settings_settings",
-                            "ic_settings_settings"
-                        ) {
-                            findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalSignInFragment()
-                            )
-                        },
-                        SettingsCard(
-                            ImmichApplication.appContext!!.getString(R.string.view_settings),
-                            null,
-                            "view_settings",
-                            "icon_view",
-                            "icon_view"
-                        ) {
-                            findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalToSettingsDialog(ViewPrefScreen.key)
-                            )
-                        },
-                        SettingsCard(
-                            ImmichApplication.appContext!!.getString(R.string.screensaver),
-                            null,
-                            "screensaver",
-                            "screensaver",
-                            "ic_settings_settings"
-                        ) {
-                            findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalToSettingsDialog(ScreensaverPrefScreen.key)
-                            )
-                        },
-                        SettingsCard(
-                            ImmichApplication.appContext!!.getString(R.string.home_screen_channels),
-                            null,
-                            "home_screen_channels",
-                            "ic_home_channels",
-                            "ic_home_channels"
-                        ) {
-                            findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalToSettingsDialog(HomeScreenChannelsPrefScreen.key)
-                            )
-                        },
-                        SettingsCard(
-                            ImmichApplication.appContext!!.getString(R.string.debug),
-                            null,
-                            "debug",
-                            "bug",
-                            "bug"
-                        ) {
-                            findNavController().navigate(
-                                HomeFragmentDirections.actionGlobalToSettingsDialog(DebugPrefScreen.key)
-                            )
-                        }
-                    )
+    override fun onViewCreated(view: android.view.View, savedInstanceState: android.os.Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setTitle(getString(R.string.settings))
+        if (cards.isEmpty()) {
+            cards.addAll(
+                listOf(
+                    Card(getString(R.string.server), null, "server", "server", null),
+                    Card(getString(R.string.view_settings), null, "view_settings", "view_settings", null),
+                    Card(getString(R.string.screensaver), null, "screensaver", "screensaver", null),
+                    Card(getString(R.string.home_screen_channels), null, "home_screen_channels", "home_screen_channels", null),
+                    Card(getString(R.string.debug), null, "debug", "debug", null),
                 )
             )
-            mainFragmentAdapter.fragmentHost?.notifyDataReady(
-                mainFragmentAdapter
-            )
         }
     }
 
-    private fun createCardRow(cards: List<SettingsCard>): ListRow {
-        val iconCardPresenter = SettingsIconPresenter(requireContext())
-        val adapter = ArrayObjectAdapter(iconCardPresenter)
-        adapter.addAll(0, cards.filter { it.visible })
-        val headerItem = HeaderItem(ImmichApplication.appContext!!.getString(R.string.settings))
-        return ListRow(headerItem, adapter)
+    override fun onCardClicked(index: Int, card: Card) {
+        val directions = when (card.id) {
+            "server" -> HomeFragmentDirections.actionGlobalSignInFragment()
+            "view_settings" -> HomeFragmentDirections.actionGlobalToSettingsDialog(ViewPrefScreen.key)
+            "screensaver" -> HomeFragmentDirections.actionGlobalToSettingsDialog(ScreensaverPrefScreen.key)
+            "home_screen_channels" -> HomeFragmentDirections.actionGlobalToSettingsDialog(HomeScreenChannelsPrefScreen.key)
+            "debug" -> HomeFragmentDirections.actionGlobalToSettingsDialog(DebugPrefScreen.key)
+            else -> return
+        }
+        findNavController().navigate(directions)
     }
 }
