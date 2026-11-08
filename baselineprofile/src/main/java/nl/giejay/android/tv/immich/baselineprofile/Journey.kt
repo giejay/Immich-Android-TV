@@ -24,7 +24,7 @@ private fun MacrobenchmarkScope.pause(ms: Long) = Thread.sleep(ms)
  * An app that is already signed in skips this.
  */
 internal fun MacrobenchmarkScope.signInIfNeeded() {
-    val loginText = signInByApiKeyText()
+    val loginText = appString("auth_sign_in_by_api_key", "Sign in by API key")
     if (!device.wait(Until.hasObject(By.text(loginText)), 3_000)) return
     val args = InstrumentationRegistry.getArguments()
     val url = args.getString("serverUrl")
@@ -48,18 +48,20 @@ internal fun MacrobenchmarkScope.signInIfNeeded() {
     pause(500)
     repeat(4) { device.pressDPadDown() }
     device.pressDPadCenter()
-    // the journey must not run on the login screen: fail loudly if signing in did not work
-    check(device.wait(Until.gone(By.text(loginText)), 30_000)) { "Still on the login screen after signing in with $url" }
+    // right after signing in the navigation rail is expanded: its Timeline label proves the home screen was reached
+    // (a rejected URL would leave us on the second login screen, whose step 1 label is gone as well)
+    val timelineLabel = appString("timeline", "Timeline")
+    check(device.wait(Until.hasObject(By.text(timelineLabel)), 30_000)) { "Home screen not reached after signing in with $url" }
     pause(3_000)
 }
 
-/** The login option's label in the device language, read from the app's own resources (English as the fallback). */
-private fun signInByApiKeyText(): String = try {
+/** A string of the app in the device language, read from the app's own resources (with a fallback). */
+private fun appString(name: String, fallback: String): String = try {
     val resources = InstrumentationRegistry.getInstrumentation().context.packageManager.getResourcesForApplication(targetAppId)
-    val id = resources.getIdentifier("auth_sign_in_by_api_key", "string", targetAppId)
-    if (id != 0) resources.getString(id) else "Sign in by API key"
+    val id = resources.getIdentifier(name, "string", targetAppId)
+    if (id != 0) resources.getString(id) else fallback
 } catch (e: Exception) {
-    "Sign in by API key"
+    fallback
 }
 
 /** Timeline: let it load, scroll down and up through the mosaic. */
