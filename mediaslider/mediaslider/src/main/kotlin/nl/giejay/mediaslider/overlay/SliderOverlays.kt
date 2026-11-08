@@ -147,16 +147,21 @@ fun DateOverlay(state: SliderOverlayState, modifier: Modifier = Modifier) {
 fun createOverlayView(context: Context, content: @Composable () -> Unit): View = OverlayComposeView(context, content)
 
 private class OverlayComposeView(context: Context, private val content: @Composable () -> Unit) : AbstractComposeView(context) {
+    private var installedOn: View? = null
     private var fallback: FallbackOwner? = null
 
     @Composable
     override fun Content() = content()
 
     override fun onAttachedToWindow() {
-        if (findViewTreeLifecycleOwner() == null) {
+        // Compose creates its window recomposer from the lifecycle owner of the window's ROOT view,
+        // so a missing owner (DreamService window) has to be provided there, not on this view.
+        val root = rootView
+        if (root.findViewTreeLifecycleOwner() == null) {
+            installedOn = root
             fallback = FallbackOwner().also {
-                setViewTreeLifecycleOwner(it)
-                setViewTreeSavedStateRegistryOwner(it)
+                root.setViewTreeLifecycleOwner(it)
+                root.setViewTreeSavedStateRegistryOwner(it)
                 it.start()
             }
         }
@@ -166,7 +171,12 @@ private class OverlayComposeView(context: Context, private val content: @Composa
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         fallback?.stop()
+        installedOn?.let {
+            it.setViewTreeLifecycleOwner(null)
+            it.setViewTreeSavedStateRegistryOwner(null)
+        }
         fallback = null
+        installedOn = null
     }
 }
 
