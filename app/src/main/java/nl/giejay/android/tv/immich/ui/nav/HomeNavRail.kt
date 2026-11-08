@@ -95,11 +95,11 @@ fun HomeNavRail(
             }
             .focusGroup()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 12.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         items.forEach { item ->
-            if (item.separated) Spacer(Modifier.height(16.dp))
+            if (item.separated) Spacer(Modifier.height(12.dp))
             val selected = item.key == selectedKey
             NavRailEntry(
                 item = item,
@@ -159,10 +159,10 @@ private fun NavRailEntry(
             },
     ) {
         Row(
-            Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 14.dp),
+            Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(item.icon, contentDescription = if (expanded) null else label, modifier = Modifier.size(26.dp))
+            Icon(item.icon, contentDescription = if (expanded) null else label, modifier = Modifier.size(24.dp))
             if (expanded) {
                 Text(
                     text = label,

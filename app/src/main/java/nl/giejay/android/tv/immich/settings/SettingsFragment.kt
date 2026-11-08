@@ -16,7 +16,6 @@ class SettingsFragment : GridFragment(hideProgressBar = true) {
 
     override fun onViewCreated(view: android.view.View, savedInstanceState: android.os.Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setTitle(getString(R.string.settings))
         if (cards.isEmpty()) {
             cards.addAll(
                 listOf(
