@@ -296,8 +296,8 @@ class TimelineFragment : Fragment() {
                         viewModel.lastSelectedMemoryId != null ||
                         viewModel.lastSelectedAssetId != null
                     ) {
-                        // Re-entering with a prior cell — block children so no neighboring item flashes
-                        // a neighboring item before we hand focus back.
+                        // Re-entering with a prior cell — block children so no neighboring item
+                        // flashes before we hand focus back.
                         beginResumeFocusLock()
                     }
                 }
@@ -634,9 +634,6 @@ class TimelineFragment : Fragment() {
 
         adapter.submitList(itemsWithMemories) {
             if (!isAdded) return@submitList
-            if (days.isNotEmpty()) {
-            }
-
             val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
             val deferAnchor = TimelineLeaveOff.shouldDeferBindAnchorScroll(
                 allowScrollAdjust = viewModel.leaveOffAllowScrollAdjust
