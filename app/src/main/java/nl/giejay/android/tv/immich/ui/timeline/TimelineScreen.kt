@@ -168,6 +168,9 @@ fun TimelineScreen(
         // restore only: remember what is at the top now, so it can be pinned while neighbor months load
         val topKey = currentLayout.items.getOrNull(listState.firstVisibleItemIndex)?.listKey()
         val topOffset = listState.firstVisibleItemScrollOffset
+        // The target's list key must be read now: while we wait below for the cell to compose, a prefetch may
+        // insert rows above it and make [itemPosition] stale.
+        val targetListKey = currentLayout.items.getOrNull(itemPosition)?.listKey()
         var scrolled = false
         // scroll when the target is not composed, or composed but not on screen (e.g. after stray focus
         // pulled the list elsewhere); a target that is already visible keeps the viewport as it is
@@ -187,7 +190,7 @@ fun TimelineScreen(
             }
         }
         runCatching { requesters[key]?.requestFocus() }
-        if (scrolled) currentLayout.items.getOrNull(itemPosition)?.listKey()?.let { anchorTo(it) }
+        if (scrolled) targetListKey?.let { anchorTo(it) }
         else if (pinTop && topKey != null) anchorTo(topKey, topOffset)
     }
 
@@ -424,6 +427,8 @@ fun TimelineScreen(
                                             // stray focus before the restore has run must not overwrite the leave-off
                                             if (!pendingRestore) {
                                                 viewModel.lastSelectedMemoryId = null
+                                                // a pending target (e.g. from a scrubber jump) is outdated once the user moves on
+                                                viewModel.pendingResumeAssetId = null
                                                 viewModel.rememberSelection(cell.dayKey, cell.asset.id)
                                             }
                                         } else if (focusedAssetId == cell.asset.id) {
