@@ -6,6 +6,7 @@ import nl.giejay.mediaslider.plugin.SliderControllerPlugin
 import nl.giejay.mediaslider.plugin.SliderKeyEventPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPlugin
 import nl.giejay.mediaslider.transformations.GlideTransformations
+import nl.giejay.mediaslider.transitions.SliderTransition
 import nl.giejay.mediaslider.util.LoadMore
 
 class MediaSliderConfiguration(
@@ -31,6 +32,10 @@ class MediaSliderConfiguration(
     val dpadSeeksInVideo: Boolean = false,
     /** When true, [nl.giejay.mediaslider.plugin.DateOverlayViewPlugin] shows DATE at the top. */
     val showDateTopLeft: Boolean = false,
+    /** Transition between assets; only used while [enableSlideAnimation] is on. */
+    val transition: SliderTransition = SliderTransition.SLIDE,
+    /** Duration of every transition except [SliderTransition.SLIDE], which uses [animationSpeedMillis]. */
+    val transitionDurationMillis: Int = 1200,
     var controllerPlugins: List<SliderControllerPlugin> = emptyList(),
     var viewPlugins: List<SliderViewPlugin<*>> = emptyList(),
     var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()

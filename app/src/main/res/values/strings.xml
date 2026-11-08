@@ -309,4 +309,18 @@
     <string name="favorite_removed">Removed from favorites</string>
     <string name="favorite_add_failed">Failed to add to favorites</string>
     <string name="favorite_remove_failed">Failed to remove from favorites</string>
+
+    <!-- Screensaver transitions -->
+    <string name="screensaver_transition">Transition</string>
+    <string name="screensaver_transition_desc">How the screensaver changes from one photo to the next. Needs "Slide the new asset in" to be on.</string>
+    <string name="screensaver_transition_duration">Transition duration</string>
+    <string name="screensaver_transition_duration_desc">How long the transition takes (does not apply to Slide, which uses the slide animation speed)</string>
+    <string name="transition_slide">Slide</string>
+    <string name="transition_crossfade">Crossfade</string>
+    <string name="transition_fade_through">Fade through</string>
+    <string name="transition_zoom">Zoom</string>
+    <string name="transition_depth">Depth</string>
+    <string name="transition_parallax">Parallax</string>
+    <string name="transition_cube">Cube</string>
+    <string name="transition_random">Random</string>
 </resources>

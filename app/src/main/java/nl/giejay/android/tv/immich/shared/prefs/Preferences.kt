@@ -20,6 +20,7 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelManager
+import nl.giejay.android.tv.immich.screensaver.ScreenSaverTransition
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.security.ApiKeyCipher
 import nl.giejay.mediaslider.transformations.GlideTransformations
@@ -133,6 +134,21 @@ data object SCREENSAVER_INTERVAL : IntListPref(3,
     ImmichApplication.appContext!!.getString(R.string.screensaver_interval_desc),
     R.array.interval_titles,
     R.array.interval_values)
+
+data object SCREENSAVER_TRANSITION : EnumByTitlePref<ScreenSaverTransition>(ScreenSaverTransition.SLIDE,
+    ImmichApplication.appContext!!.getString(R.string.screensaver_transition),
+    ImmichApplication.appContext!!.getString(R.string.screensaver_transition_desc)) {
+    override fun fromPrefValue(prefValue: String): ScreenSaverTransition =
+        ScreenSaverTransition.valueOfSafe(prefValue, defaultValue)
+
+    override fun getEnumEntries(): Array<ScreenSaverTransition> = ScreenSaverTransition.entries.toTypedArray()
+}
+
+data object SCREENSAVER_TRANSITION_DURATION : IntListPref(1200,
+    ImmichApplication.appContext!!.getString(R.string.screensaver_transition_duration),
+    ImmichApplication.appContext!!.getString(R.string.screensaver_transition_duration_desc),
+    R.array.transition_duration_titles,
+    R.array.transition_duration_values)
 
 data object SCREENSAVER_SHOW_DESCRIPTION : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.show_description),
@@ -620,6 +636,8 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_START_NOW,
                 SCREENSAVER_SET,
                 SCREENSAVER_INTERVAL,
+                SCREENSAVER_TRANSITION,
+                SCREENSAVER_TRANSITION_DURATION,
                 SCREENSAVER_TYPE,
                 SCREENSAVER_ALBUMS,
                 SCREENSAVER_SHOW_DATE_TOP_LEFT,

@@ -12,6 +12,8 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
+import android.view.animation.Interpolator
+import android.view.animation.PathInterpolator
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
@@ -38,6 +40,8 @@ import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.MetadataViewPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPluginContext
+import nl.giejay.mediaslider.transitions.RandomTransformer
+import nl.giejay.mediaslider.transitions.SliderTransition
 import nl.giejay.mediaslider.util.FixedSpeedScroller
 import nl.giejay.mediaslider.util.LoadMoreResult
 import timber.log.Timber
@@ -177,15 +181,37 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             listener
         )
 
+        val customTransition = config.enableSlideAnimation && config.transition != SliderTransition.SLIDE
         try {
-            if (config.enableSlideAnimation && config.animationSpeedMillis > 0) {
+            val duration = if (customTransition) config.transitionDurationMillis else config.animationSpeedMillis
+            if (config.enableSlideAnimation && duration > 0) {
                 val mScroller: Field = ViewPager::class.java.getDeclaredField("mScroller")
                 mScroller.isAccessible = true
-                val scroller = FixedSpeedScroller(mPager.context, DecelerateInterpolator(0.75F), config.animationSpeedMillis)
-                mScroller.set(mPager, scroller)
+                val interpolator: Interpolator =
+                    if (customTransition) PathInterpolator(0.4f, 0f, 0.2f, 1f) else DecelerateInterpolator(0.75F)
+                mScroller.set(mPager, FixedSpeedScroller(mPager.context, interpolator, duration))
             }
         } catch (e: Exception) {
             Timber.e(e, "Could not set scroller")
+        }
+        Timber.i("Slider transition: %s (custom: %s, %d ms)", config.transition, customTransition, config.transitionDurationMillis)
+        if (customTransition) {
+            val transformer = config.transition.createTransformer()
+            mPager.setPageTransformer(false, transformer)
+            if (transformer is RandomTransformer) {
+                // pick a new transition whenever the pager starts moving (drag or programmatic)
+                var previousState = ViewPager.SCROLL_STATE_IDLE
+                mPager.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
+                    override fun onPageScrollStateChanged(state: Int) {
+                        if (state == ViewPager.SCROLL_STATE_DRAGGING ||
+                            (state == ViewPager.SCROLL_STATE_SETTLING && previousState == ViewPager.SCROLL_STATE_IDLE)
+                        ) {
+                            transformer.pickNext()
+                        }
+                        previousState = state
+                    }
+                })
+            }
         }
 
         mPager.setAdapter(pagerAdapter)
