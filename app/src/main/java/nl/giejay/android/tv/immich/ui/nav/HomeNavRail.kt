@@ -138,9 +138,10 @@ private fun NavRailBrand(expanded: Boolean) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.icon),
+            // the rosette alone (no tile), so it sits cleanly on the rail background
+            painter = painterResource(R.drawable.icon_mark),
             contentDescription = stringResource(R.string.nav_brand),
-            modifier = Modifier.size(LogoSize).clip(RoundedCornerShape(9.dp)),
+            modifier = Modifier.size(LogoSize),
         )
         if (expanded) {
             Text(
