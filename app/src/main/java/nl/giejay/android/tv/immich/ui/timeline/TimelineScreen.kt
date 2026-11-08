@@ -65,6 +65,7 @@ import nl.giejay.android.tv.immich.timeline.MemoriesRowAdapter
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicCell
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicItem
 import nl.giejay.android.tv.immich.timeline.TimelineViewModel
+import nl.giejay.android.tv.immich.timeline.loadFirstUnloadedBuckets
 
 /** Same insets the View timeline gives its RecyclerView, so rows get the same content width. */
 private val ContentPaddingStart = 40.dp
@@ -363,6 +364,10 @@ fun TimelineScreen(
         loadError = null
         viewModel.clearError()
         withContext(Dispatchers.IO) { viewModel.loadBucketList() }
+        // after a failed first load the month list is cached but the months are not: loadBucketList is a no-op then
+        if (loadAttempt > 0 && currentLayout.items.isEmpty()) {
+            withContext(Dispatchers.IO) { viewModel.loadFirstUnloadedBuckets() }
+        }
         withContext(Dispatchers.IO) { viewModel.loadMemories() }
         initialLoadDone = true
         if (loadAttempt > 0) {

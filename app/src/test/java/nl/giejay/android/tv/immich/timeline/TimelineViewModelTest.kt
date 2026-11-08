@@ -586,4 +586,41 @@ class TimelineViewModelTest {
         assertEquals("2021-12-31", vm.newestDayKeyForBucket("2022-01-01"))
         assertEquals("2022-01-01", vm.resolveBucketKey("2022-01"))
     }
+
+    @Test
+    fun `loadFirstUnloadedBuckets retries months that failed while the month list is cached`() = runTest {
+        val failFirstMonths = AtomicInteger(3)
+        val vm = TimelineViewModel(
+            fetchBuckets = {
+                Either.Right(
+                    listOf(
+                        TimeBucketSummary("2026-07-01", 1),
+                        TimeBucketSummary("2026-06-01", 1),
+                        TimeBucketSummary("2026-05-01", 1),
+                        TimeBucketSummary("2026-04-01", 1)
+                    )
+                )
+            },
+            // the first three month requests fail (as with a flaky connection), later ones succeed
+            fetchBucket = { key ->
+                if (failFirstMonths.getAndDecrement() > 0) Either.Left("offline") else Either.Right(listOf(asset("$key-a")))
+            },
+            prefetchDebounceMs = 0
+        )
+        vm.setLayoutConfig(1000, 200, 10, "Today", "Yesterday")
+
+        vm.loadBucketList(eagerMonths = 3)
+        advanceUntilIdle()
+        assertEquals(4, vm.buckets.value.size)
+        assertTrue(vm.bucketAssets.value.isEmpty())
+
+        // loadBucketList is a no-op now that the list is cached; the helper loads the months again
+        vm.loadBucketList(eagerMonths = 3)
+        advanceUntilIdle()
+        assertTrue(vm.bucketAssets.value.isEmpty())
+        vm.loadFirstUnloadedBuckets(count = 3)
+        advanceUntilIdle()
+
+        assertEquals(setOf("2026-07-01", "2026-06-01", "2026-05-01"), vm.bucketAssets.value.keys)
+    }
 }
