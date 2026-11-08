@@ -83,6 +83,16 @@ class ComposeSliderPager(
     /** Asks the slider to prepare the current video again (after the page was rebuilt for a TextureView). */
     var onVideoRetry: (Int) -> Unit = {}
 
+    /** Page whose slideshow effect is running (-1: none) and a counter so the same page can start it again. */
+    internal var effectPage by mutableIntStateOf(-1)
+    internal var effectToken by mutableIntStateOf(0)
+
+    /** Starts the zoom/pan (or panorama scroll) of the photo on [page]; it ends when the pager moves. */
+    fun startSlideshowEffect(page: Int) {
+        effectPage = page
+        effectToken++
+    }
+
     /** Transition in use; RANDOM resolves to a concrete one that changes whenever the pager starts moving. */
     internal var activeTransition by mutableStateOf(initialTransition())
 
@@ -137,6 +147,7 @@ class ComposeSliderPager(
                     if (config.transition == SliderTransition.RANDOM) pickNextTransition()
                     firstVideoFrameRendered = false
                     settledNotified = -1
+                    effectPage = -1
                     onScrollStarted()
                 } else {
                     settle()
@@ -258,7 +269,11 @@ private fun SliderPagerContent(pager: ComposeSliderPager) = CompositionLocalProv
                     SliderImagePage(item.mainItem, Modifier.weight(1f).fillMaxSize())
                     SliderImagePage(item.secondaryItem!!, Modifier.weight(1f).fillMaxSize())
                 }
-                else -> SliderImagePage(item.mainItem, Modifier.fillMaxSize())
+                else -> SliderImagePage(
+                    item.mainItem,
+                    Modifier.fillMaxSize(),
+                    effectToken = if (pager.effectPage == page) pager.effectToken else null,
+                )
             }
         }
     }

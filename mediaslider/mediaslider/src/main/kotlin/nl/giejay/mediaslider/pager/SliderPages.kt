@@ -2,6 +2,8 @@ package nl.giejay.mediaslider.pager
 
 import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -13,7 +15,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +29,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -38,6 +45,13 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.zeuskartik.mediaslider.R
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.effects.EffectParams
+import nl.giejay.mediaslider.effects.EffectPlan
+import nl.giejay.mediaslider.effects.SlideshowEffects
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import timber.log.Timber
@@ -45,11 +59,17 @@ import timber.log.Timber
 /** One photo: the thumbnail shows at once and the full image replaces it; a spinner covers the wait. */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier) {
+internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, effectToken: Int? = null) {
     val context = LocalContext.current
     val config = LocalSliderConfig.current
     var loaded by remember(item.id) { mutableStateOf(false) }
-    Box(modifier) {
+    var aspect by remember(item.id) { mutableFloatStateOf(0f) }
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    // the plan needs the shown photo size, so it waits until the image is loaded and measured
+    val plan = remember(effectToken, aspect > 0f, size) {
+        if (effectToken == null || aspect <= 0f || size == IntSize.Zero) null else slideshowEffectPlan(config, item, aspect, size)
+    }
+    Box(modifier.onSizeChanged { size = it }.slideshowEffect(plan)) {
         GlideImage(
             model = if (config.isOnlyUseThumbnails) item.thumbnailUrl else item.url,
             contentDescription = null,
@@ -73,6 +93,7 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier) {
                             isFirstResource: Boolean,
                         ): Boolean {
                             loaded = true
+                            if (resource.intrinsicHeight > 0) aspect = resource.intrinsicWidth.toFloat() / resource.intrinsicHeight
                             return false
                         }
                     })
@@ -144,5 +165,64 @@ internal fun SliderSpinner(modifier: Modifier = Modifier) {
             size = Size(size.width - stroke, size.height - stroke),
             style = Stroke(stroke, cap = StrokeCap.Round),
         )
+    }
+}
+
+/** Same gating as the ViewPager version: effects need the panorama/zoom setting; panoramas scroll, other photos zoom and pan. */
+private fun slideshowEffectPlan(config: MediaSliderConfiguration, item: SliderItem, aspect: Float, size: IntSize): EffectPlan? {
+    if (!config.zoomAndScrollPanorama) return null
+    val viewWidth = size.width.toFloat()
+    val viewHeight = size.height.toFloat()
+    val params = EffectParams(
+        intervalSeconds = config.interval,
+        onlyUseThumbnails = config.isOnlyUseThumbnails,
+        animationSpeedMillis = config.animationSpeedMillis,
+        zoomEffectPercent = config.zoomEffectPercent,
+        panEffectPercent = config.panEffectPercent,
+        viewWidth = viewWidth,
+        viewHeight = viewHeight,
+        imageWidth = minOf(viewWidth, viewHeight * aspect),
+        imageHeight = minOf(viewHeight, viewWidth / aspect),
+    )
+    return when {
+        item.isPanorama -> if (config.interval >= 10) SlideshowEffects.panorama(params) else null
+        else -> SlideshowEffects.zoomAndPan(params)
+    }
+}
+
+/** Animates the photo through [plan]: waits, runs each leg from where the last ended, and returns to rest if asked. */
+@Composable
+private fun Modifier.slideshowEffect(plan: EffectPlan?): Modifier {
+    val scale = remember { Animatable(1f) }
+    val x = remember { Animatable(0f) }
+    val y = remember { Animatable(0f) }
+    LaunchedEffect(plan) {
+        scale.snapTo(1f)
+        x.snapTo(0f)
+        y.snapTo(0f)
+        if (plan == null) return@LaunchedEffect
+        delay(plan.startDelayMs)
+        suspend fun goTo(durationMs: Long, targetScale: Float, targetX: Float, targetY: Float) {
+            if (durationMs <= 0) {
+                scale.snapTo(targetScale)
+                x.snapTo(targetX)
+                y.snapTo(targetY)
+                return
+            }
+            val spec = tween<Float>(durationMs.toInt(), easing = FastOutSlowInEasing)
+            coroutineScope {
+                launch { scale.animateTo(targetScale, spec) }
+                launch { x.animateTo(targetX, spec) }
+                launch { y.animateTo(targetY, spec) }
+            }
+        }
+        plan.steps.forEach { goTo(it.durationMs, it.scale, it.x, it.y) }
+        plan.resetDurationMs?.let { goTo(it, 1f, 0f, 0f) }
+    }
+    return graphicsLayer {
+        scaleX = scale.value
+        scaleY = scale.value
+        translationX = x.value
+        translationY = y.value
     }
 }
