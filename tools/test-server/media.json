@@ -1,0 +1,17 @@
+{
+  "license": "Pexels License (free to use, no attribution required); photographer credit is on each page.",
+  "photos": {
+    "mountains": [26311729, 12393620, 9399127, 30666562, 6942460, 33314038, 27413514],
+    "beach": [39648150, 12831944, 22480990, 39594224, 11006267, 6910147, 188014],
+    "city": [34671320, 35036077, 18088744, 6489448, 24345783, 18834566, 286720],
+    "forest": [34427614, 34574533, 34693090, 10173742, 40356263, 40593146],
+    "food": [5691261, 12737803, 12737797, 31771054, 6811333, 34472822],
+    "family": [7669127, 34471648, 7669177, 27177044, 8208324, 4127427]
+  },
+  "videos": {
+    "beach": [{"id": 9620654, "file": "https://videos.pexels.com/video-files/9620654/9620654-hd_1080_1920_30fps.mp4"}],
+    "city": [{"id": 35556759, "file": "https://videos.pexels.com/video-files/35556759/15065869_1280_720_30fps.mp4"}],
+    "mountains": [{"id": 35045297, "file": "https://videos.pexels.com/video-files/35045297/14845434_1280_720_60fps.mp4"}],
+    "forest": [{"id": 34684726, "file": "https://videos.pexels.com/video-files/34684726/14701396_1280_720_24fps.mp4"}]
+  }
+}
