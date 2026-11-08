@@ -123,6 +123,11 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
     }
 
+    /** The slider came back after [onDestroy] (a pause): bring a released video player back. */
+    fun onResume() {
+        composePager?.resume()
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         composePager?.dispose()
@@ -271,8 +276,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
     }
 
-    private fun findVideoView(index: Int): ExoPlayerView? =
-        composePager?.videoViews?.get(index) ?: mPager.findViewWithTag<ExoPlayerView>("view$index")
+    private fun findVideoView(index: Int): ExoPlayerView? = mPager.findViewWithTag<ExoPlayerView>("view$index")
 
     /** The asset at [sliderItemIndex] came to rest: update plugins and start what the page needs. */
     private fun onPageSettled(sliderItemIndex: Int) {
@@ -286,21 +290,25 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         config.onAssetSelected(sliderItem)
 
         if (sliderItem.type == SliderItemType.VIDEO) {
-            val viewTag = findVideoView(sliderItemIndex) ?: return
-            if (!viewTag.isReady()) {
-                Timber.e("Player is not initialized properly, cannot play video.")
-                Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
-                return
+            val shared = composePager
+            val player: ExoPlayer = if (shared != null) {
+                shared.requirePlayer()
+            } else {
+                val viewTag = findVideoView(sliderItemIndex) ?: return
+                if (!viewTag.isReady()) {
+                    Timber.e("Player is not initialized properly, cannot play video.")
+                    Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
+                    return
+                }
+                viewTag.getPlayer()!!
             }
-            val player = viewTag.getPlayer()!!
             controller.setCurrentPlayer(player)
             player.seekTo(0, 0)
-            if (player.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
+            // the shared player holds the previous video: always load this page's media; a page's own player only when idle
+            if ((shared != null || player.playbackState == Player.STATE_IDLE) && sliderItem.url != null) {
                 prepareMedia(sliderItem.url!!, player, defaultExoFactory)
             }
-            if (!config.isVideoSoundEnable) {
-                player.volume = 0f
-            }
+            player.volume = if (config.isVideoSoundEnable) 1f else 0f
             player.playWhenReady = true
             controller.configureController(sliderItem, sliderItemIndex)
         } else {
@@ -352,6 +360,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     fun onDestroy() {
+        composePager?.release()
         ioScope.cancel()
         viewPlugins.forEach { it.plugin.onDestroy(viewPluginContext, it.state) }
         controller.onDestroy()

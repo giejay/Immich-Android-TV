@@ -22,6 +22,11 @@ open class MediaSliderFragment : Fragment() {
         view.requestFocus()
     }
 
+    override fun onResume() {
+        super.onResume()
+        (super.getView() as? MediaSliderView)?.onResume()
+    }
+
     override fun onPause() {
         destroyMediaPlayer()
         super.onPause()
