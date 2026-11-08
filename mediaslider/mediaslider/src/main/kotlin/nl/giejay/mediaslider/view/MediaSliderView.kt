@@ -338,7 +338,8 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 controller.restorePagerFocus()
             }
         }
-        pager.onVideoRetry = { index -> onPageSettled(index) }
+        // a retry waits a moment; if the user paged on meanwhile, the next normal settle starts the right video
+        pager.onVideoRetry = { index -> if (pager.isSettledOn(index)) onPageSettled(index) }
         pager.onPageSettled = { index ->
             maybeLoadMore()
             onPageSettled(index)

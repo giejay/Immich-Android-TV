@@ -100,6 +100,9 @@ class ComposeSliderPager(
         isFocusable = true
     }
 
+    /** True while [page] is the current page and nothing is scrolling; delayed work (a retry) checks it before acting. */
+    fun isSettledOn(page: Int): Boolean = state.settledPage == page && !state.isScrollInProgress
+
     override val currentIndex: Int get() = state.currentPage
     override val itemCount: Int get() = items.size
 
