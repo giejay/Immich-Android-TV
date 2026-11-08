@@ -38,7 +38,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import nl.giejay.android.tv.immich.timeline.TimelineFocusAction
@@ -82,6 +84,8 @@ fun TimelineScreen(
     /** Bumped by the host (resume, side navigation closed) to put focus back where the user left off. */
     restoreRequest: Int,
     isNavFocused: () -> Boolean,
+    /** True while the host fragment is paused (app in background): the preview must not keep playing. */
+    hostPaused: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val layout by viewModel.layout.collectAsState()
@@ -103,15 +107,76 @@ fun TimelineScreen(
         }
     }
     DisposableEffect(previewPlayer) { onDispose { previewPlayer.release() } }
+    LaunchedEffect(hostPaused) {
+        if (hostPaused) previewPlayer.playWhenReady = false
+        else if (previewPlayer.mediaItemCount > 0) previewPlayer.playWhenReady = true
+    }
     val buckets by viewModel.buckets.collectAsState()
     var indicatorMonth by remember { mutableStateOf<String?>(null) }
     var scrubberFocused by remember { mutableStateOf(false) }
     val scrubberRequester = remember { FocusRequester() }
-    var pendingRestore by remember { mutableStateOf(false) }
+    // Starts pending: a freshly composed screen (after the slider, or a page switch) has to restore first, and the
+    // entry cell that grabs focus before that must not overwrite the leave-off. With nothing saved it ends at once.
+    var pendingRestore by remember { mutableStateOf(true) }
+    // Set while an item is opened in the slider: the screen stays composed underneath, and the entry cell that
+    // takes focus on the way back must not overwrite the leave-off, nor may the restore run before we are back.
+    var leftForSlider by remember { mutableStateOf(false) }
+    val openAsset: (String) -> Unit = { id ->
+        leftForSlider = true
+        pendingRestore = true
+        onOpenAsset(id)
+    }
+    val openMemory: (Memory) -> Unit = { memory ->
+        leftForSlider = true
+        pendingRestore = true
+        onOpenMemory(memory)
+    }
+    // the slider may not open at all (e.g. the asset's month is unknown): do not block the restore forever
+    LaunchedEffect(leftForSlider) {
+        if (leftForSlider) {
+            delay(SLIDER_OPEN_GRACE_MILLIS)
+            if (!hostPaused) leftForSlider = false
+        }
+    }
+    val jumpGeneration = remember { java.util.concurrent.atomic.AtomicInteger() }
+    val memoriesReady by viewModel.memoriesReady.collectAsState()
+
+    val anchorGeneration = remember { java.util.concurrent.atomic.AtomicInteger() }
+
+    /**
+     * Keeps the list item with [listKey] at the top for a moment. Months load around a jump or restore
+     * target (focus prefetches neighbors) and shift indices; an index-based scroll would then land on other
+     * content. Ends when the user moves focus (see the focus handlers) or a newer anchor takes over.
+     */
+    fun anchorTo(listKey: String, offset: Int = 0) {
+        scope.launch {
+            withFrameNanos { } // let a focus change caused by this very scroll pass first
+            val generation = anchorGeneration.incrementAndGet()
+            withTimeoutOrNull(JUMP_ANCHOR_MILLIS) {
+                snapshotFlow { currentLayout.items }.takeWhile { generation == anchorGeneration.get() }.collect { current ->
+                    val index = current.indexOfFirst { it.listKey() == listKey }
+                    if (index >= 0 && (listState.firstVisibleItemIndex != index || listState.firstVisibleItemScrollOffset != offset)) {
+                        listState.scrollToItem(index, offset)
+                    }
+                }
+            }
+        }
+    }
 
     /** Focuses [key] (an asset id or "memory:<id>"), scrolling its item into composition first. */
-    suspend fun focusKey(key: String, itemPosition: Int) {
-        if (requesters[key] == null && itemPosition >= 0) {
+    suspend fun focusKey(key: String, itemPosition: Int, pinTop: Boolean = false) {
+        // restore only: remember what is at the top now, so it can be pinned while neighbor months load
+        val topKey = currentLayout.items.getOrNull(listState.firstVisibleItemIndex)?.listKey()
+        val topOffset = listState.firstVisibleItemScrollOffset
+        // The target's list key must be read now: while we wait below for the cell to compose, a prefetch may
+        // insert rows above it and make [itemPosition] stale.
+        val targetListKey = currentLayout.items.getOrNull(itemPosition)?.listKey()
+        var scrolled = false
+        // scroll when the target is not composed, or composed but not on screen (e.g. after stray focus
+        // pulled the list elsewhere); a target that is already visible keeps the viewport as it is
+        val visible = itemPosition >= 0 && listState.layoutInfo.visibleItemsInfo.any { it.index == itemPosition }
+        if ((requesters[key] == null || !visible) && itemPosition >= 0) {
+            scrolled = true
             listState.scrollToItem(itemPosition)
             if (key.startsWith("memory:")) {
                 // the card sits in the horizontal row: scroll that row to it so the card is composed
@@ -125,16 +190,30 @@ fun TimelineScreen(
             }
         }
         runCatching { requesters[key]?.requestFocus() }
+        if (scrolled) targetListKey?.let { anchorTo(it) }
+        else if (pinTop && topKey != null) anchorTo(topKey, topOffset)
     }
 
-    LaunchedEffect(restoreRequest) { if (restoreRequest > 0) pendingRestore = true }
-    LaunchedEffect(pendingRestore, restoreRequest, layout.items.size) {
-        if (!pendingRestore || layout.items.isEmpty() || isNavFocused()) return@LaunchedEffect
-        when (val target = TimelineLeaveOff.resolveRestore(viewModel.leaveOffSnapshot())) {
+    LaunchedEffect(restoreRequest) {
+        if (restoreRequest > 0) {
+            leftForSlider = false
+            pendingRestore = true
+        }
+    }
+    LaunchedEffect(pendingRestore, leftForSlider, restoreRequest, layout.items.size, memoriesReady) {
+        if (!pendingRestore || leftForSlider || layout.items.isEmpty() || isNavFocused()) return@LaunchedEffect
+        var resolved = TimelineLeaveOff.resolveRestore(viewModel.leaveOffSnapshot())
+        if (resolved is TimelineLeaveOff.Target.Memory && !TimelineMosaicIndex.hasMemoriesRow(layout.items)) {
+            // still loading: wait; loaded without memories (e.g. the date changed): drop the stale target
+            if (!memoriesReady) return@LaunchedEffect
+            viewModel.lastSelectedMemoryId = null
+            resolved = TimelineLeaveOff.resolveRestore(viewModel.leaveOffSnapshot())
+        }
+        when (val target = resolved) {
             is TimelineLeaveOff.Target.Memory -> {
                 if (!TimelineMosaicIndex.hasMemoriesRow(layout.items)) return@LaunchedEffect
                 // clear the flag only after focusing: it keys this effect, so clearing it first would cancel the focus
-                focusKey("memory:${target.id}", 0)
+                focusKey("memory:${target.id}", 0, pinTop = true)
                 pendingRestore = false
             }
             is TimelineLeaveOff.Target.Mosaic -> {
@@ -148,7 +227,7 @@ fun TimelineScreen(
                     }
                     return@LaunchedEffect
                 }
-                focusKey(target.assetId, position)
+                focusKey(target.assetId, position, pinTop = true)
                 viewModel.pendingResumeAssetId = null
                 viewModel.rememberSelectionByAssetId(target.assetId)
                 viewModel.leaveOffAllowScrollAdjust = true
@@ -160,32 +239,44 @@ fun TimelineScreen(
 
     /** Scrolls the list to [monthKey] (loading that month first) and optionally moves focus into the mosaic. */
     suspend fun jumpToMonth(monthKey: String, exitToMosaic: Boolean) {
+        // only the latest commit may scroll, focus or re-anchor; older ones stop at their next check
+        val generation = jumpGeneration.incrementAndGet()
+        fun superseded() = generation != jumpGeneration.get()
         val bucketKey = viewModel.resolveBucketKey(monthKey) ?: monthKey
         if (bucketKey !in viewModel.bucketAssets.value.keys) {
             withContext(Dispatchers.IO) { viewModel.loadBucket(bucketKey) }
         }
+        if (superseded()) return
         val preferredDay = viewModel.newestDayKeyForBucket(bucketKey)
         val items = withTimeoutOrNull(4000) {
             snapshotFlow { currentLayout.items }
                 .first { TimelineMosaicIndex.positionForScrubberMonth(it, monthKey, preferredDay) >= 0 }
         } ?: return
+        if (superseded()) return
         val position = TimelineMosaicIndex.positionForScrubberMonth(items, monthKey, preferredDay)
         listState.scrollToItem(position)
         indicatorMonth = bucketKey
-        if (exitToMosaic) {
-            val assetId = preferredDay?.let { TimelineMosaicIndex.rightmostAssetIdForDay(items, it) }
-                ?: items.drop(position).filterIsInstance<TimelineMosaicItem.Row>().firstOrNull()?.cells?.firstOrNull()?.asset?.id
-            if (assetId != null) focusKey(assetId, TimelineMosaicIndex.positionOfAsset(items, assetId))
+        val assetId = preferredDay?.let { TimelineMosaicIndex.rightmostAssetIdForDay(items, it) }
+            ?: items.drop(position).filterIsInstance<TimelineMosaicItem.Row>().firstOrNull()?.cells?.firstOrNull()?.asset?.id
+        if (assetId != null) {
+            // The jumped month is the new leave-off, also when focus stays on the rail (Enter): opening and
+            // closing the side navigation must not scroll back to the cell selected before the jump.
+            viewModel.applyLeaveOffSnapshot(
+                TimelineLeaveOff.captureForMenu(
+                    focusedMemoryId = null,
+                    focusedMosaicAssetId = assetId,
+                    stickyMemoryId = null,
+                    lastAssetId = assetId,
+                )
+            )
+            viewModel.rememberSelectionByAssetId(assetId)
+        }
+        if (exitToMosaic && assetId != null) {
+            focusKey(assetId, TimelineMosaicIndex.positionOfAsset(items, assetId))
         }
         // Newer/older months load around the target (focus prefetches them) and shift indices:
         // keep the target month's heading at the top for a moment, by key instead of by index.
-        val anchorKey = items.getOrNull(position)?.listKey() ?: return
-        withTimeoutOrNull(JUMP_ANCHOR_MILLIS) {
-            snapshotFlow { currentLayout.items }.collect { current ->
-                val index = current.indexOfFirst { it.listKey() == anchorKey }
-                if (index >= 0 && listState.firstVisibleItemIndex != index) listState.scrollToItem(index)
-            }
-        }
+        items.getOrNull(position)?.listKey()?.let { anchorTo(it) }
     }
 
     // Keep the rail's accent on the month that is on screen (unless the user is scrubbing).
@@ -224,7 +315,8 @@ fun TimelineScreen(
             }
             TimelineFocusAction.LoadOlder -> {
                 scope.launch {
-                    val next = viewModel.nextOlderUnloadedBucket() ?: return@launch
+                    // fill the gap right below the focused day first (separate loaded islands), else extend the end
+                    val next = viewModel.nextOlderUnloadedBucket(cell.dayKey) ?: viewModel.nextOlderUnloadedBucket() ?: return@launch
                     withContext(Dispatchers.IO) { viewModel.loadBucket(next.timeBucket) }
                 }
                 true
@@ -265,10 +357,12 @@ fun TimelineScreen(
 
     // Load older months while the user nears the end of what is loaded.
     LaunchedEffect(listState, viewModel) {
+        // keyed by the item count too: a small month can load while the viewport stays "near the end"
         snapshotFlow {
             val info = listState.layoutInfo
-            info.visibleItemsInfo.lastOrNull()?.index?.let { it >= info.totalItemsCount - NEAR_END_ITEMS } ?: false
-        }.collect { nearEnd ->
+            val nearEnd = info.visibleItemsInfo.lastOrNull()?.index?.let { it >= info.totalItemsCount - NEAR_END_ITEMS } ?: false
+            nearEnd to info.totalItemsCount
+        }.collect { (nearEnd, _) ->
             if (nearEnd) {
                 val next = viewModel.nextOlderUnloadedBucket() ?: return@collect
                 withContext(Dispatchers.IO) { viewModel.loadBucket(next.timeBucket) }
@@ -326,12 +420,15 @@ fun TimelineScreen(
                                     .focusRequester(requester)
                                     .onFocusChanged {
                                         if (it.isFocused) {
+                                            anchorGeneration.incrementAndGet()
                                             focusedAssetId = cell.asset.id
                                             viewModel.bucketKeyForAsset(cell.asset.id)?.let { indicatorMonth = it }
                                             viewModel.prefetchAroundDay(cell.dayKey)
                                             // stray focus before the restore has run must not overwrite the leave-off
                                             if (!pendingRestore) {
                                                 viewModel.lastSelectedMemoryId = null
+                                                // a pending target (e.g. from a scrubber jump) is outdated once the user moves on
+                                                viewModel.pendingResumeAssetId = null
                                                 viewModel.rememberSelection(cell.dayKey, cell.asset.id)
                                             }
                                         } else if (focusedAssetId == cell.asset.id) {
@@ -342,13 +439,13 @@ fun TimelineScreen(
                                         event.type == KeyEventType.KeyDown && onCellKey(cell, event.key.nativeKeyCode)
                                     }
                                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                                        onOpenAsset(cell.asset.id)
+                                        openAsset(cell.asset.id)
                                     },
                             )
                         }
                     }
                 }
-                is TimelineMosaicItem.MemoriesRow -> MemoriesRow(item, requesters, viewModel, onOpenMemory, memoriesState, liveLeaveOff = !pendingRestore)
+                is TimelineMosaicItem.MemoriesRow -> MemoriesRow(item, requesters, viewModel, openMemory, memoriesState, liveLeaveOff = !pendingRestore)
             }
         }
     }
@@ -410,4 +507,5 @@ private fun TimelineMosaicItem.listKey(): String = when (this) {
 
 private const val NEAR_END_ITEMS = 6
 private const val JUMP_ANCHOR_MILLIS = 1500L
+private const val SLIDER_OPEN_GRACE_MILLIS = 2500L
 private val FocusOverflow = 24.dp

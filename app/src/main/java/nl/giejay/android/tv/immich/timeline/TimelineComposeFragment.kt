@@ -44,6 +44,7 @@ class TimelineComposeFragment : Fragment() {
     private lateinit var sliderLauncher: TimelineSliderLauncher
     private var restoreRequest by mutableIntStateOf(0)
     private var loadingSlider by mutableStateOf(false)
+    private var hostPaused by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,6 +86,12 @@ class TimelineComposeFragment : Fragment() {
         // Back from the side navigation: put focus back on the cell the user left.
         (parentFragment as? HomeNavHost)?.setNavTransitionListener(
             object : NavTransitionListener() {
+                override fun onHeadersTransitionStart(withHeaders: Boolean) {
+                    // Mark the restore pending as soon as the navigation opens, so the entry cell that
+                    // grabs focus when it closes cannot overwrite the leave-off before the restore runs.
+                    if (isAdded && withHeaders) restoreRequest++
+                }
+
                 override fun onHeadersTransitionStop(withHeaders: Boolean) {
                     if (isAdded && !withHeaders) restoreRequest++
                 }
@@ -95,7 +102,13 @@ class TimelineComposeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         // Back from the slider (or the app): land on the cell that was last viewed.
+        hostPaused = false
         restoreRequest++
+    }
+
+    override fun onPause() {
+        hostPaused = true
+        super.onPause()
     }
 
     override fun onDestroyView() {
@@ -123,6 +136,7 @@ class TimelineComposeFragment : Fragment() {
                 onOpenMemory = { sliderLauncher.openMemory(it) },
                 restoreRequest = restoreRequest,
                 isNavFocused = { (parentFragment as? HomeNavHost)?.isNavFocused == true },
+                hostPaused = hostPaused,
             )
         }
     }
