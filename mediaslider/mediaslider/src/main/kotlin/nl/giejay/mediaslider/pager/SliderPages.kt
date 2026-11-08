@@ -59,7 +59,7 @@ import timber.log.Timber
 /** One photo: the thumbnail shows at once and the full image replaces it; a spinner covers the wait. */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, effectToken: Int? = null) {
+internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, effectToken: Int? = null, hidden: Boolean = false) {
     val context = LocalContext.current
     val config = LocalSliderConfig.current
     var loaded by remember(item.id) { mutableStateOf(false) }
@@ -69,7 +69,7 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, ef
     val plan = remember(effectToken, aspect > 0f, size) {
         if (effectToken == null || aspect <= 0f || size == IntSize.Zero) null else slideshowEffectPlan(config, item, aspect, size)
     }
-    Box(modifier.onSizeChanged { size = it }.slideshowEffect(plan)) {
+    Box(modifier.onSizeChanged { size = it }.slideshowEffect(plan, hidden)) {
         GlideImage(
             model = if (config.isOnlyUseThumbnails) item.thumbnailUrl else item.url,
             contentDescription = null,
@@ -191,17 +191,25 @@ private fun slideshowEffectPlan(config: MediaSliderConfiguration, item: SliderIt
     }
 }
 
-/** Animates the photo through [plan]: waits, runs each leg from where the last ended, and returns to rest if asked. */
+/** Animates the photo through [plan]: waits, runs each leg from where the last ended, and returns to rest if asked; [hidden] pages are reset. */
 @Composable
-private fun Modifier.slideshowEffect(plan: EffectPlan?): Modifier {
+private fun Modifier.slideshowEffect(plan: EffectPlan?, hidden: Boolean): Modifier {
     val scale = remember { Animatable(1f) }
     val x = remember { Animatable(0f) }
     val y = remember { Animatable(0f) }
+    // a page that is leaving keeps its current zoom/pan (no plan: the running animation just stops) and returns to rest only once it is out of sight
+    LaunchedEffect(hidden) {
+        if (hidden) {
+            scale.snapTo(1f)
+            x.snapTo(0f)
+            y.snapTo(0f)
+        }
+    }
     LaunchedEffect(plan) {
+        if (plan == null) return@LaunchedEffect
         scale.snapTo(1f)
         x.snapTo(0f)
         y.snapTo(0f)
-        if (plan == null) return@LaunchedEffect
         delay(plan.startDelayMs)
         suspend fun goTo(durationMs: Long, targetScale: Float, targetX: Float, targetY: Float) {
             if (durationMs <= 0) {
