@@ -335,7 +335,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         private const val FETCH_NEXT_THRESHOLD = COLUMNS * 6
         const val FETCH_COUNT = 50
         const val FETCH_PAGE_COUNT = FETCH_COUNT
-        /** Shared with Timeline so it can cancel a pending Photos background paint. */
+        /** Debounce key for the hover background load. */
         const val BACKGROUND_DEBOUNCE_KEY = "background"
     }
 }
