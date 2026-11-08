@@ -637,13 +637,13 @@ class MediaSliderController(
     }
 
     fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {
-        button.setImageResource(if (soundEnabled) R.drawable.unmute_icon else R.drawable.mute_icon)
+        button.setImageResource(if (soundEnabled) R.drawable.ic_ctrl_volume_on else R.drawable.ic_ctrl_volume_off)
     }
 
     fun updatePlayPauseIcon(button: ImageButton, isPlaying: Boolean) {
         button.setImageResource(
-            if (isPlaying) android.R.drawable.ic_media_pause
-            else android.R.drawable.ic_media_play
+            if (isPlaying) R.drawable.ic_ctrl_pause
+            else R.drawable.ic_ctrl_play
         )
     }
 
@@ -668,8 +668,8 @@ class MediaSliderController(
     private fun showTemporaryPlayIndicator() {
         playButtonView.visibility = View.VISIBLE
         playButtonView.setBackgroundResource(
-            if (slideShowPlaying) android.R.drawable.ic_media_play
-            else android.R.drawable.ic_media_pause
+            if (slideShowPlaying) R.drawable.indicator_play
+            else R.drawable.indicator_pause
         )
         mainHandler.postDelayed({
             playButtonView.visibility = View.GONE

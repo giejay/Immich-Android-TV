@@ -1,0 +1,13 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#B30F1115" />
+        </shape>
+    </item>
+    <item
+        android:drawable="@drawable/ic_ctrl_play"
+        android:bottom="30dp"
+        android:left="30dp"
+        android:right="30dp"
+        android:top="30dp" />
+</layer-list>
