@@ -38,7 +38,9 @@ class MediaSliderConfiguration(
     val transitionDurationMillis: Int = 1200,
     var controllerPlugins: List<SliderControllerPlugin> = emptyList(),
     var viewPlugins: List<SliderViewPlugin<*>> = emptyList(),
-    var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()
+    var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList(),
+    /** Pages with the Compose pager instead of the ViewPager (experimental until it replaces it). */
+    var useComposePager: Boolean = false
 ) {
     val isGradiantOverlayVisible: Boolean
         get() = (metaDataConfig.isNotEmpty()) && this.gradiantOverlay

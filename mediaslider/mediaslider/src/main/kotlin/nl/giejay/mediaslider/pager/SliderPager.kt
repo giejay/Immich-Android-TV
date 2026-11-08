@@ -38,3 +38,11 @@ class ViewPagerSliderPager(private val pager: ViewPager) : SliderPager {
         }
     }
 }
+
+/** Lets the controller keep one pager reference while the slider chooses the implementation later. */
+class DelegatingSliderPager(var delegate: SliderPager) : SliderPager {
+    override val currentIndex: Int get() = delegate.currentIndex
+    override val itemCount: Int get() = delegate.itemCount
+    override fun scrollTo(index: Int, animate: Boolean) = delegate.scrollTo(index, animate)
+    override fun restoreFocus() = delegate.restoreFocus()
+}

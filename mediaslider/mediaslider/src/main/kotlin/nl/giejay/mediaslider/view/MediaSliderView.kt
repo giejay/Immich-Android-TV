@@ -38,6 +38,8 @@ import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.controller.SliderControllerBar
 import nl.giejay.mediaslider.controller.SliderControllerUiState
 import nl.giejay.mediaslider.overlay.createOverlayView
+import nl.giejay.mediaslider.pager.ComposeSliderPager
+import nl.giejay.mediaslider.pager.DelegatingSliderPager
 import nl.giejay.mediaslider.pager.ViewPagerSliderPager
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
@@ -83,6 +85,8 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     // internal
     protected val controller: MediaSliderController
     private val controllerState = SliderControllerUiState()
+    private val sliderPager: DelegatingSliderPager
+    private var composePager: ComposeSliderPager? = null
     private var defaultExoFactory = DefaultHttpDataSource.Factory()
     private var pagerAdapter: ScreenSlidePagerAdapter? = null
     private var loading = false
@@ -103,9 +107,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
         val playButton: View = findViewById(R.id.playPause)
         mPager = findViewById(R.id.pager)
+        sliderPager = DelegatingSliderPager(ViewPagerSliderPager(mPager))
         val controllerHost = findViewById<android.widget.FrameLayout>(R.id.controller_host)
         controllerHost.addView(createOverlayView(context) { SliderControllerBar(controllerState) })
-        controller = MediaSliderController(context, mainHandler, ViewPagerSliderPager(mPager), playButton, this, controllerState)
+        controller = MediaSliderController(context, mainHandler, sliderPager, playButton, this, controllerState)
         playButton.setOnClickListener { controller.toggleSlideshow(true) }
     }
 
@@ -120,6 +125,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        composePager?.dispose()
         if (isVolumeReceiverRegistered) {
             try {
                 context.unregisterReceiver(volumeReceiver)
@@ -131,7 +137,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (mPager.adapter == null) {
+        if (composePager == null && mPager.adapter == null) {
             return super.dispatchKeyEvent(event)
         }
         return controller.dispatchKeyEvent(event) { super.dispatchKeyEvent(event) }
@@ -165,7 +171,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         initViewsAndSetAdapter(listener)
     }
 
-    private fun setStartPosition() {
+    private fun setStartPositionOnViewPager() {
         if (config.startPosition >= 0) {
             if (config.startPosition > config.items.size) {
                 mPager.currentItem = (config.items.size - 1)
@@ -180,6 +186,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     private fun initViewsAndSetAdapter(listener: ExoPlayerListener) {
+        if (config.useComposePager) {
+            initComposePager(listener)
+            return
+        }
         pagerAdapter = ScreenSlidePagerAdapter(
             context,
             config.items,
@@ -224,63 +234,12 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         mPager.setAdapter(pagerAdapter)
         mPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(sliderItemIndex: Int, v: Float, i1: Int) {
-                if (config.loadMore != null && mPager.currentItem > config.items.size - 40 && !loading) {
-                    loading = true
-                    ioScope.launch {
-                        val loadMore = config.loadMore ?: return@launch
-                        val result: LoadMoreResult = loadMore()
-                        addItemsMain(result.items)
-                        if (!result.canLoadMore) {
-                            config.loadMore = null
-                        }
-                        loading = false
-                    }
-                }
+                maybeLoadMore()
                 controller.stopPlayer()
                 if (sliderItemIndex != mPager.currentItem) {
                     return
                 }
-                val sliderItem = config.items[sliderItemIndex]
-                val mainItem = sliderItem.mainItem
-
-                viewPlugins.forEach { entry ->
-                    entry.plugin.onPageSettled(viewPluginContext, config, sliderItem, sliderItemIndex, mainHandler, entry.state)
-                }
-
-                config.onAssetSelected(sliderItem)
-
-                if (sliderItem.type == SliderItemType.VIDEO) {
-                    val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return
-                    if (!viewTag.isReady()) {
-                        Timber.e("Player is not initialized properly, cannot play video.")
-                        Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
-                        return
-                    }
-                    val player = viewTag.getPlayer()!!
-                    controller.setCurrentPlayer(player)
-                    player.seekTo(0, 0)
-                    if (player.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
-                        prepareMedia(sliderItem.url!!, player, defaultExoFactory)
-                    }
-                    if (!config.isVideoSoundEnable) {
-                        player.volume = 0f
-                    }
-                    player.playWhenReady = true
-                    controller.configureController(sliderItem, sliderItemIndex)
-                } else {
-                    controller.setCurrentPlayer(null)
-                    controller.configureController(sliderItem, sliderItemIndex)
-                    if (controller.slideShowPlaying) {
-                        controller.startTimerNextAsset()
-                        val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return
-                        val touchImageView = viewTag.children.first() as? TouchImageView
-                        if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
-                            touchImageView.zoomAndScrollPanorama(config, sliderItem)
-                        } else if (touchImageView != null && config.zoomAndScrollPanorama && !mainItem.isPanorama) {
-                            touchImageView.zoomAndPanEffect(config, sliderItem)
-                        }
-                    }
-                }
+                onPageSettled(sliderItemIndex)
             }
 
             override fun onPageSelected(i: Int) {
@@ -294,7 +253,102 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         })
         // Register the listener before selecting the start page so the first asset
         // still gets onPageSelected / onPageSettled (metadata, date overlay, etc.).
-        setStartPosition()
+        setStartPositionOnViewPager()
+    }
+
+    private fun maybeLoadMore() {
+        if (config.loadMore != null && sliderPager.currentIndex > config.items.size - 40 && !loading) {
+            loading = true
+            ioScope.launch {
+                val loadMore = config.loadMore ?: return@launch
+                val result: LoadMoreResult = loadMore()
+                addItemsMain(result.items)
+                if (!result.canLoadMore) {
+                    config.loadMore = null
+                }
+                loading = false
+            }
+        }
+    }
+
+    private fun findVideoView(index: Int): ExoPlayerView? =
+        composePager?.videoViews?.get(index) ?: mPager.findViewWithTag<ExoPlayerView>("view$index")
+
+    /** The asset at [sliderItemIndex] came to rest: update plugins and start what the page needs. */
+    private fun onPageSettled(sliderItemIndex: Int) {
+        val sliderItem = config.items.getOrNull(sliderItemIndex) ?: return
+        val mainItem = sliderItem.mainItem
+
+        viewPlugins.forEach { entry ->
+            entry.plugin.onPageSettled(viewPluginContext, config, sliderItem, sliderItemIndex, mainHandler, entry.state)
+        }
+
+        config.onAssetSelected(sliderItem)
+
+        if (sliderItem.type == SliderItemType.VIDEO) {
+            val viewTag = findVideoView(sliderItemIndex) ?: return
+            if (!viewTag.isReady()) {
+                Timber.e("Player is not initialized properly, cannot play video.")
+                Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
+                return
+            }
+            val player = viewTag.getPlayer()!!
+            controller.setCurrentPlayer(player)
+            player.seekTo(0, 0)
+            if (player.playbackState == Player.STATE_IDLE && sliderItem.url != null) {
+                prepareMedia(sliderItem.url!!, player, defaultExoFactory)
+            }
+            if (!config.isVideoSoundEnable) {
+                player.volume = 0f
+            }
+            player.playWhenReady = true
+            controller.configureController(sliderItem, sliderItemIndex)
+        } else {
+            controller.setCurrentPlayer(null)
+            controller.configureController(sliderItem, sliderItemIndex)
+            if (controller.slideShowPlaying) {
+                controller.startTimerNextAsset()
+                // slideshow zoom/pan effects of the ViewPager pages (the Compose pager gets its own)
+                val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return
+                val touchImageView = viewTag.children.first() as? TouchImageView
+                if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
+                    touchImageView.zoomAndScrollPanorama(config, sliderItem)
+                } else if (touchImageView != null && config.zoomAndScrollPanorama && !mainItem.isPanorama) {
+                    touchImageView.zoomAndPanEffect(config, sliderItem)
+                }
+            }
+        }
+    }
+
+    private fun initComposePager(listener: ExoPlayerListener) {
+        mPager.visibility = View.GONE
+        val pager = ComposeSliderPager(context, config, listener, config.startPosition.coerceAtLeast(0))
+        pager.onScrollStarted = { controller.stopPlayer() }
+        pager.onPageSelected = { index ->
+            viewPlugins.forEach { it.plugin.onPageSelected(viewPluginContext, index, it.state) }
+            if (!controller.isControllerVisible) {
+                controller.restorePagerFocus()
+            }
+        }
+        // a retry waits a moment; if the user paged on meanwhile, the next normal settle starts the right video
+        pager.onVideoRetry = { index -> if (pager.isSettledOn(index)) onPageSettled(index) }
+        pager.onPageSettled = { index ->
+            maybeLoadMore()
+            onPageSettled(index)
+        }
+        composePager = pager
+        sliderPager.delegate = pager
+        val params = LayoutParams(0, 0).apply {
+            topToTop = LayoutParams.PARENT_ID
+            bottomToBottom = LayoutParams.PARENT_ID
+            startToStart = LayoutParams.PARENT_ID
+            endToEnd = LayoutParams.PARENT_ID
+        }
+        // inside the inflated slider layout (same parent as the ViewPager), or its black background would cover it
+        val container = mPager.parent as ViewGroup
+        container.addView(pager.view, container.indexOfChild(mPager), params)
+        pager.start()
+        controller.restorePagerFocus()
     }
 
     fun onDestroy() {
@@ -325,13 +379,13 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             controller.cancelNextAssetTimer()
         }
         config.items = items
-        pagerAdapter!!.setItems(items)
+        composePager?.let { it.items = items } ?: pagerAdapter!!.setItems(items)
         if (controller.slideShowPlaying && currentItemType() == SliderItemType.IMAGE) {
             controller.startTimerNextAsset()
         }
     }
 
-    protected fun currentItem(): SliderItemViewHolder = config.items[mPager.currentItem]
+    protected fun currentItem(): SliderItemViewHolder = config.items[sliderPager.currentIndex]
     protected fun currentItemType(): SliderItemType = currentItem().type
 
     fun isControllerVisible(): Boolean = controller.isControllerVisible

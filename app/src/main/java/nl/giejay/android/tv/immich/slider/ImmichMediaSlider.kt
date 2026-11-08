@@ -11,6 +11,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
+import nl.giejay.android.tv.immich.shared.prefs.EXPERIMENTAL_COMPOSE_SLIDER
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.mediaslider.plugin.TimelineStoryProgressPlugin
 import nl.giejay.mediaslider.view.MediaSliderFragment
@@ -60,6 +61,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
         config.viewPlugins += enabledPlugins.viewPlugins
         config.keyEventPlugins += enabledPlugins.keyEventPlugins
 
+        config.useComposePager = PreferenceManager.get(EXPERIMENTAL_COMPOSE_SLIDER)
         loadMediaSliderView(config)
 
         if (bundle.timelineView) {
