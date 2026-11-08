@@ -13,7 +13,7 @@ Bring your photo library to the big screen:
 • Albums, people, folders, recent and seasonal views, random photos
 • Search across your library
 • Full-screen viewer with slideshow, video playback and photo details
-• Screensaver (Daydream) with your albums, people or favorites and several transitions
+• Screensaver (Daydream) with your albums, random or recent photos, or photos from a similar time of year, and several transitions
 • Home screen channels for quick access
 • Customize which pages are shown and what the photo overlay displays
 • Fully D-pad friendly, no touch screen needed

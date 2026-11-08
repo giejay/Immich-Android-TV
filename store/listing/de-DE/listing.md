@@ -13,7 +13,7 @@ Bring deine Fotosammlung auf den großen Bildschirm:
 • Alben, Personen, Ordner, Zuletzt hinzugefügt, Jahreszeiten und Zufallsfotos
 • Suche in deiner Mediathek
 • Vollbildansicht mit Diashow, Videowiedergabe und Fotodetails
-• Bildschirmschoner (Daydream) mit deinen Alben, Personen oder Favoriten und verschiedenen Übergängen
+• Bildschirmschoner (Daydream) mit deinen Alben, zufälligen oder neuesten Fotos oder Fotos aus ähnlicher Jahreszeit und verschiedenen Übergängen
 • Startbildschirm-Kanäle für schnellen Zugriff
 • Seiten ein- und ausblenden und die Foto-Einblendungen anpassen
 • Komplett mit der Fernbedienung bedienbar, kein Touchscreen nötig
