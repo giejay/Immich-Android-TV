@@ -80,7 +80,7 @@ When setting up your API key in Immich, make sure to grant the following permiss
 
 ## Build steps
 
-1. Clone project with `git clone --recurse git@github.com:giejay/Immich-Android-TV.git`
+1. Clone project with `git clone --recurse git@github.com:daniii88/Immich-Android-TV-Next.git`
 2. copy app/strings_other.xml.example to app/src/main/res/values/strings_other.xml and modify
    the address and API keys for your demo server.
 3. Build apk with `./gradlew assembleRelease`
@@ -88,11 +88,11 @@ When setting up your API key in Immich, make sure to grant the following permiss
 ## Support the project
 
 You can support the project in several ways. The first one is by creating nice descriptive bug
-reports if you find any: https://github.com/giejay/Immich-Android-TV/issues/new/choose.
-<br><br>Even better is creating a PR: https://github.com/giejay/Immich-Android-TV/pulls.
+reports if you find any: https://github.com/daniii88/Immich-Android-TV-Next/issues/new/choose.
+<br><br>Even better is creating a PR: https://github.com/daniii88/Immich-Android-TV-Next/pulls.
 <br><br>
 Lastly, if you feel this Android TV app is a useful addition to the already great Immich app, you
-might consider buying me a coffee or a beer:
+might consider buying the original author (giejay, whose Immich-Android-TV this is forked from) a coffee or a beer:
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/giejay)
 
