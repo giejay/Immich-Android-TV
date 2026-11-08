@@ -86,14 +86,13 @@ dependencies {
     implementation libs.androidx.appcompat
     implementation libs.androidx.core.ktx
     implementation libs.androidx.fragment.ktx
-    implementation libs.androidx.leanback
     implementation libs.androidx.lifecycle.extensions1
     implementation libs.androidx.navigation.fragment.ktx
     implementation libs.androidx.navigation.ui.ktx
-    implementation libs.androidx.leanback.preference
+    implementation libs.androidx.preference
     implementation libs.arrow.core
 
-    // Compose for TV (coexists with Leanback during the migration)
+    // Compose for TV
     implementation platform(libs.androidx.compose.bom)
     implementation libs.androidx.compose.ui
     implementation libs.androidx.compose.foundation
