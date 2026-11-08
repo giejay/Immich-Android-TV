@@ -5,7 +5,7 @@ taken without private photos.
 
 1. Install Docker (once): `sudo apt install docker.io docker-compose-v2 && sudo usermod -aG docker $USER` (log in again).
 2. `docker compose up -d` (first start pulls the images; add `--profile ml` for faces/smart search).
-3. `export PEXELS_API_KEY=...` (free key: https://www.pexels.com/api/) and `python3 fetch_pexels.py`.
+3. `python3 fetch_media.py` downloads the curated Pexels set from `media.json` (about 55 MB, no API key).
 4. `python3 seed.py` -> creates the admin user, an API key and uploads `./media` (albums per theme).
 5. In the app use the URL and API key from `.state/credentials.txt`. In the emulator the host is `http://10.0.2.2:2283`.
 

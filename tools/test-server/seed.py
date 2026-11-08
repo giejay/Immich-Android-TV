@@ -3,7 +3,7 @@
 
     python3 seed.py [http://localhost:2283]
 
-Media files are named <theme>-<id>.<ext> (see fetch_pexels.py); every theme becomes an album, capture
+Media files are named <theme>-<id>.<ext> (see fetch_media.py); every theme becomes an album, capture
 dates are spread over several years; the first themes are dated today (month/day) in earlier years so "N years ago" memories have content.
 Writes the server URL and API key to ./.state/credentials.txt (git-ignored); enter both in the app.
 """
@@ -58,7 +58,7 @@ def upload(path: Path, api_key: str, taken: datetime, favorite: bool) -> str:
 
 def main():
     if not MEDIA.exists():
-        sys.exit("No ./media folder; run fetch_pexels.py first or put photos/videos there.")
+        sys.exit("No ./media folder; run fetch_media.py first or put photos/videos there.")
     try:
         call("/api/auth/admin-sign-up", {"email": EMAIL, "name": NAME, "password": PASSWORD})
     except SystemExit:
