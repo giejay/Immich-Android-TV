@@ -2,7 +2,7 @@ package nl.giejay.android.tv.immich.homescreenchannels
 
 import android.net.Uri
 
-private const val SCHEME = "immichtvnext"
+private const val SCHEME = "immichandroidtvnext"
 
 sealed class DeepLinkTarget {
     data class Asset(val assetId: String) : DeepLinkTarget()

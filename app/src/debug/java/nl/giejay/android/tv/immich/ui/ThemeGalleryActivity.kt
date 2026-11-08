@@ -33,7 +33,7 @@ private fun Gallery() {
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(48.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        Text("Immich TV Next", style = MaterialTheme.typography.displaySmall)
+        Text("Immich Android TV Next", style = MaterialTheme.typography.displaySmall)
         Text("Headline and body text on the background colour", style = MaterialTheme.typography.bodyLarge)
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             listOf(
