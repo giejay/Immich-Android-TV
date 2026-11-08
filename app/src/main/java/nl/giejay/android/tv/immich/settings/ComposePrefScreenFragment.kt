@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.ComponentDialog
 import androidx.activity.OnBackPressedCallback
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.fragment.app.Fragment
@@ -18,9 +20,13 @@ import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.ui.immichComposeView
 import nl.giejay.android.tv.immich.ui.settings.PrefScreenPanel
 
-/** Hosts a [PrefScreen] as Compose panel inside [SettingsDialogFragment]. */
-abstract class ComposePrefScreenFragment : Fragment() {
-    abstract fun getScreen(): PrefScreen
+/**
+ * Base for Compose content inside [SettingsDialogFragment]. While the content reports an open
+ * choice list, Back closes only that list instead of the whole dialog.
+ */
+abstract class ComposeSettingsFragment : Fragment() {
+    @Composable
+    abstract fun Content(closeChoiceSignal: Int, onChoosingChanged: (Boolean) -> Unit)
 
     private var closeChoiceSignal by mutableIntStateOf(0)
 
@@ -32,18 +38,27 @@ abstract class ComposePrefScreenFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val screen = getScreen()
         (requireParentFragment() as? androidx.fragment.app.DialogFragment)?.let { parent ->
             (parent.dialog as? ComponentDialog)?.onBackPressedDispatcher?.addCallback(viewLifecycleOwner, backCallback)
         }
         return immichComposeView(requireContext()) {
-            PrefScreenPanel(
-                screen = screen,
-                navController = findNavController(),
-                closeChoiceSignal = closeChoiceSignal,
-                onChoosingChanged = { backCallback.isEnabled = it },
-            )
+            Content(closeChoiceSignal = closeChoiceSignal, onChoosingChanged = { backCallback.isEnabled = it })
         }
+    }
+}
+
+/** Hosts a [PrefScreen] as Compose panel. */
+abstract class ComposePrefScreenFragment : ComposeSettingsFragment() {
+    abstract fun getScreen(): PrefScreen
+
+    @Composable
+    override fun Content(closeChoiceSignal: Int, onChoosingChanged: (Boolean) -> Unit) {
+        PrefScreenPanel(
+            screen = remember { getScreen() },
+            navController = findNavController(),
+            closeChoiceSignal = closeChoiceSignal,
+            onChoosingChanged = onChoosingChanged,
+        )
     }
 }
 

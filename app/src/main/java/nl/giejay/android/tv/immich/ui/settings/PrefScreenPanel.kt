@@ -280,7 +280,7 @@ private fun PrefRow(
 }
 
 @Composable
-private fun SettingRow(
+internal fun SettingRow(
     title: String,
     summary: String?,
     trailing: (@Composable () -> Unit)?,
@@ -344,7 +344,7 @@ internal fun ToggleIndicator(checked: Boolean) {
 }
 
 @Composable
-private fun SelectedDot() {
+internal fun SelectedDot() {
     Box(
         Modifier
             .size(14.dp)
