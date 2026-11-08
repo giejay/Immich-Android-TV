@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only arrays whose items are hardcoded text need a localized copy;
+         all other arrays are made of @string references or values and inherit from the default file. -->
+    <string-array name="glide_transformation_labels">
+        <item>Einpassen (Breite und Höhe des Bildes beibehalten)</item>
+        <item>Zuschneiden (Bildschirm füllen)</item>
+        <item>Sicher zuschneiden (maximaler Zuschnitt in Prozent)</item>
+    </string-array>
+
+    <string-array name="transition_duration_titles">
+        <item>0,6 Sekunden</item>
+        <item>0,9 Sekunden</item>
+        <item>1,2 Sekunden</item>
+        <item>1,8 Sekunden</item>
+        <item>2,5 Sekunden</item>
+    </string-array>
+</resources>

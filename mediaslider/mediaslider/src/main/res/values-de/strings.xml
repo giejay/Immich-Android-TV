@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="album_name">Albumname</string>
+    <string name="camera">Kameramodell</string>
+    <string name="city">Ort</string>
+    <string name="clock">Uhr</string>
+    <string name="country">Land</string>
+    <string name="date">Datum</string>
+    <string name="time">Uhrzeit</string>
+    <string name="current_date">Aktuelles Datum</string>
+    <string name="description">Beschreibung</string>
+    <string name="filename">Dateiname</string>
+    <string name="filepath">Dateipfad</string>
+    <string name="favorite">Favorit</string>
+    <string name="media_count">Anzahl der Medien</string>
+    <string name="image_controller_next">Weiter</string>
+    <string name="people">Personen</string>
+    <string name="image_controller_previous">Zurück</string>
+    <string name="slideshow">Diashow</string>
+
+    <string name="media_mute">Stumm</string>
+    <string name="media_play">Wiedergabe</string>
+    <string name="media_pause">Pause</string>
+    <string name="open_in_external_player">In externem Player öffnen</string>
+    <string name="no_external_player_found">Kein externer Player gefunden</string>
+    <string name="cannot_play_video">Das Video kann nicht abgespielt werden: %1$s</string>
+    <string name="volume_changed_unmuting">Lautstärke geändert, der Ton des Videos wird eingeschaltet</string>
+    <string name="no_items_received">Keine Elemente für die Diashow erhalten</string>
+</resources>

@@ -40,6 +40,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
+import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.overlay.createOverlayView
@@ -222,7 +223,7 @@ class ComposeSliderPager(
             pendingRetryPage = page
             videoRebuild++
         } else {
-            Toast.makeText(context, "Cannot play video: ${error.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.cannot_play_video, error.message), Toast.LENGTH_LONG).show()
             exoListener.onPlayerError(error)
         }
     }

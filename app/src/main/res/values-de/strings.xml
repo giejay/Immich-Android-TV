@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="continue_text">Weiter</string>
+    <string name="email">E-Mail-Adresse</string>
+    <string name="password">Passwort</string>
+    <string name="sign_in">Anmelden</string>
+
+    <!-- Playback error actions -->
+    <string name="retry">Erneut versuchen</string>
+    <string name="go_back">Zurück zur Übersicht</string>
+
+    <!-- Home Menu -->
+    <string name="seasonal">Saisonal</string>
+    <string name="folders">Ordner</string>
+    <string name="settings">Einstellungen</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="photos">Fotos</string>
+    <string name="random">Zufällig</string>
+    <string name="people">Personen</string>
+    <string name="recent">Zuletzt</string>
+    <string name="albums">Alben</string>
+    <string name="timeline">Zeitleiste</string>
+    <string name="this_month">Diesen Monat</string>
+    <string name="today">Heute</string>
+    <string name="yesterday">Gestern</string>
+    <plurals name="years_ago">
+        <item quantity="one">Vor %d Jahr</item>
+        <item quantity="other">Vor %d Jahren</item>
+    </plurals>
+    <string name="server">Server</string>
+    <string name="screensaver">Bildschirmschoner</string>
+    <string name="debug">Debug</string>
+    <string name="use_hd_thumbnails">Hochauflösende Vorschaubilder verwenden</string>
+    <string name="use_hd_thumbnails_text">Hochauflösende Vorschaubilder statt der Originalbilder verwenden. Beschleunigt das Laden erheblich.</string>
+    <string name="show_partner_photos_in_timeline">Fotos des Partners in der Zeitleiste zeigen</string>
+    <string name="show_partner_photos_in_timeline_desc">Fotos, die dein Partner mit dir teilt, auch in der Haupt-Zeitleiste anzeigen, zusätzlich zu den Foto- und Suchansichten.</string>
+    <string name="albums_sorting_text">Reihenfolge der Alben festlegen</string>
+    <string name="order">Reihenfolge</string>
+    <string name="photos_sorting_text">Reihenfolge der Fotos festlegen</string>
+    <string name="disable_ssl">SSL-Prüfung deaktivieren</string>
+    <string name="disable_ssl_text">Nur verwenden, wenn es Probleme mit selbst signierten Zertifikaten gibt!</string>
+    <string name="api_key_text">API-Schlüssel</string>
+    <string name="server_url_text">Server-URL</string>
+    <string name="done">Fertig</string>
+
+    <!-- Auth by phone -->
+    <string name="scan_qr_below">Scanne den QR-Code unten</string>
+    <string name="or_enter_code_on_site">Oder gib den Code auf https://immich.giejay.nl ein</string>
+
+    <!-- Screensaver  -->
+    <string name="screensaver_set">Immich als Bildschirmschoner festlegen</string>
+    <string name="screensaver_set_select_albums_first">Wähle zuerst die anzuzeigenden Alben aus!</string>
+    <string name="screensaver_not_possible_title">Bildschirmschoner kann nicht festgelegt werden</string>
+    <string name="screensaver_not_possible">Der Immich-Bildschirmschoner konnte wegen eines ungültigen Hostnamens oder API-Schlüssels nicht gestartet werden</string>
+    <string name="close">Schließen</string>
+    <string name="interval">Intervall</string>
+    <string name="screensaver_interval_desc">Intervall des Bildschirmschoners</string>
+    <string name="show_media_count">Anzahl der Medien anzeigen</string>
+    <string name="show_media_count_desc_screensaver">Gesamtzahl der Elemente und die aktuelle Position anzeigen</string>
+    <string name="show_description">Beschreibung anzeigen</string>
+    <string name="show_description_screensaver">Beschreibung des Mediums im Bildschirmschoner anzeigen</string>
+    <string name="show_album_name">Albumnamen anzeigen</string>
+    <string name="show_album_name_desc">Albumnamen des Mediums im Bildschirmschoner anzeigen</string>
+    <string name="show_date">Datum anzeigen</string>
+    <string name="show_date_screensaver">Datum des Mediums im Bildschirmschoner anzeigen</string>
+    <string name="show_clock">Uhr anzeigen</string>
+    <string name="show_clock_screensaver">Uhr im Bildschirmschoner anzeigen</string>
+    <string name="slide_new_asset_in">Neues Medium hineinschieben</string>
+    <string name="slide_new_asset_in_desc">Beim Wechsel das neue Medium hineinschieben</string>
+    <string name="set_albums_screensaver">Alben für den Bildschirmschoner wählen</string>
+    <string name="set_albums_screensaver_desc">Alben wählen, die im Bildschirmschoner erscheinen</string>
+    <string name="set_albums_screensaver_error">Wähle in den Bildschirmschoner-Einstellungen die Immich-Alben aus, die angezeigt werden sollen</string>
+    <string name="customize_metadata">Metadaten anpassen</string>
+    <string name="configure_metadata_screensaver">Festlegen, was im Bildschirmschoner angezeigt wird</string>
+    <string name="include_videos">Videos einbeziehen</string>
+    <string name="include_videos_screensaver">Videos im Bildschirmschoner einbeziehen</string>
+    <string name="play_sound">Ton abspielen</string>
+    <string name="play_sound_screensaver">Ton von Videos während des Bildschirmschoners abspielen</string>
+    <string name="screensaver_type">Art des Bildschirmschoners</string>
+    <string name="screensaver_type_desc">Was angezeigt wird: Alben, Zufall, Zuletzt usw.</string>
+    <string name="screensaver_start_now">Jetzt starten</string>
+    <string name="screensaver_start_now_desc">Den Bildschirmschoner jetzt starten</string>
+
+    <!-- Slider/viewer preferences -->
+    <string name="interval_slideshow">Intervall der Diashow</string>
+    <string name="interval_slideshow_desc">Sekunden pro Foto in der Diashow. Videos werden vollständig abgespielt, danach geht es weiter.</string>
+    <string name="slide_animation_speed_ms">Geschwindigkeit der Wischanimation (ms)</string>
+    <string name="slide_animation_speed_desc">Geschwindigkeit der Wischanimation in Millisekunden</string>
+    <string name="show_description_slideshow">Beschreibung anzeigen</string>
+    <string name="show_description_slideshow_desc">Beschreibung des Mediums in der Diashow anzeigen</string>
+    <string name="show_media_count_slideshow">Anzahl der Medien anzeigen</string>
+    <string name="show_media_count_slideshow_desc">Gesamtzahl der Elemente und die aktuelle Position anzeigen</string>
+    <string name="show_date_slideshow">Datum anzeigen</string>
+    <string name="show_date_slideshow_desc">Datum des Mediums in der Diashow anzeigen</string>
+    <string name="show_date_top_left">Datum oben links anzeigen</string>
+    <string name="show_date_top_left_viewer_desc">Das Datum des Mediums als Einblendung oben links im Foto- und Videobetrachter anzeigen. Unabhängig von den Metadaten unten.</string>
+    <string name="show_date_top_left_screensaver_desc">Das Datum des Mediums als Einblendung oben links im Bildschirmschoner anzeigen. Unabhängig von den Metadaten unten.</string>
+    <string name="show_city">Ort anzeigen</string>
+    <string name="show_city_desc">Ort des Mediums in der Diashow anzeigen</string>
+    <string name="customize_metadata_viewer">Metadaten anpassen</string>
+    <string name="configure_metadata_viewer">Festlegen, was im Betrachter angezeigt wird</string>
+    <string name="merge_portrait_photos">Hochformatfotos zusammenfassen</string>
+    <string name="merge_portrait_photos_desc">Zwei Hochformatfotos nebeneinander anzeigen</string>
+    <string name="safe_center_crop_max_cutoff_height">Safe Center Crop: maximal abgeschnittene Höhe in %</string>
+    <string name="safe_center_crop_max_cutoff_height_desc">Maximaler Prozentsatz, um den die Bildhöhe bei SafeCenterCrop beschnitten wird</string>
+    <string name="safe_center_crop_max_cutoff_width">Safe Center Crop: maximal abgeschnittene Breite in %</string>
+    <string name="safe_center_crop_max_cutoff_width_desc">Maximaler Prozentsatz, um den die Bildbreite bei SafeCenterCrop beschnitten wird</string>
+    <string name="photo_transformation">Foto-Transformation</string>
+    <string name="photo_transformation_desc">Wie Fotos an den Bildschirm angepasst werden</string>
+    <string name="force_original_video">Originalvideo erzwingen</string>
+    <string name="force_original_video_desc">Das Originalvideo abspielen, auch wenn eine transkodierte Version verfügbar ist</string>
+    <string name="dpad_seek_in_video">Steuerkreuz spult im Video</string>
+    <string name="dpad_seek_in_video_desc">Links/Rechts spult im Video etwa 10 Sekunden, statt das Medium zu wechseln. Vor- und Zurückspulen auf der Fernbedienung spult immer. Standardmäßig aus.</string>
+    <string name="load_edited_photo">Bearbeitete Fotos laden</string>
+    <string name="load_edited_photo_desc">Die bearbeitete Version eines Fotos statt des Originals laden</string>
+    <string name="zoom_scroll_panoramas">Zoom- und Schwenkeffekt</string>
+    <string name="zoom_scroll_panoramas_desc">In Diashows Zoom- und Schwenkeffekte auf einzelne Fotos anwenden. Panoramafotos werden automatisch bildschirmfüllend vergrößert und von unten nach oben oder von links nach rechts gescrollt.</string>
+    <string name="zoom_effect_percent">Stärke des Zoomeffekts in %</string>
+    <string name="zoom_effect_percent_desc">Stärke des Zoomeffekts anpassen.</string>
+    <string name="pan_effect_percent">Stärke des Schwenkeffekts in %</string>
+    <string name="pan_effect_percent_desc">Stärke des Schwenkeffekts anpassen.</string>
+
+    <!-- Other preferences -->
+    <string name="photos_in_albums">Fotos in Alben</string>
+    <string name="photos_in_albums_desc_inside">Reihenfolge der Fotos innerhalb von Alben festlegen</string>
+    <string name="content_type">Inhaltstyp</string>
+    <string name="filter_by_content_type">Nach Inhaltstyp filtern</string>
+    <string name="assets_outside_albums">Medien außerhalb von Alben</string>
+    <string name="assets_outside_albums_desc">Reihenfolge der Medien außerhalb von Alben festlegen</string>
+    <string name="enable_debug_mode">Debug-Modus aktivieren</string>
+    <string name="enable_debug_mode_desc">Aktiviere dies, wenn Probleme auftreten.</string>
+    <string name="load_selected_item_as_background">Ausgewähltes Element als Hintergrund laden</string>
+    <string name="load_selected_item_as_background_desc">Das aktuell ausgewählte Bild oder Album als Hintergrund laden</string>
+    <string name="user_id">Benutzer-ID</string>
+    <string name="user_id_desc">Deine Benutzer-ID, nötig für die Fehlersuche</string>
+    <string name="seasonal_photos_years_back">Saisonale Fotos: Jahre zurück</string>
+    <string name="seasonal_photos_years_back_desc">Wie viele Jahre bei der Auswahl saisonaler Fotos zurückgegangen wird</string>
+    <string name="seasonal_photos_period_days">Saisonale Fotos: Zeitraum in Tagen</string>
+    <string name="recent_photos_months_back">Aktuelle Fotos: Monate zurück</string>
+    <string name="excluded_albums">Ausgeschlossene Alben</string>
+    <string name="excluded_albums_desc">Medien bestimmter Alben in der Zufalls- und Saisonansicht ausschließen</string>
+
+    <!-- Preference screens and categories -->
+    <string name="view_settings">Ansicht</string>
+    <string name="display">Anzeige</string>
+    <string name="display_desc">Ändern, wie Medien dargestellt werden</string>
+    <string name="effects">Effekte</string>
+    <string name="effects_desc">Zoom-, Schwenk- und Zuschnitt-Effekte</string>
+    <string name="content">Inhalt</string>
+    <string name="content_desc">Festlegen, welche Inhalte angezeigt werden</string>
+    <string name="general">Allgemein</string>
+    <string name="general_desc">Allgemeine Einstellungen</string>
+    <string name="ordering">Sortierung</string>
+    <string name="slideshow">Diashow</string>
+    <string name="other">Sonstiges</string>
+    <string name="screensaver_settings">Bildschirmschoner</string>
+    <string name="debug_settings">Debug</string>
+    <string name="settings_for">Einstellungen für %1$s</string>
+    <string name="filtering">Filter</string>
+
+    <!-- Home screen channels -->
+    <string name="home_screen_channels">TV-Kanäle</string>
+    <string name="home_screen_channels_settings">Einstellungen für Startbildschirm-Kanäle</string>
+    <string name="channel_recent_photos">Neueste Fotos</string>
+    <string name="enable_home_screen_channels">Kanäle auf dem Startbildschirm zeigen</string>
+    <string name="enable_home_screen_channels_desc">Deine neuesten Fotos und die unten gewählten Alben als Kanäle auf dem Android-TV-Startbildschirm veröffentlichen</string>
+    <string name="set_albums_home_screen_channels">Alben als Kanäle veröffentlichen</string>
+    <string name="set_albums_home_screen_channels_desc">Jedes ausgewählte Album erscheint als eigene Reihe auf dem Android-TV-Startbildschirm</string>
+    <string name="home_screen_channels_refresh_now">Jetzt aktualisieren</string>
+    <string name="home_screen_channels_refresh_now_desc">Die Startbildschirm-Kanäle sofort synchronisieren, statt auf die nächste automatische Aktualisierung zu warten</string>
+    <string name="home_screen_channel_error">Der Startbildschirm-Kanal für dieses Album konnte nicht eingerichtet werden</string>
+
+    <!-- Auth step 1 -->
+    <string name="auth_sign_in_by_api_key">Mit API-Schlüssel anmelden</string>
+    <string name="auth_sign_in_by_api_key_desc">Melde dich bei deiner Immich-Instanz an, indem du deinen API-Schlüssel eingibst.</string>
+    <string name="auth_sign_in_by_phone">Mit dem Handy anmelden</string>
+    <string name="auth_sign_in_by_phone_desc">Melde dich bei deiner Immich-Instanz an, indem du einen QR-Code mit dem Handy scannst. Hinweis: Das funktioniert nur, wenn dein Immich-Server aus dem Internet erreichbar ist (nicht bei lokalen/privaten IP-Adressen).</string>
+    <string name="auth_demo_mode">Demo-Modus</string>
+    <string name="auth_demo_mode_desc">Bei einer Immich-Demo-Instanz anmelden.</string>
+
+    <!-- Auth step 2 -->
+    <string name="login_immich_description">Melde dich bei deinem Immich-Server an oder probiere die Demo aus.</string>
+    <string name="server_url_hint">Server-URL (http[s]://…)</string>
+    <string name="disable_ssl_verification">SSL-Prüfung deaktivieren</string>
+    <string name="disable_ssl_verification_desc">Nur verwenden, wenn es Probleme mit selbst signierten Zertifikaten gibt!</string>
+    <string name="debug_mode">Debug-Modus</string>
+    <string name="debug_mode_desc">Aktiviere dies, wenn beim Abrufen der Immich-Daten Probleme auftreten.</string>
+    <string name="submit">Absenden</string>
+    <string name="enter_server_url">Bitte gib eine Server-URL ein (https://…)</string>
+    <string name="enter_api_key">Bitte gib einen API-Schlüssel ein. Falls du ihn schon eingegeben hast: Markiere das Feld erneut und bestätige mit Enter/OK, nicht mit Zurück.</string>
+    <string name="enter_valid_server_url">Bitte gib eine gültige Server-URL ein (https://…)</string>
+
+    <!-- Auth by phone -->
+    <string name="or_enter_code_on_auth_url">Oder gib den Code %1$s auf %2$s ein</string>
+    <string name="auth_timeout_recreating_qr">Die Anmeldung ist abgelaufen, der QR-Code wird neu erstellt.</string>
+    <string name="invalid_server_url_or_api_key">Ungültige Server-URL oder ungültiger API-Schlüssel, scanne erneut!</string>
+    <string name="could_not_fetch_qr">QR-Code konnte nicht abgerufen werden: %1$s</string>
+    <string name="could_not_fetch_qr_short">QR-Code konnte nicht abgerufen werden</string>
+    <string name="could_not_load_assets">Medien konnten nicht aus Immich geladen werden</string>
+
+    <!-- Albums ordering -->
+    <string name="albums_order_asset_count">Anzahl der Medien</string>
+
+    <!-- Ordering -->
+    <string name="order_alphabetically_az">Alphabetisch (A–Z)</string>
+    <string name="order_alphabetically_za">Alphabetisch (Z–A)</string>
+    <string name="order_newest_oldest">Neueste – Älteste</string>
+    <string name="order_oldest_newest">Älteste – Neueste</string>
+    <string name="order_last_updated">Zuletzt aktualisiert</string>
+    <string name="order_least_updated">Am längsten nicht aktualisiert</string>
+
+    <!-- Interval titles -->
+    <string name="interval_1_second">1 Sekunde</string>
+    <string name="interval_2_seconds">2 Sekunden</string>
+    <string name="interval_3_seconds">3 Sekunden</string>
+    <string name="interval_4_seconds">4 Sekunden</string>
+    <string name="interval_5_seconds">5 Sekunden</string>
+    <string name="interval_6_seconds">6 Sekunden</string>
+    <string name="interval_7_seconds">7 Sekunden</string>
+    <string name="interval_8_seconds">8 Sekunden</string>
+    <string name="interval_9_seconds">9 Sekunden</string>
+    <string name="interval_10_seconds">10 Sekunden</string>
+    <string name="interval_20_seconds">20 Sekunden</string>
+    <string name="interval_30_seconds">30 Sekunden</string>
+    <string name="interval_1_minute">1 Minute</string>
+    <string name="interval_3_minutes">3 Minuten</string>
+    <string name="interval_5_minutes">5 Minuten</string>
+    <string name="interval_10_minutes">10 Minuten</string>
+
+    <!-- Content type filter -->
+    <string name="content_type_all">Alle</string>
+    <string name="content_type_image">Bild</string>
+    <string name="content_type_video">Video</string>
+
+    <!-- Metadata alignment -->
+    <string name="left">Links</string>
+    <string name="right">Rechts</string>
+
+    <string name="already_added_metadata">Du hast bereits alle möglichen Metadaten hinzugefügt</string>
+    <string name="no_items_to_play">Nichts zum Abspielen</string>
+    <string name="no_assets_for_screensaver">Keine Medien für den Bildschirmschoner. Wähle in den Einstellungen eine andere Art des Bildschirmschoners</string>
+    <string name="edit_metadata_title">Metadaten bearbeiten</string>
+    <string name="meta_data_type_dialog_title">Typ</string>
+    <string name="meta_data_type_desc">Typ der Metadaten</string>
+    <string name="meta_data_type_title">Typ der Metadaten</string>
+    <string name="meta_data_order_dialog_title">Reihenfolge</string>
+    <string name="meta_data_order_desc">Reihenfolge der Metadaten</string>
+    <string name="meta_data_order_title">Reihenfolge der Metadaten</string>
+    <string name="meta_data_font_size_title">Schriftgröße</string>
+    <string name="meta_data_font_size_dialog_title">Schriftgröße</string>
+    <string name="meta_data_padding_title">Abstand</string>
+    <string name="meta_data_padding_dialog_title">Abstand über und unter dem Element</string>
+    <string name="meta_data_delete_desc">Element löschen</string>
+    <string name="meta_data_save_desc">Element speichern</string>
+    <string name="favorite_added">Zu Favoriten hinzugefügt</string>
+    <string name="favorite_removed">Aus Favoriten entfernt</string>
+    <string name="favorite_add_failed">Hinzufügen zu Favoriten fehlgeschlagen</string>
+    <string name="favorite_remove_failed">Entfernen aus Favoriten fehlgeschlagen</string>
+
+    <!-- Screensaver transitions -->
+    <string name="screensaver_transition">Übergang</string>
+    <string name="screensaver_transition_desc">Wie der Bildschirmschoner von einem Foto zum nächsten wechselt. „Neues Medium hineinschieben“ muss aktiviert sein.</string>
+    <string name="screensaver_transition_duration">Dauer des Übergangs</string>
+    <string name="screensaver_transition_duration_desc">Wie lange der Übergang dauert (gilt nicht für „Schieben“, das die Geschwindigkeit der Wischanimation nutzt)</string>
+    <string name="transition_slide">Schieben</string>
+    <string name="transition_crossfade">Überblenden</string>
+    <string name="transition_fade_through">Ausblenden und einblenden</string>
+    <string name="transition_zoom">Zoom</string>
+    <string name="transition_depth">Tiefe</string>
+    <string name="transition_parallax">Parallaxe</string>
+    <string name="transition_cube">Würfel</string>
+    <string name="transition_random">Zufällig</string>
+    <string name="classic_timeline">Klassische Zeitleiste (Kompatibilität)</string>
+    <string name="classic_timeline_desc">Die ältere Zeitleiste verwenden, falls die neue auf deinem Gerät Probleme macht. Wirkt beim nächsten Öffnen der Zeitleiste.</string>
+    <string name="timeline_empty_title">Noch keine Fotos</string>
+    <string name="timeline_empty_body">Fotos, die du zu Immich hinzufügst, erscheinen hier.</string>
+    <string name="timeline_error_title">Deine Zeitleiste konnte nicht geladen werden</string>
+</resources>

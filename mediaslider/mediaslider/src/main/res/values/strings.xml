@@ -25,6 +25,9 @@
     <string name="media_pause">Pause</string>
     <string name="open_in_external_player">Open in external player</string>
     <string name="no_external_player_found">No external player found</string>
+    <string name="cannot_play_video">Cannot play video: %1$s</string>
+    <string name="volume_changed_unmuting">Volume changed, unmuting video</string>
+    <string name="no_items_received">No items received to show in slideshow</string>
     <string name="story_progress_count">%1$d/%2$d</string>
 
     <string name="api_key" translatable="false">api_key</string>
