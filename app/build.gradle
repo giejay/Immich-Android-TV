@@ -6,6 +6,7 @@ plugins {
     alias libs.plugins.navigation.safeargs.kotlin
     alias libs.plugins.google.devtools.ksp
     alias libs.plugins.kotlin.compose
+    alias libs.plugins.androidx.baselineprofile
 }
 
 android {
@@ -83,6 +84,8 @@ kotlin {
 }
 
 dependencies {
+    implementation libs.androidx.profileinstaller
+    baselineProfile project(':baselineprofile')
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation libs.kotlin.reflect
     implementation project(path: ':mediaslider:mediaslider')

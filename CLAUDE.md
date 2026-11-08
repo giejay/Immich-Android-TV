@@ -14,8 +14,11 @@ Requires JDK 17, Android SDK (`local.properties` with `sdk.dir=/home/daniii/Andr
 ./gradlew assembleDebug                 # output: app/build/outputs/apk/debug/ImmichAndroidTVNext-<version>.apk
 ./gradlew testDebugUnitTest             # all unit tests (Robolectric + Mockito + Truth)
 ./gradlew :app:testDebugUnitTest --tests "nl.giejay.android.tv.immich.timeline.TimelineViewModelTest"   # single class
+./gradlew :app:generateBaselineProfile  # regenerate the baseline profile on a connected device (app signed in), writes app/src/release/generated/baselineProfiles
+./gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest   # startup / timeline scroll benchmarks with and without the profile (use the real TV)
 ```
 
+- `assembleRelease` signs with the debug key when no keystore exists and `CI` is unset (CI keeps requiring the real keystore). The `:baselineprofile` module (journey in `Journey.kt`, `BaselineProfileGenerator`, `Benchmarks`) generates the profile that is committed under `app/src/release/generated/baselineProfiles`; regenerate it after bigger UI changes.
 - Untracked local file needed to build (git-ignored, must stay a placeholder and never be committed): `app/src/main/res/values/strings_other.xml` (copy of `app/strings_other.xml.example`).
 - Spotless/ktlint is configured but `enforceCheck false`; don't expect it to gate builds.
 - `gradle/gradle-daemon-jvm.properties` requests toolchain 25; the environment has JDK 17 (build works regardless).
