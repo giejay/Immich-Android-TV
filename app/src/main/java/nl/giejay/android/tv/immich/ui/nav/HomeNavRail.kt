@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.ui.nav
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import nl.giejay.android.tv.immich.R
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -98,6 +104,7 @@ fun HomeNavRail(
             .padding(horizontal = 12.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        NavRailBrand(expanded)
         items.forEach { item ->
             if (item.separated) Spacer(Modifier.height(12.dp))
             val selected = item.key == selectedKey
@@ -122,6 +129,36 @@ fun HomeNavRail(
         }
     }
 }
+
+/** App logo at the very top of the rail; with the labels expanded the name is shown next to it. */
+@Composable
+private fun NavRailBrand(expanded: Boolean) {
+    Row(
+        Modifier.fillMaxWidth().height(BrandHeight).padding(start = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(R.drawable.icon),
+            contentDescription = stringResource(R.string.nav_brand),
+            modifier = Modifier.size(LogoSize).clip(RoundedCornerShape(9.dp)),
+        )
+        if (expanded) {
+            Text(
+                text = stringResource(R.string.nav_brand),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 14.dp),
+            )
+        }
+    }
+}
+
+/** Kept low enough that the logo row on top still leaves all entries on a 1080p screen. */
+private val EntryHeight = 40.dp
+private val BrandHeight = 40.dp
+private val LogoSize = 32.dp
 
 @Composable
 private fun NavRailEntry(
@@ -159,7 +196,7 @@ private fun NavRailEntry(
             },
     ) {
         Row(
-            Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 14.dp),
+            Modifier.fillMaxWidth().height(EntryHeight).padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(item.icon, contentDescription = if (expanded) null else label, modifier = Modifier.size(24.dp))

@@ -325,4 +325,5 @@
     <string name="transition_random">Random</string>
     <string name="experimental_compose_timeline">Experimental Compose timeline</string>
     <string name="experimental_compose_timeline_desc">Show the new Compose version of the timeline. Work in progress, may be incomplete.</string>
+    <string name="nav_brand" translatable="false">Immich Next</string>
 </resources>
