@@ -3,14 +3,9 @@ package nl.giejay.mediaslider.plugin
 import android.content.Context
 import android.os.Handler
 import android.view.KeyEvent
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageButton
+import androidx.compose.runtime.State
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
-import com.zeuskartik.mediaslider.R
 import kotlinx.coroutines.CoroutineScope
 import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.overlay.SliderOverlayState
@@ -26,11 +21,20 @@ enum class ControllerButtonPlacement {
     RIGHT_OF
 }
 
-data class ControllerButtonSpec(
-    val button: ImageButton,
+/**
+ * A button a plugin adds to the controller row. [icon] is observable so a click can swap it (favorite);
+ * [anchorId] is a [nl.giejay.mediaslider.controller.ControllerIds] value for LEFT_OF / RIGHT_OF.
+ */
+class ControllerButtonSpec(
+    val description: String,
+    val icon: State<Int>,
+    val onClick: () -> Unit,
     val placement: ControllerButtonPlacement,
-    val anchorViewId: Int? = null
+    val anchorId: String? = null,
+    val id: String = "plugin_" + nextPluginButtonId.incrementAndGet(),
 )
+
+private val nextPluginButtonId = java.util.concurrent.atomic.AtomicInteger()
 
 enum class SliderKeyEventResult {
     UNHANDLED,
@@ -95,20 +99,6 @@ data class ControllerPluginContext(
 
 interface SliderControllerPlugin {
     fun provideControllerButton(context: ControllerPluginContext): ControllerButtonSpec? = null
-
-    fun createDefaultControllerButton(
-        context: ControllerPluginContext,
-        @StringRes contentDescriptionRes: Int,
-        @DrawableRes iconRes: Int
-    ): ImageButton {
-        val row = context.rootView.findViewById<ViewGroup>(R.id.media_controller_button_row)
-        return (LayoutInflater.from(context.context).inflate(R.layout.controller_plugin_button, row, false) as ImageButton).apply {
-            id = View.generateViewId()
-            tag = "controller_plugin_button"
-            contentDescription = context.context.getString(contentDescriptionRes)
-            setImageResource(iconRes)
-        }
-    }
 
     fun onConfigureController(context: ControllerPluginContext) {}
     fun onControllerVisibilityChanged(isVisible: Boolean, rootView: View, controller: MediaSliderController, config: MediaSliderConfiguration) {}

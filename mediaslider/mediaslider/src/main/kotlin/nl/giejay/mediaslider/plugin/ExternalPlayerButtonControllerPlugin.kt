@@ -4,13 +4,14 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
-import android.view.View
+import androidx.compose.runtime.mutableStateOf
 import android.widget.Toast
 import com.zeuskartik.mediaslider.R
+import nl.giejay.mediaslider.controller.ControllerIds
 
 class ExternalPlayerButtonControllerPlugin(
     private val placement: ControllerButtonPlacement = ControllerButtonPlacement.RIGHT_OF,
-    private val anchorViewId: Int = R.id.image_slideshow
+    private val anchorId: String = ControllerIds.SLIDESHOW
 ) : SliderControllerPlugin {
     override fun provideControllerButton(context: ControllerPluginContext): ControllerButtonSpec? {
         val canOpenExternally = context.isVideo && !context.sliderItem.url.isNullOrBlank()
@@ -18,13 +19,7 @@ class ExternalPlayerButtonControllerPlugin(
             return null
         }
 
-        val externalPlayerButton = createDefaultControllerButton(
-            context = context,
-            contentDescriptionRes = R.string.open_in_external_player,
-            iconRes = R.drawable.ic_open_external
-        )
-        externalPlayerButton.visibility = View.VISIBLE
-        externalPlayerButton.setOnClickListener {
+        val onClick: () -> Unit = {
             val url = context.sliderItem.url
             if (!url.isNullOrBlank()) {
                 val viewIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -45,9 +40,11 @@ class ExternalPlayerButtonControllerPlugin(
             }
         }
         return ControllerButtonSpec(
-            button = externalPlayerButton,
+            description = context.context.getString(R.string.open_in_external_player),
+            icon = mutableStateOf(R.drawable.ic_open_external),
+            onClick = onClick,
             placement = placement,
-            anchorViewId = anchorViewId
+            anchorId = anchorId
         )
     }
 }

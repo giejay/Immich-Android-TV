@@ -6,28 +6,22 @@ import android.os.Handler
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.SeekBar
-import android.widget.TextView
-import androidx.core.view.children
-import androidx.core.view.isVisible
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.controller.ControllerFocusRequest
+import nl.giejay.mediaslider.controller.ControllerLayout
+import nl.giejay.mediaslider.controller.SliderControllerUiState
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
-import nl.giejay.mediaslider.plugin.ControllerButtonPlacement
 import nl.giejay.mediaslider.plugin.ControllerPluginContext
 import nl.giejay.mediaslider.plugin.SliderKeyEventResult
 import nl.giejay.mediaslider.plugin.SliderKeyEventState
 import nl.giejay.mediaslider.util.MediaSliderListener
 import timber.log.Timber
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 /**
  * Handles all control logic for the media slider:
@@ -44,7 +38,9 @@ class MediaSliderController(
     private val pager: ViewPager,
     /** The centre play/pause overlay indicator shown briefly on slideshow toggle. */
     private val playButtonView: View,
-    private val controllerRootView: View
+    private val controllerRootView: View,
+    /** State of the Compose controller bar (see [SliderControllerBar]); owned by [MediaSliderView]. */
+    private val uiState: SliderControllerUiState
 ) {
     private lateinit var config: MediaSliderConfiguration
 
@@ -57,9 +53,6 @@ class MediaSliderController(
     /** Currently active ExoPlayer (for the video page that is in view). */
     var currentPlayer: ExoPlayer? = null
         private set
-
-    /** True while the user is actively dragging the seek bar. */
-    private var isSeeking = false
 
     private var reverseSlideShowDirection = false
     private val goToNextAssetRunnable = Runnable { goToNextAsset() }
@@ -102,8 +95,7 @@ class MediaSliderController(
     }
 
     fun onIsPlayingChanged(isPlaying: Boolean) {
-        controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
-            ?.let { updatePlayPauseIcon(it, isPlaying) }
+        uiState.isPlaying = isPlaying
 
         if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
             if (isPlaying) {
@@ -225,25 +217,25 @@ class MediaSliderController(
      * Returns true if the event was consumed (controller shown or already visible).
      */
     private fun toggleOverlayControls(): Boolean {
-        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: return false
-        if (controller.isVisible) {
+        if (_isControllerVisible) {
             hideOverlayControls()
             return true
         }
-        controller.visibility = View.VISIBLE
+        uiState.visible = true
         _isControllerVisible = true
         config.controllerPlugins.forEach { it.onControllerVisibilityChanged(true, controllerRootView, this, config) }
 
-        requestInitialControllerFocus()
+        val isVideo = currentItemTypeOrNull() == SliderItemType.VIDEO
+        uiState.focusRequest = ControllerFocusRequest(ControllerLayout.initialFocus(isVideo, reverseSlideShowDirection))
 
-        if (currentItemTypeOrNull() == SliderItemType.VIDEO) {
+        if (isVideo) {
             startProgressUpdates()
         }
         return true
     }
 
     fun hideOverlayControls() {
-        controllerRootView.findViewById<View>(R.id.image_controller)?.visibility = View.GONE
+        uiState.visible = false
         _isControllerVisible = false
         config.controllerPlugins.forEach { it.onControllerVisibilityChanged(false, controllerRootView, this, config) }
         stopProgressUpdates()
@@ -257,77 +249,51 @@ class MediaSliderController(
      * so D-pad navigation is not interrupted when the page changes.
      */
     fun configureController(sliderItem: SliderItemViewHolder, sliderItemIndex: Int) {
-        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: run {
-            _isControllerVisible = false
-            return
-        }
         val keepVisible = _isControllerVisible
-        val focusSnapshot = if (keepVisible) captureControllerFocus() else null
+        val previousFocusId = uiState.focusedId
+        val previousFocusIndex = uiState.focusedIndex
 
         stopProgressUpdates()
-
-        val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
-        val slideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow) ?: return
-        val reverseSlideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow_reverse) ?: return
-        val nextButton = controllerRootView.findViewById<ImageButton>(R.id.image_next) ?: return
-        val muteButton = controllerRootView.findViewById<ImageButton>(R.id.media_mute)
-        val playPauseButton = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
-        val progressLayout = controllerRootView.findViewById<View>(R.id.media_progress_layout)
-        val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
-        val buttonRow = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row)
-
-        // clear any existing plugin buttons from the previous page before adding new ones for this page
-        buttonRow.children.filter { it.tag == "controller_plugin_button" }.forEach { buttonRow.removeView(it) }
 
         val isVideo = sliderItem.type == SliderItemType.VIDEO
         val hasSecondaryItem = sliderItem.hasSecondaryItem()
 
-        previousButton.setOnClickListener { goToPreviousAsset() }
-        slideshowButton.setOnClickListener { toggleSlideshow(true, false) }
-        reverseSlideshowButton.setOnClickListener { toggleSlideshow(true, true) }
-        nextButton.setOnClickListener { goToNextAsset() }
-
-        muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
-        playPauseButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
-        progressLayout?.visibility = if (isVideo) View.VISIBLE else View.GONE
+        uiState.isVideo = isVideo
+        uiState.onPrevious = { goToPreviousAsset() }
+        uiState.onNext = { goToNextAsset() }
+        uiState.onSlideshow = { toggleSlideshow(true, false) }
+        uiState.onSlideshowReverse = { toggleSlideshow(true, true) }
+        uiState.isPlaying = currentPlayer?.isPlaying == true
+        uiState.positionMs = 0L
+        uiState.durationMs = 0L
 
         if (isVideo) {
-            val soundEnabled = (currentPlayer?.volume ?: 0f) > 0f
-            muteButton?.let { button ->
-                updateMuteIcon(button, soundEnabled)
-                button.setOnClickListener {
-                    currentPlayer?.let { player ->
-                        if (player.volume == 0f) {
-                            player.volume = 1f
-                            config.isVideoSoundEnable = true
-                            updateMuteIcon(button, true)
-                        } else {
-                            player.volume = 0f
-                            config.isVideoSoundEnable = false
-                            updateMuteIcon(button, false)
+            uiState.soundOn = (currentPlayer?.volume ?: 0f) > 0f
+            uiState.onMute = {
+                currentPlayer?.let { player ->
+                    val soundOn = player.volume == 0f
+                    player.volume = if (soundOn) 1f else 0f
+                    config.isVideoSoundEnable = soundOn
+                    uiState.soundOn = soundOn
+                }
+            }
+            uiState.onPlayPause = {
+                currentPlayer?.let { player ->
+                    if (player.isPlaying) {
+                        player.pause()
+                    } else {
+                        if (player.currentPosition >= player.contentDuration) {
+                            player.seekToDefaultPosition()
                         }
+                        player.play()
                     }
                 }
             }
-
-            playPauseButton?.let { button ->
-                updatePlayPauseIcon(button, currentPlayer?.isPlaying == true)
-                button.setOnClickListener {
-                    currentPlayer?.let { player ->
-                        if (player.isPlaying) {
-                            player.pause()
-                        } else {
-                            if (player.currentPosition >= player.contentDuration) {
-                                player.seekToDefaultPosition()
-                            }
-                            player.play()
-                        }
-                    }
-                }
-            }
-            seekBar?.setOnSeekBarChangeListener(defaultSeekBarChangeListener())
+            uiState.onSeekTo = { positionMs -> currentPlayer?.seekTo(positionMs) }
         } else {
-            seekBar?.setOnSeekBarChangeListener(null)
+            uiState.onMute = {}
+            uiState.onPlayPause = {}
+            uiState.onSeekTo = {}
         }
 
         val pluginContext = ControllerPluginContext(
@@ -341,31 +307,25 @@ class MediaSliderController(
             controller = this
         )
 
-        // Let plugins add/remove optional controls for this page before configuring behavior.
-        config.controllerPlugins.forEach { plugin ->
-            val buttonSpec = plugin.provideControllerButton(pluginContext) ?: return@forEach
-            placeMediaControllerButton(
-                buttonSpec.button,
-                buttonSpec.placement,
-                buttonSpec.anchorViewId
-            )
-        }
+        // Plugins contribute buttons for this page; placement is resolved by ControllerLayout.
+        uiState.pluginButtons = config.controllerPlugins.mapNotNull { it.provideControllerButton(pluginContext) }
         config.controllerPlugins.forEach { it.onConfigureController(pluginContext) }
 
-        setupFocusNavigation(buttonRow, seekBar, isVideo, playPauseButton, previousButton)
-
         if (keepVisible) {
-            controller.visibility = View.VISIBLE
+            uiState.visible = true
             _isControllerVisible = true
             config.controllerPlugins.forEach {
                 it.onControllerVisibilityChanged(true, controllerRootView, this, config)
             }
-            restoreControllerFocus(focusSnapshot)
+            val chain = ControllerLayout.focusChain(isVideo, uiState.pluginButtons)
+            uiState.focusRequest = ControllerFocusRequest(
+                ControllerLayout.restoreFocus(previousFocusId, previousFocusIndex, chain, isVideo, reverseSlideShowDirection)
+            )
             if (isVideo) {
                 startProgressUpdates()
             }
         } else {
-            controller.visibility = View.GONE
+            uiState.visible = false
             _isControllerVisible = false
         }
     }
@@ -375,7 +335,7 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun toggleMute() {
-        controllerRootView.findViewById<ImageButton>(R.id.media_mute)?.performClick()
+        uiState.onMute()
     }
 
     fun dispatchKeyEvent(event: KeyEvent, superDispatch: () -> Boolean): Boolean {
@@ -493,178 +453,6 @@ class MediaSliderController(
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private fun setupFocusNavigation(
-        buttonRow: LinearLayout?,
-        seekBar: SeekBar?,
-        isVideo: Boolean,
-        playPauseButton: ImageButton?,
-        fallbackUpButton: ImageButton
-    ) {
-        val row = buttonRow ?: return
-        val chain = mutableListOf<ImageButton>()
-        for (i in 0 until row.childCount) {
-            val view = row.getChildAt(i)
-            if (view is ImageButton && view.isVisible) {
-                chain.add(view)
-            }
-        }
-
-        for (i in chain.indices) {
-            if (i > 0) chain[i].nextFocusLeftId = chain[i - 1].id
-            if (i < chain.size - 1) chain[i].nextFocusRightId = chain[i + 1].id
-        }
-
-        // Wire up/down navigation between the buttons row and the seekbar
-        if (isVideo && seekBar != null && chain.isNotEmpty()) {
-            chain.forEach { button -> button.nextFocusDownId = R.id.media_seek_bar }
-            seekBar.nextFocusUpId = (playPauseButton ?: fallbackUpButton).id
-        }
-    }
-
-    private fun findChildIndexById(row: LinearLayout, viewId: Int): Int {
-        for (i in 0 until row.childCount) {
-            if (row.getChildAt(i).id == viewId) return i
-        }
-        return -1
-    }
-
-    private fun requestInitialControllerFocus() {
-        val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row) ?: return
-        val isVideo = currentItemTypeOrNull() == SliderItemType.VIDEO
-        if (isVideo) {
-            val playPause = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
-            if (playPause?.visibility == View.VISIBLE) {
-                playPause.requestFocus()
-                return
-            }
-        }
-        val slideshow = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow)
-        val reverseSlideshow = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow_reverse)
-        if (!isVideo && slideshow?.visibility == View.VISIBLE) {
-            if(reverseSlideShowDirection){
-                reverseSlideshow.requestFocus()
-            }
-            else {
-                slideshow.requestFocus()
-            }
-            return
-        }
-        for (i in 0 until row.childCount) {
-            val child = row.getChildAt(i)
-            if (child is ImageButton && child.isVisible) {
-                child.requestFocus()
-                return
-            }
-        }
-    }
-
-    /**
-     * Snapshot of which controller control had focus before a page reconfigure.
-     * [viewId] is stable for built-in controls; [index] helps for plugin buttons
-     * that get new generated ids each page.
-     */
-    private data class ControllerFocusSnapshot(val viewId: Int, val index: Int)
-
-    private fun captureControllerFocus(): ControllerFocusSnapshot? {
-        val controller = controllerRootView.findViewById<View>(R.id.image_controller) ?: return null
-        val focused = controller.findFocus() ?: return null
-        val chain = visibleControllerFocusables()
-        return ControllerFocusSnapshot(focused.id, chain.indexOf(focused))
-    }
-
-    private fun restoreControllerFocus(snapshot: ControllerFocusSnapshot?) {
-        if (snapshot == null) {
-            requestInitialControllerFocus()
-            return
-        }
-
-        fun requestIfFocusable(viewId: Int): Boolean {
-            val view = controllerRootView.findViewById<View>(viewId) ?: return false
-            if (!view.isVisible || !view.isFocusable) return false
-            view.requestFocus()
-            return true
-        }
-
-        // Same control still present (prev/next/slideshow, or seek bar on video→video).
-        if (snapshot.viewId != View.NO_ID && requestIfFocusable(snapshot.viewId)) {
-            return
-        }
-
-        // Photo ↔ video: map play/pause ↔ slideshow; mute/seek → nearest stable control.
-        val semanticFallback = when (snapshot.viewId) {
-            R.id.media_play_pause -> R.id.image_slideshow
-            R.id.image_slideshow -> {
-                val playPause = controllerRootView.findViewById<View>(R.id.media_play_pause)
-                if (playPause != null && playPause.isVisible) R.id.media_play_pause
-                else R.id.image_slideshow
-            }
-            R.id.media_mute -> R.id.image_previous
-            R.id.media_seek_bar -> {
-                val playPause = controllerRootView.findViewById<View>(R.id.media_play_pause)
-                if (playPause != null && playPause.isVisible) R.id.media_play_pause
-                else R.id.image_slideshow
-            }
-            else -> null
-        }
-        if (semanticFallback != null && requestIfFocusable(semanticFallback)) {
-            return
-        }
-
-        // Same slot in the visible focus chain (plugin buttons / relative position).
-        val chain = visibleControllerFocusables()
-        if (chain.isNotEmpty()) {
-            val index = when {
-                snapshot.index >= 0 -> snapshot.index.coerceIn(0, chain.lastIndex)
-                else -> 0
-            }
-            chain[index].requestFocus()
-            return
-        }
-
-        requestInitialControllerFocus()
-    }
-
-    private fun visibleControllerFocusables(): List<View> {
-        val rowButtons = controllerRootView
-            .findViewById<LinearLayout>(R.id.media_controller_button_row)
-            ?.children
-            ?.filter { it.isVisible && it.isFocusable }
-            ?.toList()
-            .orEmpty()
-        val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar)
-            ?.takeIf { it.isVisible && it.isFocusable }
-        return if (seekBar != null) rowButtons + seekBar else rowButtons
-    }
-
-    fun updateMuteIcon(button: ImageButton, soundEnabled: Boolean) {
-        button.setImageResource(if (soundEnabled) R.drawable.ic_ctrl_volume_on else R.drawable.ic_ctrl_volume_off)
-    }
-
-    fun updatePlayPauseIcon(button: ImageButton, isPlaying: Boolean) {
-        button.setImageResource(
-            if (isPlaying) R.drawable.ic_ctrl_pause
-            else R.drawable.ic_ctrl_play
-        )
-    }
-
-    fun defaultSeekBarChangeListener(): SeekBar.OnSeekBarChangeListener {
-        return object : SeekBar.OnSeekBarChangeListener {
-            override fun onStartTrackingTouch(seekBar: SeekBar) {
-                isSeeking = true
-            }
-
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    currentPlayer?.seekTo(progress.toLong() * 1000)
-                }
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar) {
-                isSeeking = false
-            }
-        }
-    }
-
     private fun showTemporaryPlayIndicator() {
         playButtonView.visibility = View.VISIBLE
         playButtonView.setBackgroundResource(
@@ -675,31 +463,6 @@ class MediaSliderController(
             playButtonView.visibility = View.GONE
             restorePagerFocus()
         }, 2000)
-    }
-
-    private fun placeMediaControllerButton(button: ImageButton, placement: ControllerButtonPlacement, anchorViewId: Int?) {
-        val row = controllerRootView.findViewById<LinearLayout>(R.id.media_controller_button_row) ?: return
-        if (button.parent !== row) {
-            (button.parent as? LinearLayout)?.removeView(button)
-            row.addView(button)
-        }
-        val currentIndex = row.indexOfChild(button)
-        if (currentIndex >= 0) {
-            row.removeViewAt(currentIndex)
-        }
-        val targetIndex = when (placement) {
-            ControllerButtonPlacement.START -> 0
-            ControllerButtonPlacement.END -> row.childCount
-            ControllerButtonPlacement.LEFT_OF -> {
-                val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
-                if (anchorIndex >= 0) anchorIndex else row.childCount
-            }
-            ControllerButtonPlacement.RIGHT_OF -> {
-                val anchorIndex = anchorViewId?.let { findChildIndexById(row, it) } ?: -1
-                if (anchorIndex >= 0) (anchorIndex + 1).coerceAtMost(row.childCount) else row.childCount
-            }
-        }
-        row.addView(button, targetIndex)
     }
 
     private fun startProgressUpdates() {
@@ -715,28 +478,8 @@ class MediaSliderController(
         val player = currentPlayer ?: return
         val duration = player.contentDuration
         if (duration <= 0) return
-
-        val seekBar = controllerRootView.findViewById<SeekBar>(R.id.media_seek_bar) ?: return
-        val positionText = controllerRootView.findViewById<TextView>(R.id.media_position) ?: return
-        val durationText = controllerRootView.findViewById<TextView>(R.id.media_duration) ?: return
-
-        val position = player.currentPosition
-        if (!isSeeking) {
-            val durationInSeconds = (duration / 1000).toInt()
-            if (seekBar.max != durationInSeconds) {
-                seekBar.max = durationInSeconds
-            }
-            seekBar.progress = (position / 1000).toInt()
-        }
-        positionText.text = formatDuration(position)
-        durationText.text = formatDuration(duration)
-    }
-
-    private fun formatDuration(ms: Long): String {
-        val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(ms)
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
+        uiState.durationMs = duration
+        uiState.positionMs = player.currentPosition
     }
 
     fun setKeepScreenOnFlags() {

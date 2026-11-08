@@ -35,6 +35,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.mediaslider.adapter.ScreenSlidePagerAdapter
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.controller.SliderControllerBar
+import nl.giejay.mediaslider.controller.SliderControllerUiState
+import nl.giejay.mediaslider.overlay.createOverlayView
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.MetadataViewPlugin
@@ -78,6 +81,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     // internal
     protected val controller: MediaSliderController
+    private val controllerState = SliderControllerUiState()
     private var defaultExoFactory = DefaultHttpDataSource.Factory()
     private var pagerAdapter: ScreenSlidePagerAdapter? = null
     private var loading = false
@@ -98,7 +102,9 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
         val playButton: View = findViewById(R.id.playPause)
         mPager = findViewById(R.id.pager)
-        controller = MediaSliderController(context, mainHandler, mPager, playButton, this)
+        val controllerHost = findViewById<android.widget.FrameLayout>(R.id.controller_host)
+        controllerHost.addView(createOverlayView(context) { SliderControllerBar(controllerState) })
+        controller = MediaSliderController(context, mainHandler, mPager, playButton, this, controllerState)
         playButton.setOnClickListener { controller.toggleSlideshow(true) }
     }
 
