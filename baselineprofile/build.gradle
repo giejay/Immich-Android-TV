@@ -1,0 +1,55 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias libs.plugins.android.test
+    alias libs.plugins.androidx.baselineprofile
+}
+
+// Generates the baseline profile of :app by driving a user journey on a connected device or emulator:
+//   ./gradlew :app:generateBaselineProfile
+// The result is written to app/src/release/generated/baselineProfiles and committed, so CI and release
+// builds ship it without needing a device. Macrobenchmarks (startup, scrolling) live here too.
+android {
+    namespace 'nl.giejay.android.tv.immich.baselineprofile'
+    compileSdk 37
+
+    defaultConfig {
+        minSdk 28
+        targetSdk 37
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    targetProjectPath = ":app"
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
+}
+
+baselineProfile {
+    useConnectedDevices = true
+}
+
+dependencies {
+    implementation libs.androidx.junit
+    implementation libs.androidx.espresso.core
+    implementation libs.androidx.uiautomator
+    implementation libs.androidx.benchmark.macro.junit4
+}
+
+androidComponents {
+    onVariants(selector().all()) { v ->
+        def artifactsLoader = v.artifacts.getBuiltArtifactsLoader()
+        v.instrumentationRunnerArguments.put(
+            "targetAppId",
+            v.testedApks.map { artifactsLoader.load(it)?.applicationId }
+        )
+    }
+}

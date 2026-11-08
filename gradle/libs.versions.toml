@@ -1,5 +1,9 @@
 [versions]
 agp = "9.5.1"
+baselineprofile = "1.5.0"
+benchmark-macro = "1.5.0"
+profileinstaller = "1.4.1"
+uiautomator = "2.4.1"
 appcompat = "1.7.1"
 arrow-core = "2.2.3"
 compose-bom = "2026.09.00"
@@ -98,9 +102,14 @@ robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "
 rxandroid = { group = "io.reactivex.rxjava3", name = "rxandroid", version.ref = "rxandroid" }
 rxjava = { group = "io.reactivex.rxjava3", name = "rxjava", version.ref = "rxjava" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmark-macro" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 
 [plugins]
+android-test = { id = "com.android.test", version.ref = "agp" }
+androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprofile" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
