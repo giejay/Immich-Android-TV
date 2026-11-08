@@ -68,6 +68,19 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set up Gradle (caches the wrapper distribution and dependencies)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Download Gradle distribution (retry on GitHub hiccups)
+        run: |
+          chmod +x gradlew
+          for attempt in 1 2 3 4; do
+            ./gradlew --version && exit 0
+            echo "Gradle download failed (attempt $attempt), retrying in 30s"
+            sleep 30
+          done
+          exit 1
+
       - name: Extra strings file
         env:
           STRINGS_OTHER_BASE64: ${{secrets.STRINGS_OTHER}}
