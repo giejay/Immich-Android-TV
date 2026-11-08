@@ -1,32 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:id="@+id/browse_dummy"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent" >
+    android:id="@+id/grid_frame"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:descendantFocusability="afterDescendants"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
-    <androidx.leanback.widget.BrowseFrameLayout
-            android:id="@+id/grid_frame"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:descendantFocusability="afterDescendants"
+    <!-- Optional blurred-out artwork of the first item (preference "load background image"). -->
+    <ImageView
+        android:id="@+id/grid_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.35"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/grid_title"
+            style="@style/Title"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingStart="40dp"
+            android:paddingTop="24dp"
+            android:paddingEnd="40dp"
+            android:visibility="gone" />
 
         <FrameLayout
-                android:id="@+id/browse_grid_dock"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+            android:id="@+id/browse_grid_dock"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
             <ProgressBar
                 android:id="@+id/browse_progressbar"
-                android:visibility="visible"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:indeterminate="true"
-                android:theme="@style/ProgressBar"/>
+                android:theme="@style/ProgressBar"
+                android:visibility="visible" />
         </FrameLayout>
-
-
-
-    </androidx.leanback.widget.BrowseFrameLayout>
+    </LinearLayout>
 </FrameLayout>

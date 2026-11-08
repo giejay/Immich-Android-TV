@@ -25,9 +25,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import android.graphics.drawable.Drawable
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.leanback.app.BrandedSupportFragment
-import androidx.leanback.app.BrowseSupportFragment
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.ui.grid.ImmichCardGrid
@@ -37,12 +38,25 @@ import timber.log.Timber
 /**
  * A page that renders [Card]s in a Compose grid.
  *
- * Hosted by [nl.giejay.android.tv.immich.home.HomeFragment] or pushed on the nav graph. It keeps
- * the Leanback [BrandedSupportFragment] title view; only the grid itself is Compose.
+ * Hosted by [nl.giejay.android.tv.immich.home.HomeFragment] or pushed on the nav graph. The grid,
+ * the optional title and the optional background artwork are plain views / Compose; no Leanback.
  */
-open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
+open class GridFragment(val hideProgressBar: Boolean = false) : Fragment() {
     private var manuallySelectedPosition: Int = -1
     var progressBar: ProgressBar? = null
+    private var titleView: TextView? = null
+    private var backgroundView: ImageView? = null
+    private var pendingBackground: Drawable? = null
+
+    /** Optional heading shown above the grid (album / person name). */
+    var title: CharSequence? = null
+        set(value) {
+            field = value
+            titleView?.let {
+                it.text = value
+                it.visibility = if (value.isNullOrEmpty()) View.GONE else View.VISIBLE
+            }
+        }
 
     /** Cards shown in the grid. Mutate on the main thread only; replace items instead of editing them. */
     protected val cards = mutableStateListOf<Card>()
@@ -57,9 +71,6 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     protected open fun onCardClicked(index: Int, card: Card) {}
     protected open fun onCardFocused(index: Int, card: Card) {}
 
-    private val mMainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
-        BrowseSupportFragment.MainFragmentAdapter(this)
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -73,6 +84,11 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
         super.onViewCreated(view, savedInstanceState)
         val gridDock: ViewGroup = view.findViewById(R.id.browse_grid_dock)
         progressBar = gridDock.findViewById(R.id.browse_progressbar)
+        titleView = view.findViewById<TextView>(R.id.grid_title).also { tv ->
+            tv.text = title
+            tv.visibility = if (title.isNullOrEmpty()) View.GONE else View.VISIBLE
+        }
+        backgroundView = view.findViewById<ImageView>(R.id.grid_background).also { it.setImageDrawable(pendingBackground) }
         if (hideProgressBar) {
             progressBar?.visibility = View.GONE
         }
@@ -84,7 +100,6 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
                     onCardClick = { index, card -> onCardClicked(index, card as Card) },
                     onCardFocused = { index, card ->
                         lastFocusedIndex = index
-                        showOrHideTitle(index)
                         onCardFocused(index, card as Card)
                     },
                     focusIndexRequest = focusIndexRequest,
@@ -94,29 +109,24 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
             0,
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         )
-        installTitleView(LayoutInflater.from(requireContext()), gridDock, savedInstanceState)
-        mainFragmentAdapter.fragmentHost?.notifyViewCreated(mMainFragmentAdapter)
         // coming back to this page (e.g. from an album or the slider): focus the item the user left
         if (lastFocusedIndex > 0) {
             focusIndexRequest = lastFocusedIndex
         }
     }
 
-    /** Page title is only shown while the first grid row is focused (as before with Leanback). */
-    private fun showOrHideTitle(focusedIndex: Int) {
-        val inFirstRow = focusedIndex < columns
-        showTitle(inFirstRow)
-        mMainFragmentAdapter.fragmentHost?.showTitleView(inFirstRow)
+    /** Sets (or clears with null) the artwork drawn dimmed behind the grid. */
+    protected fun setBackgroundArtwork(drawable: Drawable?) {
+        pendingBackground = drawable
+        backgroundView?.setImageDrawable(drawable)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         Timber.i("${this.javaClass.simpleName} got destroyed")
         progressBar = null
-    }
-
-    override fun getMainFragmentAdapter(): BrowseSupportFragment.MainFragmentAdapter<*> {
-        return mMainFragmentAdapter
+        titleView = null
+        backgroundView = null
     }
 
     override fun onResume() {
