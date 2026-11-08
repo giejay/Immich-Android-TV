@@ -15,7 +15,7 @@
   -->
 
 <resources>
-    <string name="app_name" translatable="false">Immich TV</string>
+    <string name="app_name" translatable="false">Immich Android TV Next</string>
 
     <!-- Strings for the "No Firebase" screen -->
     <string name="no_firebase_title">Firebase not configured</string>
@@ -77,7 +77,6 @@
     <string name="server">Server</string>
     <string name="screensaver">Screensaver</string>
     <string name="debug">Debug</string>
-    <string name="donate">Donate</string>
     <string name="use_hd_thumbnails">Use high resolution thumbnails</string>
     <string name="use_hd_thumbnails_text">Use high resolution thumbnails instead of native/full images. Will dramatically speed up loading.</string>
     <string name="show_partner_photos_in_timeline">Show partner photos in timeline</string>
@@ -253,11 +252,6 @@
     <!-- Albums ordering -->
     <string name="albums_order_asset_count">Asset count</string>
 
-    <!-- Donate -->
-    <string name="donation_title">Donation</string>
-    <string name="donation_subtitle">Developing this app takes a lot of effort, if you would like to show your appreciation, you can donate using the following options.</string>
-    <string name="donation_exhausted">You have exhausted your donate options, thanks!</string>
-    <string name="donation_init_failed">Could not initialize donation service, sorry!</string>
 
     <!-- Ordering -->
     <string name="order_alphabetically_az">Alphabetically (A-Z)</string>
@@ -315,4 +309,18 @@
     <string name="favorite_removed">Removed from favorites</string>
     <string name="favorite_add_failed">Failed to add to favorites</string>
     <string name="favorite_remove_failed">Failed to remove from favorites</string>
+
+    <!-- Screensaver transitions -->
+    <string name="screensaver_transition">Transition</string>
+    <string name="screensaver_transition_desc">How the screensaver changes from one photo to the next. Needs "Slide the new asset in" to be on.</string>
+    <string name="screensaver_transition_duration">Transition duration</string>
+    <string name="screensaver_transition_duration_desc">How long the transition takes (does not apply to Slide, which uses the slide animation speed)</string>
+    <string name="transition_slide">Slide</string>
+    <string name="transition_crossfade">Crossfade</string>
+    <string name="transition_fade_through">Fade through</string>
+    <string name="transition_zoom">Zoom</string>
+    <string name="transition_depth">Depth</string>
+    <string name="transition_parallax">Parallax</string>
+    <string name="transition_cube">Cube</string>
+    <string name="transition_random">Random</string>
 </resources>

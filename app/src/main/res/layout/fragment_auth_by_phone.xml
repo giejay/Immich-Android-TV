@@ -18,7 +18,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/screen_white_70"
+    android:background="@color/gray_dark"
     android:paddingHorizontal="@dimen/overscan_horizontal"
     android:paddingVertical="@dimen/overscan_vertical">
 
@@ -27,6 +27,7 @@
         android:textAlignment="center"
         android:layout_gravity="center|top"
         android:layoutDirection="inherit"
+        android:textColor="@color/screen_white_70"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/scan_qr_below" />
@@ -38,6 +39,8 @@
         android:src="@drawable/ic_launcher_background"
         android:layout_gravity="center"
         android:layout_margin="100dp"
+        android:background="@android:color/white"
+        android:padding="12dp"
         android:layout_height="200dp">
     </ImageView>
 
@@ -55,7 +58,7 @@
         android:textAlignment="center"
         android:layout_gravity="center|bottom"
         android:textSize="@dimen/text_body"
-        android:textColor="@color/screen_black"
+        android:textColor="@color/screen_white_70"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/or_enter_code_on_site" />

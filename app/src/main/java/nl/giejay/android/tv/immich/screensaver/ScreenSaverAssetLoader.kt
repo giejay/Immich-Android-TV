@@ -23,6 +23,8 @@ import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ANIMATE_ASSET_SLIDE
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TRANSITION
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TRANSITION_DURATION
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INCLUDE_VIDEOS
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_PLAY_SOUND
@@ -87,6 +89,8 @@ internal fun buildScreenSaverConfiguration(
         maxCutOffWidth = PreferenceManager.get(SLIDER_MAX_CUT_OFF_HEIGHT),
         glideTransformation = PreferenceManager.get(SLIDER_GLIDE_TRANSFORMATION),
         enableSlideAnimation = PreferenceManager.get(SCREENSAVER_ANIMATE_ASSET_SLIDE),
+        transition = PreferenceManager.get(SCREENSAVER_TRANSITION).sliderTransition,
+        transitionDurationMillis = PreferenceManager.get(SCREENSAVER_TRANSITION_DURATION),
         gradiantOverlay = true,
         metaDataConfig = PreferenceManager.getAllMetaData(MetaDataScreen.SCREENSAVER),
         zoomAndScrollPanorama = PreferenceManager.get(SLIDER_ZOOM_SCROLL_PANORAMAS),

@@ -77,7 +77,6 @@
     <string name="server">Serveur</string>
     <string name="screensaver">Écran de veille</string>
     <string name="debug">Débogage</string>
-    <string name="donate">Faire un don</string>
     <string name="use_hd_thumbnails">Utiliser les miniatures haute résolution</string>
     <string name="use_hd_thumbnails_text">Utiliser les miniatures haute résolution au lieu des images natives/complètes. Cela accélérera considérablement le chargement.</string>
     <string name="show_partner_photos_in_timeline">Afficher les photos du partenaire dans la chronologie</string>
@@ -241,11 +240,6 @@
     <!-- Albums ordering -->
     <string name="albums_order_asset_count">Nombre d’éléments</string>
 
-    <!-- Donate -->
-    <string name="donation_title">Don</string>
-    <string name="donation_subtitle">Le développement de cette application demande beaucoup d’efforts. Si vous souhaitez montrer votre soutien, vous pouvez faire un don avec les options suivantes.</string>
-    <string name="donation_exhausted">Vous avez épuisé vos options de don, merci !</string>
-    <string name="donation_init_failed">Impossible d’initialiser le service de don, désolé !</string>
 
     <!-- Ordering -->
     <string name="order_alphabetically_az">Alphabétique (A-Z)</string>

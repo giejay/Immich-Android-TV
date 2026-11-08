@@ -1,6 +1,7 @@
 package nl.giejay.android.tv.immich.settings
 
 import android.app.Dialog
+import androidx.activity.ComponentDialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -69,7 +70,7 @@ class SettingsDialogFragment : DialogFragment() {
 //        )
 
         // creating the fullscreen dialog
-        val dialog = Dialog(requireContext())
+        val dialog = ComponentDialog(requireContext())
         val dialogWindow: Window? = dialog.window
         dialog.setContentView(root)
         dialogWindow!!.setBackgroundDrawable(ColorDrawable(Color.BLACK))

@@ -182,4 +182,19 @@
         <item>100</item>
     </string-array>
 
+
+    <string-array name="transition_duration_titles">
+        <item>0.6 seconds</item>
+        <item>0.9 seconds</item>
+        <item>1.2 seconds</item>
+        <item>1.8 seconds</item>
+        <item>2.5 seconds</item>
+    </string-array>
+    <string-array name="transition_duration_values">
+        <item>600</item>
+        <item>900</item>
+        <item>1200</item>
+        <item>1800</item>
+        <item>2500</item>
+    </string-array>
 </resources>

@@ -13,7 +13,7 @@
  */
 package nl.giejay.android.tv.immich.shared.fragment
 
-import android.annotation.SuppressLint
+
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -21,124 +21,44 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.fragment.app.Fragment
 import androidx.leanback.app.BrandedSupportFragment
 import androidx.leanback.app.BrowseSupportFragment
-import androidx.leanback.transition.TransitionHelper
-import androidx.leanback.widget.ArrayObjectAdapter
-import androidx.leanback.widget.OnChildLaidOutListener
-import androidx.leanback.widget.OnItemViewClickedListener
-import androidx.leanback.widget.OnItemViewSelectedListener
-import androidx.leanback.widget.VerticalGridPresenter
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.card.Card
+import nl.giejay.android.tv.immich.ui.grid.ImmichCardGrid
+import nl.giejay.android.tv.immich.ui.immichComposeView
 import timber.log.Timber
 
 /**
- * A fragment for rendering items in a vertical grids.
+ * A page that renders [Card]s in a Compose grid.
+ *
+ * Hosted by [nl.giejay.android.tv.immich.home.HomeFragment] or pushed on the nav graph. It keeps
+ * the Leanback [BrandedSupportFragment] title view; only the grid itself is Compose.
  */
 open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
     private var manuallySelectedPosition: Int = -1
-    private var mAdapter: ArrayObjectAdapter = ArrayObjectAdapter()
-    private var mGridPresenter: VerticalGridPresenter? = null
-    private var mGridViewHolder: VerticalGridPresenter.ViewHolder? = null
-    private var mOnItemViewSelectedListener: OnItemViewSelectedListener? = null
-    private var mOnItemViewClickedListener: OnItemViewClickedListener? = null
-    private var mSceneAfterEntranceTransition: Any? = null
     var progressBar: ProgressBar? = null
-    private var mSelectedPosition = -1
+
+    /** Cards shown in the grid. Mutate on the main thread only; replace items instead of editing them. */
+    protected val cards = mutableStateListOf<Card>()
+
+    /** Grid index the user last focused (or -1), used to restore focus after coming back. */
+    protected var lastFocusedIndex: Int = -1
+        private set
+
+    private var focusIndexRequest by mutableStateOf<Int?>(null)
+
+    protected open val columns: Int = 4
+    protected open fun onCardClicked(index: Int, card: Card) {}
+    protected open fun onCardFocused(index: Int, card: Card) {}
+
     private val mMainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
-        object : BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {
-            override fun setEntranceTransitionState(state: Boolean) {
-                this@GridFragment.setEntranceTransitionState(state)
-            }
-        }
-    var gridPresenter: VerticalGridPresenter?
-        /**
-         * Returns the grid presenter.
-         */
-        get() = mGridPresenter
-        /**
-         * Sets the grid presenter.
-         */
-        set(gridPresenter) {
-            requireNotNull(gridPresenter) { "Grid presenter may not be null" }
-            mGridPresenter = gridPresenter
-            mGridPresenter!!.onItemViewSelectedListener = mViewSelectedListener
-            if (mOnItemViewClickedListener != null) {
-                mGridPresenter!!.onItemViewClickedListener = mOnItemViewClickedListener
-            }
-        }
-    var adapter: ArrayObjectAdapter
-        /**
-         * Returns the object adapter.
-         */
-        get() = mAdapter
-        /**
-         * Sets the object adapter for the fragment.
-         */
-        set(adapter) {
-            mAdapter = adapter
-            updateAdapter()
-        }
-    private val mViewSelectedListener: OnItemViewSelectedListener =
-        OnItemViewSelectedListener { itemViewHolder, item, rowViewHolder, row ->
-            val position: Int = mGridViewHolder!!.gridView.selectedPosition
-            gridOnItemSelected(position)
-            if (mOnItemViewSelectedListener != null) {
-                mOnItemViewSelectedListener!!.onItemSelected(
-                    itemViewHolder, item,
-                    rowViewHolder, row
-                )
-            }
-        }
-    private val mChildLaidOutListener: OnChildLaidOutListener =
-        OnChildLaidOutListener { _, _, position, _ ->
-            if (position == 0) {
-                showOrHideTitle()
-            }
-        }
-
-    /**
-     * Sets an item selection listener.
-     */
-    fun setOnItemViewSelectedListener(listener: OnItemViewSelectedListener?) {
-        mOnItemViewSelectedListener = listener
-    }
-
-    private fun gridOnItemSelected(position: Int) {
-        mSelectedPosition = position
-        showOrHideTitle()
-    }
-
-    private fun showOrHideTitle() {
-        if (mGridViewHolder!!.gridView.findViewHolderForAdapterPosition(mSelectedPosition)
-            == null
-        ) {
-            return
-        }
-        if (!mGridViewHolder!!.gridView.hasPreviousViewInSameRow(mSelectedPosition)) {
-            showTitle(true)
-            mMainFragmentAdapter.fragmentHost?.showTitleView(true)
-        } else {
-            showTitle(false)
-            mMainFragmentAdapter.fragmentHost?.showTitleView(false)
-        }
-    }
-
-    var onItemViewClickedListener: OnItemViewClickedListener?
-        /**
-         * Returns the item clicked listener.
-         */
-        get() = mOnItemViewClickedListener
-        /**
-         * Sets an item clicked listener.
-         */
-        set(listener) {
-            mOnItemViewClickedListener = listener
-            if (mGridPresenter != null) {
-                mGridPresenter!!.onItemViewClickedListener = mOnItemViewClickedListener
-            }
-        }
+        BrowseSupportFragment.MainFragmentAdapter(this)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -149,7 +69,6 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
         return inflater.inflate(R.layout.grid_fragment, container, false)
     }
 
-    @SuppressLint("RestrictedApi")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val gridDock: ViewGroup = view.findViewById(R.id.browse_grid_dock)
@@ -157,43 +76,47 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
         if (hideProgressBar) {
             progressBar?.visibility = View.GONE
         }
+        gridDock.addView(
+            immichComposeView(requireContext()) {
+                ImmichCardGrid(
+                    cards = cards,
+                    columns = columns,
+                    onCardClick = { index, card -> onCardClicked(index, card as Card) },
+                    onCardFocused = { index, card ->
+                        lastFocusedIndex = index
+                        showOrHideTitle(index)
+                        onCardFocused(index, card as Card)
+                    },
+                    focusIndexRequest = focusIndexRequest,
+                    onFocusIndexRequestHandled = { focusIndexRequest = null },
+                )
+            },
+            0,
+            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
         installTitleView(LayoutInflater.from(requireContext()), gridDock, savedInstanceState)
-        mGridViewHolder = mGridPresenter?.onCreateViewHolder(gridDock)
-        mGridViewHolder?.view?.apply { gridDock.addView(this) }
-        mGridViewHolder?.gridView?.setOnChildLaidOutListener(mChildLaidOutListener)
-        mSceneAfterEntranceTransition =
-            TransitionHelper.createScene(gridDock) { setEntranceTransitionState(true) }
         mainFragmentAdapter.fragmentHost?.notifyViewCreated(mMainFragmentAdapter)
-        updateAdapter()
+        // coming back to this page (e.g. from an album or the slider): focus the item the user left
+        if (lastFocusedIndex > 0) {
+            focusIndexRequest = lastFocusedIndex
+        }
+    }
+
+    /** Page title is only shown while the first grid row is focused (as before with Leanback). */
+    private fun showOrHideTitle(focusedIndex: Int) {
+        val inFirstRow = focusedIndex < columns
+        showTitle(inFirstRow)
+        mMainFragmentAdapter.fragmentHost?.showTitleView(inFirstRow)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         Timber.i("${this.javaClass.simpleName} got destroyed")
-        mGridViewHolder = null
+        progressBar = null
     }
 
     override fun getMainFragmentAdapter(): BrowseSupportFragment.MainFragmentAdapter<*> {
         return mMainFragmentAdapter
-    }
-
-    /**
-     * Sets the selected item position.
-     */
-    private fun setSelectedPosition(position: Int) {
-        mSelectedPosition = position
-        if (mGridViewHolder != null && mGridViewHolder!!.gridView.adapter != null) {
-            mGridViewHolder!!.gridView.setSelectedPositionSmooth(position)
-        }
-    }
-
-    private fun updateAdapter() {
-        if (mGridViewHolder != null) {
-            mGridPresenter?.onBindViewHolder(mGridViewHolder!!, mAdapter)
-            if (mSelectedPosition != -1) {
-                updateSelectionPosition(mSelectedPosition)
-            }
-        }
     }
 
     override fun onResume() {
@@ -204,21 +127,13 @@ open class GridFragment(val hideProgressBar: Boolean = false) : BrandedSupportFr
     }
 
     protected open fun updateManualPositionHandler(selectedPosition: Int) {
-        Handler(Looper.getMainLooper()!!).postDelayed({
-            setSelectedPosition(selectedPosition)
+        Handler(Looper.getMainLooper()).postDelayed({
+            focusIndexRequest = selectedPosition
             manuallySelectedPosition = -1
         }, 100)
     }
 
     fun manualUpdatePosition(position: Int) {
         manuallySelectedPosition = position
-    }
-
-    private fun updateSelectionPosition(selectionPosition: Int) {
-        mGridViewHolder?.gridView?.selectedPosition = selectionPosition
-    }
-
-    fun setEntranceTransitionState(afterTransition: Boolean) {
-        mGridPresenter?.setEntranceTransitionState(mGridViewHolder!!, afterTransition)
     }
 }

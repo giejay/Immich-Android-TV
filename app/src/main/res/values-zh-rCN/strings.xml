@@ -75,7 +75,6 @@
     <string name="server">服务器</string>
     <string name="screensaver">屏保</string>
     <string name="debug">调试</string>
-    <string name="donate">捐赠</string>
     <string name="use_hd_thumbnails">使用高分辨率缩略图</string>
     <string name="use_hd_thumbnails_text">使用高分辨率缩略图代替原图/完整尺寸图片，可大幅提升加载速度。</string>
     <string name="show_partner_photos_in_timeline">在时间线中显示伴侣的照片</string>
@@ -250,11 +249,6 @@
     <!-- Albums ordering -->
     <string name="albums_order_asset_count">媒体项数量</string>
 
-    <!-- Donate -->
-    <string name="donation_title">捐赠</string>
-    <string name="donation_subtitle">开发本应用花费了大量心血，如果你想表达支持，欢迎通过以下方式捐赠。</string>
-    <string name="donation_exhausted">你已用完所有捐赠渠道，谢谢！</string>
-    <string name="donation_init_failed">抱歉，无法初始化捐赠服务！</string>
 
     <!-- Ordering -->
     <string name="order_alphabetically_az">按字母顺序（A-Z）</string>

@@ -1,55 +1,48 @@
 package nl.giejay.mediaslider.plugin
 
-import android.view.View
-import android.widget.LinearLayout
-import android.widget.ListView
-import androidx.constraintlayout.widget.ConstraintLayout
-import com.zeuskartik.mediaslider.R
 import android.os.Handler
+import android.view.View
+import androidx.constraintlayout.widget.ConstraintLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.mediaslider.adapter.AlignOption
-import nl.giejay.mediaslider.adapter.MetaDataAdapter
 import nl.giejay.mediaslider.adapter.MetaDataClock
+import nl.giejay.mediaslider.adapter.MetaDataItem
 import nl.giejay.mediaslider.adapter.MetaDataMediaCount
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
+import nl.giejay.mediaslider.overlay.MetadataOverlay
+import nl.giejay.mediaslider.overlay.OverlayLine
+import nl.giejay.mediaslider.overlay.SliderOverlayState
+import nl.giejay.mediaslider.overlay.createOverlayView
 import nl.giejay.mediaslider.view.MediaSliderController
 
+/** Bottom metadata (left/right columns) drawn by the Compose [MetadataOverlay]. */
 class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControllerPlugin {
+    private var overlayView: View? = null
+    private var currentState: MetadataRenderState? = null
+    private var controllerVisible = false
 
     override fun createState(context: SliderViewPluginContext, config: MediaSliderConfiguration): MetadataRenderState {
-        val rightAdapter = MetaDataAdapter(
-            context.context,
-            config.metaDataConfig.filter { it.align == AlignOption.RIGHT },
-            config.metaDataConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
-            {
-                val currentItem = context.currentItemProvider()
-                if (currentItem.hasSecondaryItem()) currentItem.secondaryItem!! else currentItem.mainItem
-            },
-            { context.currentItemProvider().hasSecondaryItem() }
-        )
-
-        val leftAdapter = MetaDataAdapter(
-            context.context,
-            config.metaDataConfig.filter { it.align == AlignOption.LEFT },
-            config.metaDataConfig.filterNot { it is MetaDataClock || it is MetaDataMediaCount }
+        return MetadataRenderState(
+            overlay = SliderOverlayState(),
+            leftItems = config.metaDataConfig.filter { it.align == AlignOption.LEFT },
+            leftPortraitItems = config.metaDataConfig.filterNot { it is MetaDataClock || it is MetaDataMediaCount }
                 .map { it.withAlign(align = AlignOption.LEFT) }
                 .distinct(),
-            { context.currentItemProvider().mainItem },
-            { context.currentItemProvider().hasSecondaryItem() }
-        )
-
-        return MetadataRenderState(leftAdapter, rightAdapter)
+            rightItems = config.metaDataConfig.filter { it.align == AlignOption.RIGHT },
+            rightPortraitItems = config.metaDataConfig.map { it.withAlign(align = AlignOption.RIGHT) }.distinct(),
+        ).also { currentState = it }
     }
 
     override fun attachView(rootView: ConstraintLayout, state: MetadataRenderState?) {
-        val view = View.inflate(rootView.context, R.layout.metadata_holder, null)
+        val pluginState = state ?: return
+        val view = createOverlayView(rootView.context) { MetadataOverlay(pluginState.overlay) }
         val params = ConstraintLayout.LayoutParams(
-            ConstraintLayout.LayoutParams.WRAP_CONTENT,
+            ConstraintLayout.LayoutParams.MATCH_CONSTRAINT,
             ConstraintLayout.LayoutParams.WRAP_CONTENT
         ).apply {
             startToStart = ConstraintLayout.LayoutParams.PARENT_ID
@@ -57,21 +50,7 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
             bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
         }
         rootView.addView(view, params)
-    }
-
-    override fun onLoadConfig(
-        context: SliderViewPluginContext,
-        config: MediaSliderConfiguration,
-        state: MetadataRenderState?
-    ) {
-        val pluginState = state ?: return
-        val listViewRight = context.rootView.findViewById<ListView>(R.id.metadata_view_right) ?: return
-        listViewRight.divider = null
-        listViewRight.adapter = pluginState.rightAdapter
-
-        val listViewLeft = context.rootView.findViewById<ListView>(R.id.metadata_view_left) ?: return
-        listViewLeft.divider = null
-        listViewLeft.adapter = pluginState.leftAdapter
+        overlayView = view
     }
 
     override fun onPageSettled(
@@ -82,66 +61,77 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         handler: Handler,
         state: MetadataRenderState?
     ) {
-        val currentState = state ?: return
-        val leftAdapter = currentState.leftAdapter
-        val rightAdapter = currentState.rightAdapter
+        val pluginState = state ?: return
+        // The dark gradient is only used for images; videos keep their own picture untouched.
+        pluginState.overlay.gradientAllowed = config.isGradiantOverlayVisible && sliderItem.type != SliderItemType.VIDEO
+        pluginState.overlay.gradientVisible = pluginState.overlay.gradientAllowed && !controllerVisible
 
-        // Disable the gradient overlay for video items if the config specifies it should be hidden
-        val metaDataHolderView = context.rootView.findViewById<LinearLayout>(R.id.meta_data_holder)
-        if (sliderItem.type == SliderItemType.VIDEO) {
-            if (config.isGradiantOverlayVisible) {
-                metaDataHolderView?.background = null
-            }
-        } else {
-            if (config.isGradiantOverlayVisible) {
-                metaDataHolderView?.setBackgroundResource(R.drawable.gradient_overlay)
-            }
+        val portrait = sliderItem.hasSecondaryItem()
+        val rightItem = if (portrait) sliderItem.secondaryItem!! else sliderItem.mainItem
+        context.ioScope.launch {
+            resolve(context, pluginState, "left", sliderItem.mainItem, sliderItemIndex, config, itemsFor(pluginState, left = true, portrait))
+            resolve(context, pluginState, "right", rightItem, sliderItemIndex, config, itemsFor(pluginState, left = false, portrait))
+            // the user may have moved on while resolving: always show the item that is current now
+            withContext(Dispatchers.Main) { publish(pluginState, context.currentItemProvider(), sliderItemIndex) }
         }
-
-        updateMetaData(context, leftAdapter, sliderItem.mainItem, sliderItemIndex, config)
-        updateMetaData(
-            context,
-            rightAdapter,
-            if (sliderItem.hasSecondaryItem()) sliderItem.secondaryItem!! else sliderItem.mainItem,
-            sliderItemIndex,
-            config
-        )
     }
 
     override fun onControllerVisibilityChanged(isVisible: Boolean, rootView: View, controller: MediaSliderController, config: MediaSliderConfiguration) {
-        if(isVisible && config.isGradiantOverlayVisible) {
-            rootView.findViewById<LinearLayout>(R.id.meta_data_holder)?.background = null
-        } else if(!isVisible && config.isGradiantOverlayVisible) {
-            rootView.findViewById<LinearLayout>(R.id.meta_data_holder)?.setBackgroundResource(R.drawable.gradient_overlay)
-        }
+        controllerVisible = isVisible
+        val overlay = currentState?.overlay ?: return
+        // the gradient is hidden while the controller bar is open, and comes back afterwards
+        overlay.gradientVisible = config.isGradiantOverlayVisible && !isVisible && overlay.gradientAllowed
     }
 
     override fun onPageSelected(context: SliderViewPluginContext, sliderItemIndex: Int, state: MetadataRenderState?) {
-        val currentState = state ?: return
-        currentState.leftAdapter.notifyDataSetChanged()
-        currentState.rightAdapter.notifyDataSetChanged()
+        val pluginState = state ?: return
+        publish(pluginState, context.currentItemProvider(), sliderItemIndex)
     }
 
-    private fun updateMetaData(
+    override fun onDestroy(context: SliderViewPluginContext, state: MetadataRenderState?) {
+        overlayView?.let { (it.parent as? ConstraintLayout)?.removeView(it) }
+        overlayView = null
+        currentState = null
+    }
+
+    private fun itemsFor(state: MetadataRenderState, left: Boolean, portrait: Boolean): List<MetaDataItem> = when {
+        left && portrait -> state.leftPortraitItems
+        left -> state.leftItems
+        portrait -> state.rightPortraitItems
+        else -> state.rightItems
+    }
+
+    private fun key(assetId: String, side: String, index: Int) = "$assetId|$side|$index"
+
+    private suspend fun resolve(
         context: SliderViewPluginContext,
-        adapter: MetaDataAdapter,
-        sliderItem: SliderItem,
+        state: MetadataRenderState,
+        side: String,
+        item: SliderItem,
         sliderItemIndex: Int,
-        config: MediaSliderConfiguration
+        config: MediaSliderConfiguration,
+        items: List<MetaDataItem>
     ) {
-        context.ioScope.launch {
-            adapter.getItemsToShow().forEachIndexed { metaDataIndex, item ->
-                if (adapter.hasStateForItem(sliderItem.id, metaDataIndex)) {
-                    return@forEachIndexed
-                }
-                val value = item.getValue(context.context, sliderItem, sliderItemIndex, config.items.size)
-                adapter.updateState(sliderItem.id, metaDataIndex, value ?: "")
-            }
-            withContext(Dispatchers.Main) {
-                adapter.notifyDataSetChanged()
-            }
+        items.forEachIndexed { index, metaData ->
+            val key = key(item.id, side, index)
+            if (state.values.containsKey(key)) return@forEachIndexed
+            val value = metaData.getValue(context.context, item, sliderItemIndex, config.items.size)
+            state.values[key] = value ?: ""
         }
     }
+
+    /** Shows the cached lines of the current item; lines whose value is empty or not yet known are skipped. */
+    private fun publish(state: MetadataRenderState, holder: SliderItemViewHolder, sliderItemIndex: Int) {
+        val portrait = holder.hasSecondaryItem()
+        val rightItem = if (portrait) holder.secondaryItem!! else holder.mainItem
+        state.overlay.left = lines(state, "left", holder.mainItem, itemsFor(state, left = true, portrait))
+        state.overlay.right = lines(state, "right", rightItem, itemsFor(state, left = false, portrait))
+    }
+
+    private fun lines(state: MetadataRenderState, side: String, item: SliderItem, items: List<MetaDataItem>): List<OverlayLine> =
+        items.mapIndexedNotNull { index, metaData ->
+            val value = state.values[key(item.id, side, index)]
+            if (value.isNullOrBlank()) null
+            else OverlayLine(value, metaData.fontSize, metaData.padding, metaData is MetaDataClock)
+        }
 }
-
-

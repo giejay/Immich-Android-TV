@@ -7,10 +7,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
 import androidx.leanback.app.BackgroundManager
-import androidx.leanback.widget.ArrayObjectAdapter
-import androidx.leanback.widget.FocusHighlight
-import androidx.leanback.widget.OnItemViewClickedListener
-import androidx.leanback.widget.VerticalGridPresenter
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -29,7 +25,6 @@ import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.ApiClientConfig
 import nl.giejay.android.tv.immich.card.Card
-import nl.giejay.android.tv.immich.card.CardPresenterSelector
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
@@ -52,7 +47,6 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     protected lateinit var apiClient: ApiClient
     private lateinit var keyEvents: KeyEventsViewModel
-    private val ZOOM_FACTOR = FocusHighlight.ZOOM_FACTOR_SMALL
     protected val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private val mainScope = CoroutineScope(Job() + Dispatchers.Main)
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
@@ -107,10 +101,10 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 keyEvents.state.collect {
                     // open popup menu on the right side if its the last photo in the row and user presses right button
-                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ((adapter.size() == 0 && allPagesLoaded) || currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == adapter.size()))) {
+                    if (it?.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && ((cards.isEmpty() && allPagesLoaded) || currentSelectedIndex > 0 && (currentSelectedIndex % COLUMNS == 3 || currentSelectedIndex + 1 == cards.size))) {
                         openPopUpMenu()
                     } else if (it?.keyCode == KeyEvent.KEYCODE_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD || it?.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) {
-                        updateManualPositionHandler(adapter.size() - 1)
+                        updateManualPositionHandler(cards.size - 1)
                     } else if (it?.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || it?.keyCode == KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD) {
                         updateManualPositionHandler((currentSelectedIndex - FETCH_PAGE_COUNT).coerceAtLeast(0))
                     }
@@ -118,35 +112,32 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             }
         }
 
-        setupAdapter()
         setupBackgroundManager()
 
-        onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
-            val card: Card = item as Card
-            if (selectionMode) {
-                card.selected = !card.selected
-                adapter.notifyArrayItemRangeChanged(currentSelectedIndex, 1)
-                onItemSelected(card, currentSelectedIndex)
-            } else {
-                onItemClicked(card)
-            }
-        }
-        setOnItemViewSelectedListener { _, item, _, _ ->
-            currentSelectedIndex = adapter.indexOf(item)
-            item?.let {
-                loadBackgroundDebounced((it as Card).backgroundUrl) {
-                    loadBackgroundDebounced(it.thumbnailUrl) {
-                        Timber.tag(javaClass.name)
-                            .e("Could not load background url")
-                    }
-                }
-            }
-            with(this@VerticalCardGridFragment) {
-                loadNextItemsIfNeeded(adapter.indexOf(item))
-            }
-        }
         // fetch initial items
         fetchInitialItems()
+    }
+
+    override val columns: Int = COLUMNS
+
+    override fun onCardClicked(index: Int, card: Card) {
+        if (selectionMode) {
+            val updated = card.copy(selected = !card.selected)
+            cards[index] = updated
+            onItemSelected(updated, index)
+        } else {
+            onItemClicked(card)
+        }
+    }
+
+    override fun onCardFocused(index: Int, card: Card) {
+        currentSelectedIndex = index
+        loadBackgroundDebounced(card.backgroundUrl) {
+            loadBackgroundDebounced(card.thumbnailUrl) {
+                Timber.tag(javaClass.name).e("Could not load background url")
+            }
+        }
+        loadNextItemsIfNeeded(index)
     }
 
     protected open fun fetchInitialItems() {
@@ -166,7 +157,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     private fun loadNextItemsIfNeeded(selectedIndex: Int) {
-        if (selectedIndex != -1 && (adapter.size() - selectedIndex < FETCH_NEXT_THRESHOLD)) {
+        if (selectedIndex != -1 && (cards.size - selectedIndex < FETCH_NEXT_THRESHOLD)) {
             if (currentLoadingJob?.isActive != true && assetsStillToRender.isEmpty() && !allPagesLoaded) {
                 // try a next page if its available
                 currentLoadingJob = fetchNextItems()
@@ -180,15 +171,15 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
 
     protected open fun resortItems() {
         assets = sortItems(assets)
-        adapter.clear()
-        adapter.addAll(0, assets.map { createCard(it) })
+        cards.clear()
+        cards.addAll(assets.map { createCard(it) })
     }
 
     protected open fun clearState() {
         currentPage = startPage
         assets = emptyList()
         assetsStillToRender.clear()
-        adapter.clear()
+        cards.clear()
     }
 
     protected open fun openPopUpMenu() {
@@ -235,14 +226,6 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         if (assets.isNotEmpty()) {
             progressBar?.visibility = View.GONE
         }
-    }
-
-    private fun setupAdapter() {
-        val presenter = VerticalGridPresenter(ZOOM_FACTOR)
-        presenter.numberOfColumns = COLUMNS
-        gridPresenter = presenter
-        val cardPresenter = CardPresenterSelector(requireContext())
-        adapter = ArrayObjectAdapter(cardPresenter)
     }
 
     private fun setupBackgroundManager() {
@@ -343,7 +326,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private fun addAssetsPaginated() {
         val assetsPaginated = assetsStillToRender.take(FETCH_COUNT)
         val cards = assetsPaginated.map { createCard(it) }
-        adapter.addAll(adapter.size(), cards)
+        this.cards.addAll(cards)
         assetsStillToRender.removeAll(assetsPaginated)
     }
 

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false">
+
+    <!-- Page content. The start margin equals the collapsed navigation rail width so the rail
+         never covers content; the expanded rail overlays it instead (no content relayout). -->
+    <FrameLayout
+        android:id="@+id/home_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/home_nav_collapsed_width"
+        android:clipChildren="false" />
+
+    <!-- The Compose navigation rail is added here in code (HomeFragment). -->
+</FrameLayout>

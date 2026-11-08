@@ -15,8 +15,8 @@
   -->
 
 <resources>
-    <!-- Warm dark gray for backgrounds -->
-    <color name="gray_dark">#212121</color>
+    <!-- App background; keep in sync with ui/theme/Color.kt (Background) -->
+    <color name="gray_dark">#0F1115</color>
 
     <color name="black">#000000</color>
 

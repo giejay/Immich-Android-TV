@@ -1,22 +1,20 @@
 package nl.giejay.android.tv.immich.home
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.activity.OnBackPressedCallback
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
-import androidx.leanback.app.BrowseSupportFragment
-import androidx.leanback.widget.ArrayObjectAdapter
-import androidx.leanback.widget.ClassPresenterSelector
-import androidx.leanback.widget.DividerPresenter
-import androidx.leanback.widget.DividerRow
-import androidx.leanback.widget.HeaderItem
-import androidx.leanback.widget.ListRowPresenter
-import androidx.leanback.widget.PageRow
-import androidx.leanback.widget.PresenterSelector
-import androidx.leanback.widget.Row
-import androidx.leanback.widget.RowHeaderPresenter
-import androidx.leanback.widget.SectionRow
-import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragment
 import nl.giejay.android.tv.immich.assets.AllAssetFragment
@@ -30,124 +28,216 @@ import nl.giejay.android.tv.immich.shared.fragment.GridFragment
 import nl.giejay.android.tv.immich.shared.prefs.HIDDEN_HOME_ITEMS
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.timeline.TimelineFragment
+import nl.giejay.android.tv.immich.ui.immichComposeView
+import nl.giejay.android.tv.immich.ui.nav.HomeNavRail
+import nl.giejay.android.tv.immich.ui.nav.NavRailItem
+import nl.giejay.android.tv.immich.ui.theme.ImmichIcons
 import timber.log.Timber
 
-class HomeFragment : BrowseSupportFragment() {
-    private lateinit var mRowsAdapter: ArrayObjectAdapter
-    private lateinit var rows: List<PageRow>
-    val immichRowPresenter = ImmichRowPresenter()
+/**
+ * Home screen: a Compose side navigation rail plus the selected page hosted as a child fragment.
+ *
+ * Rail and content are siblings in the View hierarchy (not nested in one Compose tree) so D-Pad
+ * focus moves between them with the regular View focus search, and the page content (Timeline,
+ * grids, settings) is never relaid out when the rail expands.
+ */
+class HomeFragment : Fragment(), HomeNavHost {
+
+    private class Page(val key: String, val icon: ImageVector, val separated: Boolean = false, val factory: () -> Fragment)
+
+    private val pages: List<Page> by lazy {
+        listOf(
+            Page(getString(R.string.timeline), ImmichIcons.Timeline) { TimelineFragment() },
+            Page(getString(R.string.albums), ImmichIcons.Albums) {
+                AlbumFragment().apply { arguments = bundleOf("selectionMode" to false) }
+            },
+            Page(getString(R.string.photos), ImmichIcons.Photos) { AllAssetFragment() },
+            Page(getString(R.string.random), ImmichIcons.Random) { RandomAssetsFragment() },
+            Page(getString(R.string.people), ImmichIcons.People) { PeopleFragment() },
+            Page(getString(R.string.recent), ImmichIcons.Recent) { RecentAssetsFragment() },
+            Page(getString(R.string.seasonal), ImmichIcons.Seasonal) { SimilarTimeAssetsFragment() },
+            Page(getString(R.string.folders), ImmichIcons.Folders) { FolderFragment() },
+            Page(getString(R.string.edit), ImmichIcons.Edit, separated = true) { GridFragment(hideProgressBar = true) },
+            Page(getString(R.string.settings), ImmichIcons.Settings) { SettingsFragment() },
+        )
+    }
+
+    private val editKey get() = getString(R.string.edit)
+    private val settingsKey get() = getString(R.string.settings)
+
+    private var selectedKey by mutableStateOf<String?>(null)
+    private var editMode by mutableStateOf(false)
+    /** Bumped when hidden items change so the rail re-reads the preference. */
+    private var hiddenVersion by mutableIntStateOf(0)
+    private var railFocused by mutableStateOf(true)
+
+    /** True when the user was in the page content when the view was last destroyed (e.g. opened an album). */
+    private var contentHadFocus = false
+    private var navListener: NavTransitionListener? = null
+    private var railView: View? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var pendingSelect: Runnable? = null
+
+    private val backCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            // Back from a page goes to the navigation first; back from the navigation leaves the app.
+            railView?.requestFocus()
+        }
+    }
+
+    override val isNavFocused: Boolean get() = railFocused
+
+    override fun setNavTransitionListener(listener: NavTransitionListener?) {
+        navListener = listener
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         Timber.i("Loaded Home")
-
-        setupUi()
-        loadData()
-
-        mainFragmentRegistry.registerFragment(PageRow::class.java, PageRowFragmentFactory())
+        selectedKey = savedInstanceState?.getString(STATE_SELECTED)
+        // A fresh start (or a returning user) begins with the navigation focused.
+        railFocused = true
     }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
+        inflater.inflate(R.layout.fragment_home, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        headersSupportFragment.setOnHeaderViewSelectedListener { _, row ->
-            selectedPosition = row?.let { mRowsAdapter.indexOf(it) } ?: 0
-            val name = row?.headerItem?.name ?: "-"
-            // Timeline is a full-bleed mosaic — never show the Leanback page title there
-            // (it flashes and slides away when entering the page).
-            if (name == getString(R.string.timeline)) {
-                title = ""
-                showTitle(false)
-            } else {
-                title = name
-            }
+        val root = view as FrameLayout
+        val resources = resources
+        val collapsedPx = resources.getDimensionPixelSize(R.dimen.home_nav_collapsed_width)
+        val expandedPx = resources.getDimensionPixelSize(R.dimen.home_nav_expanded_width)
+
+        val returningFromPage = contentHadFocus
+        railFocused = !returningFromPage
+
+        if (selectedKey == null || visiblePages().none { it.key == selectedKey }) {
+            selectedKey = visiblePages().first().key
+        }
+        if (childFragmentManager.findFragmentById(R.id.home_content) == null) {
+            showPage(pages.first { it.key == selectedKey })
         }
 
-        headersSupportFragment.setOnHeaderClickedListener { _, row ->
-            if (row.headerItem.name == getString(R.string.edit)) {
-                immichRowPresenter.editMode = !immichRowPresenter.editMode
-                if(immichRowPresenter.editMode){
-                    mRowsAdapter.clear()
-                    mRowsAdapter.addAll(0, rows.filter { it.headerItem.name != getString(R.string.settings) })
-                } else {
-                    mRowsAdapter.clear();
-                    mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.itemInStringSet(it.headerItem.name, HIDDEN_HOME_ITEMS) })
-                }
-                adapter.notifyItemRangeChanged(0, mRowsAdapter.size());
-            } else if(immichRowPresenter.editMode){
-                PreferenceManager.toggleStringSetItem(row.headerItem.name, HIDDEN_HOME_ITEMS)
-                adapter.notifyItemRangeChanged(0, mRowsAdapter.size())
-            } else{
-                if (!this.isInHeadersTransition) {
-                    this.startHeadersTransition(false)
-//                    this.mainFragment.requireView().requestFocus()
-                }
-            }
-        }
-    }
-
-    private fun setupUi() {
-        headersState = HEADERS_ENABLED
-        isHeadersTransitionOnBackEnabled = true
-        brandColor = resources.getColor(android.R.color.black)
-        // First page is Timeline, which never shows a Browse title.
-        title = ""
-        showTitle(false)
-//        setOnSearchClickedListener {
-//            Toast.makeText(
-//                activity, "Search!", Toast.LENGTH_SHORT
-//            ).show()
-//        }
-
-        // Lines of code to be added
-        val sHeaderPresenter: PresenterSelector = ClassPresenterSelector()
-            .addClassPresenter(DividerRow::class.java, DividerPresenter())
-            .addClassPresenter(
-                SectionRow::class.java,
-                RowHeaderPresenter()
+        val rail = immichComposeView(requireContext()) {
+            val visible = visiblePages()
+            @Suppress("UNUSED_EXPRESSION") hiddenVersion
+            HomeNavRail(
+                items = visible.map { NavRailItem(it.key, it.key, it.icon, it.separated) },
+                selectedKey = selectedKey,
+                expanded = railFocused,
+                editMode = editMode,
+                isHidden = { PreferenceManager.itemInStringSet(it, HIDDEN_HOME_ITEMS) },
+                onItemFocused = ::onItemFocused,
+                onItemClick = ::onItemClick,
+                onEnterContent = ::onEnterContent,
+                onRailFocusChanged = { onRailFocusChanged(it, collapsedPx, expandedPx) },
+                editKey = editKey,
+                doneLabel = getString(R.string.done),
             )
-            .addClassPresenter(Row::class.java, immichRowPresenter)
-
-        setHeaderPresenterSelector(sHeaderPresenter)
-    }
-
-    private fun loadData() {
-        mRowsAdapter = ArrayObjectAdapter(ListRowPresenter())
-        adapter = mRowsAdapter
-        rows = createRows()
-        mRowsAdapter.addAll(0, rows.filter { !PreferenceManager.itemInStringSet(it.headerItem.name, HIDDEN_HOME_ITEMS) })
-    }
-
-    private fun createRows(): List<PageRow> {
-        return HEADERS.mapIndexed { index, header -> PageRow(HeaderItem(index.toLong(), header.name)) }
-    }
-
-    private class PageRowFragmentFactory : FragmentFactory<Fragment>() {
-        override fun createFragment(rowObj: Any): Fragment {
-            val row = rowObj as Row
-            Timber.i("Going to show page: ${row.headerItem.name}")
-            return HEADERS[row.headerItem.id.toInt()].fragment()
         }
+        rail.layoutParams = FrameLayout.LayoutParams(if (railFocused) expandedPx else collapsedPx, ViewGroup.LayoutParams.MATCH_PARENT)
+        railView = rail
+        root.addView(rail)
+
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
+        backCallback.isEnabled = !railFocused
+
+        if (railFocused) {
+            rail.post { rail.requestFocus() }
+        } else {
+            view.post { requestContentFocus() }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_SELECTED, selectedKey)
+    }
+
+    override fun onDestroyView() {
+        contentHadFocus = !railFocused
+        pendingSelect?.let { handler.removeCallbacks(it) }
+        pendingSelect = null
+        railView = null
+        super.onDestroyView()
+    }
+
+    private fun visiblePages(): List<Page> =
+        if (editMode) {
+            pages.filter { it.key != settingsKey }
+        } else {
+            pages.filter { !PreferenceManager.itemInStringSet(it.key, HIDDEN_HOME_ITEMS) }
+        }
+
+    private fun showPage(page: Page) {
+        selectedKey = page.key
+        Timber.i("Going to show page: ${page.key}")
+        childFragmentManager.beginTransaction()
+            .replace(R.id.home_content, page.factory())
+            .commitAllowingStateLoss()
+    }
+
+    private fun onItemFocused(key: String) {
+        if (editMode) return
+        // Moving over items must not build heavy pages (Timeline) for every item passed.
+        // Always drop an older pending switch, also when focus came back to the shown page.
+        pendingSelect?.let { handler.removeCallbacks(it) }
+        pendingSelect = null
+        if (key == selectedKey) return
+        pendingSelect = Runnable { selectNow(key) }.also { handler.postDelayed(it, SELECT_DELAY_MS) }
+    }
+
+    private fun selectNow(key: String) {
+        pendingSelect?.let { handler.removeCallbacks(it) }
+        pendingSelect = null
+        if (key == selectedKey || !isAdded) return
+        pages.firstOrNull { it.key == key }?.let { showPage(it) }
+    }
+
+    private fun onItemClick(key: String) {
+        when {
+            key == editKey -> {
+                editMode = !editMode
+                if (!editMode) {
+                    // leaving edit mode: hidden items disappear from the list
+                    hiddenVersion++
+                }
+            }
+            editMode -> {
+                PreferenceManager.toggleStringSetItem(key, HIDDEN_HOME_ITEMS)
+                hiddenVersion++
+            }
+            else -> {
+                selectNow(key)
+                onEnterContent(key)
+            }
+        }
+    }
+
+    private fun onEnterContent(key: String) {
+        selectNow(key)
+        childFragmentManager.executePendingTransactions()
+        view?.post { requestContentFocus() }
+    }
+
+    private fun requestContentFocus() {
+        view?.findViewById<ViewGroup>(R.id.home_content)?.requestFocus(View.FOCUS_RIGHT)
+    }
+
+    private fun onRailFocusChanged(focused: Boolean, collapsedPx: Int, expandedPx: Int) {
+        if (focused == railFocused) return
+        navListener?.onHeadersTransitionStart(focused)
+        railFocused = focused
+        backCallback.isEnabled = !focused
+        railView?.let {
+            it.layoutParams = it.layoutParams.apply { width = if (focused) expandedPx else collapsedPx }
+        }
+        navListener?.onHeadersTransitionStop(focused)
     }
 
     companion object {
-        private val HEADERS: List<Header> = listOf(
-            Header(ImmichApplication.appContext!!.getString(R.string.timeline)) { TimelineFragment() },
-            Header(ImmichApplication.appContext!!.getString(R.string.albums)) {
-                AlbumFragment().apply {
-                    arguments = bundleOf("selectionMode" to false)
-                }
-            },
-            Header(ImmichApplication.appContext!!.getString(R.string.photos)) { AllAssetFragment() },
-            Header(ImmichApplication.appContext!!.getString(R.string.random)) { RandomAssetsFragment() },
-            Header(ImmichApplication.appContext!!.getString(R.string.people)) { PeopleFragment() },
-            Header(ImmichApplication.appContext!!.getString(R.string.recent)) { RecentAssetsFragment() },
-            Header(ImmichApplication.appContext!!.getString(R.string.seasonal)) { SimilarTimeAssetsFragment() },
-            Header(ImmichApplication.appContext!!.getString(R.string.folders)) { FolderFragment() },
-            Header(ImmichApplication.appContext!!.getString(R.string.edit)) { GridFragment(hideProgressBar = true) },
-            Header(ImmichApplication.appContext!!.getString(R.string.settings)) { SettingsFragment() },
-        )
+        private const val STATE_SELECTED = "selected_page"
+        private const val SELECT_DELAY_MS = 250L
     }
 }
-
-class Header(val name: String, var show: Boolean = false, val fragment: () -> Fragment)

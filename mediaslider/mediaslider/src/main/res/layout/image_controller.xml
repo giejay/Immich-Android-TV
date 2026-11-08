@@ -2,13 +2,13 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#D9000000"
+    android:background="@drawable/controller_bar_background"
     android:gravity="center"
     android:id="@+id/image_controller"
     android:elevation="20dp"
     android:orientation="vertical"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp">
+    android:paddingTop="40dp"
+    android:paddingBottom="20dp">
 
     <LinearLayout
         android:id="@+id/media_controller_button_row"
@@ -22,42 +22,42 @@
             android:id="@+id/media_mute"
             style="@style/TVMediaButton"
             android:contentDescription="@string/media_mute"
-            android:src="@drawable/mute_icon"
+            android:src="@drawable/ic_ctrl_volume_on"
             android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/image_previous"
             style="@style/TVMediaButton"
             android:contentDescription="@string/image_controller_previous"
-            android:src="@android:drawable/ic_media_previous" />
+            android:src="@drawable/ic_ctrl_previous" />
 
         <!-- Video-only: play / pause -->
         <ImageButton
             android:id="@+id/media_play_pause"
             style="@style/TVMediaButton"
             android:contentDescription="@string/media_play"
-            android:src="@android:drawable/ic_media_pause"
+            android:src="@drawable/ic_ctrl_pause"
             android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/image_slideshow_reverse"
             style="@style/TVMediaButton"
             android:contentDescription="@string/slideshow"
-            android:src="@drawable/slideshow"
-            android:scaleX="-1"/>
+            android:src="@drawable/ic_ctrl_slideshow"
+            android:rotationY="180" />
 
         <ImageButton
             android:id="@+id/image_slideshow"
             style="@style/TVMediaButton"
             android:contentDescription="@string/slideshow"
-            android:src="@drawable/slideshow" />
+            android:src="@drawable/ic_ctrl_slideshow" />
 
 
         <ImageButton
             android:id="@+id/image_next"
             style="@style/TVMediaButton"
             android:contentDescription="@string/image_controller_next"
-            android:src="@android:drawable/ic_media_next" />
+            android:src="@drawable/ic_ctrl_next" />
 
     </LinearLayout>
 
@@ -81,8 +81,8 @@
             android:paddingEnd="4dp"
             android:paddingStart="4dp"
             android:text="0:00"
-            android:textColor="#FFBEBEBE"
-            android:textSize="14sp"
+            android:textColor="#CCE4E6EC"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <SeekBar
@@ -91,7 +91,13 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:focusable="true"
-            android:progress="0" />
+            android:maxHeight="6dp"
+            android:minHeight="6dp"
+            android:progress="0"
+            android:progressDrawable="@drawable/controller_seekbar"
+            android:splitTrack="false"
+            android:thumb="@drawable/controller_seekbar_thumb"
+            android:thumbOffset="0dp" />
 
         <TextView
             android:id="@+id/media_duration"
@@ -101,8 +107,8 @@
             android:paddingEnd="4dp"
             android:paddingStart="4dp"
             android:text="0:00"
-            android:textColor="#FFBEBEBE"
-            android:textSize="14sp"
+            android:textColor="#CCE4E6EC"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
     </LinearLayout>
