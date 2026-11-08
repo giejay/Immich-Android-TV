@@ -25,7 +25,7 @@ import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
 import nl.giejay.android.tv.immich.people.PeopleFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
 import nl.giejay.android.tv.immich.shared.fragment.GridFragment
-import nl.giejay.android.tv.immich.shared.prefs.EXPERIMENTAL_COMPOSE_TIMELINE
+import nl.giejay.android.tv.immich.shared.prefs.CLASSIC_TIMELINE
 import nl.giejay.android.tv.immich.shared.prefs.HIDDEN_HOME_ITEMS
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.timeline.TimelineComposeFragment
@@ -49,7 +49,7 @@ class HomeFragment : Fragment(), HomeNavHost {
 
     private val pages: List<Page> by lazy {
         listOf(
-            Page(getString(R.string.timeline), ImmichIcons.Timeline) { if (PreferenceManager.get(EXPERIMENTAL_COMPOSE_TIMELINE)) TimelineComposeFragment() else TimelineFragment() },
+            Page(getString(R.string.timeline), ImmichIcons.Timeline) { if (PreferenceManager.get(CLASSIC_TIMELINE)) TimelineFragment() else TimelineComposeFragment() },
             Page(getString(R.string.albums), ImmichIcons.Albums) {
                 AlbumFragment().apply { arguments = bundleOf("selectionMode" to false) }
             },

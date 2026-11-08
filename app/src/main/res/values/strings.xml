@@ -323,8 +323,8 @@
     <string name="transition_parallax">Parallax</string>
     <string name="transition_cube">Cube</string>
     <string name="transition_random">Random</string>
-    <string name="experimental_compose_timeline">Experimental Compose timeline</string>
-    <string name="experimental_compose_timeline_desc">Show the new Compose version of the timeline. Work in progress, may be incomplete.</string>
+    <string name="classic_timeline">Classic timeline (compatibility)</string>
+    <string name="classic_timeline_desc">Use the older timeline if the new one misbehaves on your device. Takes effect the next time the Timeline page opens.</string>
     <string name="nav_brand" translatable="false">Immich Next</string>
     <string name="timeline_empty_title">No photos yet</string>
     <string name="timeline_empty_body">Photos you add to Immich show up here.</string>
