@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:clipChildren="false">
 
-    <androidx.leanback.widget.BrowseFrameLayout
+    <nl.giejay.android.tv.immich.timeline.FocusSearchFrameLayout
         android:id="@+id/timeline_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -58,5 +58,5 @@
                 android:theme="@style/ProgressBar"
                 android:visibility="visible" />
         </FrameLayout>
-    </androidx.leanback.widget.BrowseFrameLayout>
+    </nl.giejay.android.tv.immich.timeline.FocusSearchFrameLayout>
 </FrameLayout>

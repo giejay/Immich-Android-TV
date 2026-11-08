@@ -1,6 +1,5 @@
 package nl.giejay.android.tv.immich.timeline
 
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -10,13 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.leanback.app.BackgroundManager
-import androidx.leanback.app.BrandedSupportFragment
-import androidx.leanback.app.BrowseSupportFragment
-import androidx.leanback.widget.BrowseFrameLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -56,8 +50,6 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_SCROLL_PANORAMAS
 import nl.giejay.android.tv.immich.home.HomeNavHost
 import nl.giejay.android.tv.immich.home.NavTransitionListener
-import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
-import nl.giejay.android.tv.immich.shared.util.Debouncer
 import nl.giejay.android.tv.immich.shared.util.Utils.pmap
 import nl.giejay.android.tv.immich.shared.util.toSliderItems
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -73,7 +65,7 @@ import kotlin.math.roundToInt
  * with a right-edge year/month scrubber. Up/Down previews a month; Enter jumps while staying
  * on the scrubber; Left jumps and returns focus to the mosaic.
  */
-class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
+class TimelineFragment : Fragment() {
 
     private lateinit var apiClient: ApiClient
     private lateinit var viewModel: TimelineViewModel
@@ -87,7 +79,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private var focusVideoPreview: TimelineFocusVideoPreview? = null
 
     private var selectionRestored = false
-    private var dataReadyNotified = false
     private var loadingNextBucket = false
     private var loadingNewerBucket = false
     private var contentWidthPx = 0
@@ -109,12 +100,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private var stickyJumpBucketKey: String? = null
     /** True after Up/Down on the scrubber while focused — Left should commit a jump. */
     private var scrubberPreviewMoved = false
-
-    private val mainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
-        object : BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {}
-
-    override fun getMainFragmentAdapter(): BrowseSupportFragment.MainFragmentAdapter<*> =
-        mainFragmentAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -156,9 +141,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (!::viewModel.isInitialized) return
-        clearBackground()
-        // Fragment host is usually still null here; hide again after notifyViewCreated.
-        hideBrowseTitle()
 
         progressBar = view.findViewById(R.id.browse_progressbar)
         recyclerView = view.findViewById(R.id.timeline_recycler)
@@ -256,8 +238,8 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             }
         })
 
-        val frame = view.findViewById<BrowseFrameLayout>(R.id.timeline_frame)
-        frame.onFocusSearchListener = BrowseFrameLayout.OnFocusSearchListener { focused, direction ->
+        val frame = view.findViewById<FocusSearchFrameLayout>(R.id.timeline_frame)
+        frame.onFocusSearchListener = FocusSearchFrameLayout.OnFocusSearchListener { focused, direction ->
             if (focused is TimelineScrubberView) {
                 return@OnFocusSearchListener if (direction == View.FOCUS_LEFT) {
                     focused.selectedMonthKey()?.let {
@@ -301,16 +283,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             }
         }
 
-        mainFragmentAdapter.fragmentHost?.notifyViewCreated(mainFragmentAdapter)
-        // Host is attached by now; keep Browse from flashing/animating the "Timeline" title.
-        hideBrowseTitle()
-
         (parentFragment as? HomeNavHost)?.setNavTransitionListener(
             object : NavTransitionListener() {
                 override fun onHeadersTransitionStart(withHeaders: Boolean) {
                     if (!isAdded) return
                     if (withHeaders) {
-                        // Opening menu — remember the mosaic cell before Leanback steals focus.
+                        // Opening menu — remember the mosaic cell before focus leaves the page.
                         captureResumeState()
                         beginResumeFocusLock()
                     } else if (
@@ -318,7 +296,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                         viewModel.lastSelectedMemoryId != null ||
                         viewModel.lastSelectedAssetId != null
                     ) {
-                        // Re-entering with a prior cell — block children so Leanback cannot flash
+                        // Re-entering with a prior cell — block children so no neighboring item flashes
                         // a neighboring item before we hand focus back.
                         beginResumeFocusLock()
                     }
@@ -330,7 +308,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                         // Snapshot already taken on start — don't recapture with focus gone.
                         selectionRestored = false
                     } else {
-                        hideBrowseTitle()
                         restoreSelectionIfNeeded()
                     }
                 }
@@ -395,8 +372,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
     override fun onResume() {
         super.onResume()
-        clearBackground()
-        // Leanback may restore focus to the opened mosaic cell before leave-off runs.
+        // The system may restore focus to the opened mosaic cell before leave-off runs.
         if (TimelineLeaveOff.shouldForceLeaveOffRestore(viewModel.pendingResumeAssetId)) {
             selectionRestored = false
         }
@@ -424,17 +400,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         pendingJumpFocus = false
         stickyJumpBucketKey = null
         scrubberPreviewMoved = false
-    }
-
-    private fun clearBackground() {
-        Debouncer.cancel(VerticalCardGridFragment.BACKGROUND_DEBOUNCE_KEY)
-        val backgroundManager = BackgroundManager.getInstance(activity)
-        if (!backgroundManager.isAttached) {
-            backgroundManager.attach(requireActivity().window)
-        }
-        backgroundManager.drawable = ColorDrawable(
-            ContextCompat.getColor(requireContext(), R.color.gray_dark)
-        )
     }
 
     /** Enter jumps and keeps scrubber focus; Left jumps then moves focus into the mosaic. */
@@ -670,11 +635,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         adapter.submitList(itemsWithMemories) {
             if (!isAdded) return@submitList
             if (days.isNotEmpty()) {
-                if (!dataReadyNotified) {
-                    mainFragmentAdapter.fragmentHost?.notifyDataReady(mainFragmentAdapter)
-                    dataReadyNotified = true
-                }
-                hideBrowseTitle()
             }
 
             val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
@@ -701,7 +661,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 scrubberView?.hasFocus() == true -> {
                     selectionRestored = true
                 }
-                // Slider leave-off wins over Leanback restoring focus to the *opened* cell.
+                // Slider leave-off wins over the system restoring focus to the *opened* cell.
                 TimelineLeaveOff.shouldForceLeaveOffRestore(viewModel.pendingResumeAssetId) -> {
                     selectionRestored = false
                     restoreSelectionIfNeeded()
@@ -768,7 +728,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         val rv = recyclerView ?: return
         rv.isFocusable = true
         rv.isFocusableInTouchMode = true
-        // Children cannot take focus — Leanback may park on the recycler itself (no cell flash).
+        // Children cannot take focus — focus may park on the recycler itself (no cell flash).
         rv.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         scrubberView?.isFocusable = false
     }
@@ -855,7 +815,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 }
                 viewModel.pendingResumeAssetId = null
                 viewModel.rememberSelectionByAssetId(assetId)
-                // Hold scroll-suppress through focus scale so Leanback cannot inch the page.
+                // Hold scroll-suppress through focus scale so the page does not inch.
                 // Keep allowScrollAdjust=false until unlock so bindDays cannot yank focus away.
                 rv.postDelayed({
                     if (!isAdded) return@postDelayed
@@ -884,12 +844,6 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
     private fun isBrowseShowingHeaders(): Boolean =
         (parentFragment as? HomeNavHost)?.isNavFocused == true
-
-    /** Timeline has no page title — hide immediately so Leanback cannot flash/animate one. */
-    private fun hideBrowseTitle() {
-        showTitle(false)
-        mainFragmentAdapter.fragmentHost?.showTitleView(false)
-    }
 
     /** Prefer the first memory card; fall back to the first mosaic cell. */
     private fun focusInitialEntry() {
