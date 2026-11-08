@@ -107,6 +107,7 @@ internal fun SliderVideoPage(pager: ComposeSliderPager, page: Int, item: SliderI
                             item.url?.let { pager.failedVideoUrls.add(it) }
                             player.release()
                             rebuild++
+                            pager.retryVideo(page)
                             true
                         } else {
                             Toast.makeText(context, "Cannot play video: ${error.message}", Toast.LENGTH_LONG).show()

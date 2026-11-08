@@ -125,6 +125,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        composePager?.dispose()
         if (isVolumeReceiverRegistered) {
             try {
                 context.unregisterReceiver(volumeReceiver)
@@ -329,6 +330,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 controller.restorePagerFocus()
             }
         }
+        pager.onVideoRetry = { index -> onPageSettled(index) }
         pager.onPageSettled = { index ->
             maybeLoadMore()
             onPageSettled(index)
@@ -349,7 +351,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     fun onDestroy() {
-        composePager?.release()
         ioScope.cancel()
         viewPlugins.forEach { it.plugin.onDestroy(viewPluginContext, it.state) }
         controller.onDestroy()

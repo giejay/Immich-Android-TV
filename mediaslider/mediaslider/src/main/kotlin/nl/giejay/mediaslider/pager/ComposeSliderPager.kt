@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.overlay.createOverlayView
@@ -72,13 +73,28 @@ class ComposeSliderPager(
     var onPageSelected: (Int) -> Unit = {}
     var onPageSettled: (Int) -> Unit = {}
 
+    /** Asks the slider to prepare the video of [page] again after its view was rebuilt for a TextureView. */
+    var onVideoRetry: (Int) -> Unit = {}
+
     private var pendingSettle = false
+
+    /** Page [onPageSettled] last ran for since the pager last started to move; -1 after a scroll start. */
+    private var settledNotified = -1
 
     /** Scope of the composition: animations need its frame clock, which a plain scope does not have. */
     internal var compositionScope: CoroutineScope? = null
 
     val view: View = createOverlayView(context) { SliderPagerContent(this) }.apply {
         isFocusable = true
+    }
+
+    /** Waits for the rebuilt page to compose (two frames), then asks the slider to start its video again. */
+    internal fun retryVideo(page: Int) {
+        compositionScope?.launch {
+            withFrameNanos { }
+            withFrameNanos { }
+            onVideoRetry(page)
+        }
     }
 
     override val currentIndex: Int get() = state.currentPage
@@ -90,6 +106,8 @@ class ComposeSliderPager(
             if (animationScope != null && animate && config.enableSlideAnimation) {
                 state.animateScrollToPage(index, animationSpec = scrollSpec())
             } else {
+                settledNotified = -1
+                onScrollStarted()
                 state.scrollToPage(index)
             }
         }
@@ -110,11 +128,16 @@ class ComposeSliderPager(
             snapshotFlow { state.isScrollInProgress }.collect { scrolling ->
                 if (scrolling) {
                     if (config.transition == SliderTransition.RANDOM) pickNextTransition()
+                    settledNotified = -1
                     onScrollStarted()
                 } else {
                     settle()
                 }
             }
+        }
+        scope.launch {
+            // immediate jumps (no animation) may never report a scroll in progress; the settled page still changes
+            snapshotFlow { state.settledPage }.collect { settle() }
         }
         scope.launch {
             // a video page composes after the settle that wanted it: start it as soon as its view exists
@@ -127,15 +150,18 @@ class ComposeSliderPager(
     private fun settle() {
         val page = state.settledPage
         val item = items.getOrNull(page) ?: return
+        if (state.isScrollInProgress || page == settledNotified) return
         if (item.type == SliderItemType.VIDEO && videoViews[page] == null) {
             pendingSettle = true
             return
         }
         pendingSettle = false
+        settledNotified = page
         onPageSettled(page)
     }
 
-    fun release() {
+    /** Ends the observers for good; the slider calls it when its view goes away, not on a temporary pause. */
+    fun dispose() {
         scope.cancel()
         videoViews.clear()
     }
