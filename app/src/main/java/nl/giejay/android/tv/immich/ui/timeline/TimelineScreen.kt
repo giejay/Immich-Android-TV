@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -48,6 +49,7 @@ import nl.giejay.android.tv.immich.timeline.TimelineFocusActions
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicIndex
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.compose.ui.platform.LocalDensity
@@ -55,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.timeline.TimelineLeaveOff
@@ -349,10 +352,31 @@ fun TimelineScreen(
     val endPx = with(density) { ContentPaddingEnd.roundToPx() }
     val gap = with(density) { gapPx.toDp() }
 
-    // Load the month list and memories once, like the View timeline does on creation.
-    LaunchedEffect(viewModel) {
+    // Load the month list and memories, like the View timeline does on creation; Retry runs it again.
+    var initialLoadDone by remember { mutableStateOf(false) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+    var loadAttempt by remember { mutableIntStateOf(0) }
+    // the host toasts and clears the error, so keep our own copy for the message shown in the empty state
+    LaunchedEffect(viewModel) { viewModel.error.collect { if (it != null) loadError = it } }
+    LaunchedEffect(viewModel, loadAttempt) {
+        initialLoadDone = false
+        loadError = null
+        viewModel.clearError()
         withContext(Dispatchers.IO) { viewModel.loadBucketList() }
         withContext(Dispatchers.IO) { viewModel.loadMemories() }
+        initialLoadDone = true
+        if (loadAttempt > 0) {
+            // After Retry the button that held focus is gone: put focus on the first card or photo again.
+            val items = withTimeoutOrNull(3000) { snapshotFlow { currentLayout.items }.first { it.isNotEmpty() } } ?: return@LaunchedEffect
+            val firstMemory = (items.firstOrNull() as? TimelineMosaicItem.MemoriesRow)?.memories?.firstOrNull()
+            if (firstMemory != null) {
+                focusKey("memory:${firstMemory.id}", 0)
+            } else {
+                items.filterIsInstance<TimelineMosaicItem.Row>().firstOrNull()?.cells?.firstOrNull()?.let {
+                    focusKey(it.asset.id, TimelineMosaicIndex.positionOfAsset(items, it.asset.id))
+                }
+            }
+        }
     }
 
     // Load older months while the user nears the end of what is loaded.
@@ -371,6 +395,25 @@ fun TimelineScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
+    if (layout.items.isEmpty()) {
+        // nothing to list yet: loading, empty library, or the load failed
+        val stateModifier = Modifier.align(Alignment.Center)
+        when {
+            !initialLoadDone -> TimelineLoadingIndicator(stateModifier)
+            loadError != null -> TimelineMessage(
+                title = stringResource(R.string.timeline_error_title),
+                body = loadError,
+                modifier = stateModifier,
+                actionLabel = stringResource(R.string.retry),
+                onAction = { loadAttempt++ },
+            )
+            else -> TimelineMessage(
+                title = stringResource(R.string.timeline_empty_title),
+                body = stringResource(R.string.timeline_empty_body),
+                modifier = stateModifier,
+            )
+        }
+    }
     // Below the list so focused cells cover the year labels; raised above it while the rail has focus.
     TimelineScrubber(
         buckets = buckets,
