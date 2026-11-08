@@ -4,7 +4,7 @@
     python3 seed.py [http://localhost:2283]
 
 Media files are named <theme>-<id>.<ext> (see fetch_pexels.py); every theme becomes an album, capture
-dates are spread over several years so the timeline, scrubber and "N years ago" memories have content.
+dates are spread over several years; the first themes are dated today (month/day) in earlier years so "N years ago" memories have content.
 Writes the server URL and API key to ./.state/credentials.txt (git-ignored); enter both in the app.
 """
 import json
@@ -71,12 +71,28 @@ def main():
     now = datetime.now(timezone.utc)
     files = sorted(p for p in MEDIA.rglob("*") if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".mp4", ".mov"})
     themes = sorted({p.name.rsplit("-", 1)[0] for p in files})
-    # one base day per theme, spread over ~6 years, a few recent ones for the top of the timeline
-    base_days = {t: now - timedelta(days=rng.choice([20, 70, 400, 765, 1130, 1500, 1860, 2190])) for t in themes}
+    # The first themes are dated on today's month/day in earlier years so Immich's "N years ago" memories
+    # (which pick assets by day of year) have content; the others are spread over the past years.
+    anniversary_years = [2, 3, 5, 7]
+    base_days = {}
+    anniversary = {}
+    for position, theme in enumerate(themes):
+        if position < len(anniversary_years):
+            years = anniversary_years[position]
+            try:
+                day = now.replace(year=now.year - years, hour=12, minute=0, second=0, microsecond=0)
+            except ValueError:  # Feb 29
+                day = now.replace(year=now.year - years, day=28, hour=12, minute=0, second=0, microsecond=0)
+            base_days[theme], anniversary[theme] = day, True
+        else:
+            base_days[theme] = now - timedelta(days=rng.choice([20, 70, 400, 765, 1130, 1500, 1860, 2190]))
     albums: dict[str, list[str]] = {t: [] for t in themes}
     for index, path in enumerate(files):
         theme = path.name.rsplit("-", 1)[0]
-        taken = base_days[theme] + timedelta(hours=rng.randint(0, 70), minutes=rng.randint(0, 59))
+        if theme in anniversary:  # stay on the same calendar day (12:00 +-5 h)
+            taken = base_days[theme] + timedelta(hours=rng.randint(-5, 5), minutes=rng.randint(0, 59))
+        else:
+            taken = base_days[theme] + timedelta(hours=rng.randint(0, 70), minutes=rng.randint(0, 59))
         asset = upload(path, key, taken, favorite=index % 9 == 0)
         albums[theme].append(asset)
         print(f"uploaded {path.name}")

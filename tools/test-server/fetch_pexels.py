@@ -37,10 +37,16 @@ def get(url: str) -> bytes:
 def download(url: str, target: Path) -> None:
     if target.exists():
         return
-    # media files are public CDN links, no auth header needed
+    # media files are public CDN links, no auth header needed; write to a temp file so an interrupted
+    # transfer never leaves a truncated file behind that later runs would skip
+    partial = target.with_suffix(target.suffix + ".part")
     request = urllib.request.Request(url, headers={"User-Agent": "immich-android-tv-next-test-media"})
-    with urllib.request.urlopen(request, timeout=120) as response, open(target, "wb") as file:
-        file.write(response.read())
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response, open(partial, "wb") as file:
+            file.write(response.read())
+        partial.replace(target)
+    finally:
+        partial.unlink(missing_ok=True)
 
 
 def main() -> None:
