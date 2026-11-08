@@ -24,7 +24,8 @@ private fun MacrobenchmarkScope.pause(ms: Long) = Thread.sleep(ms)
  * An app that is already signed in skips this.
  */
 internal fun MacrobenchmarkScope.signInIfNeeded() {
-    if (!device.wait(Until.hasObject(By.text("Sign in by API key")), 3_000)) return
+    val loginText = signInByApiKeyText()
+    if (!device.wait(Until.hasObject(By.text(loginText)), 3_000)) return
     val args = InstrumentationRegistry.getArguments()
     val url = args.getString("serverUrl")
     val key = args.getString("apiKey")
@@ -47,7 +48,18 @@ internal fun MacrobenchmarkScope.signInIfNeeded() {
     pause(500)
     repeat(4) { device.pressDPadDown() }
     device.pressDPadCenter()
-    pause(6_000)
+    // the journey must not run on the login screen: fail loudly if signing in did not work
+    check(device.wait(Until.gone(By.text(loginText)), 30_000)) { "Still on the login screen after signing in with $url" }
+    pause(3_000)
+}
+
+/** The login option's label in the device language, read from the app's own resources (English as the fallback). */
+private fun signInByApiKeyText(): String = try {
+    val resources = InstrumentationRegistry.getInstrumentation().context.packageManager.getResourcesForApplication(targetAppId)
+    val id = resources.getIdentifier("auth_sign_in_by_api_key", "string", targetAppId)
+    if (id != 0) resources.getString(id) else "Sign in by API key"
+} catch (e: Exception) {
+    "Sign in by API key"
 }
 
 /** Timeline: let it load, scroll down and up through the mosaic. */
