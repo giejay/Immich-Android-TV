@@ -46,6 +46,8 @@ import nl.giejay.android.tv.immich.timeline.TimelineFocusActions
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicIndex
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -92,6 +94,15 @@ fun TimelineScreen(
     val requesters = remember { mutableMapOf<String, FocusRequester>() }
     val loadingNewer = remember { mutableStateOf(false) }
     val memoriesState = rememberLazyListState()
+    // one muted player shared by the focus preview of video cells
+    val context = LocalContext.current
+    val previewPlayer = remember {
+        ExoPlayer.Builder(context.applicationContext).build().apply {
+            volume = 0f
+            repeatMode = Player.REPEAT_MODE_ONE
+        }
+    }
+    DisposableEffect(previewPlayer) { onDispose { previewPlayer.release() } }
     val buckets by viewModel.buckets.collectAsState()
     var indicatorMonth by remember { mutableStateOf<String?>(null) }
     var scrubberFocused by remember { mutableStateOf(false) }
@@ -310,6 +321,7 @@ fun TimelineScreen(
                             TimelineMosaicCell(
                                 cell = cell,
                                 focused = cell.asset.id == focusedAssetId,
+                                previewPlayer = previewPlayer,
                                 modifier = Modifier
                                     .focusRequester(requester)
                                     .onFocusChanged {
