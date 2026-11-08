@@ -16,6 +16,7 @@
 
 <resources>
     <string name="app_name" translatable="false">Immich Android TV Next</string>
+    <string name="screensaver_label" translatable="false">Immich TV Next</string>
 
     <!-- Strings for the "No Firebase" screen -->
     <string name="no_firebase_title">Firebase not configured</string>
