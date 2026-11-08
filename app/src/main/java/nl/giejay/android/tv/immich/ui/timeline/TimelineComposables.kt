@@ -114,12 +114,14 @@ fun TimelineMosaicCell(
                 else Modifier
             ),
     ) {
-        val previewing = focused && !cell.asset.isImage && previewPlayer != null
+        // a failed preview falls back to the poster until the cell is focused again
+        var previewFailed by remember(cell.asset.id, focused) { mutableStateOf(false) }
+        val previewing = focused && !cell.asset.isImage && previewPlayer != null && !previewFailed
         var videoReady by remember(cell.asset.id, previewing) { mutableStateOf(false) }
         var remainingSeconds by remember(cell.asset.id, previewing) { mutableStateOf<Long?>(null) }
         if (previewing) {
             // decodes under the poster until the first frame is rendered, so there is no grey flash
-            FocusVideoPreview(cell.asset.id, previewPlayer!!, onReady = { videoReady = true })
+            FocusVideoPreview(cell.asset.id, previewPlayer!!, onReady = { videoReady = true }, onError = { previewFailed = true })
             val total = TimelineVideoDuration.parseSeconds(cell.asset.duration) ?: 0L
             LaunchedEffect(cell.asset.id) {
                 while (true) {
@@ -228,13 +230,14 @@ private val previewDataSourceFactory: DefaultHttpDataSource.Factory
 /** Plays [assetId]'s video on the shared [player] while this composable is in the composition. */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-private fun FocusVideoPreview(assetId: String, player: ExoPlayer, onReady: () -> Unit) {
+private fun FocusVideoPreview(assetId: String, player: ExoPlayer, onReady: () -> Unit, onError: () -> Unit) {
     DisposableEffect(assetId, player) {
         val listener = object : Player.Listener {
             override fun onRenderedFirstFrame() = onReady()
             override fun onPlayerError(error: PlaybackException) {
                 Timber.w(error, "Timeline focus video preview failed for %s", assetId)
                 player.stop()
+                onError()
             }
         }
         player.addListener(listener)
