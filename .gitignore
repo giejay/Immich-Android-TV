@@ -19,3 +19,7 @@ mediasliderold
 mediaslider2
 commits.txt
 service-account-key.json
+# test server (stock media, data, credentials)
+tools/test-server/media/
+tools/test-server/data/
+tools/test-server/.state/
