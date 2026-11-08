@@ -71,7 +71,8 @@ class MetadataViewPlugin : SliderViewPlugin<MetadataRenderState>, SliderControll
         context.ioScope.launch {
             resolve(context, pluginState, "left", sliderItem.mainItem, sliderItemIndex, config, itemsFor(pluginState, left = true, portrait))
             resolve(context, pluginState, "right", rightItem, sliderItemIndex, config, itemsFor(pluginState, left = false, portrait))
-            withContext(Dispatchers.Main) { publish(pluginState, sliderItem, sliderItemIndex) }
+            // the user may have moved on while resolving: always show the item that is current now
+            withContext(Dispatchers.Main) { publish(pluginState, context.currentItemProvider(), sliderItemIndex) }
         }
     }
 
