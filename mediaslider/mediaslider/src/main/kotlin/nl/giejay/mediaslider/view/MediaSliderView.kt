@@ -123,8 +123,14 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
     }
 
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        if (visibility == View.VISIBLE && isConfigReady) composePager?.resume()
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        composePager?.dispose()
         if (isVolumeReceiverRegistered) {
             try {
                 context.unregisterReceiver(volumeReceiver)

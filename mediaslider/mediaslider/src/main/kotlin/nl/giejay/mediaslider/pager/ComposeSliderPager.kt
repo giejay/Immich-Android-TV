@@ -90,6 +90,9 @@ class ComposeSliderPager(
     var onPageSelected: (Int) -> Unit = {}
     var onPageSettled: (Int) -> Unit = {}
 
+    /** Page [onPageSettled] last ran for since the pager last started to move; -1 after a scroll start. */
+    private var settledNotified = -1
+
     /** Scope of the composition: animations need its frame clock, which a plain scope does not have. */
     internal var compositionScope: CoroutineScope? = null
 
@@ -106,6 +109,9 @@ class ComposeSliderPager(
             if (animationScope != null && animate && config.enableSlideAnimation) {
                 state.animateScrollToPage(index, animationSpec = scrollSpec())
             } else {
+                settledNotified = -1
+                firstVideoFrameRendered = false
+                onScrollStarted()
                 state.scrollToPage(index)
             }
         }
@@ -127,17 +133,24 @@ class ComposeSliderPager(
                 if (scrolling) {
                     if (config.transition == SliderTransition.RANDOM) pickNextTransition()
                     firstVideoFrameRendered = false
+                    settledNotified = -1
                     onScrollStarted()
                 } else {
                     settle()
                 }
             }
         }
+        scope.launch {
+            // immediate jumps (no animation) may never report a scroll in progress; the settled page still changes
+            snapshotFlow { state.settledPage }.collect { settle() }
+        }
     }
 
     private fun settle() {
         val page = state.settledPage
         if (items.getOrNull(page) == null) return
+        if (state.isScrollInProgress || page == settledNotified) return
+        settledNotified = page
         onPageSettled(page)
     }
 
@@ -179,7 +192,22 @@ class ComposeSliderPager(
         }
     }
 
+    /** Frees the shared player (the slider's pause); the observers stay so the pager keeps working on resume. */
     fun release() {
+        videoPlayer?.release()
+        videoPlayer = null
+        firstVideoFrameRendered = false
+        videoRebuild++
+    }
+
+    /** Back in the foreground: settle the current page again so a released video player is built and started anew. */
+    fun resume() {
+        settledNotified = -1
+        settle()
+    }
+
+    /** Ends the observers for good; the slider calls it when its view goes away. */
+    fun dispose() {
         scope.cancel()
         videoPlayer?.release()
         videoPlayer = null
