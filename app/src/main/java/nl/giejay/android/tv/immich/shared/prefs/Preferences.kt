@@ -456,10 +456,10 @@ data object DEBUG_MODE : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.enable_debug_mode),
     ImmichApplication.appContext!!.getString(R.string.enable_debug_mode_desc))
 
-/** Step K: shows the Compose timeline instead of the View one. Experimental, off by default. */
-data object EXPERIMENTAL_COMPOSE_TIMELINE : BooleanPref(false,
-    ImmichApplication.appContext!!.getString(R.string.experimental_compose_timeline),
-    ImmichApplication.appContext!!.getString(R.string.experimental_compose_timeline_desc))
+/** Compatibility option: the timeline is Compose by default; this switches back to the older View based one. */
+data object CLASSIC_TIMELINE : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.classic_timeline),
+    ImmichApplication.appContext!!.getString(R.string.classic_timeline_desc))
 
 data object LOAD_BACKGROUND_IMAGE : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background),
@@ -666,7 +666,7 @@ data object HomeScreenChannelsPrefScreen : PrefScreen(ImmichApplication.appConte
 )
 
 data object DebugPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.debug_settings), "debug",
-    children = listOf(PrefCategory("", listOf(DEBUG_MODE, EXPERIMENTAL_COMPOSE_TIMELINE, USER_ID))), { prefManager ->
+    children = listOf(PrefCategory("", listOf(DEBUG_MODE, CLASSIC_TIMELINE, USER_ID))), { prefManager ->
         prefManager.findPreference<Preference>(USER_ID.key())?.summary = PreferenceManager.get(USER_ID)
     })
 
