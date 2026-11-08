@@ -6,10 +6,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.leanback.widget.ArrayObjectAdapter
-import androidx.leanback.widget.HorizontalGridView
-import androidx.leanback.widget.ItemBridgeAdapter
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -52,7 +50,7 @@ class TimelineMosaicAdapter(
                 inflater.inflate(R.layout.timeline_day_header, parent, false)
             )
             VIEW_TYPE_MEMORIES -> MemoriesRowVH(
-                inflater.inflate(R.layout.timeline_memories_row, parent, false) as HorizontalGridView
+                inflater.inflate(R.layout.timeline_memories_row, parent, false) as RecyclerView
             )
             else -> RowVH(inflater.inflate(R.layout.timeline_mosaic_row, parent, false) as LinearLayout)
         }
@@ -249,33 +247,39 @@ class TimelineMosaicAdapter(
         }
     }
 
-    private inner class MemoriesRowVH(private val gridView: HorizontalGridView) : RecyclerView.ViewHolder(gridView) {
-        private val arrayAdapter = ArrayObjectAdapter(
-            MemoryPresenter(gridView.context, onMemoryClicked, onMemoryFocused)
-        )
+    private inner class MemoriesRowVH(private val gridView: RecyclerView) : RecyclerView.ViewHolder(gridView) {
+        private val memoriesAdapter = MemoriesRowAdapter(onMemoryClicked, onMemoryFocused)
 
         init {
-            gridView.adapter = ItemBridgeAdapter(arrayAdapter)
+            gridView.layoutManager = LinearLayoutManager(gridView.context, LinearLayoutManager.HORIZONTAL, false)
+            gridView.addItemDecoration(
+                MemoriesRowAdapter.SpacingDecoration(
+                    gridView.resources.getDimensionPixelSize(R.dimen.timeline_memories_horizontal_margin)
+                )
+            )
+            gridView.itemAnimator = null
+            gridView.adapter = memoriesAdapter
         }
 
         fun bind(item: TimelineMosaicItem.MemoriesRow) {
-            arrayAdapter.setItems(item.memories, null)
+            memoriesAdapter.submitList(item.memories)
         }
 
         fun focusMemory(memoryId: String?): Boolean {
-            if (arrayAdapter.size() == 0) return false
+            val memories = memoriesAdapter.currentList
+            if (memories.isEmpty()) return false
             val index = if (memoryId != null) {
-                (0 until arrayAdapter.size()).indexOfFirst {
-                    (arrayAdapter.get(it) as? Memory)?.id == memoryId
-                }.takeIf { it >= 0 } ?: 0
+                memories.indexOfFirst { it.id == memoryId }.takeIf { it >= 0 } ?: 0
             } else {
                 0
             }
-            gridView.setSelectedPosition(index)
+            gridView.scrollToPosition(index)
             val child = gridView.layoutManager?.findViewByPosition(index)
             return if (child != null) {
                 child.requestFocus()
             } else {
+                // Not laid out yet: take focus now, then hand it to the card once it exists.
+                gridView.post { gridView.layoutManager?.findViewByPosition(index)?.requestFocus() }
                 gridView.requestFocus()
             }
         }

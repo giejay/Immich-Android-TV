@@ -1,7 +1,7 @@
 package nl.giejay.android.tv.immich.timeline
 
 /**
- * Pure year math for on-this-day memory labels (Context/plurals stay in [MemoryPresenter]).
+ * Pure year math for on-this-day memory labels (Context/plurals stay in [MemoriesRowAdapter]).
  */
 object MemoryLabels {
 
