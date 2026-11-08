@@ -80,6 +80,12 @@ class ComposeSliderPager(
     /** Bumped when a failed SurfaceView page has to be rebuilt with a TextureView. */
     internal var videoRebuild by mutableIntStateOf(0)
 
+    /** True from the slider's pause until its resume: no player view (and no player) is created meanwhile. */
+    internal var paused by mutableStateOf(false)
+
+    /** Page whose video is retried once the rebuilt player view is attached to the player; null when nothing waits. */
+    private var pendingRetryPage: Int? = null
+
     /** Asks the slider to prepare the current video again (after the page was rebuilt for a TextureView). */
     var onVideoRetry: (Int) -> Unit = {}
 
@@ -148,6 +154,7 @@ class ComposeSliderPager(
                     firstVideoFrameRendered = false
                     settledNotified = -1
                     effectPage = -1
+                    pendingRetryPage = null
                     onScrollStarted()
                 } else {
                     settle()
@@ -188,6 +195,13 @@ class ComposeSliderPager(
             videoPlayer = player
         }
 
+    /** The page's player view attached to the shared player; a pending retry can start now. */
+    internal fun onPlayerViewBound() {
+        val page = pendingRetryPage ?: return
+        pendingRetryPage = null
+        view.post { onVideoRetry(page) }
+    }
+
     /** A SurfaceView that failed is retried once on a TextureView, like the per-page players did. */
     private fun handleVideoError(error: PlaybackException) {
         val page = state.settledPage
@@ -198,8 +212,8 @@ class ComposeSliderPager(
             item.url?.let { failedVideoUrls.add(it) }
             videoPlayer?.stop()
             firstVideoFrameRendered = false
+            pendingRetryPage = page
             videoRebuild++
-            view.post { onVideoRetry(page) }
         } else {
             Toast.makeText(context, "Cannot play video: ${error.message}", Toast.LENGTH_LONG).show()
             exoListener.onPlayerError(error)
@@ -208,14 +222,17 @@ class ComposeSliderPager(
 
     /** Frees the shared player (the slider's pause); the observers stay so the pager keeps working on resume. */
     fun release() {
+        paused = true
+        pendingRetryPage = null
         videoPlayer?.release()
         videoPlayer = null
         firstVideoFrameRendered = false
-        videoRebuild++
     }
 
     /** Back in the foreground: settle the current page again so a released video player is built and started anew. */
     fun resume() {
+        if (!paused) return
+        paused = false
         settledNotified = -1
         settle()
     }
