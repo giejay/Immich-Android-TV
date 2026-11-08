@@ -5,7 +5,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -34,7 +38,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import nl.giejay.android.tv.immich.timeline.TimelineFocusAction
 import nl.giejay.android.tv.immich.timeline.TimelineFocusActions
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicIndex
@@ -86,6 +92,10 @@ fun TimelineScreen(
     val requesters = remember { mutableMapOf<String, FocusRequester>() }
     val loadingNewer = remember { mutableStateOf(false) }
     val memoriesState = rememberLazyListState()
+    val buckets by viewModel.buckets.collectAsState()
+    var indicatorMonth by remember { mutableStateOf<String?>(null) }
+    var scrubberFocused by remember { mutableStateOf(false) }
+    val scrubberRequester = remember { FocusRequester() }
     var pendingRestore by remember { mutableStateOf(false) }
 
     /** Focuses [key] (an asset id or "memory:<id>"), scrolling its item into composition first. */
@@ -137,6 +147,50 @@ fun TimelineScreen(
         }
     }
 
+    /** Scrolls the list to [monthKey] (loading that month first) and optionally moves focus into the mosaic. */
+    suspend fun jumpToMonth(monthKey: String, exitToMosaic: Boolean) {
+        val bucketKey = viewModel.resolveBucketKey(monthKey) ?: monthKey
+        if (bucketKey !in viewModel.bucketAssets.value.keys) {
+            withContext(Dispatchers.IO) { viewModel.loadBucket(bucketKey) }
+        }
+        val preferredDay = viewModel.newestDayKeyForBucket(bucketKey)
+        val items = withTimeoutOrNull(4000) {
+            snapshotFlow { currentLayout.items }
+                .first { TimelineMosaicIndex.positionForScrubberMonth(it, monthKey, preferredDay) >= 0 }
+        } ?: return
+        val position = TimelineMosaicIndex.positionForScrubberMonth(items, monthKey, preferredDay)
+        listState.scrollToItem(position)
+        indicatorMonth = bucketKey
+        if (exitToMosaic) {
+            val assetId = preferredDay?.let { TimelineMosaicIndex.rightmostAssetIdForDay(items, it) }
+                ?: items.drop(position).filterIsInstance<TimelineMosaicItem.Row>().firstOrNull()?.cells?.firstOrNull()?.asset?.id
+            if (assetId != null) focusKey(assetId, TimelineMosaicIndex.positionOfAsset(items, assetId))
+        }
+        // Newer/older months load around the target (focus prefetches them) and shift indices:
+        // keep the target month's heading at the top for a moment, by key instead of by index.
+        val anchorKey = items.getOrNull(position)?.listKey() ?: return
+        withTimeoutOrNull(JUMP_ANCHOR_MILLIS) {
+            snapshotFlow { currentLayout.items }.collect { current ->
+                val index = current.indexOfFirst { it.listKey() == anchorKey }
+                if (index >= 0 && listState.firstVisibleItemIndex != index) listState.scrollToItem(index)
+            }
+        }
+    }
+
+    // Keep the rail's accent on the month that is on screen (unless the user is scrubbing).
+    LaunchedEffect(listState, viewModel) {
+        snapshotFlow { listState.firstVisibleItemIndex }.collect { first ->
+            if (scrubberFocused) return@collect
+            val dayKey = when (val item = currentLayout.items.getOrNull(first)) {
+                is TimelineMosaicItem.Header -> item.dayKey
+                is TimelineMosaicItem.Row -> item.dayKey
+                else -> null
+            } ?: return@collect
+            runCatching { TimelineViewModel.monthBucketKey(java.time.LocalDate.parse(dayKey)) }.getOrNull()
+                ?.let { indicatorMonth = it }
+        }
+    }
+
     fun focusMemories() {
         val items = currentLayout.items
         val memories = items.firstOrNull() as? TimelineMosaicItem.MemoriesRow ?: return
@@ -153,8 +207,10 @@ fun TimelineScreen(
                 scope.launch { focusKey(action.assetId, position) }
                 true
             }
-            // the scrubber arrives with step K4; keep focus where it is meanwhile
-            TimelineFocusAction.ExitScrubber -> true
+            TimelineFocusAction.ExitScrubber -> {
+                runCatching { scrubberRequester.requestFocus() }
+                true
+            }
             TimelineFocusAction.LoadOlder -> {
                 scope.launch {
                     val next = viewModel.nextOlderUnloadedBucket() ?: return@launch
@@ -209,6 +265,20 @@ fun TimelineScreen(
         }
     }
 
+    Box(Modifier.fillMaxSize()) {
+    // Below the list so focused cells cover the year labels; raised above it while the rail has focus.
+    TimelineScrubber(
+        buckets = buckets,
+        indicatorMonthKey = indicatorMonth,
+        onCommit = { month, exit -> scope.launch { jumpToMonth(month, exit) } },
+        focusRequester = scrubberRequester,
+        onFocusedChange = { scrubberFocused = it },
+        modifier = Modifier
+            .align(Alignment.CenterEnd)
+            .width(112.dp)
+            .fillMaxHeight()
+            .zIndex(if (scrubberFocused) 2f else 0f),
+    )
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(start = ContentPaddingStart, top = 28.dp, end = ContentPaddingEnd, bottom = 48.dp),
@@ -245,6 +315,7 @@ fun TimelineScreen(
                                     .onFocusChanged {
                                         if (it.isFocused) {
                                             focusedAssetId = cell.asset.id
+                                            viewModel.bucketKeyForAsset(cell.asset.id)?.let { indicatorMonth = it }
                                             viewModel.prefetchAroundDay(cell.dayKey)
                                             // stray focus before the restore has run must not overwrite the leave-off
                                             if (!pendingRestore) {
@@ -268,6 +339,7 @@ fun TimelineScreen(
                 is TimelineMosaicItem.MemoriesRow -> MemoriesRow(item, requesters, viewModel, onOpenMemory, memoriesState, liveLeaveOff = !pendingRestore)
             }
         }
+    }
     }
 }
 
@@ -325,4 +397,5 @@ private fun TimelineMosaicItem.listKey(): String = when (this) {
 }
 
 private const val NEAR_END_ITEMS = 6
+private const val JUMP_ANCHOR_MILLIS = 1500L
 private val FocusOverflow = 24.dp
