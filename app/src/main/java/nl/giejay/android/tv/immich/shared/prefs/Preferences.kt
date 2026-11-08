@@ -461,11 +461,6 @@ data object EXPERIMENTAL_COMPOSE_TIMELINE : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.experimental_compose_timeline),
     ImmichApplication.appContext!!.getString(R.string.experimental_compose_timeline_desc))
 
-/** Step L2: pages the slider (viewer and screensaver) with the Compose pager. On by default; switching it off falls back to the ViewPager until that is removed. */
-data object EXPERIMENTAL_COMPOSE_SLIDER : BooleanPref(true,
-    ImmichApplication.appContext!!.getString(R.string.experimental_compose_slider),
-    ImmichApplication.appContext!!.getString(R.string.experimental_compose_slider_desc))
-
 data object LOAD_BACKGROUND_IMAGE : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background),
     ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background_desc))
@@ -671,7 +666,7 @@ data object HomeScreenChannelsPrefScreen : PrefScreen(ImmichApplication.appConte
 )
 
 data object DebugPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.debug_settings), "debug",
-    children = listOf(PrefCategory("", listOf(DEBUG_MODE, EXPERIMENTAL_COMPOSE_TIMELINE, EXPERIMENTAL_COMPOSE_SLIDER, USER_ID))), { prefManager ->
+    children = listOf(PrefCategory("", listOf(DEBUG_MODE, EXPERIMENTAL_COMPOSE_TIMELINE, USER_ID))), { prefManager ->
         prefManager.findPreference<Preference>(USER_ID.key())?.summary = PreferenceManager.get(USER_ID)
     })
 

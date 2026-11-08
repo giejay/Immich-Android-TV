@@ -11,19 +11,14 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
-import android.view.animation.Interpolator
-import android.view.animation.PathInterpolator
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.view.children
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
-import androidx.viewpager.widget.ViewPager
 import com.google.common.collect.Iterables
 import com.google.common.collect.Lists
 import com.zeuskartik.mediaslider.R
@@ -33,25 +28,19 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import nl.giejay.mediaslider.adapter.ScreenSlidePagerAdapter
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.controller.SliderControllerBar
 import nl.giejay.mediaslider.controller.SliderControllerUiState
 import nl.giejay.mediaslider.overlay.createOverlayView
 import nl.giejay.mediaslider.pager.ComposeSliderPager
 import nl.giejay.mediaslider.pager.DelegatingSliderPager
-import nl.giejay.mediaslider.pager.ViewPagerSliderPager
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
 import nl.giejay.mediaslider.plugin.MetadataViewPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPlugin
 import nl.giejay.mediaslider.plugin.SliderViewPluginContext
-import nl.giejay.mediaslider.transitions.RandomTransformer
-import nl.giejay.mediaslider.transitions.SliderTransition
-import nl.giejay.mediaslider.util.FixedSpeedScroller
 import nl.giejay.mediaslider.util.LoadMoreResult
 import timber.log.Timber
-import java.lang.reflect.Field
 
 /**
  * Pager + metadata shell for the media slider. Timeline/memories chrome is provided
@@ -60,7 +49,6 @@ import java.lang.reflect.Field
 open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     // view elements
     protected val mainHandler = Handler(Looper.getMainLooper())
-    protected val mPager: ViewPager
     private val volumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == "android.media.VOLUME_CHANGED_ACTION" && isConfigReady) {
@@ -85,10 +73,9 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     // internal
     protected val controller: MediaSliderController
     private val controllerState = SliderControllerUiState()
-    private val sliderPager: DelegatingSliderPager
+    private val sliderPager = DelegatingSliderPager()
     private var composePager: ComposeSliderPager? = null
     private var defaultExoFactory = DefaultHttpDataSource.Factory()
-    private var pagerAdapter: ScreenSlidePagerAdapter? = null
     private var loading = false
     private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
     private data class ViewPluginEntry(val plugin: SliderViewPlugin<Any?>, val state: Any?)
@@ -106,8 +93,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         inflate(getContext(), R.layout.slider, this)
 
         val playButton: View = findViewById(R.id.playPause)
-        mPager = findViewById(R.id.pager)
-        sliderPager = DelegatingSliderPager(ViewPagerSliderPager(mPager))
         val controllerHost = findViewById<android.widget.FrameLayout>(R.id.controller_host)
         controllerHost.addView(createOverlayView(context) { SliderControllerBar(controllerState) })
         controller = MediaSliderController(context, mainHandler, sliderPager, playButton, this, controllerState)
@@ -142,7 +127,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (composePager == null && mPager.adapter == null) {
+        if (composePager == null) {
             return super.dispatchKeyEvent(event)
         }
         return controller.dispatchKeyEvent(event) { super.dispatchKeyEvent(event) }
@@ -173,92 +158,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         controller.initialize(config)
         viewPlugins.forEach { it.plugin.attachView(viewPluginContext.rootView, it.state) }
         viewPlugins.forEach { it.plugin.onLoadConfig(viewPluginContext, config, it.state) }
-        initViewsAndSetAdapter(listener)
-    }
-
-    private fun setStartPositionOnViewPager() {
-        if (config.startPosition >= 0) {
-            if (config.startPosition > config.items.size) {
-                mPager.currentItem = (config.items.size - 1)
-                return
-            }
-            mPager.currentItem = config.startPosition
-        } else {
-            mPager.currentItem = 0
-        }
-        mPager.offscreenPageLimit = 1
-        controller.restorePagerFocus()
-    }
-
-    private fun initViewsAndSetAdapter(listener: ExoPlayerListener) {
-        if (config.useComposePager) {
-            initComposePager(listener)
-            return
-        }
-        pagerAdapter = ScreenSlidePagerAdapter(
-            context,
-            config.items,
-            config,
-            { mPager.currentItem },
-            listener
-        )
-
-        val customTransition = config.enableSlideAnimation && config.transition != SliderTransition.SLIDE
-        try {
-            val duration = if (customTransition) config.transitionDurationMillis else config.animationSpeedMillis
-            if (config.enableSlideAnimation && duration > 0) {
-                val mScroller: Field = ViewPager::class.java.getDeclaredField("mScroller")
-                mScroller.isAccessible = true
-                val interpolator: Interpolator =
-                    if (customTransition) PathInterpolator(0.4f, 0f, 0.2f, 1f) else DecelerateInterpolator(0.75F)
-                mScroller.set(mPager, FixedSpeedScroller(mPager.context, interpolator, duration))
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Could not set scroller")
-        }
-        Timber.i("Slider transition: %s (custom: %s, %d ms)", config.transition, customTransition, config.transitionDurationMillis)
-        if (customTransition) {
-            val transformer = config.transition.createTransformer()
-            mPager.setPageTransformer(false, transformer)
-            if (transformer is RandomTransformer) {
-                // pick a new transition whenever the pager starts moving (drag or programmatic)
-                var previousState = ViewPager.SCROLL_STATE_IDLE
-                mPager.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
-                    override fun onPageScrollStateChanged(state: Int) {
-                        if (state == ViewPager.SCROLL_STATE_DRAGGING ||
-                            (state == ViewPager.SCROLL_STATE_SETTLING && previousState == ViewPager.SCROLL_STATE_IDLE)
-                        ) {
-                            transformer.pickNext()
-                        }
-                        previousState = state
-                    }
-                })
-            }
-        }
-
-        mPager.setAdapter(pagerAdapter)
-        mPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
-            override fun onPageScrolled(sliderItemIndex: Int, v: Float, i1: Int) {
-                maybeLoadMore()
-                controller.stopPlayer()
-                if (sliderItemIndex != mPager.currentItem) {
-                    return
-                }
-                onPageSettled(sliderItemIndex)
-            }
-
-            override fun onPageSelected(i: Int) {
-                viewPlugins.forEach { it.plugin.onPageSelected(viewPluginContext, i, it.state) }
-                if (!controller.isControllerVisible) {
-                    controller.restorePagerFocus()
-                }
-            }
-
-            override fun onPageScrollStateChanged(i: Int) {}
-        })
-        // Register the listener before selecting the start page so the first asset
-        // still gets onPageSelected / onPageSettled (metadata, date overlay, etc.).
-        setStartPositionOnViewPager()
+        initComposePager(listener)
     }
 
     private fun maybeLoadMore() {
@@ -276,8 +176,6 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
     }
 
-    private fun findVideoView(index: Int): ExoPlayerView? = mPager.findViewWithTag<ExoPlayerView>("view$index")
-
     /** The asset at [sliderItemIndex] came to rest: update plugins and start what the page needs. */
     private fun onPageSettled(sliderItemIndex: Int) {
         val sliderItem = config.items.getOrNull(sliderItemIndex) ?: return
@@ -290,22 +188,11 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         config.onAssetSelected(sliderItem)
 
         if (sliderItem.type == SliderItemType.VIDEO) {
-            val shared = composePager
-            val player: ExoPlayer = if (shared != null) {
-                shared.requirePlayer()
-            } else {
-                val viewTag = findVideoView(sliderItemIndex) ?: return
-                if (!viewTag.isReady()) {
-                    Timber.e("Player is not initialized properly, cannot play video.")
-                    Toast.makeText(context, "Player is not initialized properly, cannot play video.", Toast.LENGTH_LONG).show()
-                    return
-                }
-                viewTag.getPlayer()!!
-            }
+            val player: ExoPlayer = composePager?.requirePlayer() ?: return
             controller.setCurrentPlayer(player)
             player.seekTo(0, 0)
-            // the shared player holds the previous video: always load this page's media; a page's own player only when idle
-            if ((shared != null || player.playbackState == Player.STATE_IDLE) && sliderItem.url != null) {
+            // the shared player still holds the previous video: always load this page's media
+            if (sliderItem.url != null) {
                 prepareMedia(sliderItem.url!!, player, defaultExoFactory)
             }
             player.volume = if (config.isVideoSoundEnable) 1f else 0f
@@ -316,24 +203,12 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             controller.configureController(sliderItem, sliderItemIndex)
             if (controller.slideShowPlaying) {
                 controller.startTimerNextAsset()
-                composePager?.let {
-                    it.startSlideshowEffect(sliderItemIndex)
-                    return
-                }
-                // slideshow zoom/pan effects of the ViewPager pages
-                val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return
-                val touchImageView = viewTag.children.first() as? TouchImageView
-                if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
-                    touchImageView.zoomAndScrollPanorama(config, sliderItem)
-                } else if (touchImageView != null && config.zoomAndScrollPanorama && !mainItem.isPanorama) {
-                    touchImageView.zoomAndPanEffect(config, sliderItem)
-                }
+                composePager?.startSlideshowEffect(sliderItemIndex)
             }
         }
     }
 
     private fun initComposePager(listener: ExoPlayerListener) {
-        mPager.visibility = View.GONE
         val pager = ComposeSliderPager(context, config, listener, config.startPosition.coerceAtLeast(0))
         pager.onScrollStarted = { controller.stopPlayer() }
         pager.onPageSelected = { index ->
@@ -350,15 +225,10 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
         composePager = pager
         sliderPager.delegate = pager
-        val params = LayoutParams(0, 0).apply {
-            topToTop = LayoutParams.PARENT_ID
-            bottomToBottom = LayoutParams.PARENT_ID
-            startToStart = LayoutParams.PARENT_ID
-            endToEnd = LayoutParams.PARENT_ID
-        }
-        // inside the inflated slider layout (same parent as the ViewPager), or its black background would cover it
-        val container = mPager.parent as ViewGroup
-        container.addView(pager.view, container.indexOfChild(mPager), params)
+        findViewById<ViewGroup>(R.id.pager_host).addView(
+            pager.view,
+            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+        )
         pager.start()
         controller.restorePagerFocus()
     }
@@ -392,7 +262,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             controller.cancelNextAssetTimer()
         }
         config.items = items
-        composePager?.let { it.items = items } ?: pagerAdapter!!.setItems(items)
+        composePager?.items = items
         if (controller.slideShowPlaying && currentItemType() == SliderItemType.IMAGE) {
             controller.startTimerNextAsset()
         }

@@ -1,7 +1,5 @@
 package nl.giejay.mediaslider.pager
 
-import androidx.viewpager.widget.ViewPager
-
 /**
  * What [nl.giejay.mediaslider.view.MediaSliderController] needs from the paging surface, so the
  * controller does not depend on a concrete pager (ViewPager today, a Compose pager later).
@@ -24,25 +22,18 @@ object SliderPaging {
     fun previous(current: Int, count: Int): Int = (if (current == 0) count else current) - 1
 }
 
-class ViewPagerSliderPager(private val pager: ViewPager) : SliderPager {
-    override val currentIndex: Int get() = pager.currentItem
-    override val itemCount: Int get() = pager.adapter?.count ?: 0
-
-    override fun scrollTo(index: Int, animate: Boolean) = pager.setCurrentItem(index, animate)
-
-    override fun restoreFocus() {
-        pager.post {
-            if (!pager.hasFocus()) {
-                pager.requestFocus()
-            }
-        }
-    }
-}
-
 /** Lets the controller keep one pager reference while the slider chooses the implementation later. */
-class DelegatingSliderPager(var delegate: SliderPager) : SliderPager {
+class DelegatingSliderPager(var delegate: SliderPager = EmptySliderPager) : SliderPager {
     override val currentIndex: Int get() = delegate.currentIndex
     override val itemCount: Int get() = delegate.itemCount
     override fun scrollTo(index: Int, animate: Boolean) = delegate.scrollTo(index, animate)
     override fun restoreFocus() = delegate.restoreFocus()
+}
+
+/** The pager before a configuration is loaded: no items, nothing to scroll. */
+object EmptySliderPager : SliderPager {
+    override val currentIndex: Int = 0
+    override val itemCount: Int = 0
+    override fun scrollTo(index: Int, animate: Boolean) = Unit
+    override fun restoreFocus() = Unit
 }
