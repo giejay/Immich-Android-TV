@@ -1,0 +1,45 @@
+# Local Immich server for testing the app and taking README screenshots, with stock media only.
+# Start:  docker compose up -d        (add --profile ml for faces/smart search, needs ~2 GB more RAM)
+# Data lives in ./data (git-ignored); `docker compose down -v && rm -rf data` resets everything.
+name: immich-test
+
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    environment:
+      DB_HOSTNAME: database
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: redis
+    volumes:
+      - ./data/upload:/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "2283:2283"
+    depends_on:
+      - redis
+      - database
+    restart: unless-stopped
+
+  immich-machine-learning:
+    profiles: ["ml"]
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    volumes:
+      - ./data/model-cache:/cache
+    restart: unless-stopped
+
+  redis:
+    image: docker.io/valkey/valkey:8-bookworm
+    restart: unless-stopped
+
+  database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvector0.8.0
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
