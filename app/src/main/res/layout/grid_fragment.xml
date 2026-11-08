@@ -33,6 +33,13 @@
             android:paddingEnd="40dp"
             android:visibility="gone" />
 
+        <!-- Optional Compose header (search field, chips) between the title and the grid. -->
+        <FrameLayout
+            android:id="@+id/grid_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
         <FrameLayout
             android:id="@+id/browse_grid_dock"
             android:layout_width="match_parent"

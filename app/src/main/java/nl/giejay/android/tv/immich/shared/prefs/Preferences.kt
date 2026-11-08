@@ -461,6 +461,13 @@ data object CLASSIC_TIMELINE : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.classic_timeline),
     ImmichApplication.appContext!!.getString(R.string.classic_timeline_desc))
 
+/** The last searches (see SearchHistory); not shown in any settings screen. */
+data object SEARCH_HISTORY : StringPref("",
+    "Search history",
+    "Recent searches") {
+    override fun key() = "search_history"
+}
+
 data object LOAD_BACKGROUND_IMAGE : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background),
     ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background_desc))

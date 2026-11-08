@@ -14,6 +14,7 @@ import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
+import nl.giejay.android.tv.immich.api.model.SmartSearchRequest
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import nl.giejay.android.tv.immich.api.model.toTimelineAssets
@@ -97,6 +98,9 @@ internal fun List<Asset>.toRandomAssetResponse(): AssetResponse =
 
 class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
+        private const val SMART_SEARCH_RETRY_MILLIS = 5 * 60 * 1000L
+        private const val MAX_FALLBACK_HITS_PER_FIELD = 500
+
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
         fun getClient(config: ApiClientConfig): nl.giejay.android.tv.immich.api.ApiClient {
             if (config != apiClient?.config) {
@@ -122,6 +126,74 @@ class ApiClient(private val config: ApiClientConfig) {
 
     private suspend fun search(searchRequest: SearchRequest): Either<String, SearchResponse> {
         return executeAPICall(200) { service.listAssets(searchRequest) }
+    }
+
+    /** Until when smart search is assumed to be unavailable (no machine learning on the server); 0 = not known to fail. */
+    @Volatile private var smartSearchUnavailableUntil = 0L
+
+    /**
+     * Search by text: by image content when the server has machine learning (smart search), otherwise by
+     * file name, description, city and country. A failed smart search falls back for a while so the
+     * slower double request does not happen on every query.
+     */
+    /** Which backend serves the pages of the search that is running: it must not change between its pages. */
+    private enum class SearchBackend { SMART, METADATA }
+    private var searchBackend = SearchBackend.METADATA
+
+    suspend fun searchAssets(query: String, page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
+        val type = if (contentType == ContentType.ALL) null else contentType.toString()
+        val size = pageCount.coerceAtMost(MAX_SEARCH_PAGE_SIZE)
+        val isFirstPage = page <= 1
+        // only the first page of a search chooses; later pages stay with that choice (or fail, never mix)
+        val smartAllowed = if (isFirstPage) System.currentTimeMillis() >= smartSearchUnavailableUntil else searchBackend == SearchBackend.SMART
+        if (smartAllowed) {
+            val smart = executeAPICall(200) { service.smartSearch(SmartSearchRequest(query = query, page = page, size = size, type = type)) }
+            if (smart.isRight()) {
+                searchBackend = SearchBackend.SMART
+                return smart.map { it.toAssetResponse() }.map { it.copy(assets = it.assets.filter(excludeByTag())) }
+            }
+            if (!isFirstPage) return smart.map { AssetResponse(emptyList(), false) }
+            // (a cancelled call has thrown before this point, so an interrupted request never lands here)
+            smartSearchUnavailableUntil = System.currentTimeMillis() + SMART_SEARCH_RETRY_MILLIS
+        }
+        searchBackend = SearchBackend.METADATA
+        return metadataSearchPage(query, type, page, size)
+    }
+
+    /** The merged metadata hits of the last query, so paging does not fetch and merge everything again. */
+    private var metadataCache: Triple<String, String?, List<Asset>>? = null
+
+    /**
+     * The four field searches are paginated separately, so a page of each cannot be merged into a correct
+     * global order. Instead the hits of every field are fetched once (up to [MAX_FALLBACK_HITS_PER_FIELD]),
+     * merged and sorted, and the page is cut from that list.
+     */
+    private suspend fun metadataSearchPage(query: String, type: String?, page: Int, size: Int): Either<String, AssetResponse> {
+        // a new search (page 1) always looks again; the cache only serves the pages of the search in progress
+        if (page <= 1) metadataCache = null
+        val cached = metadataCache?.takeIf { it.first == query && it.second == type }?.third
+        val merged = cached ?: run {
+            val perField = buildMetadataSearchRequests(query, 1, MAX_SEARCH_PAGE_SIZE, type).pmap { first ->
+                var hits = emptyList<Asset>()
+                var request = first
+                while (true) {
+                    val response = search(request).getOrElse { return@pmap if (hits.isEmpty()) Either.Left(it) else Either.Right(hits) }
+                    hits = hits + response.assets.items
+                    if (response.assets.nextPage == null || hits.size >= MAX_FALLBACK_HITS_PER_FIELD) break
+                    request = request.copy(page = (request.page ?: 1) + 1)
+                }
+                Either.Right(hits)
+            }
+            if (perField.all { it.isLeft() }) return perField.first().map { AssetResponse(emptyList(), false) }
+            mergeSearchResults(perField.mapNotNull { it.getOrNull() }).filter(excludeByTag())
+                .also { metadataCache = Triple(query, type, it) }
+        }
+        val slice = sliceSearchPage(merged, page, size)
+        return Either.Right(AssetResponse(slice.assets, slice.hasMore))
+    }
+
+    suspend fun searchPeople(name: String): Either<String, List<Person>> {
+        return executeAPICall(200) { service.searchPeople(name) }.map { people -> people.filter { !it.name.isNullOrBlank() } }
     }
 
     suspend fun listAlbums(assetId: Option<String> = None): Either<String, List<Album>> {
