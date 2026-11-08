@@ -80,6 +80,9 @@ class ComposeSliderPager(
     /** Bumped when a failed SurfaceView page has to be rebuilt with a TextureView. */
     internal var videoRebuild by mutableIntStateOf(0)
 
+    /** Bumped whenever the shared player is released, so a page view bound to the old player is rebuilt on any recomposition. */
+    internal var playerGeneration by mutableIntStateOf(0)
+
     /** True from the slider's pause until its resume: no player view (and no player) is created meanwhile. */
     internal var paused by mutableStateOf(false)
 
@@ -226,6 +229,7 @@ class ComposeSliderPager(
         pendingRetryPage = null
         videoPlayer?.release()
         videoPlayer = null
+        playerGeneration++
         firstVideoFrameRendered = false
     }
 
