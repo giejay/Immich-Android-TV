@@ -12,7 +12,8 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.zeuskartik.mediaslider.R
 import kotlinx.coroutines.CoroutineScope
-import nl.giejay.mediaslider.adapter.MetaDataAdapter
+import nl.giejay.mediaslider.adapter.MetaDataItem
+import nl.giejay.mediaslider.overlay.SliderOverlayState
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
@@ -133,8 +134,12 @@ interface SliderControllerPlugin {
     fun onDestroy(controller: MediaSliderController) {}
 }
 
-data class MetadataRenderState(
-    val leftAdapter: MetaDataAdapter,
-    val rightAdapter: MetaDataAdapter
+class MetadataRenderState(
+    val overlay: SliderOverlayState,
+    val leftItems: List<MetaDataItem>,
+    val leftPortraitItems: List<MetaDataItem>,
+    val rightItems: List<MetaDataItem>,
+    val rightPortraitItems: List<MetaDataItem>,
+    /** Resolved text per asset, side and item index; filled asynchronously and kept for paging back. */
+    val values: MutableMap<String, String> = mutableMapOf()
 )
-

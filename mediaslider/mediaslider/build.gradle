@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 apply plugin: 'com.android.library'
 apply plugin: 'com.google.devtools.ksp'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 android {
     compileSdk 37
@@ -29,6 +30,7 @@ android {
         // View binding allows efficient, type-safe view access
         // See more at https://developer.android.com/topic/libraries/view-binding
         viewBinding = true
+        compose = true
     }
     namespace 'com.zeuskartik.mediaslider'
 }
@@ -57,4 +59,9 @@ dependencies {
     implementation libs.androidx.constraintlayout
     implementation libs.gson
     implementation libs.nextlib.media3ext
+
+    // Compose overlays (metadata, date)
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.foundation
 }
