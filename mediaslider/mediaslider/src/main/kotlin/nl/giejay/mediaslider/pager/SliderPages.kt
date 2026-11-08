@@ -96,7 +96,7 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier) {
 internal fun SliderVideoPage(pager: ComposeSliderPager, page: Int, item: SliderItemViewHolder) {
     val isCurrent = page == pager.state.settledPage
     Box(Modifier.fillMaxSize()) {
-        if (isCurrent) {
+        if (isCurrent && !pager.paused) {
             // rebuilt with a TextureView when the SurfaceView failed (see ComposeSliderPager.handleVideoError)
             key(pager.videoRebuild) {
                 val useTextureView = item.mainItem.orientation != 1 || pager.failedVideoUrls.contains(item.url)
@@ -106,6 +106,7 @@ internal fun SliderVideoPage(pager: ComposeSliderPager, page: Int, item: SliderI
                         val layout = if (useTextureView) R.layout.slider_player_texture else R.layout.slider_player_surface
                         (LayoutInflater.from(context).inflate(layout, null, false) as PlayerView).also {
                             it.player = pager.requirePlayer()
+                            pager.onPlayerViewBound()
                         }
                     },
                     onRelease = { it.player = null },

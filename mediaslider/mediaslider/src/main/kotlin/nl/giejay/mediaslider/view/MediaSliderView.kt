@@ -123,9 +123,9 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
         }
     }
 
-    override fun onWindowVisibilityChanged(visibility: Int) {
-        super.onWindowVisibilityChanged(visibility)
-        if (visibility == View.VISIBLE && isConfigReady) composePager?.resume()
+    /** The slider came back after [onDestroy] (a pause): bring a released video player back. */
+    fun onResume() {
+        composePager?.resume()
     }
 
     override fun onDetachedFromWindow() {
