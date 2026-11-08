@@ -9,6 +9,7 @@ import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import retrofit2.HttpException
 import retrofit2.Response
+import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import java.util.UUID
 
@@ -79,6 +80,9 @@ object ApiUtil {
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            // a cancelled coroutine (the user moved on) is not an API failure
+            throw e
         } catch (e: HttpException) {
             Timber.e(e, "Could not fetch items due to http error")
             return Either.Left("Could not fetch data from API, status: ${e.code()}")

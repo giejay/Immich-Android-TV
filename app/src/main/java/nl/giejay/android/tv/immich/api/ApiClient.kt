@@ -136,16 +136,27 @@ class ApiClient(private val config: ApiClientConfig) {
      * file name, description, city and country. A failed smart search falls back for a while so the
      * slower double request does not happen on every query.
      */
+    /** Which backend serves the pages of the search that is running: it must not change between its pages. */
+    private enum class SearchBackend { SMART, METADATA }
+    private var searchBackend = SearchBackend.METADATA
+
     suspend fun searchAssets(query: String, page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
         val type = if (contentType == ContentType.ALL) null else contentType.toString()
         val size = pageCount.coerceAtMost(MAX_SEARCH_PAGE_SIZE)
-        if (System.currentTimeMillis() >= smartSearchUnavailableUntil) {
+        val isFirstPage = page <= 1
+        // only the first page of a search chooses; later pages stay with that choice (or fail, never mix)
+        val smartAllowed = if (isFirstPage) System.currentTimeMillis() >= smartSearchUnavailableUntil else searchBackend == SearchBackend.SMART
+        if (smartAllowed) {
             val smart = executeAPICall(200) { service.smartSearch(SmartSearchRequest(query = query, page = page, size = size, type = type)) }
             if (smart.isRight()) {
+                searchBackend = SearchBackend.SMART
                 return smart.map { it.toAssetResponse() }.map { it.copy(assets = it.assets.filter(excludeByTag())) }
             }
+            if (!isFirstPage) return smart.map { AssetResponse(emptyList(), false) }
+            // (a cancelled call has thrown before this point, so an interrupted request never lands here)
             smartSearchUnavailableUntil = System.currentTimeMillis() + SMART_SEARCH_RETRY_MILLIS
         }
+        searchBackend = SearchBackend.METADATA
         return metadataSearchPage(query, type, page, size)
     }
 
@@ -158,6 +169,8 @@ class ApiClient(private val config: ApiClientConfig) {
      * merged and sorted, and the page is cut from that list.
      */
     private suspend fun metadataSearchPage(query: String, type: String?, page: Int, size: Int): Either<String, AssetResponse> {
+        // a new search (page 1) always looks again; the cache only serves the pages of the search in progress
+        if (page <= 1) metadataCache = null
         val cached = metadataCache?.takeIf { it.first == query && it.second == type }?.third
         val merged = cached ?: run {
             val perField = buildMetadataSearchRequests(query, 1, MAX_SEARCH_PAGE_SIZE, type).pmap { first ->
