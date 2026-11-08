@@ -173,7 +173,8 @@ class ComposeSliderPager(
     private fun settle() {
         val page = state.settledPage
         if (items.getOrNull(page) == null) return
-        if (state.isScrollInProgress || page == settledNotified) return
+        // while paused nothing may start playback; resume() settles the current page
+        if (paused || state.isScrollInProgress || page == settledNotified) return
         settledNotified = page
         onPageSettled(page)
     }
