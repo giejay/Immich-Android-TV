@@ -19,6 +19,7 @@ import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
+import nl.giejay.android.tv.immich.shared.prefs.EXPERIMENTAL_COMPOSE_SLIDER
 import nl.giejay.android.tv.immich.shared.prefs.MetaDataScreen
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
@@ -101,7 +102,8 @@ internal fun buildScreenSaverConfiguration(
         showDateTopLeft = PreferenceManager.get(SCREENSAVER_SHOW_DATE_TOP_LEFT),
         controllerPlugins = enabledPlugins.controllerPlugins,
         viewPlugins = enabledPlugins.viewPlugins,
-        keyEventPlugins = enabledPlugins.keyEventPlugins
+        keyEventPlugins = enabledPlugins.keyEventPlugins,
+        useComposePager = PreferenceManager.get(EXPERIMENTAL_COMPOSE_SLIDER)
     )
 }
 
