@@ -57,7 +57,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                     && controller.currentPlayer?.volume == 0f
                 ) {
                     Timber.i("Volume changed detected, unmuting video")
-                    Toast.makeText(context, "Volume changed detected, unmuting video", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.volume_changed_unmuting, Toast.LENGTH_SHORT).show()
                     controller.toggleMute()
                 }
             }
@@ -254,7 +254,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
 
     fun setItems(items: List<SliderItemViewHolder>) {
         if (items.isEmpty()) {
-            Toast.makeText(context, "No items received to show in slideshow", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.no_items_received, Toast.LENGTH_SHORT).show()
             return
         }
         if (controller.slideShowPlaying) {
