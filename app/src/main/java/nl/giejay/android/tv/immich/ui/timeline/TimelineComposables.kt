@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -122,6 +123,56 @@ private fun VideoBadge(durationText: String, focused: Boolean, modifier: Modifie
             contentDescription = null,
             tint = Color.Unspecified,
             modifier = Modifier.size(26.dp),
+        )
+    }
+}
+
+/** "N years ago" card of the memories row: cover image with the title on a bottom scrim. */
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+fun TimelineMemoryCard(
+    coverUrl: String?,
+    label: String,
+    focused: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (focused) TimelineMosaicDefaults.FocusScale else 1f,
+        animationSpec = tween(ImmichFocus.AnimationMillis),
+        label = "memoryCardScale",
+    )
+    Box(
+        modifier
+            .size(280.dp, 160.dp)
+            .zIndex(if (focused) 1f else 0f)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        if (coverUrl != null) {
+            GlideImage(
+                model = coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .size(72.dp)
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000)))),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.align(Alignment.BottomStart).padding(14.dp),
         )
     }
 }
