@@ -98,7 +98,7 @@ internal fun SliderVideoPage(pager: ComposeSliderPager, page: Int, item: SliderI
     Box(Modifier.fillMaxSize()) {
         if (isCurrent && !pager.paused) {
             // rebuilt with a TextureView when the SurfaceView failed (see ComposeSliderPager.handleVideoError)
-            key(pager.videoRebuild) {
+            key(pager.videoRebuild, pager.playerGeneration) {
                 val useTextureView = item.mainItem.orientation != 1 || pager.failedVideoUrls.contains(item.url)
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
