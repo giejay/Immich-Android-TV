@@ -30,11 +30,6 @@
 -keep class nl.giejay.mediaslider.adapter.MetaDataItem { *; }
 -keep class * extends nl.giejay.mediaslider.adapter.MetaDataItem { *; }
 
-# MediaSliderView swaps this field in by name via reflection to control slide animation speed.
--keepclassmembers class androidx.viewpager.widget.ViewPager {
-    android.widget.Scroller mScroller;
-}
-
 # Pref/PrefScreen objects are enumerated via Kotlin sealedSubclasses reflection, their class
 # simple names double as SharedPreferences keys (see Pref.key()), and MetaDataScreen is resolved
 # by fully-qualified name from nav_graph.xml's argType -- all of this breaks silently under R8

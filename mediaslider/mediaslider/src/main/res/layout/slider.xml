@@ -8,8 +8,9 @@
     android:theme="@style/AppTheme"
     tools:context="nl.giejay.mediaslider.view.MediaSliderFragment">
 
-    <androidx.viewpager.widget.ViewPager
-        android:id="@+id/pager"
+    <!-- Host of the Compose pager (see ComposeSliderPager); added in MediaSliderView. -->
+    <FrameLayout
+        android:id="@+id/pager_host"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
