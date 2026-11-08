@@ -138,10 +138,13 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             return
         }
 
+        // keyed by server settings: the activity-scoped ViewModel captures the api client, so a changed
+        // server address or API key must not reuse a ViewModel that still talks to the old server
+        val clientKey = ApiClientConfig.fromPrefs().hashCode()
         viewModel = ViewModelProvider(
             requireActivity(),
             TimelineViewModelFactory(apiClient)
-        )[TimelineViewModel::class.java]
+        )["timeline-$clientKey", TimelineViewModel::class.java]
     }
 
     override fun onCreateView(

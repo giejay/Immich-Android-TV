@@ -323,7 +323,7 @@ private fun SettingRow(
 }
 
 @Composable
-private fun ToggleIndicator(checked: Boolean) {
+internal fun ToggleIndicator(checked: Boolean) {
     val track by animateColorAsState(
         if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "toggleTrack",
