@@ -129,7 +129,7 @@ class TimelineComposeFragment : Fragment() {
             TimelineScreen(
                 viewModel = viewModel,
                 rowHeightPx = dp(180),
-                gapPx = dp(6),
+                gapPx = dp(8),
                 todayLabel = getString(R.string.today),
                 yesterdayLabel = getString(R.string.yesterday),
                 onOpenAsset = { sliderLauncher.openAsset(it) },
