@@ -21,9 +21,15 @@ android {
         testOptions.unitTests.includeAndroidResources = true
     }
 
+    // Local release builds (to test R8, baseline profiles, performance) work without the real keystore by
+    // falling back to the debug key; CI (CI=true) keeps requiring the real one so a missing secret is never
+    // papered over with a debug-signed release.
+    def releaseKeystore = file(System.getenv("RELEASE_KEYSTORE_PATH") ?: "keystore")
+    def useDebugKeyForRelease = !releaseKeystore.exists() && System.getenv("CI") == null
+
     signingConfigs {
         release {
-            storeFile file(System.getenv("RELEASE_KEYSTORE_PATH") ?: "keystore")
+            storeFile releaseKeystore
             storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: "dummy"
             keyAlias System.getenv("RELEASE_KEY_ALIAS") ?: "immich"
             keyPassword System.getenv("RELEASE_KEY_PASSWORD") ?: "dummy"
@@ -35,7 +41,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig useDebugKeyForRelease ? signingConfigs.debug : signingConfigs.release
         }
     }
 
