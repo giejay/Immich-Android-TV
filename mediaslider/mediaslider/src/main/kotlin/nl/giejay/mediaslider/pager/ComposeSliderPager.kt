@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,6 +50,7 @@ import nl.giejay.mediaslider.view.ExoPlayerListener
 import nl.giejay.mediaslider.player.AmlogicSafeRenderersFactory
 import nl.giejay.mediaslider.player.createVideoLoadControl
 import timber.log.Timber
+import kotlin.math.abs
 import kotlin.random.Random
 
 /**
@@ -91,6 +94,16 @@ class ComposeSliderPager(
 
     /** Asks the slider to prepare the current video again (after the page was rebuilt for a TextureView). */
     var onVideoRetry: (Int) -> Unit = {}
+
+    /** Page whose slideshow effect is running (-1: none) and a counter so the same page can start it again. */
+    internal var effectPage by mutableIntStateOf(-1)
+    internal var effectToken by mutableIntStateOf(0)
+
+    /** Starts the zoom/pan (or panorama scroll) of the photo on [page]; it ends when the pager moves. */
+    fun startSlideshowEffect(page: Int) {
+        effectPage = page
+        effectToken++
+    }
 
     /** Transition in use; RANDOM resolves to a concrete one that changes whenever the pager starts moving. */
     internal var activeTransition by mutableStateOf(initialTransition())
@@ -146,6 +159,7 @@ class ComposeSliderPager(
                     if (config.transition == SliderTransition.RANDOM) pickNextTransition()
                     firstVideoFrameRendered = false
                     settledNotified = -1
+                    effectPage = -1
                     pendingRetryPage = null
                     onScrollStarted()
                 } else {
@@ -280,7 +294,18 @@ private fun SliderPagerContent(pager: ComposeSliderPager) = CompositionLocalProv
                     SliderImagePage(item.mainItem, Modifier.weight(1f).fillMaxSize())
                     SliderImagePage(item.secondaryItem!!, Modifier.weight(1f).fillMaxSize())
                 }
-                else -> SliderImagePage(item.mainItem, Modifier.fillMaxSize())
+                else -> {
+                    // a page that is a full page away is out of sight; only then may its zoom/pan reset
+                    val hidden by remember(page) {
+                        derivedStateOf { abs(page - pager.state.currentPage - pager.state.currentPageOffsetFraction) >= 1f }
+                    }
+                    SliderImagePage(
+                        item.mainItem,
+                        Modifier.fillMaxSize(),
+                        effectToken = if (pager.effectPage == page) pager.effectToken else null,
+                        hidden = hidden,
+                    )
+                }
             }
         }
     }

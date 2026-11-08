@@ -316,7 +316,11 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             controller.configureController(sliderItem, sliderItemIndex)
             if (controller.slideShowPlaying) {
                 controller.startTimerNextAsset()
-                // slideshow zoom/pan effects of the ViewPager pages (the Compose pager gets its own)
+                composePager?.let {
+                    it.startSlideshowEffect(sliderItemIndex)
+                    return
+                }
+                // slideshow zoom/pan effects of the ViewPager pages
                 val viewTag = mPager.findViewWithTag<ViewGroup>("view$sliderItemIndex") ?: return
                 val touchImageView = viewTag.children.first() as? TouchImageView
                 if (touchImageView != null && config.zoomAndScrollPanorama && config.interval >= 10 && mainItem.isPanorama) {
