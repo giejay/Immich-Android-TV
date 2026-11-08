@@ -20,10 +20,20 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    - name: Set up Gradle (caches the wrapper distribution and dependencies)
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Download Gradle distribution (retry on GitHub hiccups)
+      run: |
+        chmod +x gradlew
+        for attempt in 1 2 3 4; do
+          ./gradlew --version && exit 0
+          echo "Gradle download failed (attempt $attempt), retrying in 30s"
+          sleep 30
+        done
+        exit 1
+
     - name: Extra strings file
       env:
         STRINGS_OTHER_BASE64: ${{secrets.STRINGS_OTHER}}
@@ -57,11 +67,23 @@ jobs:
         RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
         RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-      run: ./gradlew assembleRelease
+      run: |
+        for attempt in 1 2 3; do
+          ./gradlew assembleRelease && exit 0
+          echo "Build failed (attempt $attempt), retrying in 60s (dependency downloads can hit GitHub 504s)"
+          sleep 60
+        done
+        exit 1
 
     - name: Build and Test
       if: steps.keystore_check.outputs.available != 'true'
-      run: ./gradlew assembleDebug test
+      run: |
+        for attempt in 1 2 3; do
+          ./gradlew assembleDebug test && exit 0
+          echo "Build failed (attempt $attempt), retrying in 60s (dependency downloads can hit GitHub 504s)"
+          sleep 60
+        done
+        exit 1
 
     - name: Upload Artifacts
       if: steps.keystore_check.outputs.available == 'true'
