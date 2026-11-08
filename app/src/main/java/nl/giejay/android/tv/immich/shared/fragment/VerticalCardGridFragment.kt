@@ -6,7 +6,6 @@ import android.util.DisplayMetrics
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
-import androidx.leanback.app.BackgroundManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -43,7 +42,6 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     protected val startPage = 1
 
     private lateinit var mMetrics: DisplayMetrics
-    private var mBackgroundManager: BackgroundManager? = null
 
     protected lateinit var apiClient: ApiClient
     private lateinit var keyEvents: KeyEventsViewModel
@@ -112,7 +110,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
             }
         }
 
-        setupBackgroundManager()
+        setupDisplayMetrics()
 
         // fetch initial items
         fetchInitialItems()
@@ -228,11 +226,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         }
     }
 
-    private fun setupBackgroundManager() {
-        mBackgroundManager = BackgroundManager.getInstance(activity)
-        if (!mBackgroundManager!!.isAttached) {
-            mBackgroundManager!!.attach(requireActivity().window)
-        }
+    private fun setupDisplayMetrics() {
         mMetrics = DisplayMetrics()
         requireActivity().windowManager.defaultDisplay.getMetrics(mMetrics)
     }
@@ -246,9 +240,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     override fun onDestroyView() {
         Debouncer.cancel(BACKGROUND_DEBOUNCE_KEY)
         super.onDestroyView()
-        if (mBackgroundManager?.isAttached == true) {
-            mBackgroundManager?.drawable = null
-        }
+        setBackgroundArtwork(null)
     }
 
     private suspend fun setupViews(assets: List<ITEM>) =
@@ -307,7 +299,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
                         // Fragment may already be gone (e.g. user switched to Timeline).
                         if (!isAdded || !isResumed) return
                         try {
-                            mBackgroundManager?.drawable = resource
+                            setBackgroundArtwork(resource)
                         } catch (e: Exception) {
                             Timber.e(e, "Could not set background")
                         }
