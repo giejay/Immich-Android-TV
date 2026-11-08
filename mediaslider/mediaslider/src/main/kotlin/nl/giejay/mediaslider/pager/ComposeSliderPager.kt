@@ -2,6 +2,12 @@ package nl.giejay.mediaslider.pager
 
 import android.content.Context
 import android.view.View
+import android.widget.Toast
+import androidx.annotation.OptIn as AndroidOptIn
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -18,7 +24,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -30,8 +36,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.snapshotFlow
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -41,7 +45,9 @@ import nl.giejay.mediaslider.transitions.SliderTransition
 import nl.giejay.mediaslider.transitions.pageTransform
 import nl.giejay.mediaslider.transitions.randomTransitionChoices
 import nl.giejay.mediaslider.view.ExoPlayerListener
-import nl.giejay.mediaslider.view.ExoPlayerView
+import nl.giejay.mediaslider.player.AmlogicSafeRenderersFactory
+import nl.giejay.mediaslider.player.createVideoLoadControl
+import timber.log.Timber
 import kotlin.random.Random
 
 /**
@@ -51,7 +57,7 @@ import kotlin.random.Random
  */
 @OptIn(ExperimentalFoundationApi::class)
 class ComposeSliderPager(
-    context: Context,
+    private val context: Context,
     internal val config: MediaSliderConfiguration,
     internal val exoListener: ExoPlayerListener,
     startIndex: Int,
@@ -61,9 +67,21 @@ class ComposeSliderPager(
     var items by mutableStateOf(config.items)
     internal val state = PagerState(currentPage = startIndex.coerceIn(0, (config.items.size - 1).coerceAtLeast(0))) { items.size }
 
-    /** Video views of the pages that are composed, by page index; [MediaSliderView] starts playback through them. */
-    val videoViews = mutableStateMapOf<Int, ExoPlayerView>()
+    /** Videos whose SurfaceView failed and play on a TextureView instead. */
     internal val failedVideoUrls = mutableSetOf<String>()
+
+    /** The one player of all video pages; it is created with the first video and bound to the current page only. */
+    var videoPlayer: ExoPlayer? = null
+        private set
+
+    /** False from the moment a page change starts until the current video drew its first frame; the poster covers the wait. */
+    var firstVideoFrameRendered by mutableStateOf(false)
+
+    /** Bumped when a failed SurfaceView page has to be rebuilt with a TextureView. */
+    internal var videoRebuild by mutableIntStateOf(0)
+
+    /** Asks the slider to prepare the current video again (after the page was rebuilt for a TextureView). */
+    var onVideoRetry: (Int) -> Unit = {}
 
     /** Transition in use; RANDOM resolves to a concrete one that changes whenever the pager starts moving. */
     internal var activeTransition by mutableStateOf(initialTransition())
@@ -71,8 +89,6 @@ class ComposeSliderPager(
     var onScrollStarted: () -> Unit = {}
     var onPageSelected: (Int) -> Unit = {}
     var onPageSettled: (Int) -> Unit = {}
-
-    private var pendingSettle = false
 
     /** Scope of the composition: animations need its frame clock, which a plain scope does not have. */
     internal var compositionScope: CoroutineScope? = null
@@ -110,34 +126,63 @@ class ComposeSliderPager(
             snapshotFlow { state.isScrollInProgress }.collect { scrolling ->
                 if (scrolling) {
                     if (config.transition == SliderTransition.RANDOM) pickNextTransition()
+                    firstVideoFrameRendered = false
                     onScrollStarted()
                 } else {
                     settle()
                 }
             }
         }
-        scope.launch {
-            // a video page composes after the settle that wanted it: start it as soon as its view exists
-            snapshotFlow { videoViews[state.settledPage] }.filterNotNull().collect {
-                if (pendingSettle) settle()
-            }
-        }
     }
 
     private fun settle() {
         val page = state.settledPage
-        val item = items.getOrNull(page) ?: return
-        if (item.type == SliderItemType.VIDEO && videoViews[page] == null) {
-            pendingSettle = true
-            return
-        }
-        pendingSettle = false
+        if (items.getOrNull(page) == null) return
         onPageSettled(page)
+    }
+
+    /** The shared video player; built on first use with the same renderers and buffering as the ViewPager pages. */
+    @AndroidOptIn(UnstableApi::class)
+    fun requirePlayer(): ExoPlayer = videoPlayer ?: ExoPlayer.Builder(context)
+        .setRenderersFactory(AmlogicSafeRenderersFactory(context))
+        .setLoadControl(createVideoLoadControl(context, config))
+        .build()
+        .also { player ->
+            player.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) = exoListener.onPlaybackStateChanged(playbackState)
+                override fun onIsPlayingChanged(isPlaying: Boolean) = exoListener.onIsPlayingChanged(isPlaying)
+                override fun onRenderedFirstFrame() {
+                    firstVideoFrameRendered = true
+                }
+
+                override fun onPlayerError(error: PlaybackException) = handleVideoError(error)
+            })
+            if (!config.isVideoSoundEnable) player.volume = 0f
+            videoPlayer = player
+        }
+
+    /** A SurfaceView that failed is retried once on a TextureView, like the per-page players did. */
+    private fun handleVideoError(error: PlaybackException) {
+        val page = state.settledPage
+        val item = items.getOrNull(page) ?: return
+        val useTextureView = item.mainItem.orientation != 1 || failedVideoUrls.contains(item.url)
+        Timber.e(error, "Player error at page $page for ${item.url}. Retry with TextureView: ${!useTextureView}. ${error.message}")
+        if (!useTextureView) {
+            item.url?.let { failedVideoUrls.add(it) }
+            videoPlayer?.stop()
+            firstVideoFrameRendered = false
+            videoRebuild++
+            view.post { onVideoRetry(page) }
+        } else {
+            Toast.makeText(context, "Cannot play video: ${error.message}", Toast.LENGTH_LONG).show()
+            exoListener.onPlayerError(error)
+        }
     }
 
     fun release() {
         scope.cancel()
-        videoViews.clear()
+        videoPlayer?.release()
+        videoPlayer = null
     }
 
     private fun scrollSpec() = if (config.transition == SliderTransition.SLIDE) {

@@ -1,7 +1,7 @@
 package nl.giejay.mediaslider.pager
 
 import android.graphics.drawable.Drawable
-import android.widget.Toast
+import android.view.LayoutInflater
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +29,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.ui.PlayerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -40,8 +40,6 @@ import com.bumptech.glide.request.target.Target
 import com.zeuskartik.mediaslider.R
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemViewHolder
-import nl.giejay.mediaslider.player.AmlogicSafeRenderersFactory
-import nl.giejay.mediaslider.view.ExoPlayerView
 import timber.log.Timber
 
 /** One photo: the thumbnail shows at once and the full image replaces it; a spinner covers the wait. */
@@ -88,39 +86,41 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier) {
     }
 }
 
-/** A video page keeps the existing [ExoPlayerView]; playback is driven by the controller. */
+/**
+ * A video page. The shared player is bound to the page that came to rest; every other page, and the
+ * current one until its first frame, shows the poster. The poster sits above the video, so a
+ * SurfaceView never flashes black.
+ */
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 internal fun SliderVideoPage(pager: ComposeSliderPager, page: Int, item: SliderItemViewHolder) {
-    val config = LocalSliderConfig.current
-    // bumped when a SurfaceView page failed, so the page is rebuilt with a TextureView
-    var rebuild by remember(item.url) { mutableIntStateOf(0) }
-    key(rebuild) {
-        val useTextureView = item.mainItem.orientation != 1 || pager.failedVideoUrls.contains(item.url)
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                ExoPlayerView(context, if (useTextureView) R.layout.video_item_texture_view else R.layout.video_item).also { view ->
-                    view.setupPlayer(config, AmlogicSafeRenderersFactory(context), pager.exoListener) { player, error ->
-                        val shouldRetry = !useTextureView && !pager.failedVideoUrls.contains(item.url)
-                        Timber.e(error, "Player error at page $page for ${item.url}. Retry with TextureView: $shouldRetry. ${error.message}")
-                        if (shouldRetry) {
-                            item.url?.let { pager.failedVideoUrls.add(it) }
-                            player.release()
-                            rebuild++
-                            true
-                        } else {
-                            Toast.makeText(context, "Cannot play video: ${error.message}", Toast.LENGTH_LONG).show()
-                            false
+    val isCurrent = page == pager.state.settledPage
+    Box(Modifier.fillMaxSize()) {
+        if (isCurrent) {
+            // rebuilt with a TextureView when the SurfaceView failed (see ComposeSliderPager.handleVideoError)
+            key(pager.videoRebuild) {
+                val useTextureView = item.mainItem.orientation != 1 || pager.failedVideoUrls.contains(item.url)
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { context ->
+                        val layout = if (useTextureView) R.layout.slider_player_texture else R.layout.slider_player_surface
+                        (LayoutInflater.from(context).inflate(layout, null, false) as PlayerView).also {
+                            it.player = pager.requirePlayer()
                         }
-                    }
-                    pager.videoViews[page] = view
-                }
-            },
-            onRelease = { view ->
-                view.releasePlayer()
-                if (pager.videoViews[page] === view) pager.videoViews.remove(page)
-            },
-        )
+                    },
+                    onRelease = { it.player = null },
+                )
+            }
+        }
+        if (!isCurrent || !pager.firstVideoFrameRendered) {
+            GlideImage(
+                model = item.mainItem.thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+            if (isCurrent) SliderSpinner(Modifier.align(Alignment.Center))
+        }
     }
 }
 
