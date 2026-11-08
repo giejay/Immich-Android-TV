@@ -41,7 +41,7 @@ import nl.giejay.android.tv.immich.ui.theme.ImmichFocus
 import nl.giejay.android.tv.immich.ui.theme.ImmichIcons
 
 /** What the search page currently shows below the field. */
-enum class SearchStatus { IDLE, LOADING, RESULTS, NO_RESULTS }
+enum class SearchStatus { IDLE, LOADING, RESULTS, NO_RESULTS, ERROR }
 
 /**
  * Search field, matching people, recent searches and a status line, shown above the result grid.
@@ -83,6 +83,7 @@ fun SearchHeader(
             SearchStatus.IDLE -> if (recents.isEmpty()) stringResource(R.string.search_hint) else null
             SearchStatus.LOADING -> stringResource(R.string.search_loading)
             SearchStatus.NO_RESULTS -> stringResource(R.string.search_no_results, selectedPerson ?: submittedQuery)
+            SearchStatus.ERROR -> stringResource(R.string.search_error)
             SearchStatus.RESULTS -> null
         }
         if (statusText != null) {

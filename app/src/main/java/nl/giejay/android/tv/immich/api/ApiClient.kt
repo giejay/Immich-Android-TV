@@ -99,6 +99,7 @@ internal fun List<Asset>.toRandomAssetResponse(): AssetResponse =
 class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
         private const val SMART_SEARCH_RETRY_MILLIS = 5 * 60 * 1000L
+        private const val MAX_FALLBACK_HITS_PER_FIELD = 500
 
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
         fun getClient(config: ApiClientConfig): nl.giejay.android.tv.immich.api.ApiClient {
@@ -145,15 +146,37 @@ class ApiClient(private val config: ApiClientConfig) {
             }
             smartSearchUnavailableUntil = System.currentTimeMillis() + SMART_SEARCH_RETRY_MILLIS
         }
-        val responses = buildMetadataSearchRequests(query, page, size, type).pmap { search(it) }
-        if (responses.all { it.isLeft() }) {
-            return responses.first().map { it.toAssetResponse() }
+        return metadataSearchPage(query, type, page, size)
+    }
+
+    /** The merged metadata hits of the last query, so paging does not fetch and merge everything again. */
+    private var metadataCache: Triple<String, String?, List<Asset>>? = null
+
+    /**
+     * The four field searches are paginated separately, so a page of each cannot be merged into a correct
+     * global order. Instead the hits of every field are fetched once (up to [MAX_FALLBACK_HITS_PER_FIELD]),
+     * merged and sorted, and the page is cut from that list.
+     */
+    private suspend fun metadataSearchPage(query: String, type: String?, page: Int, size: Int): Either<String, AssetResponse> {
+        val cached = metadataCache?.takeIf { it.first == query && it.second == type }?.third
+        val merged = cached ?: run {
+            val perField = buildMetadataSearchRequests(query, 1, MAX_SEARCH_PAGE_SIZE, type).pmap { first ->
+                var hits = emptyList<Asset>()
+                var request = first
+                while (true) {
+                    val response = search(request).getOrElse { return@pmap if (hits.isEmpty()) Either.Left(it) else Either.Right(hits) }
+                    hits = hits + response.assets.items
+                    if (response.assets.nextPage == null || hits.size >= MAX_FALLBACK_HITS_PER_FIELD) break
+                    request = request.copy(page = (request.page ?: 1) + 1)
+                }
+                Either.Right(hits)
+            }
+            if (perField.all { it.isLeft() }) return perField.first().map { AssetResponse(emptyList(), false) }
+            mergeSearchResults(perField.mapNotNull { it.getOrNull() }).filter(excludeByTag())
+                .also { metadataCache = Triple(query, type, it) }
         }
-        val ok = responses.mapNotNull { it.getOrNull() }
-        return Either.Right(AssetResponse(
-            mergeSearchResults(ok.map { it.assets.items }).filter(excludeByTag()),
-            ok.any { it.assets.nextPage != null }
-        ))
+        val slice = sliceSearchPage(merged, page, size)
+        return Either.Right(AssetResponse(slice.assets, slice.hasMore))
     }
 
     suspend fun searchPeople(name: String): Either<String, List<Person>> {

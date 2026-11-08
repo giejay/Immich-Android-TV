@@ -329,6 +329,7 @@
     <string name="search_people">People</string>
     <string name="search_recent">Recent searches</string>
     <string name="search_loading">Searching…</string>
+    <string name="search_error">Search failed. Check the connection to your server and try again.</string>
     <string name="search_no_results">Nothing found for "%1$s"</string>
     <string name="classic_timeline">Classic timeline (compatibility)</string>
     <string name="classic_timeline_desc">Use the older timeline if the new one misbehaves on your device. Takes effect the next time the Timeline page opens.</string>

@@ -22,3 +22,12 @@ internal fun mergeSearchResults(results: List<List<Asset>>): List<Asset> =
     results.flatten()
         .distinctBy { it.id }
         .sortedByDescending { it.fileCreatedAt }
+
+/** One page of an already merged and sorted list; [hasMore] says whether later pages exist. */
+internal data class SearchPage(val assets: List<Asset>, val hasMore: Boolean)
+
+internal fun sliceSearchPage(all: List<Asset>, page: Int, size: Int): SearchPage {
+    val from = ((page - 1).coerceAtLeast(0)) * size
+    val end = (from + size).coerceAtMost(all.size)
+    return SearchPage(if (from >= all.size) emptyList() else all.subList(from, end), end < all.size)
+}

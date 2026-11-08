@@ -276,6 +276,7 @@
     <string name="search_people">Personen</string>
     <string name="search_recent">Zuletzt gesucht</string>
     <string name="search_loading">Suche läuft…</string>
+    <string name="search_error">Die Suche ist fehlgeschlagen. Prüfe die Verbindung zu deinem Server und versuche es erneut.</string>
     <string name="search_no_results">Nichts gefunden für „%1$s“</string>
     <string name="classic_timeline">Klassische Zeitleiste (Kompatibilität)</string>
     <string name="classic_timeline_desc">Die ältere Zeitleiste verwenden, falls die neue auf deinem Gerät Probleme macht. Wirkt beim nächsten Öffnen der Zeitleiste.</string>
