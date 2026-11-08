@@ -461,8 +461,8 @@ data object EXPERIMENTAL_COMPOSE_TIMELINE : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.experimental_compose_timeline),
     ImmichApplication.appContext!!.getString(R.string.experimental_compose_timeline_desc))
 
-/** Step L2: pages the slider with the Compose pager instead of the ViewPager. Experimental, off by default. */
-data object EXPERIMENTAL_COMPOSE_SLIDER : BooleanPref(false,
+/** Step L2: pages the slider (viewer and screensaver) with the Compose pager. On by default; switching it off falls back to the ViewPager until that is removed. */
+data object EXPERIMENTAL_COMPOSE_SLIDER : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.experimental_compose_slider),
     ImmichApplication.appContext!!.getString(R.string.experimental_compose_slider_desc))
 

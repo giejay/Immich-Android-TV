@@ -276,7 +276,8 @@ private fun SliderPagerContent(pager: ComposeSliderPager) = CompositionLocalProv
     HorizontalPager(
         state = pager.state,
         beyondViewportPageCount = 1,
-        key = { index -> items.getOrNull(index)?.ids()?.joinToString("+") ?: index },
+        // the same asset can appear twice (screensaver albums that overlap); an index prefix keeps the keys unique
+        key = { index -> "$index:" + (items.getOrNull(index)?.ids()?.joinToString("+") ?: "") },
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
