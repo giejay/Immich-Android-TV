@@ -52,7 +52,7 @@ object PlayStorePublisher {
             .setApplicationName("Immich TV (Unofficial)")
             .build()
 
-        val packageName = "nl.giejay.android.tv.immich"
+        val packageName = "io.github.daniii.immichtvnext"
         val promote = args.size > 2 && args[2].equals("promote", ignoreCase = true)
 
         if (promote) {

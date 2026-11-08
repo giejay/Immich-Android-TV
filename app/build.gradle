@@ -11,7 +11,7 @@ plugins {
 android {
     compileSdk = 37
     defaultConfig {
-        applicationId "nl.giejay.android.tv.immich"
+        applicationId "io.github.daniii.immichtvnext"
         minSdkVersion 24
         targetSdkVersion 37
         versionCode 148
@@ -65,7 +65,7 @@ android {
 androidComponents {
     onVariants(selector().all()) { variant ->
         variant.outputs.forEach { output ->
-            output.outputFileName.set("ImmichTV-${output.versionName.get()}.apk")
+            output.outputFileName.set("ImmichTVNext-${output.versionName.get()}.apk")
         }
     }
 }
