@@ -343,4 +343,11 @@
     <string name="favorites">Favorites</string>
     <string name="screensaver_only_landscape">Landscape photos only</string>
     <string name="screensaver_only_landscape_desc">Skip portrait photos in the screensaver.</string>
+    <string name="screensaver_adb_intro">Could not open the screensaver settings on this device. Enable the screensaver by hand with these steps:</string>
+    <string name="screensaver_adb_step1">Enable developer mode on the device (tap the build number or \"Android TV OS Build\" 7 times in System -> About).</string>
+    <string name="screensaver_adb_step2">Go to System -> Developer options and enable USB debugging.</string>
+    <string name="screensaver_adb_step3">If ADB is not installed on your PC, follow the instructions at https://www.xda-developers.com/install-adb-windows-macos-linux/</string>
+    <string name="screensaver_adb_step4">Connect to the device with its IP address: adb connect 192.168.xx.xx</string>
+    <string name="screensaver_adb_step5">Run this command, then you are done:</string>
+    <string name="screensaver_adb_more">More instructions: %1$s</string>
 </resources>
