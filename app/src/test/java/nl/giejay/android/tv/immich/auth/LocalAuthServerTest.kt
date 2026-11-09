@@ -104,16 +104,15 @@ class LocalAuthServerTest {
     }
 
     @Test
-    fun stoppedServerRefusesConnections() {
-        val port = server.port
+    fun stoppedServerNoLongerServesTheForm() {
         server.stop()
-        var refused = false
-        try {
-            Socket("127.0.0.1", port).close()
+        // The port may be taken by an unrelated listener in a shared test JVM, so check behaviour, not the refusal itself.
+        val served = try {
+            call("GET", "/?t=tok123").second.contains("name=\"host\"")
         } catch (_: java.io.IOException) {
-            refused = true
+            false
         }
-        assertThat(refused).isTrue()
+        assertThat(served).isFalse()
     }
 
     @Test

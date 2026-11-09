@@ -1,6 +1,5 @@
 package nl.giejay.android.tv.immich.auth
 
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -8,6 +7,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
@@ -19,7 +24,9 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.R
-import nl.giejay.android.tv.immich.databinding.FragmentAuthByPhoneBinding
+import nl.giejay.android.tv.immich.ui.auth.PhoneSignInScreen
+import nl.giejay.android.tv.immich.ui.auth.PhoneSignInState
+import nl.giejay.android.tv.immich.ui.immichComposeView
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -35,8 +42,9 @@ class AuthByPhoneFragment : Fragment() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var server: LocalAuthServer? = null
 
+    private var state by mutableStateOf<PhoneSignInState>(PhoneSignInState.Loading)
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val binding = FragmentAuthByPhoneBinding.inflate(inflater, container, false)
         val texts = LocalAuthTexts(
             title = getString(R.string.app_name),
             hostLabel = getString(R.string.server_url_hint),
@@ -53,8 +61,7 @@ class AuthByPhoneFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val address = withContext(Dispatchers.IO) { LocalAuthServer.findLanAddress() }
             if (address == null) {
-                binding.qrProgressBar.visibility = View.GONE
-                binding.qrText.text = getString(R.string.phone_sign_in_no_network)
+                state = PhoneSignInState.NoNetwork
                 return@launch
             }
             withContext(Dispatchers.IO + NonCancellable) {
@@ -66,14 +73,22 @@ class AuthByPhoneFragment : Fragment() {
             }
             if (!isAdded) return@launch
             val url = "http://${address.hostAddress}:${localServer.port}/?t=${localServer.token}"
-            val drawable: Drawable = QrCodeDrawable(QrData.Url(url))
-            binding.qr.setImageDrawable(drawable)
-            binding.qr.visibility = View.VISIBLE
-            binding.qrProgressBar.visibility = View.GONE
-            binding.qrText.text = getString(R.string.phone_sign_in_open_address, url)
+            state = PhoneSignInState.Ready(url, qrBitmap(url))
             mainHandler.postDelayed({ onTimeout() }, TIMEOUT_MS)
         }
-        return binding.root
+        return immichComposeView(requireContext()) {
+            PhoneSignInScreen(
+                title = getString(R.string.app_name),
+                description = getString(R.string.phone_sign_in_description),
+                openAddressLabel = getString(R.string.phone_sign_in_open_address),
+                noNetworkText = getString(R.string.phone_sign_in_no_network),
+                state = state,
+            )
+        }
+    }
+
+    private suspend fun qrBitmap(url: String): ImageBitmap = withContext(Dispatchers.Default) {
+        QrCodeDrawable(QrData.Url(url)).toBitmap(QR_PIXELS, QR_PIXELS).asImageBitmap()
     }
 
     /** Called on a server thread; true when the credentials were saved and the app moves on. */
@@ -122,6 +137,7 @@ class AuthByPhoneFragment : Fragment() {
 
     private companion object {
         const val PORT = 8765
+        const val QR_PIXELS = 640
         const val TIMEOUT_MS = 3 * 60 * 1000L
     }
 }

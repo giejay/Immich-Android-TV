@@ -92,7 +92,6 @@
 
 
     <!-- Auth by phone -->
-    <string name="scan_qr_below">Scannez le code QR ci-dessous</string>
 
     <!-- Metadata -->
     <string name="metadata">Métadonnées</string>
@@ -293,7 +292,8 @@
     <string name="meta_data_padding_dialog_title">Marge au-dessus et au-dessous de l’élément</string>
     <string name="meta_data_delete_desc">Supprimer l’élément</string>
     <string name="meta_data_save_desc">Enregistrer l’élément</string>
-    <string name="phone_sign_in_open_address">Ou ouvrez %1$s dans le navigateur de votre téléphone (même Wi-Fi)</string>
+    <string name="phone_sign_in_open_address">Ou ouvrez cette adresse dans le navigateur de votre téléphone :</string>
+    <string name="phone_sign_in_description">Scannez le code QR avec votre téléphone et saisissez-y l\'URL du serveur et la clé API. Le téléphone doit être sur le même Wi-Fi que le téléviseur.</string>
     <string name="phone_sign_in_done">Terminé. Regardez votre télévision.</string>
     <string name="phone_sign_in_no_network">Aucun réseau domestique trouvé. Connectez le téléviseur au Wi-Fi ou à l\'Ethernet.</string>
 </resources>
