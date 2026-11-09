@@ -469,7 +469,66 @@ data object IMAGE_CACHE_SIZE_MB : IntListPref(250,
     R.array.image_cache_titles,
     R.array.image_cache_values)
 
-data object HIDDEN_HOME_ITEMS : StringSetPref(emptySet(), "", "")
+// the pages that are off by default: seasonal, tags and the archive (stored by their localized names)
+data object HIDDEN_HOME_ITEMS : StringSetPref(
+    setOf(
+        ImmichApplication.appContext!!.getString(R.string.seasonal),
+        ImmichApplication.appContext!!.getString(R.string.tags),
+        ImmichApplication.appContext!!.getString(R.string.archive),
+    ), "", "")
+
+/**
+ * Whether a page of the home navigation is shown. Backed by [HIDDEN_HOME_ITEMS] (the same list the navigation's edit mode
+ * uses), so both ways stay in sync. Seasonal, tags and the archive are hidden until switched on.
+ */
+sealed class HomePageVisiblePref(val pageTitleRes: Int) : BooleanPref(true, ImmichApplication.appContext!!.getString(pageTitleRes), "") {
+    private val pageName: String get() = ImmichApplication.appContext!!.getString(pageTitleRes)
+
+    override fun getValue(sharedPreferences: SharedPreferences): Boolean =
+        !(sharedPreferences.getStringSet(HIDDEN_HOME_ITEMS.key(), HIDDEN_HOME_ITEMS.defaultValue) ?: emptySet()).contains(pageName)
+
+    override fun save(sharedPreferences: SharedPreferences, value: Boolean) {
+        val hidden = sharedPreferences.getStringSet(HIDDEN_HOME_ITEMS.key(), HIDDEN_HOME_ITEMS.defaultValue) ?: emptySet()
+        PreferenceManager.save(HIDDEN_HOME_ITEMS, withPageVisibility(hidden, pageName, value))
+    }
+}
+
+/** The hidden-pages list after showing or hiding one page. */
+internal fun withPageVisibility(hidden: Set<String>, pageName: String, visible: Boolean): Set<String> =
+    if (visible) hidden - pageName else hidden + pageName
+
+data object HOME_PAGE_TIMELINE : HomePageVisiblePref(R.string.timeline)
+data object HOME_PAGE_SEARCH : HomePageVisiblePref(R.string.search)
+data object HOME_PAGE_ALBUMS : HomePageVisiblePref(R.string.albums)
+data object HOME_PAGE_PHOTOS : HomePageVisiblePref(R.string.photos)
+data object HOME_PAGE_VIDEOS : HomePageVisiblePref(R.string.videos)
+data object HOME_PAGE_RANDOM : HomePageVisiblePref(R.string.random)
+data object HOME_PAGE_PEOPLE : HomePageVisiblePref(R.string.people)
+data object HOME_PAGE_RECENT : HomePageVisiblePref(R.string.recent)
+data object HOME_PAGE_SEASONAL : HomePageVisiblePref(R.string.seasonal)
+data object HOME_PAGE_FOLDERS : HomePageVisiblePref(R.string.folders)
+data object HOME_PAGE_PLACES : HomePageVisiblePref(R.string.places)
+data object HOME_PAGE_TAGS : HomePageVisiblePref(R.string.tags)
+data object HOME_PAGE_ARCHIVE : HomePageVisiblePref(R.string.archive)
+
+data object HomePagesPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.home_pages), "view_pages",
+    listOf(PrefCategory("", listOf(
+        HOME_PAGE_TIMELINE,
+        HOME_PAGE_SEARCH,
+        HOME_PAGE_ALBUMS,
+        HOME_PAGE_PHOTOS,
+        HOME_PAGE_VIDEOS,
+        HOME_PAGE_RANDOM,
+        HOME_PAGE_PEOPLE,
+        HOME_PAGE_RECENT,
+        HOME_PAGE_SEASONAL,
+        HOME_PAGE_FOLDERS,
+        HOME_PAGE_PLACES,
+        HOME_PAGE_TAGS,
+        HOME_PAGE_ARCHIVE
+    )))
+)
+
 
 data object USER_ID : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.user_id),
     ImmichApplication.appContext!!.getString(R.string.user_id_desc),
@@ -605,6 +664,10 @@ data object ViewPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString
                 },
                 ActionPref("view_slideshow", ImmichApplication.appContext!!.getString(R.string.slideshow), ImmichApplication.appContext!!.getString(R.string.slideshow)) { _, navController ->
                     navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_slideshow"))
+                    true
+                },
+                ActionPref("view_pages", ImmichApplication.appContext!!.getString(R.string.home_pages), ImmichApplication.appContext!!.getString(R.string.home_pages_desc)) { _, navController ->
+                    navController.navigate(AlbumFragmentDirections.actionGlobalToSettingsDialog("view_pages"))
                     true
                 },
                 ActionPref("view_content", ImmichApplication.appContext!!.getString(R.string.content), ImmichApplication.appContext!!.getString(R.string.content_desc)) { _, navController ->

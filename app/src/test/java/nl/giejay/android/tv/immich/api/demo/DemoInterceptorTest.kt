@@ -142,6 +142,15 @@ class DemoInterceptorTest {
     }
 
     @Test
+    fun `the demo library has no archived photos and no videos`() {
+        val archived = parse<SearchResponse>(post("search/metadata", """{"visibility":"archive"}""").body!!.string())
+        val videos = parse<SearchResponse>(post("search/metadata", """{"type":"VIDEO"}""").body!!.string())
+
+        assertThat(archived.assets.items).isEmpty()
+        assertThat(videos.assets.items).isEmpty()
+    }
+
+    @Test
     fun `timeline buckets add up and each bucket parses into timeline assets`() {
         val buckets = gson.fromJson(get("timeline/buckets?order=desc").body!!.string(), Array<TimeBucketSummary>::class.java).toList()
 

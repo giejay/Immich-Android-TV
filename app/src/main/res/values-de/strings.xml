@@ -297,4 +297,8 @@
     <string name="screensaver_adb_more">Weitere Anleitung: %1$s</string>
     <string name="image_cache_size">Größe des Bild-Caches (Neustart nötig)</string>
     <string name="image_cache_size_desc">Begrenzung für die zwischengespeicherten Fotos auf diesem Gerät. Gilt nach einem Neustart der App.</string>
+    <string name="videos">Videos</string>
+    <string name="archive">Archiv</string>
+    <string name="home_pages">Seiten</string>
+    <string name="home_pages_desc">Wähle, welche Seiten die Navigation zeigt</string>
 </resources>

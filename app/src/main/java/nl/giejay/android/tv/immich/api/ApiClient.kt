@@ -72,7 +72,8 @@ internal fun buildListAssetsSearchRequest(
     fromDate: String?,
     city: String? = null,
     tagIds: List<String> = emptyList(),
-    isFavorite: Boolean? = null
+    isFavorite: Boolean? = null,
+    visibility: String? = null
 ): SearchRequest = SearchRequest(
     page = page,
     size = pageCount,
@@ -87,7 +88,8 @@ internal fun buildListAssetsSearchRequest(
     isFavorite = isFavorite,
     // "timeline" reproduces pre-v3 default for normal browsing; album-scoped search
     // omits it so archived-in-album assets keep showing (VIS-02)
-    visibility = if (albumIds.isEmpty()) "timeline" else null
+    // an explicit visibility (the archive) wins over the browsing default
+    visibility = visibility ?: if (albumIds.isEmpty()) "timeline" else null
 )
 
 // internal so app/src/test can call it directly without instantiating ApiClient/Retrofit.
@@ -322,11 +324,11 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     /** The photos of one place (city) or one tag, newest first (a separate function so [listAssets] keeps its signature). */
-    suspend fun listAssetsByFilter(page: Int, pageCount: Int, contentType: ContentType, city: String? = null, tagIds: List<String> = emptyList(), order: String = "desc", favorite: Boolean? = null): Either<String, AssetResponse> {
+    suspend fun listAssetsByFilter(page: Int, pageCount: Int, contentType: ContentType, city: String? = null, tagIds: List<String> = emptyList(), order: String = "desc", favorite: Boolean? = null, visibility: String? = null): Either<String, AssetResponse> {
         val request = buildListAssetsSearchRequest(
             page = page, pageCount = pageCount, albumIds = emptyList(), order = order,
             type = if (contentType == ContentType.ALL) null else contentType.toString(),
-            personIds = emptyList(), endDate = null, fromDate = null, city = city, tagIds = tagIds, isFavorite = favorite,
+            personIds = emptyList(), endDate = null, fromDate = null, city = city, tagIds = tagIds, isFavorite = favorite, visibility = visibility,
         )
         return search(request).map { it.toAssetResponse() }
     }

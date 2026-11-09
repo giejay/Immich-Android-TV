@@ -105,4 +105,13 @@ class SearchRequestVisibilityTest {
         assertEquals(true, fav.isFavorite)
         assertNull(plain.isFavorite)
     }
+
+    @Test
+    fun `an explicit visibility wins over the browsing default`() {
+        val archive = buildListAssetsSearchRequest(
+            page = 1, pageCount = 10, albumIds = emptyList(), order = "desc", type = null, personIds = emptyList(),
+            endDate = null, fromDate = null, visibility = "archive",
+        )
+        assertEquals("archive", archive.visibility)
+    }
 }

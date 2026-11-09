@@ -303,4 +303,8 @@
     <string name="screensaver_only_landscape_desc">Ignorer les photos en portrait dans l\'économiseur d\'écran.</string>
     <string name="image_cache_size">Taille du cache d\'images (redémarrage requis)</string>
     <string name="image_cache_size_desc">Limite des photos mises en cache sur cet appareil. S\'applique après le redémarrage de l\'application.</string>
+    <string name="videos">Vidéos</string>
+    <string name="archive">Archives</string>
+    <string name="home_pages">Pages</string>
+    <string name="home_pages_desc">Choisissez les pages affichées dans la navigation</string>
 </resources>
