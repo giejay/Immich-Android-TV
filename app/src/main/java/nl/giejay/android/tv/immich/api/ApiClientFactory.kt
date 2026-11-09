@@ -1,5 +1,7 @@
 package nl.giejay.android.tv.immich.api
 
+import nl.giejay.android.tv.immich.ImmichApplication
+import nl.giejay.android.tv.immich.api.demo.DemoInterceptor
 import nl.giejay.android.tv.immich.api.interceptor.ResponseLoggingInterceptor
 import nl.giejay.android.tv.immich.api.util.UnsafeOkHttpClient
 import okhttp3.Interceptor
@@ -13,6 +15,8 @@ object ApiClientFactory {
         val builder = if (disableSsl)
             UnsafeOkHttpClient.unsafeOkHttpClient()
         else OkHttpClient.Builder()
+        // first, so the offline demo host (never a real server) is answered before anything touches the network
+        builder.addInterceptor(DemoInterceptor { file -> ImmichApplication.appContext!!.assets.open("demo/$file") })
         builder.addInterceptor(apiKeyInterceptor)
         return if(debugMode){
             builder.addInterceptor(ResponseLoggingInterceptor()).build()

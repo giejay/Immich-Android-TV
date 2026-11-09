@@ -17,6 +17,7 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import nl.giejay.android.tv.immich.BuildConfig
 import nl.giejay.android.tv.immich.R
+import nl.giejay.android.tv.immich.api.demo.DemoCatalog
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
@@ -72,21 +73,21 @@ class AuthFragmentStep1 : Fragment() {
 
     private fun onContinue(option: SignInOption) {
         Timber.i("Continue on step 1 of authentication, option: $option")
-        val hostName = requireContext().resources.getString(R.string.host_name)
         val navController = findNavController()
         when (option) {
             SignInOption.DEMO -> {
                 PreferenceManager.save(SCREENSAVER_ALBUMS, emptySet())
-                PreferenceManager.save(API_KEY, requireContext().resources.getString(R.string.api_key))
-                PreferenceManager.save(HOST_NAME, hostName)
+                // offline demo: DemoInterceptor answers this reserved host with bundled sample photos
+                PreferenceManager.save(API_KEY, DemoCatalog.API_KEY)
+                PreferenceManager.save(HOST_NAME, DemoCatalog.HOST_URL)
                 navController.navigate(
                     AuthFragmentStep1Directions.actionGlobalHomeFragment(),
                     NavOptions.Builder().setPopUpTo(navController.graph.id, true).build(),
                 )
             }
             SignInOption.API_KEY -> {
-                if (PreferenceManager.hostName == hostName) {
-                    // remove demo instance api key
+                if (PreferenceManager.hostName == DemoCatalog.HOST_URL) {
+                    // leave the demo profile
                     PreferenceManager.removeApiSettings()
                 }
                 if (navController.currentDestination?.id == R.id.authFragment) {
