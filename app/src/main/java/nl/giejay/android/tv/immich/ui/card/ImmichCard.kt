@@ -166,9 +166,9 @@ private fun FolderArt(photoUrls: List<String>) {
     // laid out from the card's own width (it is a little narrower than its nominal size in a grid), so the folder
     // always keeps an even margin on both sides
     Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp)) {
-        Box(Modifier.size(64.dp, 24.dp).background(back, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)))
+        Box(Modifier.size(54.dp, 20.dp).background(back, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)))
         Box(
-            Modifier.offset(0.dp, 12.dp).fillMaxWidth().height(92.dp)
+            Modifier.offset(0.dp, 10.dp).fillMaxWidth().height(94.dp)
                 .background(back, RoundedCornerShape(topStart = 2.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 10.dp)),
         )
         photoUrls.take(2).forEachIndexed { index, url ->
@@ -177,14 +177,14 @@ private fun FolderArt(photoUrls: List<String>) {
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .offset((18 + index * 22).dp, (4 + index * 4).dp)
-                    .size(104.dp, 66.dp)
+                    .offset((10 + index * 26).dp, (2 + index * 4).dp)
+                    .size(132.dp, 82.dp)
                     .graphicsLayer { rotationZ = if (index == 0) -4f else 3f }
                     .clip(RoundedCornerShape(4.dp)),
             )
         }
         Box(
-            Modifier.offset(0.dp, 46.dp).fillMaxWidth().height(58.dp)
+            Modifier.offset(0.dp, 70.dp).fillMaxWidth().height(34.dp)
                 .background(front, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 10.dp, bottomEnd = 10.dp)),
         )
     }
