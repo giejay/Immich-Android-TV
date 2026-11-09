@@ -105,8 +105,12 @@ class LocalAuthServer(
             try {
                 val request = readRequest(it.getInputStream()) ?: return respond(it, 400, "Bad request")
                 val response = route(request)
-                respond(it, response.first, response.second)
-                if (response.first == 200 && request.method == "POST") onAccepted()
+                try {
+                    respond(it, response.first, response.second)
+                } finally {
+                    // The credentials are already saved: complete the TV side even if the phone went away.
+                    if (response.first == 200 && request.method == "POST") onAccepted()
+                }
             } catch (_: IllegalArgumentException) {
                 // malformed percent escapes
                 try {
