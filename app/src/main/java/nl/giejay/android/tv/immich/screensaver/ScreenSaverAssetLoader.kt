@@ -212,35 +212,34 @@ class ScreenSaverAssetLoader(
                 failAndExit(R.string.set_people_screensaver_error)
             }
 
-            val albumsList = if (albums == null) emptyList() else albums
-            val peopleList = if (people == null) emptyList() else people
+            val albumsList = albums ?: emptyList()
+            val peopleList = people ?: emptyList()
 
-            if (albumsList.isNotEmpty() || peopleList.isNotEmpty()) {
-                val response = filteredAssetLoader.load(fetch =
-                    {
-                        loadNextAssetsFrom(albumsList, peopleList, random = true).fold(
-                            {
-                                Timber.w("Could not load random assets for albums $albums, falling back to all album assets")
-                                loadNextAssetsFrom(albumsList, peopleList, random = false)
-                            },
-                            {
-                                Either.Right(it)
-                            }
-                        )
-                    }, retry = {
-                    // load assets not randomly. This can happen because the logged in User/API key does not have any own photo's, only shared access
-                    // shared photos are not returned yet for the Random endpoint (ongoing feature request).
-                    Timber.w("Random asset search for album was empty for albums $albums, now using the regular search assets in album endpoint")
-                    loadNextAssetsFrom(albumsList, peopleList, random = false)
-                }).getOrElse { AssetResponse(emptyList(), false) }
+            val response = filteredAssetLoader.load(fetch =
+                {
+                    loadNextAssetsFrom(albumsList, peopleList, random = true).fold(
+                        {
+                            Timber.w("Could not load random assets for albums $albums, falling back to all album assets")
+                            loadNextAssetsFrom(albumsList, peopleList, random = false)
+                        },
+                        {
+                            Either.Right(it)
+                        }
+                    )
+                }, retry = {
+                // load assets not randomly. This can happen because the logged in User/API key does not have any own photo's, only shared access
+                // shared photos are not returned yet for the Random endpoint (ongoing feature request).
+                Timber.w("Random asset search for album was empty for albums $albums, now using the regular search assets in album endpoint")
+                loadNextAssetsFrom(albumsList, peopleList, random = false)
+            }).getOrElse { AssetResponse(emptyList(), false) }
 
-                setInitialAssets(
-                    response.assets.shuffled(),
-                    if (response.canLoadMore) {
-                        createLoadMore { loadNextAssetsFrom(albumsList, peopleList, random = false) }
-                    } else null
-                )
-            }
+            setInitialAssets(
+                response.assets.shuffled(),
+                if (response.canLoadMore) {
+                    createLoadMore { loadNextAssetsFrom(albumsList, peopleList, random = false) }
+                } else null
+            )
+
         } catch (e: Exception) {
             Timber.e(e, "Could not fetch assets from Immich for Screensaver")
             failAndExit(R.string.could_not_load_assets)
