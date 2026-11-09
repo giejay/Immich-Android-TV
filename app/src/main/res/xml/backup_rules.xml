@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older (android:fullBackupContent). The default preferences file holds the server
+     URL and the API key, which is encrypted with a device-bound Keystore key and unreadable after a
+     restore on another device, so it stays out of the backup. SharedPreferences cannot be excluded per key. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="io.github.daniii88.immichandroidtvnext_preferences.xml" />
+</full-backup-content>

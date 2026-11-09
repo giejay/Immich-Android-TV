@@ -16,6 +16,7 @@
 
 <resources>
     <string name="app_name" translatable="false">Immich Android TV Next</string>
+    <string name="screensaver_label" translatable="false">Immich TV Next</string>
 
     <!-- Strings for the "No Firebase" screen -->
     <string name="no_firebase_title">Firebase not configured</string>
@@ -333,7 +334,7 @@
     <string name="search_no_results">Nothing found for "%1$s"</string>
     <string name="classic_timeline">Classic timeline (compatibility)</string>
     <string name="classic_timeline_desc">Use the older timeline if the new one misbehaves on your device. Takes effect the next time the Timeline page opens.</string>
-    <string name="nav_brand" translatable="false">Immich Next</string>
+    <string name="nav_brand" translatable="false">Immich TV Next</string>
     <string name="timeline_empty_title">No photos yet</string>
     <string name="timeline_empty_body">Photos you add to Immich show up here.</string>
     <string name="timeline_error_title">Couldn\'t load your timeline</string>

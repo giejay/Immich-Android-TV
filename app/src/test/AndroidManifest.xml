@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Access internet-based media -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -39,6 +40,7 @@
 
     <application
         android:allowBackup="true"
+        tools:replace="android:fullBackupContent"
         android:fullBackupContent="true"
         android:icon="@drawable/icon"
         android:banner="@mipmap/icon_banner_next"
