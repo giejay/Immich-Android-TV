@@ -26,7 +26,7 @@ All screenshots were taken in the offline demo mode with its bundled stock photo
 ## Features
 
 - Timeline with day headers, a mosaic layout, a quick scrubber, a memories row and a focus video preview
-- Albums, all photos, videos, random, recent, seasonal, people, folders, places, tags and the archive
+- Albums, all photos, videos, random, recent, seasonal, people, folders (drawn as folders with the cover photo inside and the number of assets), places, tags and the archive
 - Search across your library (smart search, with a metadata fallback)
 - Full-screen viewer with slideshow, video playback, favorites and a customizable photo overlay
 - Screensaver (Daydream) with albums, favorites, random, recent or similar-time-period photos, an option for landscape photos only, portrait photos paired by person, place and day, and several transitions

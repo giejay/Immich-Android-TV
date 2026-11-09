@@ -6,4 +6,7 @@ data class Card(
     override val id: String,
     override val thumbnailUrl: String?,
     override val backgroundUrl: String?,
-    override var selected: Boolean = false) : ICard
+    override var selected: Boolean = false,
+    override val isFolder: Boolean = false,
+    override val coverUrl: String? = null,
+    override val badge: String? = null) : ICard
