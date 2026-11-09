@@ -45,7 +45,6 @@
 
     <!-- Auth by phone -->
     <string name="scan_qr_below">Scanne den QR-Code unten</string>
-    <string name="or_enter_code_on_site">Oder gib den Code auf https://immich.giejay.nl ein</string>
 
     <!-- Screensaver  -->
     <string name="screensaver_set">Immich als Bildschirmschoner festlegen</string>
@@ -174,7 +173,7 @@
     <string name="auth_sign_in_by_api_key">Mit API-Schlüssel anmelden</string>
     <string name="auth_sign_in_by_api_key_desc">Melde dich bei deiner Immich-Instanz an, indem du deinen API-Schlüssel eingibst.</string>
     <string name="auth_sign_in_by_phone">Mit dem Handy anmelden</string>
-    <string name="auth_sign_in_by_phone_desc">Melde dich bei deiner Immich-Instanz an, indem du einen QR-Code mit dem Handy scannst. Hinweis: Das funktioniert nur, wenn dein Immich-Server aus dem Internet erreichbar ist (nicht bei lokalen/privaten IP-Adressen).</string>
+    <string name="auth_sign_in_by_phone_desc">Scanne einen QR-Code mit dem Smartphone und gib dort Server-URL und API-Key ein. Funktioniert im Heimnetz, ohne Internetdienst.</string>
     <string name="auth_demo_mode">Demo-Modus</string>
     <string name="auth_demo_mode_desc">App mit Beispielfotos ausprobieren. Kein Server nötig.</string>
 
@@ -191,11 +190,8 @@
     <string name="enter_valid_server_url">Bitte gib eine gültige Server-URL ein (https://…)</string>
 
     <!-- Auth by phone -->
-    <string name="or_enter_code_on_auth_url">Oder gib den Code %1$s auf %2$s ein</string>
     <string name="auth_timeout_recreating_qr">Die Anmeldung ist abgelaufen, der QR-Code wird neu erstellt.</string>
     <string name="invalid_server_url_or_api_key">Ungültige Server-URL oder ungültiger API-Schlüssel, scanne erneut!</string>
-    <string name="could_not_fetch_qr">QR-Code konnte nicht abgerufen werden: %1$s</string>
-    <string name="could_not_fetch_qr_short">QR-Code konnte nicht abgerufen werden</string>
     <string name="could_not_load_assets">Medien konnten nicht aus Immich geladen werden</string>
 
     <!-- Albums ordering -->
@@ -283,4 +279,7 @@
     <string name="timeline_empty_title">Noch keine Fotos</string>
     <string name="timeline_empty_body">Fotos, die du zu Immich hinzufügst, erscheinen hier.</string>
     <string name="timeline_error_title">Deine Zeitleiste konnte nicht geladen werden</string>
+    <string name="phone_sign_in_open_address">Oder öffne %1$s im Browser deines Smartphones (gleiches WLAN)</string>
+    <string name="phone_sign_in_done">Fertig. Schau auf deinen Fernseher.</string>
+    <string name="phone_sign_in_no_network">Kein Heimnetz gefunden. Verbinde den Fernseher mit WLAN oder Ethernet.</string>
 </resources>

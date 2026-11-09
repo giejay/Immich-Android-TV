@@ -94,7 +94,6 @@
 
     <!-- Auth by phone -->
     <string name="scan_qr_below">Сканируйте QR-код ниже</string>
-    <string name="or_enter_code_on_site">Или введите код на https://immich.giejay.nl</string>
 
     <!-- Metadata -->
     <string name="metadata">Метаданные</string>
@@ -214,9 +213,9 @@
     <string name="auth_sign_in_by_api_key">Войти по API-ключу</string>
     <string name="auth_sign_in_by_api_key_desc">Войдите в ваш экземпляр Immich, введя API-ключ.</string>
     <string name="auth_sign_in_by_phone">Войти по телефону</string>
-    <string name="auth_sign_in_by_phone_desc">Войдите в ваш экземпляр Immich по телефону.</string>
+    <string name="auth_sign_in_by_phone_desc">Отсканируйте QR-код телефоном и введите там URL сервера и ключ API. Работает в домашней сети, без интернет-сервиса.</string>
     <string name="auth_demo_mode">Демо-режим</string>
-    <string name="auth_demo_mode_desc">Войти в демонстрационный экземпляр Immich.</string>
+    <string name="auth_demo_mode_desc">Попробуйте приложение с примерами фотографий. Сервер не нужен.</string>
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Войдите на ваш сервер Immich или попробуйте демо.</string>
@@ -231,11 +230,8 @@
     <string name="enter_valid_server_url">Введите корректный URL сервера (https://…)</string>
 
     <!-- Auth by phone errors and messages -->
-    <string name="or_enter_code_on_auth_url">Или введите код %1$s на %2$s</string>
     <string name="auth_timeout_recreating_qr">Не удалось выполнить аутентификацию за отведенное время, создаю QR-код заново.</string>
     <string name="invalid_server_url_or_api_key">Неверный URL сервера или API-ключ, попробуйте отсканировать снова!</string>
-    <string name="could_not_fetch_qr">Не удалось получить QR-код: %1$s</string>
-    <string name="could_not_fetch_qr_short">Не удалось получить QR-код</string>
 
     <!-- Albums ordering -->
 
@@ -299,4 +295,7 @@
     <string name="meta_data_padding_dialog_title">Отступ сверху и снизу элемента</string>
     <string name="meta_data_delete_desc">Удалить элемент</string>
     <string name="meta_data_save_desc">Сохранить элемент</string>
+    <string name="phone_sign_in_open_address">Или откройте %1$s в браузере телефона (та же сеть Wi-Fi)</string>
+    <string name="phone_sign_in_done">Готово. Посмотрите на телевизор.</string>
+    <string name="phone_sign_in_no_network">Домашняя сеть не найдена. Подключите телевизор к Wi-Fi или Ethernet.</string>
 </resources>

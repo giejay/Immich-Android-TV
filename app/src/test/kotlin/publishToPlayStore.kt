@@ -49,7 +49,7 @@ object PlayStorePublisher {
         val transport = GoogleNetHttpTransport.newTrustedTransport()
         val jsonFactory = GsonFactory.getDefaultInstance()
         val publisher = AndroidPublisher.Builder(transport, jsonFactory, requestInitializer)
-            .setApplicationName("Immich Android TV Next (Unofficial)")
+            .setApplicationName("Immich TV Next (Unofficial)")
             .build()
 
         val packageName = "io.github.daniii88.immichandroidtvnext"

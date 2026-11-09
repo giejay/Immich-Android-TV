@@ -107,7 +107,7 @@ fun HomeNavRail(
         Spacer(Modifier.height(4.dp))
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
         items.forEach { item ->
             if (item.separated) Spacer(Modifier.height(12.dp))
@@ -161,8 +161,8 @@ private fun NavRailBrand(expanded: Boolean) {
     }
 }
 
-/** Kept low enough that the logo row on top still leaves all entries on a 1080p screen. */
-private val EntryHeight = 40.dp
+/** Kept low enough that the pinned logo row plus all entries fit a 1080p screen without scrolling. */
+private val EntryHeight = 36.dp
 private val BrandHeight = 40.dp
 private val LogoSize = 32.dp
 

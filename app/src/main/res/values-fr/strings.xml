@@ -93,7 +93,6 @@
 
     <!-- Auth by phone -->
     <string name="scan_qr_below">Scannez le code QR ci-dessous</string>
-    <string name="or_enter_code_on_site">Ou saisissez le code sur https://immich.giejay.nl</string>
 
     <!-- Metadata -->
     <string name="metadata">Métadonnées</string>
@@ -213,9 +212,9 @@
     <string name="auth_sign_in_by_api_key">Se connecter avec une clé d’API</string>
     <string name="auth_sign_in_by_api_key_desc">Connectez-vous à votre instance Immich en saisissant votre clé d’API.</string>
     <string name="auth_sign_in_by_phone">Se connecter avec un téléphone</string>
-    <string name="auth_sign_in_by_phone_desc">Connectez-vous à votre instance Immich en scannant un code QR avec votre téléphone. Remarque : cela fonctionne uniquement si votre serveur Immich est accessible depuis Internet (pas avec des adresses IP locales/privées).</string>
+    <string name="auth_sign_in_by_phone_desc">Scannez un code QR avec votre téléphone et saisissez-y l\'URL du serveur et la clé API. Fonctionne dans votre réseau domestique, sans service Internet.</string>
     <string name="auth_demo_mode">Mode démo</string>
-    <string name="auth_demo_mode_desc">Se connecter à une instance Immich de démonstration.</string>
+    <string name="auth_demo_mode_desc">Essayez l\'application avec des photos d\'exemple. Aucun serveur nécessaire.</string>
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Connectez-vous à votre serveur Immich ou essayez une démo.</string>
@@ -230,11 +229,8 @@
     <string name="enter_valid_server_url">Veuillez saisir une URL de serveur valide (https://…)</string>
 
     <!-- Auth by phone -->
-    <string name="or_enter_code_on_auth_url">Ou saisissez le code %1$s sur %2$s</string>
     <string name="auth_timeout_recreating_qr">Authentification non effectuée dans le délai imparti, recréation du code QR.</string>
     <string name="invalid_server_url_or_api_key">URL du serveur ou clé d’API invalide, essayez de scanner à nouveau !</string>
-    <string name="could_not_fetch_qr">Impossible de récupérer le code QR : %1$s</string>
-    <string name="could_not_fetch_qr_short">Impossible de récupérer le code QR</string>
     <string name="could_not_load_assets">Impossible de charger les éléments depuis Immich</string>
 
     <!-- Albums ordering -->
@@ -297,4 +293,7 @@
     <string name="meta_data_padding_dialog_title">Marge au-dessus et au-dessous de l’élément</string>
     <string name="meta_data_delete_desc">Supprimer l’élément</string>
     <string name="meta_data_save_desc">Enregistrer l’élément</string>
+    <string name="phone_sign_in_open_address">Ou ouvrez %1$s dans le navigateur de votre téléphone (même Wi-Fi)</string>
+    <string name="phone_sign_in_done">Terminé. Regardez votre télévision.</string>
+    <string name="phone_sign_in_no_network">Aucun réseau domestique trouvé. Connectez le téléviseur au Wi-Fi ou à l\'Ethernet.</string>
 </resources>

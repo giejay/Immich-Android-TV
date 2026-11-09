@@ -60,6 +60,5 @@
         android:textSize="@dimen/text_body"
         android:textColor="@color/screen_white_70"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/or_enter_code_on_site" />
+        android:layout_height="wrap_content" />
 </FrameLayout>
