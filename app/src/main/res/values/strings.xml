@@ -228,7 +228,7 @@
     <string name="auth_sign_in_by_phone">Sign in by phone</string>
     <string name="auth_sign_in_by_phone_desc">Login to your Immich instance by scanning a QR code with your phone. Note: this only works if your Immich server is accessible from the internet (not for local/private IP addresses).</string>
     <string name="auth_demo_mode">Demo mode</string>
-    <string name="auth_demo_mode_desc">Login to a demo Immich instance.</string>
+    <string name="auth_demo_mode_desc">Try the app with sample photos. No server needed.</string>
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Login to your Immich server or try a demo.</string>

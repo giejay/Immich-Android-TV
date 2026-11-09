@@ -176,7 +176,7 @@
     <string name="auth_sign_in_by_phone">Mit dem Handy anmelden</string>
     <string name="auth_sign_in_by_phone_desc">Melde dich bei deiner Immich-Instanz an, indem du einen QR-Code mit dem Handy scannst. Hinweis: Das funktioniert nur, wenn dein Immich-Server aus dem Internet erreichbar ist (nicht bei lokalen/privaten IP-Adressen).</string>
     <string name="auth_demo_mode">Demo-Modus</string>
-    <string name="auth_demo_mode_desc">Bei einer Immich-Demo-Instanz anmelden.</string>
+    <string name="auth_demo_mode_desc">App mit Beispielfotos ausprobieren. Kein Server nötig.</string>
 
     <!-- Auth step 2 -->
     <string name="login_immich_description">Melde dich bei deinem Immich-Server an oder probiere die Demo aus.</string>

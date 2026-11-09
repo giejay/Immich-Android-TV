@@ -14,8 +14,8 @@ are not shared with it. It needs Android 7.0 (API 24) or newer and an Immich ser
 
 ## Screenshots
 
-All screenshots were taken against a local test server filled with stock photos
-(see [tools/test-server](tools/test-server)); no private photos are shown.
+All screenshots were taken in the offline demo mode with its bundled stock photos
+(see [credits](app/src/main/assets/demo/CREDITS.md)); no private photos are shown.
 
 |                                                       |                                                      |                                                    |
 |:-----------------------------------------------------:|:----------------------------------------------------:|:--------------------------------------------------:|
@@ -33,6 +33,7 @@ All screenshots were taken against a local test server filled with stock photos
 - Home screen channels for quick access from the Android TV launcher
 - Sign in with an API key or by scanning a QR code with your phone
 - Configurable home: show or hide the pages
+- Offline demo mode with sample photos: try the app without an Immich server (photo credits in [app/src/main/assets/demo](app/src/main/assets/demo/CREDITS.md))
 - Complete D-pad navigation with a visible focus state; no touch screen needed
 
 ## What is different from the original

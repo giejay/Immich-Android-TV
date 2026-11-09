@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.homescreenchannels
 
+import nl.giejay.android.tv.immich.api.demo.DemoCatalog
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ContentUris
@@ -92,7 +93,8 @@ object HomeScreenChannelManager {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return@withLock
         }
-        if (!PreferenceManager.isLoggedId() || !PreferenceManager.get(ENABLE_HOME_SCREEN_CHANNELS)) {
+        // the launcher fetches the artwork itself and cannot reach the offline demo host, so no channels in the demo
+        if (!PreferenceManager.isLoggedId() || PreferenceManager.hostName == DemoCatalog.HOST_URL || !PreferenceManager.get(ENABLE_HOME_SCREEN_CHANNELS)) {
             try {
                 deleteAllChannels(context)
             } catch (e: Exception) {
