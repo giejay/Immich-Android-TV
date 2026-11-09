@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Fork of `giejay/Immich-Android-TV` (GPL-3.0): an Android TV client for the Immich photo server (compatible with Immich v3+). Goal of this fork: modernize the UI (Compose for TV, Synology-Photos-like look) while keeping all functionality. Application id is `io.github.daniii88.immichandroidtvnext`, app name "Immich Android TV Next"; the Kotlin packages and the Gradle `namespace` stay `nl.giejay.android.tv.immich`, so components must be addressed as `io.github.daniii88.immichandroidtvnext/nl.giejay.android.tv.immich.<Class>` (not with the `.Class` shorthand). Deep link scheme: `immichandroidtvnext://`.
+Fork of `giejay/Immich-Android-TV` (GPL-3.0): an Android TV client for the Immich photo server (compatible with Immich v3+). Goal of this fork: modernize the UI (Compose for TV, Synology-Photos-like look) while keeping all functionality. Application id is `io.github.daniii88.immichandroidtvnext`, app name "Immich TV Next" (Play title "Immich TV Next (Unofficial)"); the Kotlin packages and the Gradle `namespace` stay `nl.giejay.android.tv.immich`, so components must be addressed as `io.github.daniii88.immichandroidtvnext/nl.giejay.android.tv.immich.<Class>` (not with the `.Class` shorthand). Deep link scheme: `immichandroidtvnext://`.
 
 ## Build & test
 

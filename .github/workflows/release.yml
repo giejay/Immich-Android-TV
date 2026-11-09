@@ -166,7 +166,7 @@ jobs:
           fi
 
           gh release create "$TAG_NAME" \
-            --title "Immich Android TV Next $VERSION_NAME" \
+            --title "Immich TV Next $VERSION_NAME" \
             --notes "$NOTES" \
             --target "$GITHUB_SHA" \
             --generate-notes \

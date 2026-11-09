@@ -216,7 +216,7 @@
     <string name="auth_sign_in_by_phone">Войти по телефону</string>
     <string name="auth_sign_in_by_phone_desc">Войдите в ваш экземпляр Immich по телефону.</string>
     <string name="auth_demo_mode">Демо-режим</string>
-    <string name="auth_demo_mode_desc">Войти в демонстрационный экземпляр Immich.</string>
+    <string name="auth_demo_mode_desc">Попробуйте приложение с примерами фотографий. Сервер не нужен.</string>
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">Войдите на ваш сервер Immich или попробуйте демо.</string>

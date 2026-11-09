@@ -224,7 +224,7 @@
     <string name="auth_sign_in_by_phone">使用手机登录</string>
     <string name="auth_sign_in_by_phone_desc">用手机扫描二维码登录你的 Immich 服务器。注意：仅当你的 Immich 服务器可从互联网访问时才有效（不支持本地/内网 IP 地址）。</string>
     <string name="auth_demo_mode">演示模式</string>
-    <string name="auth_demo_mode_desc">登录 Immich 演示服务器。</string>
+    <string name="auth_demo_mode_desc">使用示例照片试用应用，无需服务器。</string>
 
     <!-- Auth step 2 (GuidedStep) -->
     <string name="login_immich_description">登录你的 Immich 服务器，或试用演示。</string>
