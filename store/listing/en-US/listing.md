@@ -16,25 +16,40 @@ Bring your photo library to the big screen:
 • Screensaver (Daydream) with your albums, random or recent photos, or photos from a similar time of year, and several transitions
 • Home screen channels for quick access
 • Customize which pages are shown and what the photo overlay displays
+• Demo mode with sample photos: try the app without an Immich server
 • Fully D-pad friendly, no touch screen needed
 
-Getting started: you need a running Immich server (v3 or newer). Sign in with your server URL and an API key, or scan a QR code with your phone. The app talks to your server (phone sign-in uses a small relay service only to pass your login to the TV): no ads, no analytics, no tracking.
+Getting started: you need a running Immich server (v3 or newer). Sign in with your server URL and an API key, or look around first in the demo mode. The app talks only to your server: no ads, no analytics, no tracking.
 
 Open source (GPL-3.0): https://github.com/daniii88/Immich-Android-TV-Next
 Immich is a trademark of its respective owners.
 
+**What's new** (release notes, max 500):
+First release: timeline with scrubber and memories, albums, people, folders, search, full-screen viewer with slideshow, screensaver and an offline demo mode.
+
+**Graphics:** in `store/assets/`: icon `icon-512.png` (512x512), feature graphic `feature-graphic-1024x500.png`, TV banner `tv-banner-1280x720.png`. Screenshots (1920x1080, 16:9) are in `screenshots/`; upload in this order: timeline, albums, album-detail, photos, search, viewer, navigation, settings.
+
 ---
 ## Console answers (draft, please review before submitting)
 
+**App access** (the app needs an Immich server to sign in, so tell the reviewers how to get in without one):
+"No account is needed. On the first screen choose 'Demo mode' and press Continue. The demo runs fully offline with bundled sample photos (no server, no login). To use the app with real data you need your own Immich server (v3 or newer)."
+
 **Data safety**
-- The developer collects nothing. Photos and metadata go only to/from the server the user configures. Optional phone sign-in sends the user's server URL and API key through the authentication relay (separate service, address set at build time): declare this as data (credentials / app info) transmitted to a third party for app functionality, optional, not used for ads or tracking. Decide the exact boxes after confirming who operates the relay.
-- Data encrypted in transit: depends on the user's server (HTTP is possible by design for home servers).
-- Users can request data deletion: not applicable, no data is held by the developer. Privacy policy URL: link to `store/privacy-policy.md` (raw GitHub URL or Pages).
+- Data collected or shared by the developer: none. The app has no analytics, ads, crash reporting or third-party SDKs and contacts only the Immich server that the user enters. Photos and metadata go only to and from that server, which the user runs.
+- The server URL, settings and API key stay on the device (the key is encrypted with the Android Keystore) and are excluded from backups.
+- The Play build offers no phone sign-in and contacts no relay service (the option is hidden when no relay address is built in).
+- Data encrypted in transit: depends on the user's server (HTTP is possible by design for home servers); answer "No, not all data" if asked and explain in the policy.
+- Data deletion: not applicable, the developer holds no data. Privacy policy: link to `store/privacy-policy.md` (GitHub page, e.g. https://github.com/daniii88/Immich-Android-TV-Next/blob/main/store/privacy-policy.md).
 
-**Content rating:** user-generated content comes only from the user's own server; no ads, no purchases. Expect "Everyone"; answer the questionnaire as a media viewer.
+**Content rating:** user-generated content comes only from the user's own server; no ads, no purchases, no social features. Answer the questionnaire as a media viewer; expect "Everyone".
 
-**App category:** Photography (alternative: Video Players & Editors). **Ads:** none. **Android TV:** leanback declared, banner 1280x720 in `store/assets`.
+**Target audience:** 18+ / general (not designed for children). **Ads:** none. **Government app / financial features / health:** no. **Category:** Photography (alternative: Video Players & Editors).
+
+**Form factor:** Android TV only (leanback declared, TV banner in `store/assets`). No phone or tablet listing.
 
 **Permissions to justify:** INTERNET (connect to the user's server), WRITE_EPG_DATA (home screen channels).
 
-**Open before release:** ask the Immich team for their OK about name and icon; add real screenshots (1920x1080, 16:9) taken against the test server.
+**Contact:** an email address is required in the listing and is public. Decide which before the release (see `RELEASE_CHECKLIST.md`).
+
+**Open before release:** ask the Immich team for their OK about name and icon.

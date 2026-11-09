@@ -8,7 +8,7 @@
 
 Writes app/src/main/res/drawable/{icon,icon_600px,icon_mark}.png, the 640x360 TV banner
 app/src/main/res/mipmap-xhdpi/icon_banner_next.png and the Google Play assets in store/assets
-(icon-512.png full bleed, tv-banner-1280x720.png). Needs Pillow only.
+(icon-512.png full bleed, tv-banner-1280x720.png, feature-graphic-1024x500.png). Needs Pillow only.
 """
 from pathlib import Path
 
@@ -81,6 +81,11 @@ def main():
     store.mkdir(parents=True, exist_ok=True)
     tile(mark, 512, rounded=False).convert("RGB").save(store / "icon-512.png")
     banner.resize((1280, 720), Image.LANCZOS).save(store / "tv-banner-1280x720.png")
+    # Play feature graphic 1024x500 (2.048:1): the banner content sits in the middle, so cut a band from it
+    scaled = banner.resize((1280, 720), Image.LANCZOS)
+    band = round(1280 / 2.048)
+    top = (720 - band) // 2 + 6
+    scaled.crop((0, top, 1280, top + band)).resize((1024, 500), Image.LANCZOS).save(store / "feature-graphic-1024x500.png")
     print("wrote icons and banners")
 
 

@@ -16,9 +16,13 @@ Bring deine Fotosammlung auf den großen Bildschirm:
 • Bildschirmschoner (Daydream) mit deinen Alben, zufälligen oder neuesten Fotos oder Fotos aus ähnlicher Jahreszeit und verschiedenen Übergängen
 • Startbildschirm-Kanäle für schnellen Zugriff
 • Seiten ein- und ausblenden und die Foto-Einblendungen anpassen
+• Demo-Modus mit Beispielfotos: die App ohne Immich-Server ausprobieren
 • Komplett mit der Fernbedienung bedienbar, kein Touchscreen nötig
 
-So geht's los: Du brauchst einen laufenden Immich-Server (ab Version 3). Melde dich mit Server-URL und API-Key an oder scanne einen QR-Code mit dem Smartphone. Die App spricht mit deinem Server (die Anmeldung per Smartphone nutzt einen kleinen Relay-Dienst, der nur deine Anmeldung an den Fernseher weiterreicht): keine Werbung, keine Analyse, kein Tracking.
+So geht's los: Du brauchst einen laufenden Immich-Server (ab Version 3). Melde dich mit Server-URL und API-Key an oder sieh dich erst im Demo-Modus um. Die App spricht nur mit deinem Server: keine Werbung, keine Analyse, kein Tracking.
 
 Open Source (GPL-3.0): https://github.com/daniii88/Immich-Android-TV-Next
 Immich ist eine Marke der jeweiligen Inhaber.
+
+**Neuigkeiten** (Versionshinweise, max. 500):
+Erste Version: Zeitleiste mit Scrubber und Erinnerungen, Alben, Personen, Ordner, Suche, Vollbildansicht mit Diashow, Bildschirmschoner und ein Offline-Demo-Modus.
