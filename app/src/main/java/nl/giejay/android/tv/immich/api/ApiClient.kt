@@ -106,7 +106,8 @@ class ApiClient(private val config: ApiClientConfig) {
         private const val SMART_SEARCH_RETRY_MILLIS = 5 * 60 * 1000L
         private const val MAX_FALLBACK_HITS_PER_FIELD = 500
         private const val MAX_TAGS = 100
-        private const val TAG_COVER_CANDIDATES = 10
+        private const val COVER_PAGE_SIZE = 100
+        private const val COVER_SEARCH_PAGES = 5
 
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
         fun getClient(config: ApiClientConfig): nl.giejay.android.tv.immich.api.ApiClient {
@@ -323,6 +324,20 @@ class ApiClient(private val config: ApiClientConfig) {
         return search(request).map { it.toAssetResponse() }
     }
 
+    /**
+     * The newest photo of a city or tag that the TV app may show (photos tagged `exclude_immich_tv` are skipped).
+     * Pages through the hits until one is found or the search is exhausted (at most [COVER_SEARCH_PAGES] pages).
+     */
+    private suspend fun findCover(city: String? = null, tagIds: List<String> = emptyList()): Asset? {
+        val allowed = excludeByTag()
+        for (page in 1..COVER_SEARCH_PAGES) {
+            val response = listAssetsByFilter(page, COVER_PAGE_SIZE, ContentType.ALL, city = city, tagIds = tagIds).getOrNull() ?: return null
+            response.assets.firstOrNull(allowed)?.let { return it }
+            if (!response.canLoadMore) return null
+        }
+        return null
+    }
+
     /** One photo per place (city), sorted by city name; the photo serves as the card picture. */
     suspend fun listPlaces(): Either<String, List<Asset>> =
         executeAPICall(200) { service.listCities() }.map { assets ->
@@ -336,8 +351,7 @@ class ApiClient(private val config: ApiClientConfig) {
                 } else {
                     // the server's pick is excluded from the TV app: another photo of the city is the cover,
                     // and a city with nothing left to show is dropped (opening it would be empty anyway)
-                    listAssetsByFilter(1, TAG_COVER_CANDIDATES, ContentType.ALL, city = representative.exifInfo?.city)
-                        .getOrNull()?.assets?.firstOrNull(allowed)
+                    findCover(city = representative.exifInfo?.city)
                 }
             }.filterNotNull()
         }
@@ -346,10 +360,7 @@ class ApiClient(private val config: ApiClientConfig) {
     suspend fun listTagsWithPictures(): Either<String, List<Pair<TagInfo, String?>>> =
         executeAPICall(200) { service.listTags() }.map { tags ->
             tags.sortedBy { it.value.lowercase() }.take(MAX_TAGS).pmap { tag ->
-                // a few candidates: the newest photo may be one the user excluded from the TV app
-                val picture = listAssetsByFilter(1, TAG_COVER_CANDIDATES, ContentType.ALL, tagIds = listOf(tag.id))
-                    .getOrNull()?.assets?.firstOrNull(excludeByTag())?.id
-                tag to picture
+                tag to findCover(tagIds = listOf(tag.id))?.id
             }
         }
 
