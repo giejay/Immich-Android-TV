@@ -39,41 +39,68 @@ class LocalAuthServer(
     val token: String = newToken(),
 ) {
     private var serverSocket: ServerSocket? = null
-    private val executor = Executors.newFixedThreadPool(MAX_CONNECTIONS) { r -> Thread(r, "local-auth").apply { isDaemon = true } }
-    private val used = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val lock = Any()
+    private var stopped = false
+    private var used = false
+    private val openSockets = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<Socket, Boolean>())
+
+    // Bounded: at most MAX_CONNECTIONS workers and MAX_QUEUED waiting sockets, everything else is closed.
+    private val executor = java.util.concurrent.ThreadPoolExecutor(
+        MAX_CONNECTIONS, MAX_CONNECTIONS, 0L, java.util.concurrent.TimeUnit.MILLISECONDS,
+        java.util.concurrent.ArrayBlockingQueue(MAX_QUEUED),
+        { r -> Thread(r, "local-auth").apply { isDaemon = true } },
+    )
 
     /** The port the server listens on (0 until [start] was called). */
     val port: Int get() = serverSocket?.localPort ?: 0
 
+    /** Starts listening; does nothing when [stop] was called before, so a late start never leaks a socket. */
     fun start(port: Int = 0) {
-        val socket = ServerSocket(port)
-        serverSocket = socket
+        val socket = synchronized(lock) {
+            if (stopped) return
+            ServerSocket(port).also { serverSocket = it }
+        }
         Thread({
             while (!socket.isClosed) {
                 try {
                     val client = socket.accept()
-                    executor.execute { handle(client) }
+                    client.soTimeout = SOCKET_TIMEOUT_MS
+                    openSockets += client
+                    try {
+                        executor.execute { handle(client) }
+                    } catch (_: java.util.concurrent.RejectedExecutionException) {
+                        openSockets -= client
+                        client.close()
+                    }
                 } catch (_: java.io.IOException) {
                     // closed by stop()
-                } catch (_: java.util.concurrent.RejectedExecutionException) {
-                    return@Thread
                 }
             }
         }, "local-auth-accept").apply { isDaemon = true }.start()
     }
 
+    /** Closes the listener and every accepted connection; credentials are never handed over afterwards. */
     fun stop() {
-        try {
-            serverSocket?.close()
-        } catch (_: java.io.IOException) {
+        synchronized(lock) {
+            stopped = true
+            try {
+                serverSocket?.close()
+            } catch (_: java.io.IOException) {
+            }
         }
         executor.shutdownNow()
+        openSockets.toList().forEach {
+            try {
+                it.close()
+            } catch (_: java.io.IOException) {
+            }
+        }
+        openSockets.clear()
     }
 
     private fun handle(socket: Socket) {
         socket.use {
             try {
-                it.soTimeout = SOCKET_TIMEOUT_MS
                 val request = readRequest(it.getInputStream()) ?: return respond(it, 400, "Bad request")
                 val response = route(request)
                 respond(it, response.first, response.second)
@@ -85,6 +112,8 @@ class LocalAuthServer(
                 }
             } catch (_: SocketTimeoutException) {
             } catch (_: java.io.IOException) {
+            } finally {
+                openSockets -= socket
             }
         }
     }
@@ -93,17 +122,23 @@ class LocalAuthServer(
         val tokenOk = tokenMatches(request.query["t"])
         return when {
             request.path == "/" && request.method == "GET" ->
-                if (tokenOk && !used.get()) 200 to formPage(null) else 403 to messagePage(texts.invalid)
+                if (tokenOk && !synchronized(lock) { used || stopped }) 200 to formPage(null) else 403 to messagePage(texts.invalid)
             request.path == "/submit" && request.method == "POST" -> {
-                if (!tokenOk || used.get()) return 403 to messagePage(texts.invalid)
+                if (!tokenOk) return 403 to messagePage(texts.invalid)
                 val form = parseForm(request.body)
                 val host = form["host"]?.trim().orEmpty()
                 val key = form["key"]?.trim().orEmpty()
-                if (host.isEmpty() || key.isEmpty() || !onCredentials(host, key)) {
-                    400 to formPage(texts.invalid)
-                } else {
-                    used.set(true)
-                    200 to messagePage(texts.success)
+                // Check, hand-over and consuming the token happen under one lock: one submission at a time,
+                // and never after stop().
+                synchronized(lock) {
+                    when {
+                        used || stopped -> 403 to messagePage(texts.invalid)
+                        host.isEmpty() || key.isEmpty() || !onCredentials(host, key) -> 400 to formPage(texts.invalid)
+                        else -> {
+                            used = true
+                            200 to messagePage(texts.success)
+                        }
+                    }
                 }
             }
             else -> 404 to messagePage("Not found")
@@ -185,6 +220,7 @@ class LocalAuthServer(
 
     companion object {
         const val MAX_CONNECTIONS = 4
+        const val MAX_QUEUED = 8
         const val MAX_HEAD_BYTES = 8 * 1024
         const val MAX_BODY_BYTES = 4 * 1024
         const val SOCKET_TIMEOUT_MS = 5_000

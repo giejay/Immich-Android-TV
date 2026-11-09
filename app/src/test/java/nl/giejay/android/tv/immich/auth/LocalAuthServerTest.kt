@@ -115,4 +115,58 @@ class LocalAuthServerTest {
         }
         assertThat(refused).isTrue()
     }
+
+    @Test
+    fun stopClosesHalfOpenConnectionsAndLateCredentialsAreDropped() {
+        val s = Socket("127.0.0.1", server.port)
+        s.soTimeout = 3000
+        s.getOutputStream().write("POST /submit?t=tok123 HTTP/1.1\r\nContent-Length: 20\r\n\r\nhost=ht".toByteArray())
+        s.getOutputStream().flush()
+        Thread.sleep(200)
+        server.stop()
+        // the server closed our connection instead of waiting for the rest of the body
+        assertThat(s.getInputStream().read()).isEqualTo(-1)
+        assertThat(received).isEmpty()
+    }
+
+    @Test
+    fun startAfterStopOpensNoSocket() {
+        val late = LocalAuthServer(texts, { _, _ -> true })
+        late.stop()
+        late.start()
+        assertThat(late.port).isEqualTo(0)
+    }
+
+    @Test
+    fun parallelSubmissionsWithOneTokenHandOverOnlyOnce() {
+        val count = java.util.concurrent.atomic.AtomicInteger()
+        val s2 = LocalAuthServer(texts, { _, _ -> count.incrementAndGet(); Thread.sleep(100); true }, token = "t")
+        s2.start()
+        try {
+            val codes = (1..6).map {
+                java.util.concurrent.CompletableFuture.supplyAsync {
+                    val c = URL("http://127.0.0.1:${s2.port}/submit?t=t").openConnection() as HttpURLConnection
+                    c.requestMethod = "POST"
+                    c.doOutput = true
+                    c.outputStream.use { o -> o.write("host=https%3A%2F%2Fa&key=k".toByteArray()) }
+                    c.responseCode
+                }
+            }.map { it.get() }
+            assertThat(count.get()).isEqualTo(1)
+            assertThat(codes.count { it == 200 }).isEqualTo(1)
+        } finally {
+            s2.stop()
+        }
+    }
+
+    @Test
+    fun connectionsBeyondTheQueueAreClosedInsteadOfPiledUp() {
+        // idle connections hold the 4 workers and 8 queue slots; later ones must be closed at once
+        val idle = (1..(LocalAuthServer.MAX_CONNECTIONS + LocalAuthServer.MAX_QUEUED)).map { Socket("127.0.0.1", server.port) }
+        Thread.sleep(300)
+        val extra = Socket("127.0.0.1", server.port)
+        extra.soTimeout = 2000
+        assertThat(extra.getInputStream().read()).isEqualTo(-1)
+        (idle + extra).forEach { it.close() }
+    }
 }

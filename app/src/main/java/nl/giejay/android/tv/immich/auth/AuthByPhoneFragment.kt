@@ -15,6 +15,7 @@ import androidx.navigation.fragment.findNavController
 import com.github.alexzhirkevich.customqrgenerator.QrData
 import com.github.alexzhirkevich.customqrgenerator.vector.QrCodeDrawable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.giejay.android.tv.immich.R
@@ -45,19 +46,26 @@ class AuthByPhoneFragment : Fragment() {
             invalid = getString(R.string.enter_valid_server_url),
             language = resources.configuration.locales[0].language,
         )
+        // The server object is owned by the fragment from the start (it opens no socket yet), so
+        // onDestroyView always stops it, even when the start below is cancelled half way.
+        val localServer = LocalAuthServer(texts, ::acceptCredentials)
+        server = localServer
         viewLifecycleOwner.lifecycleScope.launch {
-            val started = withContext(Dispatchers.IO) { startServer(texts) }
-            if (!isAdded) {
-                started?.second?.stop()
-                return@launch
-            }
-            if (started == null) {
+            val address = withContext(Dispatchers.IO) { LocalAuthServer.findLanAddress() }
+            if (address == null) {
                 binding.qrProgressBar.visibility = View.GONE
                 binding.qrText.text = getString(R.string.phone_sign_in_no_network)
                 return@launch
             }
-            val (url, localServer) = started
-            server = localServer
+            withContext(Dispatchers.IO + NonCancellable) {
+                try {
+                    localServer.start(PORT)
+                } catch (e: BindException) {
+                    localServer.start(0)
+                }
+            }
+            if (!isAdded) return@launch
+            val url = "http://${address.hostAddress}:${localServer.port}/?t=${localServer.token}"
             val drawable: Drawable = QrCodeDrawable(QrData.Url(url))
             binding.qr.setImageDrawable(drawable)
             binding.qr.visibility = View.VISIBLE
@@ -66,18 +74,6 @@ class AuthByPhoneFragment : Fragment() {
             mainHandler.postDelayed({ onTimeout() }, TIMEOUT_MS)
         }
         return binding.root
-    }
-
-    /** Returns the address to open and the running server, or null without a home network. */
-    private fun startServer(texts: LocalAuthTexts): Pair<String, LocalAuthServer>? {
-        val address = LocalAuthServer.findLanAddress() ?: return null
-        val localServer = LocalAuthServer(texts, ::acceptCredentials)
-        try {
-            localServer.start(PORT)
-        } catch (e: BindException) {
-            localServer.start(0)
-        }
-        return "http://${address.hostAddress}:${localServer.port}/?t=${localServer.token}" to localServer
     }
 
     /** Called on a server thread; true when the credentials were saved and the app moves on. */
