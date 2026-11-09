@@ -2,163 +2,124 @@ package nl.giejay.android.tv.immich.auth
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.navigation.NavController
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.github.alexzhirkevich.customqrgenerator.QrData
 import com.github.alexzhirkevich.customqrgenerator.vector.QrCodeDrawable
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
-import nl.giejay.android.tv.immich.api.AuthenticationClient
-import nl.giejay.android.tv.immich.api.service.DeviceConfigResponse
-import nl.giejay.android.tv.immich.api.service.ImmichAuthenticationService
 import nl.giejay.android.tv.immich.databinding.FragmentAuthByPhoneBinding
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import timber.log.Timber
+import java.net.BindException
 
+/**
+ * Sign in with a phone: the TV serves a small form in the home network ([LocalAuthServer]) and shows its
+ * address as a QR code. No third party is involved.
+ */
 class AuthByPhoneFragment : Fragment() {
-    private var job: Job? = null
-    private val ioScope = CoroutineScope(Job() + Dispatchers.IO)
-    private val authClient = AuthenticationClient()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var server: LocalAuthServer? = null
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val binding = FragmentAuthByPhoneBinding.inflate(inflater, container, false)
-        ioScope.launch {
-            fetchDeviceCode { code ->
-                val context = context ?: return@fetchDeviceCode
-                val authUrl = context.getString(R.string.authentication_url)
-                val data = QrData.Url("$authUrl?code=$code")
-                val drawable: Drawable = QrCodeDrawable(data)
-                binding.qr.setImageDrawable(drawable)
-                binding.qr.visibility = View.VISIBLE
-                binding.qrProgressBar.visibility = View.GONE
-                binding.qrText.text = context.getString(R.string.or_enter_code_on_auth_url, code, authUrl)
-                job = ioScope.launch {
-                    pollConfig(code)
-                }
+        val texts = LocalAuthTexts(
+            title = getString(R.string.app_name),
+            hostLabel = getString(R.string.server_url_hint),
+            keyLabel = getString(R.string.api_key_text),
+            submit = getString(R.string.submit),
+            success = getString(R.string.phone_sign_in_done),
+            invalid = getString(R.string.enter_valid_server_url),
+            language = resources.configuration.locales[0].language,
+        )
+        viewLifecycleOwner.lifecycleScope.launch {
+            val started = withContext(Dispatchers.IO) { startServer(texts) }
+            if (!isAdded) {
+                started?.second?.stop()
+                return@launch
             }
+            if (started == null) {
+                binding.qrProgressBar.visibility = View.GONE
+                binding.qrText.text = getString(R.string.phone_sign_in_no_network)
+                return@launch
+            }
+            val (url, localServer) = started
+            server = localServer
+            val drawable: Drawable = QrCodeDrawable(QrData.Url(url))
+            binding.qr.setImageDrawable(drawable)
+            binding.qr.visibility = View.VISIBLE
+            binding.qrProgressBar.visibility = View.GONE
+            binding.qrText.text = getString(R.string.phone_sign_in_open_address, url)
+            mainHandler.postDelayed({ onTimeout() }, TIMEOUT_MS)
         }
         return binding.root
     }
 
-    private suspend fun pollConfig(code: String) {
-        val timer = (0..60)
-            .asSequence()
-            .asFlow()
-            .onEach { delay(3_000) } // specify delay
-            .onCompletion { cause ->
-                if (cause == null) {
-                    withContext(Dispatchers.Main) {
-                        if (isAdded) {
-                            val message = context?.getString(R.string.auth_timeout_recreating_qr)
-                            if (message != null) {
-                                showErrorMessage(message)
-                                try {
-                                    rebootQRFlow(findNavController())
-                                } catch (e: IllegalStateException) {
-                                    Timber.w(e, "Could not navigate: fragment likely detached")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        timer.collect {
-            val config = authClient.getConfig(code)
-            if (config?.status == "SUCCESS") {
-                validateConfig(config)
-                coroutineScope { cancel() }
-            }
+    /** Returns the address to open and the running server, or null without a home network. */
+    private fun startServer(texts: LocalAuthTexts): Pair<String, LocalAuthServer>? {
+        val address = LocalAuthServer.findLanAddress() ?: return null
+        val localServer = LocalAuthServer(texts, ::acceptCredentials)
+        try {
+            localServer.start(PORT)
+        } catch (e: BindException) {
+            localServer.start(0)
+        }
+        return "http://${address.hostAddress}:${localServer.port}/?t=${localServer.token}" to localServer
+    }
+
+    /** Called on a server thread; true when the credentials were saved and the app moves on. */
+    private fun acceptCredentials(host: String, apiKey: String): Boolean {
+        if (!PreferenceManager.isValid(host, apiKey)) return false
+        PreferenceManager.save(SCREENSAVER_ALBUMS, emptySet())
+        PreferenceManager.save(API_KEY, apiKey)
+        PreferenceManager.save(HOST_NAME, host)
+        mainHandler.post {
+            if (!isAdded) return@post
+            val navController = findNavController()
+            // Clear the whole back stack so every page (and the timeline) starts with the new server settings.
+            navController.navigate(
+                AuthByPhoneFragmentDirections.actionGlobalHomeFragment(),
+                NavOptions.Builder().setPopUpTo(navController.graph.id, true).build(),
+            )
+        }
+        return true
+    }
+
+    private fun onTimeout() {
+        if (!isAdded) return
+        Toast.makeText(requireContext(), R.string.auth_timeout_recreating_qr, Toast.LENGTH_SHORT).show()
+        try {
+            findNavController().navigate(
+                AuthByPhoneFragmentDirections.actionGlobalSignInByPhoneFragment(),
+                NavOptions.Builder().setPopUpTo(R.id.authByPhoneFragment, true).build(),
+            )
+        } catch (e: IllegalStateException) {
+            Timber.w(e, "Could not navigate: fragment likely detached")
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        job?.cancel()
+        mainHandler.removeCallbacksAndMessages(null)
+        server?.stop()
+        server = null
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        ioScope.cancel()
-    }
-
-    private suspend fun validateConfig(config: DeviceConfigResponse) {
-        withContext(Dispatchers.Main) {
-            if (!isAdded) return@withContext
-            val findNavController = findNavController()
-            if (PreferenceManager.isValid(
-                    config.configuration.host,
-                    config.configuration.apiKey
-                )
-            ) {
-                PreferenceManager.save(API_KEY, config.configuration.apiKey)
-                PreferenceManager.save(HOST_NAME, config.configuration.host)
-                findNavController.navigate(
-                    AuthByPhoneFragmentDirections.actionGlobalHomeFragment(),
-                    NavOptions.Builder().setPopUpTo(R.id.authFragment, true)
-                        .build()
-                )
-            } else {
-                showErrorMessage(getString(R.string.invalid_server_url_or_api_key))
-                rebootQRFlow(findNavController)
-            }
-        }
-    }
-
-    private fun rebootQRFlow(findNavController: NavController) =
-        findNavController.navigate(
-            AuthByPhoneFragmentDirections.actionGlobalSignInByPhoneFragment(),
-            NavOptions.Builder()
-                .setPopUpTo(R.id.authByPhoneFragment, true).build()
-        )
-
-    private suspend fun fetchDeviceCode(callback: (String) -> Unit) = withContext(Dispatchers.IO) {
-        val deviceCode = authClient.registerDevice()
-        withContext(Dispatchers.Main) {
-            if (!isAdded) return@withContext
-            if (deviceCode != null) {
-                callback(deviceCode.code)
-            } else {
-                Timber.e("Could not fetch qr: registerDevice returned null")
-                val message = context?.getString(R.string.could_not_fetch_qr, "Network error")
-                if (message != null) {
-                    showErrorMessage(message)
-                }
-            }
-        }
-    }
-
-    private suspend fun showErrorMessage(message: String) {
-        withContext(Dispatchers.Main) {
-            context?.let {
-                Toast.makeText(it, message, Toast.LENGTH_SHORT).show()
-            }
-        }
+    private companion object {
+        const val PORT = 8765
+        const val TIMEOUT_MS = 3 * 60 * 1000L
     }
 }

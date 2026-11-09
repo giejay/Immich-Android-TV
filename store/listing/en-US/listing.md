@@ -16,6 +16,7 @@ Bring your photo library to the big screen:
 • Screensaver (Daydream) with your albums, random or recent photos, or photos from a similar time of year, and several transitions
 • Home screen channels for quick access
 • Customize which pages are shown and what the photo overlay displays
+• Sign in with an API key or by scanning a QR code with your phone (local, no cloud service)
 • Demo mode with sample photos: try the app without an Immich server
 • Fully D-pad friendly, no touch screen needed
 
@@ -38,7 +39,7 @@ First release: timeline with scrubber and memories, albums, people, folders, sea
 **Data safety**
 - Data collected or shared by the developer: none. The app has no analytics, ads, crash reporting or third-party SDKs and contacts only the Immich server that the user enters. Photos and metadata go only to and from that server, which the user runs.
 - The server URL, settings and API key stay on the device (the key is encrypted with the Android Keystore) and are excluded from backups.
-- The Play build offers no phone sign-in and contacts no relay service (the option is hidden when no relay address is built in).
+- Phone sign-in runs entirely in the user's home network: the TV serves a small page (plain HTTP, one-time token) and receives the server URL and API key from the phone. No relay or third-party service is contacted.
 - Data encrypted in transit: depends on the user's server (HTTP is possible by design for home servers); answer "No, not all data" if asked and explain in the policy.
 - Data deletion: not applicable, the developer holds no data. Privacy policy: link to `store/privacy-policy.md` (GitHub page, e.g. https://github.com/daniii88/Immich-Android-TV-Next/blob/main/store/privacy-policy.md).
 

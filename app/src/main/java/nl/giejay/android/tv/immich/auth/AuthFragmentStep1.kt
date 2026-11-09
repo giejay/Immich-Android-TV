@@ -35,7 +35,6 @@ class AuthFragmentStep1 : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         immichComposeView(requireContext()) {
             var selected by remember { mutableStateOf(SignInOption.API_KEY) }
-            val phoneSignIn = remember { isPhoneSignInAvailable(getString(R.string.authentication_url)) }
             val firstFocus = remember { FocusRequester() }
             androidx.compose.runtime.LaunchedEffect(Unit) {
                 try {
@@ -56,14 +55,12 @@ class AuthFragmentStep1 : Fragment() {
                         { selected = SignInOption.API_KEY },
                         Modifier.focusRequester(firstFocus),
                     )
-                    if (phoneSignIn) {
-                        AuthOptionRow(
-                            getString(R.string.auth_sign_in_by_phone),
-                            getString(R.string.auth_sign_in_by_phone_desc),
-                            selected == SignInOption.PHONE,
-                            { selected = SignInOption.PHONE },
-                        )
-                    }
+                    AuthOptionRow(
+                        getString(R.string.auth_sign_in_by_phone),
+                        getString(R.string.auth_sign_in_by_phone_desc),
+                        selected == SignInOption.PHONE,
+                        { selected = SignInOption.PHONE },
+                    )
                     AuthOptionRow(
                         getString(R.string.auth_demo_mode),
                         getString(R.string.auth_demo_mode_desc),

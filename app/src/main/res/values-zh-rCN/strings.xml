@@ -90,7 +90,6 @@
 
     <!-- Auth by phone -->
     <string name="scan_qr_below">扫描下方二维码</string>
-    <string name="or_enter_code_on_site">或在 https://immich.giejay.nl 输入该代码</string>
 
     <!-- Metadata -->
     <string name="metadata">元数据</string>
@@ -222,7 +221,7 @@
     <string name="auth_sign_in_by_api_key">使用 API 密钥登录</string>
     <string name="auth_sign_in_by_api_key_desc">输入 API 密钥以登录你的 Immich 服务器。</string>
     <string name="auth_sign_in_by_phone">使用手机登录</string>
-    <string name="auth_sign_in_by_phone_desc">用手机扫描二维码登录你的 Immich 服务器。注意：仅当你的 Immich 服务器可从互联网访问时才有效（不支持本地/内网 IP 地址）。</string>
+    <string name="auth_sign_in_by_phone_desc">用手机扫描二维码，并在手机上输入服务器地址和 API 密钥。在家庭网络内即可使用，无需互联网服务。</string>
     <string name="auth_demo_mode">演示模式</string>
     <string name="auth_demo_mode_desc">使用示例照片试用应用，无需服务器。</string>
 
@@ -239,11 +238,8 @@
     <string name="enter_valid_server_url">请输入有效的服务器地址（https://…）</string>
 
     <!-- Auth by phone -->
-    <string name="or_enter_code_on_auth_url">或在 %2$s 输入代码 %1$s</string>
     <string name="auth_timeout_recreating_qr">未能在超时时间内完成认证，正在重新生成二维码。</string>
     <string name="invalid_server_url_or_api_key">服务器地址或 API 密钥无效，请重新扫描！</string>
-    <string name="could_not_fetch_qr">无法获取二维码：%1$s</string>
-    <string name="could_not_fetch_qr_short">无法获取二维码</string>
     <string name="could_not_load_assets">无法从 Immich 加载媒体项</string>
 
     <!-- Albums ordering -->
@@ -305,4 +301,7 @@
     <string name="favorite_removed">已从收藏中移除</string>
     <string name="favorite_add_failed">添加到收藏失败</string>
     <string name="favorite_remove_failed">移除收藏失败</string>
+    <string name="phone_sign_in_open_address">或在手机浏览器中打开 %1$s（同一 Wi-Fi）</string>
+    <string name="phone_sign_in_done">完成。请查看电视。</string>
+    <string name="phone_sign_in_no_network">未找到家庭网络。请将电视连接到 Wi-Fi 或以太网。</string>
 </resources>

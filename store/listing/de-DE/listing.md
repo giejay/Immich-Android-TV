@@ -16,6 +16,7 @@ Bring deine Fotosammlung auf den großen Bildschirm:
 • Bildschirmschoner (Daydream) mit deinen Alben, zufälligen oder neuesten Fotos oder Fotos aus ähnlicher Jahreszeit und verschiedenen Übergängen
 • Startbildschirm-Kanäle für schnellen Zugriff
 • Seiten ein- und ausblenden und die Foto-Einblendungen anpassen
+• Anmeldung per API-Key oder per QR-Code mit dem Smartphone (lokal, ohne Cloud-Dienst)
 • Demo-Modus mit Beispielfotos: die App ohne Immich-Server ausprobieren
 • Komplett mit der Fernbedienung bedienbar, kein Touchscreen nötig
 
