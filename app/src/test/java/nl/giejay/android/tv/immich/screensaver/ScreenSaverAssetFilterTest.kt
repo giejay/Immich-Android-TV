@@ -74,4 +74,23 @@ class ScreenSaverAssetFilterTest {
 
         assertThat(result).containsExactly(first, second).inOrder()
     }
+
+    private fun sized(id: String, width: Int, height: Int) = asset(id, null).copy(
+        exifInfo = nl.giejay.android.tv.immich.api.model.AssetExifInfo(null, 1, width, height, null, null, null, null, null),
+    )
+
+    @Test
+    fun `landscape only drops portrait photos, otherwise they stay`() {
+        val portrait = sized("p", 800, 1200)
+        val landscape = sized("l", 1200, 800)
+
+        assertThat(filterScreenSaverAssets(listOf(portrait, landscape), emptySet(), onlyLandscape = true)).containsExactly(landscape)
+        assertThat(filterScreenSaverAssets(listOf(portrait, landscape), emptySet(), onlyLandscape = false)).containsExactly(portrait, landscape)
+    }
+
+    @Test
+    fun `landscape only still applies the exclusions`() {
+        val tagged = sized("l", 1200, 800).copy(tags = listOf(tag("exclude_immich_tv")))
+        assertThat(filterScreenSaverAssets(listOf(tagged), emptySet(), onlyLandscape = true)).isEmpty()
+    }
 }

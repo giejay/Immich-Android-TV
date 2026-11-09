@@ -306,4 +306,7 @@
     <string name="phone_sign_in_no_network">未找到家庭网络。请将电视连接到 Wi-Fi 或以太网。</string>
     <string name="places">地点</string>
     <string name="tags">标签</string>
+    <string name="favorites">收藏</string>
+    <string name="screensaver_only_landscape">仅横向照片</string>
+    <string name="screensaver_only_landscape_desc">屏保中跳过竖向照片。</string>
 </resources>

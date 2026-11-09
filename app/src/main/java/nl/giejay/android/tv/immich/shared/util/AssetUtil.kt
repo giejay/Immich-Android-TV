@@ -25,27 +25,8 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 
         while (queue.isNotEmpty()) {
             val first = queue.removeAt(0)
-            val firstDate = first.fileModifiedAt?.time
-
-            // pick the second portrait image that is most furthest away in time to the first one
-            val second = if (first.people?.isNotEmpty() == true && firstDate != null) {
-                // Try strict match: same people size and city
-                queue.filter { candidate ->
-                    candidate.people?.size == first.people.size &&
-                            candidate.people.firstOrNull()?.id == first.people.first().id &&
-                            candidate.exifInfo?.city != null && first.exifInfo?.city != null &&
-                            candidate.exifInfo.city == first.exifInfo.city &&
-                            candidate.exifInfo.dateTimeOriginal != null
-                }.maxByOrNull { candidate ->
-                    kotlin.math.abs(candidate.exifInfo!!.dateTimeOriginal!!.time - firstDate)
-                } ?: // Fallback: only same people id
-                queue.filter { candidate ->
-                    candidate.people?.firstOrNull()?.id == first.people.first().id &&
-                            candidate.exifInfo?.dateTimeOriginal != null
-                }.maxByOrNull { candidate ->
-                    kotlin.math.abs(candidate.exifInfo!!.dateTimeOriginal!!.time - firstDate)
-                }
-            } else null // no people or date info, or simply no match with the first, just add a random one next to it
+            // the best matching portrait photo, or just the next one in the queue
+            val second = pickPortraitPartner(first, queue)
 
             if (second != null) {
                 portraitSliders.add(SliderItemViewHolder(first.toSliderItem(), second.toSliderItem()))

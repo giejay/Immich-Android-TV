@@ -18,7 +18,9 @@ data class SearchRequest(val page: Int? = 0,
                          val city: String? = null,
                          val country: String? = null,
                          /** null = not sent */
-                         val tagIds: List<String>? = null
+                         val tagIds: List<String>? = null,
+                         /** true = favorites only; null = not sent */
+                         val isFavorite: Boolean? = null
 )
 
 /** POST /search/smart: CLIP search by image content, needs machine learning on the server. */
