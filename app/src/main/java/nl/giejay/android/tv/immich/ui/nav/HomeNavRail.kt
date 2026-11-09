@@ -100,11 +100,15 @@ fun HomeNavRail(
                 enter = { if (selectedAttached) selectedRequester else FocusRequester.Default }
             }
             .focusGroup()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 12.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        // The logo stays pinned: only the entries scroll, so it never gets cut off on short screens.
         NavRailBrand(expanded)
+        Spacer(Modifier.height(4.dp))
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
         items.forEach { item ->
             if (item.separated) Spacer(Modifier.height(12.dp))
             val selected = item.key == selectedKey
@@ -126,6 +130,7 @@ fun HomeNavRail(
                     Modifier
                 },
             )
+        }
         }
     }
 }
