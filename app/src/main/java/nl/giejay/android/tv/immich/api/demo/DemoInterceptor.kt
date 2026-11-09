@@ -40,7 +40,11 @@ class DemoInterceptor(private val openAsset: (String) -> InputStream) : Intercep
         val method = request.method
         val query = { name: String -> request.url.queryParameter(name) }
         return when {
-            parts == listOf("albums") -> respond(request, 200, DemoCatalog.albums.map(::albumJson))
+            parts == listOf("albums") -> {
+                // with assetId only the albums that contain that photo (album-name metadata), else all albums
+                val assetId = query("assetId")
+                respond(request, 200, DemoCatalog.albums.filter { assetId == null || it.photos.any { photo -> photo.id == assetId } }.map(::albumJson))
+            }
             parts.size == 2 && parts[0] == "albums" ->
                 DemoCatalog.album(parts[1])?.let { respond(request, 200, albumJson(it)) } ?: notFound(request)
             parts == listOf("search", "metadata") -> respond(request, 200, searchResponse(metadataSearch(body(request))))

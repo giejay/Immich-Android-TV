@@ -44,6 +44,15 @@ class DemoInterceptorTest {
     }
 
     @Test
+    fun `albums can be filtered to the albums containing one photo`() {
+        val photo = DemoCatalog.albums.first { it.name == "City" }.photos.first()
+        val albums = gson.fromJson(get("albums?assetId=${photo.id}").body!!.string(), Array<Album>::class.java).toList()
+
+        assertThat(albums.map { it.albumName }).containsExactly("City")
+        assertThat(gson.fromJson(get("albums?assetId=unknown").body!!.string(), Array<Album>::class.java)).isEmpty()
+    }
+
+    @Test
     fun `album search returns exactly the photos of that album`() {
         val album = DemoCatalog.albums.first { it.name == "Beach" }
         val result = parse<SearchResponse>(post("search/metadata", """{"page":1,"size":100,"albumIds":["${album.id}"]}""").body!!.string())
