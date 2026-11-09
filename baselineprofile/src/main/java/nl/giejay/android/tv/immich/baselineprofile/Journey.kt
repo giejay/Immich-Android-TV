@@ -55,6 +55,33 @@ internal fun MacrobenchmarkScope.signInIfNeeded() {
     pause(3_000)
 }
 
+private var classicTimelineEnabled = false
+
+/**
+ * Switches Settings -> Debug -> "Classic timeline" on (once per test process; the switch state is not visible to
+ * UiAutomator, so run it on a fresh install / cleared app data) and force-stops the app so the next launch opens
+ * the View based timeline. Call after [signInIfNeeded].
+ */
+internal fun MacrobenchmarkScope.enableClassicTimeline() {
+    if (classicTimelineEnabled) return
+    device.pressDPadLeft() // into the navigation rail
+    pause(1_000)
+    repeat(10) { device.pressDPadDown(); pause(400) } // Timeline -> ... -> Settings
+    pause(1_500)
+    device.pressDPadRight() // into the settings page: first tile (Server)
+    pause(1_000)
+    repeat(4) { device.pressDPadRight(); pause(300) } // ... -> Debug
+    device.pressDPadCenter()
+    pause(1_500)
+    device.pressDPadDown() // Debug mode -> Classic timeline
+    pause(500)
+    device.pressDPadCenter() // toggle
+    pause(1_000)
+    classicTimelineEnabled = true
+    device.executeShellCommand("am force-stop $targetAppId")
+    pause(1_000)
+}
+
 /** A string of the app in the device language, read from the app's own resources (with a fallback). */
 private fun appString(name: String, fallback: String): String = try {
     val resources = InstrumentationRegistry.getInstrumentation().context.packageManager.getResourcesForApplication(targetAppId)

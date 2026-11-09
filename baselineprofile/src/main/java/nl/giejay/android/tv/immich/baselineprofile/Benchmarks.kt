@@ -73,3 +73,69 @@ class TimelineScrollBenchmarks {
         device.waitForIdle()
     }
 }
+
+/** Cold start with the View based (classic) timeline, without and with the profile. Run on a fresh install. */
+@RunWith(AndroidJUnit4::class)
+class LegacyStartupBenchmarks {
+    @get:Rule
+    val rule = MacrobenchmarkRule()
+
+    @Test
+    fun startupWithoutProfile() = startup(CompilationMode.None())
+
+    @Test
+    fun startupWithBaselineProfile() = startup(CompilationMode.Partial(BaselineProfileMode.Require))
+
+    private fun startup(mode: CompilationMode) = rule.measureRepeated(
+        packageName = targetAppId,
+        metrics = listOf(StartupTimingMetric()),
+        iterations = 8,
+        startupMode = StartupMode.COLD,
+        compilationMode = mode,
+        setupBlock = {
+            pressHome()
+            startApp()
+            signInIfNeeded()
+            enableClassicTimeline()
+            pressHome()
+        },
+    ) {
+        startApp()
+        device.waitForIdle()
+    }
+}
+
+/** Frame timing while D-pad scrolling the View based (classic) timeline, without and with the profile. */
+@RunWith(AndroidJUnit4::class)
+class LegacyTimelineScrollBenchmarks {
+    @get:Rule
+    val rule = MacrobenchmarkRule()
+
+    @Test
+    fun scrollWithoutProfile() = scroll(CompilationMode.None())
+
+    @Test
+    fun scrollWithBaselineProfile() = scroll(CompilationMode.Partial(BaselineProfileMode.Require))
+
+    private fun scroll(mode: CompilationMode) = rule.measureRepeated(
+        packageName = targetAppId,
+        metrics = listOf(FrameTimingMetric()),
+        iterations = 5,
+        startupMode = StartupMode.WARM,
+        compilationMode = mode,
+        setupBlock = {
+            pressHome()
+            startApp()
+            signInIfNeeded()
+            enableClassicTimeline()
+            startApp()
+            device.waitForIdle()
+            Thread.sleep(3_000) // timeline loads
+            device.pressDPadRight() // into the content
+        },
+    ) {
+        repeat(40) { device.pressDPadDown(); Thread.sleep(120) }
+        repeat(20) { device.pressDPadUp(); Thread.sleep(120) }
+        device.waitForIdle()
+    }
+}
