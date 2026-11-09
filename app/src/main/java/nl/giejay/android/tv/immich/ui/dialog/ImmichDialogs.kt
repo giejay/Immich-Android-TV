@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.activity.ComponentDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -72,6 +80,8 @@ fun ImmichDialogCard(
     content: @Composable () -> Unit,
 ) {
     val closeFocus = remember { FocusRequester() }
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         try {
             closeFocus.requestFocus()
@@ -83,13 +93,23 @@ fun ImmichDialogCard(
             modifier
                 .widthIn(max = 900.dp)
                 .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.extraLarge)
+                // the text is not focusable, so Up/Down on the remote scroll it while it overflows
+                .onPreviewKeyEvent { event ->
+                    val down = event.key == Key.DirectionDown
+                    val up = event.key == Key.DirectionUp
+                    val canScroll = (down && scroll.canScrollForward) || (up && scroll.canScrollBackward)
+                    if (canScroll && event.type == KeyEventType.KeyDown) {
+                        scope.launch { scroll.animateScrollBy(if (down) SCROLL_STEP else -SCROLL_STEP) }
+                    }
+                    canScroll
+                }
                 .padding(horizontal = 32.dp, vertical = 24.dp),
         ) {
             if (title != null) {
                 Text(title, style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
             }
-            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { content() }
+            Column(Modifier.weight(1f, fill = false).verticalScroll(scroll)) { content() }
             Spacer(Modifier.height(16.dp))
             AuthButton(closeLabel, onClose, Modifier.focusRequester(closeFocus))
         }
@@ -141,3 +161,4 @@ fun showUserIdDialog(context: Context, userId: String) {
 }
 
 private const val QR_PIXELS = 512
+private const val SCROLL_STEP = 240f
