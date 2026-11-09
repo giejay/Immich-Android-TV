@@ -33,6 +33,7 @@ All screenshots were taken against a local test server filled with stock photos
 - Home screen channels for quick access from the Android TV launcher
 - Sign in with an API key or by scanning a QR code with your phone
 - Configurable home: show or hide the pages
+- Offline demo mode with sample photos: try the app without an Immich server (photo credits in [app/src/main/assets/demo](app/src/main/assets/demo/CREDITS.md))
 - Complete D-pad navigation with a visible focus state; no touch screen needed
 
 ## What is different from the original

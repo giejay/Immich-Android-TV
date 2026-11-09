@@ -51,12 +51,14 @@ fun AuthScaffold(
     title: String,
     description: String,
     modifier: Modifier = Modifier,
+    /** Small label in the bottom start corner, e.g. the app version. */
+    cornerLabel: String? = null,
     content: @Composable () -> Unit,
 ) {
+    Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
     Row(
-        modifier
+        Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 64.dp, vertical = 32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -71,6 +73,15 @@ fun AuthScaffold(
             Modifier.weight(0.58f).fillMaxHeight(),
             verticalArrangement = Arrangement.Center,
         ) { content() }
+    }
+    if (cornerLabel != null) {
+        Text(
+            cornerLabel,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.BottomStart).padding(start = 64.dp, bottom = 24.dp),
+        )
+    }
     }
 }
 

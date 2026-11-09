@@ -43,8 +43,9 @@ class AuthFragmentStep1 : Fragment() {
                 }
             }
             AuthScaffold(
-                title = getString(R.string.app_name) + " (${BuildConfig.VERSION_NAME})",
+                title = getString(R.string.app_name),
                 description = getString(R.string.login_immich_description),
+                cornerLabel = "v${BuildConfig.VERSION_NAME}",
             ) {
                 Column {
                     AuthOptionRow(
