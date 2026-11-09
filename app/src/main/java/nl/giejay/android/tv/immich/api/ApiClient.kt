@@ -106,6 +106,7 @@ class ApiClient(private val config: ApiClientConfig) {
         private const val SMART_SEARCH_RETRY_MILLIS = 5 * 60 * 1000L
         private const val MAX_FALLBACK_HITS_PER_FIELD = 500
         private const val MAX_TAGS = 100
+        private const val TAG_COVER_CANDIDATES = 10
 
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
         fun getClient(config: ApiClientConfig): nl.giejay.android.tv.immich.api.ApiClient {
@@ -313,9 +314,9 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     /** The photos of one place (city) or one tag, newest first (a separate function so [listAssets] keeps its signature). */
-    suspend fun listAssetsByFilter(page: Int, pageCount: Int, contentType: ContentType, city: String? = null, tagIds: List<String> = emptyList()): Either<String, AssetResponse> {
+    suspend fun listAssetsByFilter(page: Int, pageCount: Int, contentType: ContentType, city: String? = null, tagIds: List<String> = emptyList(), order: String = "desc"): Either<String, AssetResponse> {
         val request = buildListAssetsSearchRequest(
-            page = page, pageCount = pageCount, albumIds = emptyList(), order = "desc",
+            page = page, pageCount = pageCount, albumIds = emptyList(), order = order,
             type = if (contentType == ContentType.ALL) null else contentType.toString(),
             personIds = emptyList(), endDate = null, fromDate = null, city = city, tagIds = tagIds,
         )
@@ -334,8 +335,9 @@ class ApiClient(private val config: ApiClientConfig) {
     suspend fun listTagsWithPictures(): Either<String, List<Pair<TagInfo, String?>>> =
         executeAPICall(200) { service.listTags() }.map { tags ->
             tags.sortedBy { it.value.lowercase() }.take(MAX_TAGS).pmap { tag ->
-                val picture = listAssetsByFilter(1, 1, ContentType.ALL, tagIds = listOf(tag.id))
-                    .getOrNull()?.assets?.firstOrNull()?.id
+                // a few candidates: the newest photo may be one the user excluded from the TV app
+                val picture = listAssetsByFilter(1, TAG_COVER_CANDIDATES, ContentType.ALL, tagIds = listOf(tag.id))
+                    .getOrNull()?.assets?.firstOrNull(excludeByTag())?.id
                 tag to picture
             }
         }
