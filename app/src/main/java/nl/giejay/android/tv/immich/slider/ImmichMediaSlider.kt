@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.slider
 
+import nl.giejay.android.tv.immich.api.ApiAuthHeaders
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -45,7 +46,7 @@ class ImmichMediaSlider : MediaSliderFragment() {
 
         setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
-                .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.get(API_KEY)))
+                .setDefaultRequestProperties(ApiAuthHeaders.forPlayerFromPrefs())
         )
 
         if (bundle.timelineView) {

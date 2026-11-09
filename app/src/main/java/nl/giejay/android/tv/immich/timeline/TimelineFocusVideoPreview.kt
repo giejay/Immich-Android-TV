@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.timeline
 
+import nl.giejay.android.tv.immich.api.ApiAuthHeaders
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
@@ -51,7 +52,7 @@ class TimelineFocusVideoPreview(context: Context) {
 
     private val dataSourceFactory: DefaultHttpDataSource.Factory by lazy {
         DefaultHttpDataSource.Factory()
-            .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.get(API_KEY)))
+            .setDefaultRequestProperties(ApiAuthHeaders.forPlayerFromPrefs())
     }
 
     private val countdownTicker = object : Runnable {

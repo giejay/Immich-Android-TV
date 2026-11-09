@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.screensaver
 
+import nl.giejay.android.tv.immich.api.ApiAuthHeaders
 import android.annotation.SuppressLint
 import android.service.dreams.DreamService
 import android.view.KeyEvent
@@ -35,7 +36,7 @@ class ScreenSaverService : DreamService(), MediaSliderListener, ScreenSaverAsset
         mediaSliderView = MediaSliderView(this)
         mediaSliderView!!.setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
-                .setDefaultRequestProperties(mapOf("x-api-key" to apiKey))
+                .setDefaultRequestProperties(ApiAuthHeaders.forPlayerFromPrefs())
         )
         setContentView(mediaSliderView)
         isInteractive = true

@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.ui.timeline
 
+import nl.giejay.android.tv.immich.api.ApiAuthHeaders
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -225,7 +226,7 @@ private const val COUNTDOWN_INTERVAL_MS = 250L
 /** Media source factory that sends the API key, like the View timeline's preview does. */
 private val previewDataSourceFactory: DefaultHttpDataSource.Factory
     get() = DefaultHttpDataSource.Factory()
-        .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.get(API_KEY)))
+        .setDefaultRequestProperties(ApiAuthHeaders.forPlayerFromPrefs())
 
 /** Plays [assetId]'s video on the shared [player] while this composable is in the composition. */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)

@@ -315,4 +315,7 @@
     <string name="archive">归档</string>
     <string name="home_pages">页面</string>
     <string name="home_pages_desc">选择导航中显示的页面</string>
+    <string name="proxy_user">代理用户名（可选）</string>
+    <string name="proxy_password">代理密码（可选）</string>
+    <string name="proxy_auth_desc">适用于位于要求 HTTP 基本认证的反向代理之后的服务器。</string>
 </resources>

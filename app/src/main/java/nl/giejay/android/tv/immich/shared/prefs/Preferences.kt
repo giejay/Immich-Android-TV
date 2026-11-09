@@ -49,6 +49,31 @@ data object API_KEY : StringPref("",
     override fun toPrefValue(value: String): String = ApiKeyCipher.encrypt(value)
 }
 
+/** User of the HTTP basic auth that a reverse proxy in front of the server may ask for (optional). */
+data object PROXY_USER : StringPref("",
+    ImmichApplication.appContext!!.getString(R.string.proxy_user),
+    ImmichApplication.appContext!!.getString(R.string.proxy_auth_desc)) {
+    override fun key() = "proxyUser"
+}
+
+/** Password of the proxy's basic auth; encrypted at rest like the API key. */
+data object PROXY_PASSWORD : StringPref("",
+    ImmichApplication.appContext!!.getString(R.string.proxy_password),
+    ImmichApplication.appContext!!.getString(R.string.proxy_auth_desc)) {
+    override fun key() = "proxyPassword"
+
+    override fun getValue(sharedPreferences: SharedPreferences): String =
+        fromPrefValue(sharedPreferences.getString(key(), defaultValue) ?: defaultValue)
+
+    override fun fromPrefValue(prefValue: String): String = ApiKeyCipher.decryptOrAdoptLegacy(prefValue)
+
+    override fun save(sharedPreferences: SharedPreferences, value: String) {
+        super.save(sharedPreferences, toPrefValue(value))
+    }
+
+    override fun toPrefValue(value: String): String = ApiKeyCipher.encrypt(value)
+}
+
 data object HOST_NAME : StringPref("",
     ImmichApplication.appContext!!.getString(R.string.server_url_text),
     ImmichApplication.appContext!!.getString(R.string.server_url_text)) {

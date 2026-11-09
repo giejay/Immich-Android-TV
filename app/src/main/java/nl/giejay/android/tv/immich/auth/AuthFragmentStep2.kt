@@ -26,6 +26,8 @@ import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
+import nl.giejay.android.tv.immich.shared.prefs.PROXY_PASSWORD
+import nl.giejay.android.tv.immich.shared.prefs.PROXY_USER
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
 import nl.giejay.android.tv.immich.ui.auth.AuthButton
@@ -47,6 +49,8 @@ class AuthFragmentStep2 : Fragment() {
         immichComposeView(requireContext()) {
             var host by remember { mutableStateOf(PreferenceManager.hostName) }
             var apiKey by remember { mutableStateOf(PreferenceManager.get(API_KEY)) }
+            var proxyUser by remember { mutableStateOf(PreferenceManager.get(PROXY_USER)) }
+            var proxyPassword by remember { mutableStateOf(PreferenceManager.get(PROXY_PASSWORD)) }
             var disableSsl by remember { mutableStateOf(PreferenceManager.get(DISABLE_SSL_VERIFICATION)) }
             var debug by remember { mutableStateOf(PreferenceManager.get(DEBUG_MODE)) }
             val firstFocus = remember { FocusRequester() }
@@ -63,20 +67,24 @@ class AuthFragmentStep2 : Fragment() {
                 Column(Modifier.fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center) {
                     AuthTextField(getString(R.string.server_url_hint), host, { host = it }, Modifier.focusRequester(firstFocus), KeyboardType.Uri)
                     AuthTextField(getString(R.string.api_key_text), apiKey, { apiKey = it })
+                    AuthTextField(getString(R.string.proxy_user), proxyUser, { proxyUser = it })
+                    AuthTextField(getString(R.string.proxy_password), proxyPassword, { proxyPassword = it }, masked = true)
                     AuthToggleRow(getString(R.string.disable_ssl_verification), getString(R.string.disable_ssl_verification_desc), disableSsl, { disableSsl = it })
                     AuthToggleRow(getString(R.string.debug_mode), getString(R.string.debug_mode_desc), debug, { debug = it })
-                    AuthButton(getString(R.string.submit), { submit(host.trim(), apiKey.trim(), disableSsl, debug) })
+                    AuthButton(getString(R.string.submit), { submit(host.trim(), apiKey.trim(), disableSsl, debug, proxyUser.trim(), proxyPassword) })
                 }
             }
         }
 
-    private fun submit(hostName: String, apiKey: String, disableSsl: Boolean, debug: Boolean) {
+    private fun submit(hostName: String, apiKey: String, disableSsl: Boolean, debug: Boolean, proxyUser: String, proxyPassword: String) {
         val entry = AuthSettings(hostName, apiKey)
         Timber.i("Submit in step 2, entry valid: ${entry.isValid()}")
         if (entry.isValid()) {
             PreferenceManager.save(SCREENSAVER_ALBUMS, emptySet())
             PreferenceManager.save(API_KEY, entry.apiKey)
             PreferenceManager.save(HOST_NAME, entry.hostName)
+            PreferenceManager.save(PROXY_USER, proxyUser)
+            PreferenceManager.save(PROXY_PASSWORD, proxyPassword)
             PreferenceManager.save(DISABLE_SSL_VERIFICATION, disableSsl)
             PreferenceManager.save(DEBUG_MODE, debug)
             val navControl = findNavController()

@@ -356,4 +356,7 @@
     <string name="archive">Archive</string>
     <string name="home_pages">Pages</string>
     <string name="home_pages_desc">Choose which pages the navigation shows</string>
+    <string name="proxy_user">Proxy user (optional)</string>
+    <string name="proxy_password">Proxy password (optional)</string>
+    <string name="proxy_auth_desc">For servers behind a reverse proxy that asks for HTTP basic authentication.</string>
 </resources>

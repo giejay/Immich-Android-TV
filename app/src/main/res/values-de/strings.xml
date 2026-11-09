@@ -301,4 +301,7 @@
     <string name="archive">Archiv</string>
     <string name="home_pages">Seiten</string>
     <string name="home_pages_desc">Wähle, welche Seiten die Navigation zeigt</string>
+    <string name="proxy_user">Proxy-Benutzer (optional)</string>
+    <string name="proxy_password">Proxy-Passwort (optional)</string>
+    <string name="proxy_auth_desc">Für Server hinter einem Reverse-Proxy, der HTTP-Basic-Authentifizierung verlangt.</string>
 </resources>

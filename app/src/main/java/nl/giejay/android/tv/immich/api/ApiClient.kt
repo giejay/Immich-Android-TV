@@ -26,6 +26,8 @@ import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
+import nl.giejay.android.tv.immich.shared.prefs.PROXY_PASSWORD
+import nl.giejay.android.tv.immich.shared.prefs.PROXY_USER
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.RECENT_ASSETS_MONTHS_BACK
 import nl.giejay.android.tv.immich.shared.prefs.SHOW_PARTNER_PHOTOS_IN_TIMELINE
@@ -45,7 +47,10 @@ data class ApiClientConfig(
     val hostName: String,
     val apiKey: String,
     val disableSslVerification: Boolean,
-    val debugMode: Boolean
+    val debugMode: Boolean,
+    // read from the preferences by default, so every construction site carries the current proxy login
+    val proxyUser: String = PreferenceManager.get(PROXY_USER),
+    val proxyPassword: String = PreferenceManager.get(PROXY_PASSWORD)
 ) {
     companion object {
         fun fromPrefs(): ApiClientConfig = ApiClientConfig(
@@ -129,7 +134,7 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     private val retrofit = Retrofit.Builder()
-        .client(ApiClientFactory.getClient(config.disableSslVerification, config.apiKey, config.debugMode))
+        .client(ApiClientFactory.getClient(config.disableSslVerification, config.apiKey, config.debugMode, config.proxyUser, config.proxyPassword))
         .addConverterFactory(GsonConverterFactory.create())
         .baseUrl("${config.hostName}/api/")
         .build()

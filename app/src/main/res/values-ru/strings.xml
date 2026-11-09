@@ -309,4 +309,7 @@
     <string name="archive">Архив</string>
     <string name="home_pages">Страницы</string>
     <string name="home_pages_desc">Выберите страницы, которые показывает навигация</string>
+    <string name="proxy_user">Пользователь прокси (необязательно)</string>
+    <string name="proxy_password">Пароль прокси (необязательно)</string>
+    <string name="proxy_auth_desc">Для серверов за обратным прокси с HTTP-аутентификацией Basic.</string>
 </resources>
