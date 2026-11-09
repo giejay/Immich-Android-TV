@@ -283,4 +283,6 @@
     <string name="phone_sign_in_description">Scanne den QR-Code mit dem Smartphone und gib dort Server-URL und API-Key ein. Das Smartphone muss im selben WLAN wie der Fernseher sein.</string>
     <string name="phone_sign_in_done">Fertig. Schau auf deinen Fernseher.</string>
     <string name="phone_sign_in_no_network">Kein Heimnetz gefunden. Verbinde den Fernseher mit WLAN oder Ethernet.</string>
+    <string name="places">Orte</string>
+    <string name="tags">Tags</string>
 </resources>

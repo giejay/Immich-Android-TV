@@ -338,4 +338,6 @@
     <string name="phone_sign_in_description">Scan the QR code with your phone and enter the server URL and API key there. The phone must be in the same Wi-Fi as the TV.</string>
     <string name="phone_sign_in_done">Done. Look at your TV.</string>
     <string name="phone_sign_in_no_network">No home network found. Connect the TV to Wi-Fi or Ethernet.</string>
+    <string name="places">Places</string>
+    <string name="tags">Tags</string>
 </resources>

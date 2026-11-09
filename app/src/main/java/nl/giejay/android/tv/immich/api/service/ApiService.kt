@@ -5,6 +5,7 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.Person
+import nl.giejay.android.tv.immich.api.model.TagInfo
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
 import nl.giejay.android.tv.immich.api.model.SmartSearchRequest
@@ -66,6 +67,12 @@ interface ApiService {
 
     @GET("memories")
     suspend fun getMemories(@Query("for") forDate: String): Response<List<Memory>>
+
+    @GET("search/cities")
+    suspend fun listCities(): Response<List<Asset>>
+
+    @GET("tags")
+    suspend fun listTags(): Response<List<TagInfo>>
 
     @GET("view/folder/unique-paths")
     suspend fun getUniquePaths(): Response<List<String>>

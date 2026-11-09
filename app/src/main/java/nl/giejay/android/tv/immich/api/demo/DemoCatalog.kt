@@ -16,6 +16,11 @@ data class DemoPhoto(
     val ratio: Double get() = width.toDouble() / height
 }
 
+data class DemoPlace(val city: String, val country: String)
+
+/** A demo tag; [value] is the full path as Immich shows it, the photos are those of the given themes. */
+data class DemoTag(val id: String, val name: String, val value: String, val themes: Set<String>)
+
 data class DemoAlbum(val id: String, val name: String, val photos: List<DemoPhoto>)
 
 /**
@@ -64,6 +69,20 @@ object DemoCatalog {
 
     /** Favorites toggled in the demo live only in memory. */
     val favorites: MutableSet<String> = mutableSetOf()
+
+    /** Every theme was "taken" in one city. */
+    fun place(photo: DemoPhoto): DemoPlace = when (photo.theme) {
+        "mountains" -> DemoPlace("Innsbruck", "Austria")
+        "beach" -> DemoPlace("Lisbon", "Portugal")
+        "city" -> DemoPlace("Berlin", "Germany")
+        "forest" -> DemoPlace("Freiburg", "Germany")
+        else -> DemoPlace("Rome", "Italy")
+    }
+
+    val tags: List<DemoTag> = listOf(
+        DemoTag("20000000-0000-4000-8000-000000000001", "Holidays", "Holidays", setOf("beach", "mountains")),
+        DemoTag("20000000-0000-4000-8000-000000000002", "City life", "Trips/City life", setOf("city", "food")),
+    )
 
     fun themeName(theme: String): String = theme.replaceFirstChar { it.titlecase(Locale.ROOT) }
 

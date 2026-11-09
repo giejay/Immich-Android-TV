@@ -16,7 +16,9 @@ data class SearchRequest(val page: Int? = 0,
                          val originalFileName: String? = null,
                          val description: String? = null,
                          val city: String? = null,
-                         val country: String? = null
+                         val country: String? = null,
+                         /** null = not sent */
+                         val tagIds: List<String>? = null
 )
 
 /** POST /search/smart: CLIP search by image content, needs machine learning on the server. */
