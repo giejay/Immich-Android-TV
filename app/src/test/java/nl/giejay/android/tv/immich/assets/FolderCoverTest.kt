@@ -11,21 +11,24 @@ class FolderCoverTest {
     )
 
     @Test
-    fun `two photos peek out of a folder, photos before videos`() {
-        val assets = listOf(asset("v", "VIDEO")) + (1..6).map { asset("p$it", "IMAGE") }
-
-        assertThat(folderCoverAssetIds(assets)).containsExactly("p1", "p2").inOrder()
+    fun `the first photo is the cover, even behind a video`() {
+        assertThat(folderCoverAssetIds(listOf(asset("v", "VIDEO"), asset("a", "IMAGE"), asset("b", "IMAGE")))).containsExactly("a")
     }
 
     @Test
-    fun `videos fill up when there are few photos, an empty folder has no photos`() {
-        assertThat(folderCoverAssetIds(listOf(asset("v1", "VIDEO"), asset("p", "IMAGE"), asset("v2", "VIDEO"))))
-            .containsExactly("p", "v1").inOrder()
+    fun `a folder with only videos uses the first video, an empty folder has no cover`() {
+        assertThat(folderCoverAssetIds(listOf(asset("v1", "VIDEO"), asset("v2", "VIDEO")))).containsExactly("v1")
         assertThat(folderCoverAssetIds(emptyList())).isEmpty()
     }
 
     @Test
     fun `a different maximum is honored`() {
         assertThat(folderCoverAssetIds((1..5).map { asset("p$it", "IMAGE") }, max = 3)).hasSize(3)
+    }
+
+    @Test
+    fun `the badge is the asset count, none for an empty folder`() {
+        assertThat(FolderCover("url", 24).badge()).isEqualTo("24")
+        assertThat(FolderCover(null, 0).badge()).isNull()
     }
 }

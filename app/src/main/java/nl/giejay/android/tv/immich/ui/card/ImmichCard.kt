@@ -98,7 +98,7 @@ fun ImmichCard(card: ICard, focused: Boolean, modifier: Modifier = Modifier) {
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .animatedBorder(borderColor, ImmichFocus.BorderWidth, shape),
         ) {
-            if (card.isFolder) FolderArt(card.peekUrls) else CardImage(card.thumbnailUrl)
+            if (card.isFolder) FolderCardArt(card.coverUrl, card.badge) else CardImage(card.thumbnailUrl)
             if (card.selected) {
                 Icon(
                     imageVector = ImmichIcons.Selected,
@@ -155,38 +155,43 @@ private fun BoxScope.CardImage(thumbnailUrl: String?) {
 }
 
 /**
- * A folder: tab and back in a tone of the primary container, up to two photos peeking out at a slight angle,
- * the front flap over them. Without photos it is the empty folder.
+ * A folder card: its cover photo fills the card, a tab at the top left in the primary container tone marks the folder,
+ * and a small pill at the bottom left holds the folder symbol and the number of assets. Without a photo the card is
+ * a plain tonal folder surface.
  */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-private fun FolderArt(photoUrls: List<String>) {
-    val back = MaterialTheme.colorScheme.primaryContainer
-    val front = lerp(back, Color.White, 0.18f)
-    // laid out from the card's own width (it is a little narrower than its nominal size in a grid), so the folder
-    // always keeps an even margin on both sides
-    Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp)) {
-        Box(Modifier.size(54.dp, 20.dp).background(back, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)))
+private fun FolderCardArt(coverUrl: String?, badge: String?) {
+    val tone = MaterialTheme.colorScheme.primaryContainer
+    Box(Modifier.fillMaxSize()) {
+        Box(Modifier.size(56.dp, 18.dp).background(tone, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)))
         Box(
-            Modifier.offset(0.dp, 10.dp).fillMaxWidth().height(94.dp)
-                .background(back, RoundedCornerShape(topStart = 2.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 10.dp)),
-        )
-        photoUrls.take(2).forEachIndexed { index, url ->
-            GlideImage(
-                model = url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .offset((10 + index * 26).dp, (2 + index * 4).dp)
-                    .size(132.dp, 82.dp)
-                    .graphicsLayer { rotationZ = if (index == 0) -4f else 3f }
-                    .clip(RoundedCornerShape(4.dp)),
-            )
+            Modifier.offset(0.dp, 14.dp).fillMaxSize()
+                .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 12.dp))
+                .background(tone),
+        ) {
+            if (coverUrl != null) {
+                GlideImage(model = coverUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            } else {
+                Icon(
+                    imageVector = ImmichIcons.Folders,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.align(Alignment.Center).size(44.dp),
+                )
+            }
         }
-        Box(
-            Modifier.offset(0.dp, 70.dp).fillMaxWidth().height(34.dp)
-                .background(front, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 10.dp, bottomEnd = 10.dp)),
-        )
+        if (badge != null) {
+            Row(
+                Modifier.align(Alignment.BottomStart).padding(8.dp)
+                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(13.dp))
+                    .padding(start = 7.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(ImmichIcons.Folders, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
+                Text(badge, style = MaterialTheme.typography.labelMedium, color = Color.White, modifier = Modifier.padding(start = 5.dp))
+            }
+        }
     }
 }
 

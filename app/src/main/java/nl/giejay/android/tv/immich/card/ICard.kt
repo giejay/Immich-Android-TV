@@ -7,7 +7,8 @@ interface ICard {
     val thumbnailUrl: String?
     val backgroundUrl: String?
     val selected: Boolean
-    /** A folder card is drawn as a folder; [peekUrls] are the photos that peek out of it. */
+    /** A folder card shows [coverUrl] (a photo of the folder, if any) with a folder tab and a [badge] (the photo count). */
     val isFolder: Boolean get() = false
-    val peekUrls: List<String> get() = emptyList()
+    val coverUrl: String? get() = null
+    val badge: String? get() = null
 }

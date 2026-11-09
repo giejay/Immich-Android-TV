@@ -48,12 +48,17 @@ data class Item(val item: Any) {
 }
 
 /**
- * The assets that peek out of a folder card: up to [max] of its photos (videos only when there are fewer photos), in
- * the order of the list (which is already without excluded assets).
+ * The assets that stand for a folder card: up to [max] of its photos (videos only when there are fewer photos), in
+ * the order of the list (which is already without excluded assets); the first one is the cover.
  */
-internal fun folderCoverAssetIds(assets: List<Asset>, max: Int = 2): List<String> =
+internal fun folderCoverAssetIds(assets: List<Asset>, max: Int = 1): List<String> =
     (assets.filter { it.type.equals("IMAGE", ignoreCase = true) } + assets.filterNot { it.type.equals("IMAGE", ignoreCase = true) })
         .take(max).map { it.id }
+
+/** What a folder card shows besides its name: a photo of the folder and how many assets it holds. */
+internal data class FolderCover(val url: String?, val count: Int) {
+    fun badge(): String? = if (count > 0) count.toString() else null
+}
 
 private const val MAX_COVER_FOLDERS = 40
 private const val MAX_PARALLEL_COVER_REQUESTS = 3
@@ -142,7 +147,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
     }
 
     /** Cover picture urls of the folders of the current level, filled in the background. */
-    private val covers = mutableMapOf<String, List<String>>()
+    private val covers = mutableMapOf<String, FolderCover>()
     private var coverJob: Job? = null
 
     override fun setData(assets: List<Item>) {
@@ -162,8 +167,8 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
     }
 
     /**
-     * Fetches up to two photos of each folder (a few at a time, for the first folders only) and swaps them in for the
-     * folder icon as soon as it arrives. Folders without photos, and failed requests, keep the icon.
+     * Fetches a photo and the asset count of each folder (a few at a time, for the first folders only) and swaps them in
+     * as soon as they arrive. Folders without assets, and failed requests, keep the plain folder surface.
      */
     private fun loadCovers() {
         val folders = rootFolder?.children?.filter { it.path !in covers }?.take(MAX_COVER_FOLDERS) ?: return
@@ -173,13 +178,16 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
             folders.map { folder ->
                 launch {
                     gate.withPermit {
-                        val urls = folderCoverAssetIds(apiClient.listAssetsForFolder(folder.getFullPath()).getOrElse { emptyList() })
-                            .mapNotNull { ApiUtil.getThumbnailUrl(it, "thumbnail") }
-                        if (urls.isEmpty()) return@withPermit
+                        val assets = apiClient.listAssetsForFolder(folder.getFullPath()).getOrElse { emptyList() }
+                        val cover = FolderCover(
+                            url = folderCoverAssetIds(assets).firstOrNull()?.let { ApiUtil.getThumbnailUrl(it, "thumbnail") },
+                            count = assets.size,
+                        )
+                        if (cover.url == null && cover.count == 0) return@withPermit
                         withContext(Dispatchers.Main) {
-                            covers[folder.path] = urls
+                            covers[folder.path] = cover
                             val index = cards.indexOfFirst { it.id == folder.path }
-                            if (index >= 0) cards[index] = cards[index].copy(peekUrls = urls)
+                            if (index >= 0) cards[index] = cards[index].copy(coverUrl = cover.url, badge = cover.badge())
                         }
                     }
                 }
@@ -214,7 +222,8 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                 null,
                 false,
                 isFolder = a.item.path != "..",
-                peekUrls = covers[a.item.path].orEmpty(),
+                coverUrl = covers[a.item.path]?.url,
+                badge = covers[a.item.path]?.badge(),
             )
         } else {
             (a.item as Asset).toCard()

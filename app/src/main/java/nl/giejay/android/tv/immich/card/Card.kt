@@ -8,4 +8,5 @@ data class Card(
     override val backgroundUrl: String?,
     override var selected: Boolean = false,
     override val isFolder: Boolean = false,
-    override val peekUrls: List<String> = emptyList()) : ICard
+    override val coverUrl: String? = null,
+    override val badge: String? = null) : ICard
