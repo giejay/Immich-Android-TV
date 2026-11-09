@@ -311,4 +311,8 @@
     <string name="screensaver_only_landscape_desc">屏保中跳过竖向照片。</string>
     <string name="image_cache_size">图片缓存大小（需重启）</string>
     <string name="image_cache_size_desc">此设备上缓存照片的上限。重启应用后生效。</string>
+    <string name="videos">视频</string>
+    <string name="archive">归档</string>
+    <string name="home_pages">页面</string>
+    <string name="home_pages_desc">选择导航中显示的页面</string>
 </resources>

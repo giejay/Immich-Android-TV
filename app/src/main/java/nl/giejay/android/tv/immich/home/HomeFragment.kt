@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.home
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -22,6 +23,8 @@ import nl.giejay.android.tv.immich.assets.FolderFragment
 import nl.giejay.android.tv.immich.assets.RandomAssetsFragment
 import nl.giejay.android.tv.immich.assets.RecentAssetsFragment
 import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
+import nl.giejay.android.tv.immich.assets.ArchiveFragment
+import nl.giejay.android.tv.immich.assets.VideosFragment
 import nl.giejay.android.tv.immich.people.PeopleFragment
 import nl.giejay.android.tv.immich.places.PlacesFragment
 import nl.giejay.android.tv.immich.tags.TagsFragment
@@ -58,6 +61,7 @@ class HomeFragment : Fragment(), HomeNavHost {
                 AlbumFragment().apply { arguments = bundleOf("selectionMode" to false) }
             },
             Page(getString(R.string.photos), ImmichIcons.Photos) { AllAssetFragment() },
+            Page(getString(R.string.videos), ImmichIcons.Videos) { VideosFragment() },
             Page(getString(R.string.random), ImmichIcons.Random) { RandomAssetsFragment() },
             Page(getString(R.string.people), ImmichIcons.People) { PeopleFragment() },
             Page(getString(R.string.recent), ImmichIcons.Recent) { RecentAssetsFragment() },
@@ -65,6 +69,7 @@ class HomeFragment : Fragment(), HomeNavHost {
             Page(getString(R.string.folders), ImmichIcons.Folders) { FolderFragment() },
             Page(getString(R.string.places), ImmichIcons.Places) { PlacesFragment() },
             Page(getString(R.string.tags), ImmichIcons.Tags) { TagsFragment() },
+            Page(getString(R.string.archive), ImmichIcons.Archive) { ArchiveFragment() },
             Page(getString(R.string.edit), ImmichIcons.Edit, separated = true) { GridFragment(hideProgressBar = true) },
             Page(getString(R.string.settings), ImmichIcons.Settings) { SettingsFragment() },
         )
@@ -85,6 +90,10 @@ class HomeFragment : Fragment(), HomeNavHost {
     private var railView: View? = null
     private val handler = Handler(Looper.getMainLooper())
     private var pendingSelect: Runnable? = null
+    // the pages list changes in the settings dialog too, so the rail follows the stored list
+    private val hiddenItemsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == HIDDEN_HOME_ITEMS.key()) hiddenVersion++
+    }
 
     private val backCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
@@ -148,6 +157,7 @@ class HomeFragment : Fragment(), HomeNavHost {
         railView = rail
         root.addView(rail)
 
+        PreferenceManager.sharedPreference.registerOnSharedPreferenceChangeListener(hiddenItemsListener)
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
         backCallback.isEnabled = !railFocused
 
@@ -164,6 +174,7 @@ class HomeFragment : Fragment(), HomeNavHost {
     }
 
     override fun onDestroyView() {
+        PreferenceManager.sharedPreference.unregisterOnSharedPreferenceChangeListener(hiddenItemsListener)
         contentHadFocus = !railFocused
         pendingSelect?.let { handler.removeCallbacks(it) }
         pendingSelect = null

@@ -352,4 +352,8 @@
     <string name="screensaver_adb_more">More instructions: %1$s</string>
     <string name="image_cache_size">Image cache size (restart required)</string>
     <string name="image_cache_size_desc">Limit for the cached photos on this device. Takes effect after restarting the app.</string>
+    <string name="videos">Videos</string>
+    <string name="archive">Archive</string>
+    <string name="home_pages">Pages</string>
+    <string name="home_pages_desc">Choose which pages the navigation shows</string>
 </resources>

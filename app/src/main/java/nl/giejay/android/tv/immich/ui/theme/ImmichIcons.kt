@@ -15,7 +15,9 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PhotoAlbum
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.People
@@ -47,6 +49,8 @@ object ImmichIcons {
     val Seasonal: ImageVector get() = Icons.Filled.Event
     val Folders: ImageVector get() = Icons.Filled.Folder
     val Places: ImageVector get() = Icons.Filled.Place
+    val Videos: ImageVector get() = Icons.Filled.Videocam
+    val Archive: ImageVector get() = Icons.Filled.Archive
     val Tags: ImageVector get() = Icons.Filled.Sell
     val FolderUp: ImageVector get() = Icons.Filled.ArrowUpward
     val Edit: ImageVector get() = Icons.Filled.Edit
