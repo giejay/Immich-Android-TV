@@ -309,6 +309,6 @@
     <string name="favorites">收藏</string>
     <string name="screensaver_only_landscape">仅横向照片</string>
     <string name="screensaver_only_landscape_desc">屏保中跳过竖向照片。</string>
-    <string name="image_cache_size">图片缓存大小</string>
+    <string name="image_cache_size">图片缓存大小（需重启）</string>
     <string name="image_cache_size_desc">此设备上缓存照片的上限。重启应用后生效。</string>
 </resources>

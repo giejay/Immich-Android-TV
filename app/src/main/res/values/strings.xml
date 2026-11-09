@@ -350,6 +350,6 @@
     <string name="screensaver_adb_step4">Connect to the device with its IP address: adb connect 192.168.xx.xx</string>
     <string name="screensaver_adb_step5">Run this command, then you are done:</string>
     <string name="screensaver_adb_more">More instructions: %1$s</string>
-    <string name="image_cache_size">Image cache size</string>
+    <string name="image_cache_size">Image cache size (restart required)</string>
     <string name="image_cache_size_desc">Limit for the cached photos on this device. Takes effect after restarting the app.</string>
 </resources>
