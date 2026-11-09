@@ -44,7 +44,6 @@
     <string name="done">Fertig</string>
 
     <!-- Auth by phone -->
-    <string name="scan_qr_below">Scanne den QR-Code unten</string>
 
     <!-- Screensaver  -->
     <string name="screensaver_set">Immich als Bildschirmschoner festlegen</string>
@@ -279,7 +278,8 @@
     <string name="timeline_empty_title">Noch keine Fotos</string>
     <string name="timeline_empty_body">Fotos, die du zu Immich hinzufügst, erscheinen hier.</string>
     <string name="timeline_error_title">Deine Zeitleiste konnte nicht geladen werden</string>
-    <string name="phone_sign_in_open_address">Oder öffne %1$s im Browser deines Smartphones (gleiches WLAN)</string>
+    <string name="phone_sign_in_open_address">Oder öffne diese Adresse im Browser deines Smartphones:</string>
+    <string name="phone_sign_in_description">Scanne den QR-Code mit dem Smartphone und gib dort Server-URL und API-Key ein. Das Smartphone muss im selben WLAN wie der Fernseher sein.</string>
     <string name="phone_sign_in_done">Fertig. Schau auf deinen Fernseher.</string>
     <string name="phone_sign_in_no_network">Kein Heimnetz gefunden. Verbinde den Fernseher mit WLAN oder Ethernet.</string>
 </resources>

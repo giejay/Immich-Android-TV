@@ -30,6 +30,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -231,5 +232,51 @@ private fun AuthRow(
             verticalAlignment = Alignment.CenterVertically,
             content = content,
         )
+    }
+}
+
+sealed interface PhoneSignInState {
+    data object Loading : PhoneSignInState
+    data object NoNetwork : PhoneSignInState
+    data class Ready(val url: String, val qr: ImageBitmap) : PhoneSignInState
+}
+
+/** QR sign-in: the code on a white card (scanners need the contrast), the plain address below it. */
+@Composable
+fun PhoneSignInScreen(
+    title: String,
+    description: String,
+    openAddressLabel: String,
+    noNetworkText: String,
+    state: PhoneSignInState,
+) {
+    AuthScaffold(title = title, description = description) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            when (state) {
+                PhoneSignInState.Loading -> Spacer(Modifier.height(320.dp))
+                PhoneSignInState.NoNetwork -> Text(noNetworkText, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                is PhoneSignInState.Ready -> {
+                    Box(Modifier.size(320.dp).background(Color.White, MaterialTheme.shapes.extraLarge).padding(20.dp)) {
+                        Image(state.qr, contentDescription = null, modifier = Modifier.fillMaxSize())
+                    }
+                    Spacer(Modifier.height(24.dp))
+                    Text(openAddressLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    // tonal container (Material 3 surface variant) with the address, centered
+                    Box(
+                        Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
+                        Text(
+                            state.url,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    }
+                }
+            }
+        }
     }
 }

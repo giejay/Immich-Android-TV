@@ -93,7 +93,6 @@
 
 
     <!-- Auth by phone -->
-    <string name="scan_qr_below">Scan the QR code below</string>
 
     <!-- Metadata -->
     <string name="metadata">Metadata</string>
@@ -334,7 +333,8 @@
     <string name="timeline_empty_title">No photos yet</string>
     <string name="timeline_empty_body">Photos you add to Immich show up here.</string>
     <string name="timeline_error_title">Couldn\'t load your timeline</string>
-    <string name="phone_sign_in_open_address">Or open %1$s in your phone\'s browser (same Wi-Fi)</string>
+    <string name="phone_sign_in_open_address">Or open this address in your phone\'s browser:</string>
+    <string name="phone_sign_in_description">Scan the QR code with your phone and enter the server URL and API key there. The phone must be in the same Wi-Fi as the TV.</string>
     <string name="phone_sign_in_done">Done. Look at your TV.</string>
     <string name="phone_sign_in_no_network">No home network found. Connect the TV to Wi-Fi or Ethernet.</string>
 </resources>

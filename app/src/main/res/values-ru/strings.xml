@@ -93,7 +93,6 @@
     <string name="done">Готово</string>
 
     <!-- Auth by phone -->
-    <string name="scan_qr_below">Сканируйте QR-код ниже</string>
 
     <!-- Metadata -->
     <string name="metadata">Метаданные</string>
@@ -295,7 +294,8 @@
     <string name="meta_data_padding_dialog_title">Отступ сверху и снизу элемента</string>
     <string name="meta_data_delete_desc">Удалить элемент</string>
     <string name="meta_data_save_desc">Сохранить элемент</string>
-    <string name="phone_sign_in_open_address">Или откройте %1$s в браузере телефона (та же сеть Wi-Fi)</string>
+    <string name="phone_sign_in_open_address">Или откройте этот адрес в браузере телефона:</string>
+    <string name="phone_sign_in_description">Отсканируйте QR-код телефоном и введите там URL сервера и ключ API. Телефон должен быть в той же сети Wi-Fi, что и телевизор.</string>
     <string name="phone_sign_in_done">Готово. Посмотрите на телевизор.</string>
     <string name="phone_sign_in_no_network">Домашняя сеть не найдена. Подключите телевизор к Wi-Fi или Ethernet.</string>
 </resources>
