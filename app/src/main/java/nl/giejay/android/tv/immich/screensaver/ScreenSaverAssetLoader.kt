@@ -37,7 +37,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ONLY_LANDSCAPE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
-import nl.giejay.android.tv.immich.shared.util.isPortraitImage
+import nl.giejay.android.tv.immich.shared.util.isPortraitOrientation
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
@@ -57,7 +57,7 @@ internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: 
 
 /** The assets the screensaver may show: not excluded, and without portrait photos when only landscape is wanted. */
 internal fun filterScreenSaverAssets(assets: List<Asset>, excludedAssetIds: Set<String>, onlyLandscape: Boolean): List<Asset> =
-    filterExcludedAssets(assets, excludedAssetIds).let { kept -> if (onlyLandscape) kept.filterNot { it.isPortraitImage() } else kept }
+    filterExcludedAssets(assets, excludedAssetIds).let { kept -> if (onlyLandscape) kept.filterNot { it.isPortraitOrientation() } else kept }
 
 internal fun filterExcludedAssets(assets: List<Asset>, excludedAssetIds: Set<String>): List<Asset> =
     assets.filter { asset -> asset.tags?.none { it.name == "exclude_immich_tv" } ?: true }

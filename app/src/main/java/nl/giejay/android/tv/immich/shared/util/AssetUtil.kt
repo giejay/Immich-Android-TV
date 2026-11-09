@@ -105,6 +105,20 @@ internal fun formatAssetTime(date: Date): String {
     return SimpleDateFormat(formatString, locale).format(date)
 }
 
+/**
+ * Whether the photo or video is taller than wide as it is displayed: the EXIF dimensions with the orientation
+ * (5 to 8 means rotated by 90 degrees) applied. Unlike [isPortraitImage], a pairing heuristic, this is exact for
+ * every aspect ratio; unknown dimensions count as not portrait unless the orientation says rotated.
+ */
+fun Asset.isPortraitOrientation(): Boolean {
+    val rotated = (exifInfo?.orientation ?: 1) in 5..8
+    val width = exifInfo?.exifImageWidth
+    val height = exifInfo?.exifImageHeight
+    if (width == null || height == null) return rotated
+    val (displayedWidth, displayedHeight) = if (rotated) height to width else width to height
+    return displayedHeight > displayedWidth
+}
+
 fun Asset.isPortraitImage(): Boolean {
     val aspectRatio = this.getAspectRatio()
     return (this.exifInfo?.orientation == 6 || this.exifInfo?.orientation == 8 || (aspectRatio != null && aspectRatio > 0.56 && aspectRatio <= 1.1)) && this.type == SliderItemType.IMAGE.toString()
