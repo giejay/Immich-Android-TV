@@ -6,12 +6,15 @@ import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Registry
 import com.bumptech.glide.annotation.GlideModule
 import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
+import com.bumptech.glide.load.engine.cache.DiskCache
+import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
 import nl.giejay.android.tv.immich.api.ApiClientFactory
 import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
+import nl.giejay.android.tv.immich.shared.prefs.IMAGE_CACHE_SIZE_MB
 import nl.giejay.android.tv.immich.shared.prefs.LiveSharedPreferences
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import java.io.InputStream
@@ -54,6 +57,10 @@ class CustomGlideModule : AppGlideModule() {
     }
 
     override fun applyOptions(context: Context, builder: GlideBuilder) {
+        // read once when Glide starts, so a changed size applies after restarting the app
+        builder.setDiskCache(
+            InternalCacheDiskCacheFactory(context, DiskCache.Factory.DEFAULT_DISK_CACHE_DIR, imageCacheBytes(PreferenceManager.get(IMAGE_CACHE_SIZE_MB)))
+        )
     }
 
     override fun registerComponents(
@@ -67,3 +74,6 @@ class CustomGlideModule : AppGlideModule() {
         )
     }
 }
+
+/** The disk cache limit in bytes for a choice in MB, kept within a sane range (50 MB to 4 GB). */
+internal fun imageCacheBytes(megabytes: Int): Long = megabytes.coerceIn(50, 4096) * 1024L * 1024L

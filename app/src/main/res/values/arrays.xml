@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string-array name="image_cache_titles" translatable="false">
+        <item>100 MB</item>
+        <item>250 MB</item>
+        <item>500 MB</item>
+        <item>1 GB</item>
+        <item>2 GB</item>
+    </string-array>
+    <string-array name="image_cache_values" translatable="false">
+        <item>100</item>
+        <item>250</item>
+        <item>500</item>
+        <item>1000</item>
+        <item>2000</item>
+    </string-array>
     <array name="interval_titles">
         <item>@string/interval_1_second</item>
         <item>@string/interval_2_seconds</item>
