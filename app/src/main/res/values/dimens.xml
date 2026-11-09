@@ -22,7 +22,7 @@
     <dimen name="overscan_vertical">27dp</dimen>
 
     <dimen name="home_nav_collapsed_width">80dp</dimen>
-    <dimen name="home_nav_expanded_width">300dp</dimen>
+    <dimen name="home_nav_expanded_width">240dp</dimen>
 
     <dimen name="menu_item_width">100dp</dimen>
     <dimen name="menu_item_height">100dp</dimen>

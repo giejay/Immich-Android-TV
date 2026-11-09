@@ -75,10 +75,14 @@ class MainActivity : FragmentActivity() {
             PreferenceManager.saveMetaData(AlignOption.RIGHT, MetaDataScreen.SCREENSAVER, screenSaverMetaDataFromOldPrefs)
         }
 
-        // guarded so a process-restore recreation (savedInstanceState != null) doesn't
-        // re-fetch and re-push a deep-linked asset into the slider a second time
+        // A recreation (configuration change, process restore: savedInstanceState != null) must not
+        // re-fetch and re-push a deep-linked asset into the slider a second time. The graph still has
+        // to be set again, otherwise the restored fragments crash on the first findNavController().graph;
+        // NavController restores the saved back stack itself, the start destination is only a fallback.
         if (savedInstanceState == null) {
             loadDeepLinkOrStartingPage(intent.data)
+        } else {
+            loadStartingPage()
         }
     }
 
