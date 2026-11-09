@@ -1,20 +1,14 @@
 package nl.giejay.android.tv.immich.shared.prefs;
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
-import android.view.LayoutInflater
 import android.view.View
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.navigation.NavController
 import androidx.preference.ListPreference
 import androidx.preference.Preference
-import com.github.alexzhirkevich.customqrgenerator.QrData
-import com.github.alexzhirkevich.customqrgenerator.vector.QrCodeDrawable
 import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
@@ -23,6 +17,8 @@ import nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelManager
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverTransition
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.security.ApiKeyCipher
+import nl.giejay.android.tv.immich.ui.dialog.showScreenSaverAdbDialog
+import nl.giejay.android.tv.immich.ui.dialog.showUserIdDialog
 import nl.giejay.mediaslider.transformations.GlideTransformations
 
 // general
@@ -106,17 +102,7 @@ private fun startScreenSaverIntent(context: Context) {
             "com.android.tv.settings.device.display.daydream.DaydreamActivity"
         );
         if (!intentAvailable(intent, context) || Build.MANUFACTURER == "Google") {
-            val layoutInflater =
-                context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val inflate: View = layoutInflater.inflate(R.layout.screensaver_adb, null)
-            val dialog = AlertDialog.Builder(context)
-                .setTitle(R.string.screensaver_not_possible_title)
-                .create()
-            dialog.setView(inflate)
-            dialog.setButton(AlertDialog.BUTTON_NEGATIVE, ImmichApplication.appContext!!.getString(R.string.close)) { d, _ ->
-                d.dismiss()
-            }
-            return dialog.show()
+            return showScreenSaverAdbDialog(context)
         }
         context.startActivity(intent);
     }
@@ -483,19 +469,7 @@ data object USER_ID : ActionPref(null, ImmichApplication.appContext!!.getString(
     { context, _ ->
         val userId = PreferenceManager.get(USER_ID)
         if (userId.isNotEmpty()) {
-            val layoutInflater = LayoutInflater.from(context)
-            val view = layoutInflater.inflate(R.layout.dialog_user_id_qr, null)
-            val qrImageView = view.findViewById<ImageView>(R.id.qrCode)
-            val userIdTextView = view.findViewById<TextView>(R.id.userIdText)
-
-            userIdTextView.text = userId
-            val data = QrData.Text(userId)
-            qrImageView.setImageDrawable(QrCodeDrawable(data))
-
-            AlertDialog.Builder(context)
-                .setView(view)
-                .setPositiveButton(R.string.close) { dialog, _ -> dialog.dismiss() }
-                .show()
+            showUserIdDialog(context, userId)
         }
         true
     }) {

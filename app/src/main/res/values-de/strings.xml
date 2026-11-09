@@ -288,4 +288,11 @@
     <string name="favorites">Favoriten</string>
     <string name="screensaver_only_landscape">Nur Querformat</string>
     <string name="screensaver_only_landscape_desc">Hochformatfotos im Bildschirmschoner überspringen.</string>
+    <string name="screensaver_adb_intro">Die Bildschirmschoner-Einstellungen lassen sich auf diesem Gerät nicht öffnen. Aktiviere den Bildschirmschoner von Hand mit diesen Schritten:</string>
+    <string name="screensaver_adb_step1">Aktiviere den Entwicklermodus auf dem Gerät (tippe unter System -> Info 7-mal auf die Build-Nummer oder \"Android TV OS Build\").</string>
+    <string name="screensaver_adb_step2">Öffne System -> Entwickleroptionen und aktiviere USB-Debugging.</string>
+    <string name="screensaver_adb_step3">Ist ADB auf deinem PC nicht installiert, folge der Anleitung auf https://www.xda-developers.com/install-adb-windows-macos-linux/</string>
+    <string name="screensaver_adb_step4">Verbinde dich mit der IP-Adresse des Geräts: adb connect 192.168.xx.xx</string>
+    <string name="screensaver_adb_step5">Führe diesen Befehl aus, dann bist du fertig:</string>
+    <string name="screensaver_adb_more">Weitere Anleitung: %1$s</string>
 </resources>
