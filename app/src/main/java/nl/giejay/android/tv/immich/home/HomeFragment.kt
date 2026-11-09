@@ -242,6 +242,6 @@ class HomeFragment : Fragment(), HomeNavHost {
 
     companion object {
         private const val STATE_SELECTED = "selected_page"
-        private const val SELECT_DELAY_MS = 250L
+        private const val SELECT_DELAY_MS = 400L
     }
 }
