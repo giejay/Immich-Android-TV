@@ -169,4 +169,37 @@ class LocalAuthServerTest {
         assertThat(extra.getInputStream().read()).isEqualTo(-1)
         (idle + extra).forEach { it.close() }
     }
+
+    @Test
+    fun onAcceptedRunsAfterTheSuccessPageWasSent() {
+        val latch = java.util.concurrent.CountDownLatch(1)
+        val s2 = LocalAuthServer(texts, { _, _ -> true }, onAccepted = { latch.countDown() }, token = "t")
+        s2.start()
+        try {
+            val c = URL("http://127.0.0.1:${s2.port}/submit?t=t").openConnection() as HttpURLConnection
+            c.requestMethod = "POST"
+            c.doOutput = true
+            c.outputStream.use { it.write("host=https%3A%2F%2Fa&key=k".toByteArray()) }
+            assertThat(c.responseCode).isEqualTo(200)
+            assertThat(latch.await(2, java.util.concurrent.TimeUnit.SECONDS)).isTrue()
+        } finally {
+            s2.stop()
+        }
+    }
+
+    @Test
+    fun lanAddressSkipsVpnAndMobileAndPrefersWifiOrEthernet() {
+        fun ip(a: String) = java.net.InetAddress.getByName(a)
+        val picked = LocalAuthServer.pickLanAddress(
+            listOf(
+                "tun0" to ip("10.8.0.2"),
+                "rmnet0" to ip("10.1.1.1"),
+                "wlan0" to ip("fe80::1"),
+                "other0" to ip("192.168.5.5"),
+                "wlan0" to ip("192.168.1.20"),
+            ),
+        )
+        assertThat(picked).isEqualTo(ip("192.168.1.20"))
+        assertThat(LocalAuthServer.pickLanAddress(listOf("tun0" to ip("10.8.0.2"), "wlan0" to ip("8.8.8.8")))).isNull()
+    }
 }

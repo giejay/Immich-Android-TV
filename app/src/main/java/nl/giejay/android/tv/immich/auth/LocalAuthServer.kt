@@ -30,12 +30,14 @@ data class LocalAuthTexts(
  * party is involved. The token is random, only valid for this server instance and used up by the first
  * accepted submission. Requests and bodies are size limited, and only a handful run at the same time.
  *
+ * @param onAccepted called after the success page was written to the phone (safe moment to leave the screen).
  * @param onCredentials called with the submitted server URL and API key; returns true when they were
  *   accepted (the token is then used up), false to let the user retry.
  */
 class LocalAuthServer(
     private val texts: LocalAuthTexts,
     private val onCredentials: (host: String, apiKey: String) -> Boolean,
+    private val onAccepted: () -> Unit = {},
     val token: String = newToken(),
 ) {
     private var serverSocket: ServerSocket? = null
@@ -104,6 +106,7 @@ class LocalAuthServer(
                 val request = readRequest(it.getInputStream()) ?: return respond(it, 400, "Bad request")
                 val response = route(request)
                 respond(it, response.first, response.second)
+                if (response.first == 200 && request.method == "POST") onAccepted()
             } catch (_: IllegalArgumentException) {
                 // malformed percent escapes
                 try {
@@ -239,12 +242,28 @@ class LocalAuthServer(
         fun escape(text: String): String =
             text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;")
 
-        /** The first private IPv4 address of this device (its address in the home network), if any. */
+        private val IGNORED_INTERFACES = listOf("tun", "tap", "ppp", "wg", "ipsec", "utun", "dummy", "rmnet", "lo")
+
+        /**
+         * Picks the address of the home network from (interface name, address) pairs: private IPv4 only, no
+         * VPN/tunnel/mobile interfaces, Ethernet and Wi-Fi first.
+         */
+        fun pickLanAddress(candidates: List<Pair<String, InetAddress>>): InetAddress? =
+            candidates
+                .filter { (name, address) ->
+                    address is Inet4Address && address.isSiteLocalAddress &&
+                        IGNORED_INTERFACES.none { name.startsWith(it, ignoreCase = true) }
+                }
+                .sortedBy { (name, _) -> if (name.startsWith("eth") || name.startsWith("wlan") || name.startsWith("en")) 0 else 1 }
+                .firstOrNull()?.second
+
+        /** The address of this device in the home network, if any. */
         fun findLanAddress(): InetAddress? = try {
-            NetworkInterface.getNetworkInterfaces().toList()
-                .filter { it.isUp && !it.isLoopback }
-                .flatMap { it.inetAddresses.toList() }
-                .firstOrNull { it is Inet4Address && it.isSiteLocalAddress }
+            pickLanAddress(
+                NetworkInterface.getNetworkInterfaces().toList()
+                    .filter { it.isUp && !it.isLoopback }
+                    .flatMap { nic -> nic.inetAddresses.toList().map { nic.name to it } },
+            )
         } catch (_: java.io.IOException) {
             null
         }

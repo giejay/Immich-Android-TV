@@ -48,7 +48,7 @@ class AuthByPhoneFragment : Fragment() {
         )
         // The server object is owned by the fragment from the start (it opens no socket yet), so
         // onDestroyView always stops it, even when the start below is cancelled half way.
-        val localServer = LocalAuthServer(texts, ::acceptCredentials)
+        val localServer = LocalAuthServer(texts, ::acceptCredentials, onAccepted = ::leaveAfterSignIn)
         server = localServer
         viewLifecycleOwner.lifecycleScope.launch {
             val address = withContext(Dispatchers.IO) { LocalAuthServer.findLanAddress() }
@@ -82,6 +82,11 @@ class AuthByPhoneFragment : Fragment() {
         PreferenceManager.save(SCREENSAVER_ALBUMS, emptySet())
         PreferenceManager.save(API_KEY, apiKey)
         PreferenceManager.save(HOST_NAME, host)
+        return true
+    }
+
+    /** Called on a server thread once the phone got its success page. */
+    private fun leaveAfterSignIn() {
         mainHandler.post {
             if (!isAdded) return@post
             val navController = findNavController()
@@ -91,10 +96,11 @@ class AuthByPhoneFragment : Fragment() {
                 NavOptions.Builder().setPopUpTo(navController.graph.id, true).build(),
             )
         }
-        return true
     }
 
     private fun onTimeout() {
+        // The old token must die even when navigation is not possible right now (e.g. the app is in the background).
+        server?.stop()
         if (!isAdded) return
         Toast.makeText(requireContext(), R.string.auth_timeout_recreating_qr, Toast.LENGTH_SHORT).show()
         try {
