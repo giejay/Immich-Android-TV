@@ -4,7 +4,14 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import arrow.core.getOrElse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.album.AlbumDetailsFragmentDirections
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.Asset
@@ -39,6 +46,13 @@ data class Item(val item: Any) {
     fun asset() = item as Asset
     val id = if (item is Asset) item.id else (item as Folder).path
 }
+
+/** The asset that stands for a folder: its first photo, else its first video (the list is already without excluded assets). */
+internal fun folderCoverAssetId(assets: List<Asset>): String? =
+    (assets.firstOrNull { it.type.equals("IMAGE", ignoreCase = true) } ?: assets.firstOrNull())?.id
+
+private const val MAX_COVER_FOLDERS = 40
+private const val MAX_PARALLEL_COVER_REQUESTS = 3
 
 class FolderFragment : VerticalCardGridFragment<Item>() {
     private var rootFolder: Folder? = null
@@ -81,7 +95,9 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
     }
 
     override fun onItemClicked(card: Card) {
-        if (card.thumbnailUrl?.contains("folder") == true) {
+        // a folder card is told from a photo card by its item (the thumbnail can be a photo now)
+        val clicked = this.assets.firstOrNull { it.id == card.id }
+        if (clicked != null && !clicked.isAsset()) {
             if (card.title == "..") {
                 updateState(stack.removeAt(stack.size - 1))
             } else {
@@ -121,6 +137,52 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
         }
     }
 
+    /** Cover picture urls of the folders of the current level, filled in the background. */
+    private val covers = mutableMapOf<String, String>()
+    private var coverJob: Job? = null
+
+    override fun setData(assets: List<Item>) {
+        super.setData(assets)
+        loadCovers()
+    }
+
+    override fun clearState() {
+        coverJob?.cancel()
+        covers.clear()
+        super.clearState()
+    }
+
+    override fun onDestroyView() {
+        coverJob?.cancel()
+        super.onDestroyView()
+    }
+
+    /**
+     * Fetches the first photo of each folder (a few at a time, for the first folders only) and swaps it in for the
+     * folder icon as soon as it arrives. Folders without photos, and failed requests, keep the icon.
+     */
+    private fun loadCovers() {
+        val folders = rootFolder?.children?.filter { it.path !in covers }?.take(MAX_COVER_FOLDERS) ?: return
+        if (folders.isEmpty() || coverJob?.isActive == true) return
+        coverJob = ioScope.launch {
+            val gate = Semaphore(MAX_PARALLEL_COVER_REQUESTS)
+            folders.map { folder ->
+                launch {
+                    gate.withPermit {
+                        val assetId = folderCoverAssetId(apiClient.listAssetsForFolder(folder.getFullPath()).getOrElse { emptyList() })
+                            ?: return@withPermit
+                        val url = ApiUtil.getThumbnailUrl(assetId, "thumbnail") ?: return@withPermit
+                        withContext(Dispatchers.Main) {
+                            covers[folder.path] = url
+                            val index = cards.indexOfFirst { it.id == folder.path }
+                            if (index >= 0) cards[index] = cards[index].copy(thumbnailUrl = url)
+                        }
+                    }
+                }
+            }.joinAll()
+        }
+    }
+
     private fun updateState(clickedChild: Folder) {
         rootFolder = clickedChild
         clearState()
@@ -144,7 +206,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                 a.item.path,
                 "",
                 a.item.path,
-                if (a.item.path == "..") "folder_up" else "folder",
+                if (a.item.path == "..") "folder_up" else covers[a.item.path] ?: "folder",
                 null,
                 false
             )
