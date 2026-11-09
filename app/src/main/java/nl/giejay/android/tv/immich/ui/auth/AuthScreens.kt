@@ -36,6 +36,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -140,6 +142,8 @@ fun AuthTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
+    /** Shows dots instead of the value (a password). */
+    masked: Boolean = false,
 ) {
     var editing by remember { mutableStateOf(false) }
     // the field reports "not focused" once while it is being created; only leaving after it had focus ends editing
@@ -165,7 +169,8 @@ fun AuthTextField(
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Done),
+                    visualTransformation = if (masked) PasswordVisualTransformation() else VisualTransformation.None,
+                    keyboardOptions = KeyboardOptions(keyboardType = if (masked) KeyboardType.Password else keyboardType, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { editing = false; keyboard?.hide() }),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -179,7 +184,7 @@ fun AuthTextField(
                 )
             } else {
                 Text(
-                    value.ifEmpty { "—" },
+                    if (masked && value.isNotEmpty()) "•".repeat(value.length.coerceAtMost(12)) else value.ifEmpty { "—" },
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

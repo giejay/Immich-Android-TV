@@ -100,6 +100,8 @@ object PreferenceManager {
     fun removeApiSettings() {
         save(HOST_NAME, "")
         save(API_KEY, "")
+        save(PROXY_USER, "")
+        save(PROXY_PASSWORD, "")
     }
 
     private fun removeStringSetItem(item: String, prefKey: StringSetPref) {

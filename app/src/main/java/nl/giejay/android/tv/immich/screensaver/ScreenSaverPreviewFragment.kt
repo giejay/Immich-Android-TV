@@ -1,5 +1,6 @@
 package nl.giejay.android.tv.immich.screensaver
 
+import nl.giejay.android.tv.immich.api.ApiAuthHeaders
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
@@ -77,7 +78,7 @@ class ScreenSaverPreviewFragment : MediaSliderFragment(), ScreenSaverAssetLoader
         ioScope = CoroutineScope(Job() + Dispatchers.IO)
         sliderView?.setDefaultExoFactory(
             DefaultHttpDataSource.Factory()
-                .setDefaultRequestProperties(mapOf("x-api-key" to PreferenceManager.get(API_KEY)))
+                .setDefaultRequestProperties(ApiAuthHeaders.forPlayerFromPrefs())
         )
         ScreenSaverAssetLoader(
             ioScope,
