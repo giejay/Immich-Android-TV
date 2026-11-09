@@ -298,4 +298,6 @@
     <string name="phone_sign_in_description">Отсканируйте QR-код телефоном и введите там URL сервера и ключ API. Телефон должен быть в той же сети Wi-Fi, что и телевизор.</string>
     <string name="phone_sign_in_done">Готово. Посмотрите на телевизор.</string>
     <string name="phone_sign_in_no_network">Домашняя сеть не найдена. Подключите телевизор к Wi-Fi или Ethernet.</string>
+    <string name="places">Места</string>
+    <string name="tags">Теги</string>
 </resources>

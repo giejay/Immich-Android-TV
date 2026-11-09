@@ -74,4 +74,21 @@ class SearchRequestVisibilityTest {
             formatted.matches(Regex(""".*(Z|[+-]\d{2}:\d{2})$"""))
         )
     }
+
+    @Test
+    fun `city and tag filters are passed on and tag ids stay unset when empty`() {
+        val filtered = buildListAssetsSearchRequest(
+            page = 1, pageCount = 10, albumIds = emptyList(), order = "desc", type = null, personIds = emptyList(),
+            endDate = null, fromDate = null, city = "Rome", tagIds = listOf("t1"),
+        )
+        val plain = buildListAssetsSearchRequest(
+            page = 1, pageCount = 10, albumIds = emptyList(), order = "desc", type = null, personIds = emptyList(),
+            endDate = null, fromDate = null,
+        )
+
+        assertEquals("Rome", filtered.city)
+        assertEquals(listOf("t1"), filtered.tagIds)
+        assertNull(plain.city)
+        assertNull(plain.tagIds)
+    }
 }

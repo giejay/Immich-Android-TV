@@ -296,4 +296,6 @@
     <string name="phone_sign_in_description">Scannez le code QR avec votre téléphone et saisissez-y l\'URL du serveur et la clé API. Le téléphone doit être sur le même Wi-Fi que le téléviseur.</string>
     <string name="phone_sign_in_done">Terminé. Regardez votre télévision.</string>
     <string name="phone_sign_in_no_network">Aucun réseau domestique trouvé. Connectez le téléviseur au Wi-Fi ou à l\'Ethernet.</string>
+    <string name="places">Lieux</string>
+    <string name="tags">Étiquettes</string>
 </resources>

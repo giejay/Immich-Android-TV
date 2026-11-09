@@ -6,6 +6,7 @@ import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchResponse
+import nl.giejay.android.tv.immich.api.model.TagInfo
 import nl.giejay.android.tv.immich.api.model.TimeBucketAssetsResponse
 import nl.giejay.android.tv.immich.api.model.TimeBucketSummary
 import nl.giejay.android.tv.immich.api.model.toTimelineAssets
@@ -104,6 +105,28 @@ class DemoInterceptorTest {
         assertThat(scoped.assets.items.map { it.id }).isNotEmpty()
         assertThat(food.photos.map { it.id }).containsAtLeastElementsIn(scoped.assets.items.map { it.id })
         assertThat(scoped.assets.items.size).isAtMost(unscoped.assets.items.size)
+    }
+
+    @Test
+    fun `places give one photo per city and a city search finds its photos`() {
+        val places = parse<Array<Asset>>(get("search/cities").body!!.string()).toList()
+        val cities = places.map { it.exifInfo?.city }
+
+        assertThat(cities).containsNoDuplicates()
+        assertThat(cities).containsExactly("Innsbruck", "Lisbon", "Berlin", "Freiburg", "Rome")
+        val berlin = parse<SearchResponse>(post("search/metadata", """{"city":"berlin"}""").body!!.string())
+        assertThat(berlin.assets.items).hasSize(4)
+        assertThat(berlin.assets.items.map { it.exifInfo?.city }.distinct()).containsExactly("Berlin")
+    }
+
+    @Test
+    fun `tags are listed and a tag filter returns only its photos`() {
+        val tags = parse<Array<TagInfo>>(get("tags").body!!.string()).toList()
+        assertThat(tags.map { it.value }).containsExactly("Holidays", "Trips/City life")
+
+        val holidays = parse<SearchResponse>(post("search/metadata", """{"tagIds":["${tags.first { it.name == "Holidays" }.id}"]}""").body!!.string())
+        assertThat(holidays.assets.items).hasSize(8)
+        assertThat(holidays.assets.items.all { it.originalFileName!!.startsWith("beach") || it.originalFileName!!.startsWith("mountains") }).isTrue()
     }
 
     @Test

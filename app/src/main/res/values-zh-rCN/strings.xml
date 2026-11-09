@@ -304,4 +304,6 @@
     <string name="phone_sign_in_description">用手机扫描二维码，并在手机上输入服务器地址和 API 密钥。手机必须与电视处于同一 Wi-Fi。</string>
     <string name="phone_sign_in_done">完成。请查看电视。</string>
     <string name="phone_sign_in_no_network">未找到家庭网络。请将电视连接到 Wi-Fi 或以太网。</string>
+    <string name="places">地点</string>
+    <string name="tags">标签</string>
 </resources>

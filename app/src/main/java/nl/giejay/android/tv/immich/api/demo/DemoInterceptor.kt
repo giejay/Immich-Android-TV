@@ -49,6 +49,10 @@ class DemoInterceptor(private val openAsset: (String) -> InputStream) : Intercep
                 DemoCatalog.album(parts[1])?.let { respond(request, 200, albumJson(it)) } ?: notFound(request)
             parts == listOf("search", "metadata") -> respond(request, 200, searchResponse(metadataSearch(body(request))))
             parts == listOf("search", "smart") -> respond(request, 200, searchResponse(smartSearch(body(request))))
+            parts == listOf("search", "cities") ->
+                respond(request, 200, DemoCatalog.photos.distinctBy { DemoCatalog.place(it).city }.map(::assetJson))
+            parts == listOf("tags") ->
+                respond(request, 200, DemoCatalog.tags.map { mapOf("id" to it.id, "name" to it.name, "value" to it.value, "color" to null) })
             parts == listOf("search", "person") -> respond(request, 200, emptyList<Any>())
             parts == listOf("search", "random") -> respond(request, 200, randomAssets(body(request)).map(::assetJson))
             parts == listOf("people") -> respond(request, 200, mapOf("total" to 0, "hasNextPage" to false, "people" to emptyList<Any>()))
@@ -86,10 +90,14 @@ class DemoInterceptor(private val openAsset: (String) -> InputStream) : Intercep
         val type = body.string("type")
         val name = body.string("originalFileName")?.lowercase()
         val description = body.string("description")?.lowercase()
+        val city = body.string("city")
+        val tagIds = body.stringList("tagIds")
         val before = body.string("takenBefore")?.let(::parseDate)
         val after = body.string("takenAfter")?.let(::parseDate)
         return DemoCatalog.photos.filter { photo ->
             (albumIds.isEmpty() || albumIds.any { DemoCatalog.album(it)?.photos?.contains(photo) == true }) &&
+                (city == null || DemoCatalog.place(photo).city.equals(city, ignoreCase = true)) &&
+                (tagIds.isEmpty() || DemoCatalog.tags.any { it.id in tagIds && photo.theme in it.themes }) &&
                 (type == null || type == "IMAGE") &&
                 (name == null || photo.file.lowercase().contains(name)) &&
                 (description == null || description(photo).lowercase().contains(description)) &&
@@ -178,8 +186,8 @@ class DemoInterceptor(private val openAsset: (String) -> InputStream) : Intercep
             "orientation" to 1,
             "exifImageWidth" to photo.width,
             "exifImageHeight" to photo.height,
-            "city" to null,
-            "country" to null,
+            "city" to DemoCatalog.place(photo).city,
+            "country" to DemoCatalog.place(photo).country,
             "dateTimeOriginal" to iso(photo.takenAt),
             "make" to null,
             "model" to null,

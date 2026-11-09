@@ -11,6 +11,7 @@ import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.Person
+import nl.giejay.android.tv.immich.api.model.TagInfo
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -68,7 +69,9 @@ internal fun buildListAssetsSearchRequest(
     type: String?,
     personIds: List<UUID>,
     endDate: String?,
-    fromDate: String?
+    fromDate: String?,
+    city: String? = null,
+    tagIds: List<String> = emptyList()
 ): SearchRequest = SearchRequest(
     page = page,
     size = pageCount,
@@ -78,6 +81,8 @@ internal fun buildListAssetsSearchRequest(
     personIds = personIds,
     takenBefore = endDate,
     takenAfter = fromDate,
+    city = city,
+    tagIds = tagIds.ifEmpty { null },
     // "timeline" reproduces pre-v3 default for normal browsing; album-scoped search
     // omits it so archived-in-album assets keep showing (VIS-02)
     visibility = if (albumIds.isEmpty()) "timeline" else null
@@ -100,6 +105,9 @@ class ApiClient(private val config: ApiClientConfig) {
     companion object ApiClient {
         private const val SMART_SEARCH_RETRY_MILLIS = 5 * 60 * 1000L
         private const val MAX_FALLBACK_HITS_PER_FIELD = 500
+        private const val MAX_TAGS = 100
+        private const val COVER_PAGE_SIZE = 100
+        private const val COVER_SEARCH_PAGES = 5
 
         private var apiClient: nl.giejay.android.tv.immich.api.ApiClient? = null
         fun getClient(config: ApiClientConfig): nl.giejay.android.tv.immich.api.ApiClient {
@@ -305,6 +313,56 @@ class ApiClient(private val config: ApiClientConfig) {
     private fun excludeByTag() = { asset: Asset ->
         asset.tags?.none { t -> t.name == "exclude_immich_tv" } ?: true
     }
+
+    /** The photos of one place (city) or one tag, newest first (a separate function so [listAssets] keeps its signature). */
+    suspend fun listAssetsByFilter(page: Int, pageCount: Int, contentType: ContentType, city: String? = null, tagIds: List<String> = emptyList(), order: String = "desc"): Either<String, AssetResponse> {
+        val request = buildListAssetsSearchRequest(
+            page = page, pageCount = pageCount, albumIds = emptyList(), order = order,
+            type = if (contentType == ContentType.ALL) null else contentType.toString(),
+            personIds = emptyList(), endDate = null, fromDate = null, city = city, tagIds = tagIds,
+        )
+        return search(request).map { it.toAssetResponse() }
+    }
+
+    /**
+     * The newest photo of a city or tag that the TV app may show (photos tagged `exclude_immich_tv` are skipped).
+     * Pages through the hits until one is found or the search is exhausted (at most [COVER_SEARCH_PAGES] pages).
+     */
+    private suspend fun findCover(city: String? = null, tagIds: List<String> = emptyList()): Asset? {
+        val allowed = excludeByTag()
+        for (page in 1..COVER_SEARCH_PAGES) {
+            val response = listAssetsByFilter(page, COVER_PAGE_SIZE, ContentType.ALL, city = city, tagIds = tagIds).getOrNull() ?: return null
+            response.assets.firstOrNull(allowed)?.let { return it }
+            if (!response.canLoadMore) return null
+        }
+        return null
+    }
+
+    /** One photo per place (city), sorted by city name; the photo serves as the card picture. */
+    suspend fun listPlaces(): Either<String, List<Asset>> =
+        executeAPICall(200) { service.listCities() }.map { assets ->
+            val places = assets.filter { !it.exifInfo?.city.isNullOrBlank() }
+                .distinctBy { it.exifInfo?.city }
+                .sortedBy { it.exifInfo?.city?.lowercase() }
+            val allowed = excludeByTag()
+            places.pmap { representative ->
+                if (allowed(representative)) {
+                    representative
+                } else {
+                    // the server's pick is excluded from the TV app: another photo of the city is the cover,
+                    // and a city with nothing left to show is dropped (opening it would be empty anyway)
+                    findCover(city = representative.exifInfo?.city)
+                }
+            }.filterNotNull()
+        }
+
+    /** The tags with a picture each (the newest photo carrying it, if any), sorted by name. */
+    suspend fun listTagsWithPictures(): Either<String, List<Pair<TagInfo, String?>>> =
+        executeAPICall(200) { service.listTags() }.map { tags ->
+            tags.sortedBy { it.value.lowercase() }.take(MAX_TAGS).pmap { tag ->
+                tag to findCover(tagIds = listOf(tag.id))?.id
+            }
+        }
 
     suspend fun listFolders(): Either<String, Folder> {
         return executeAPICall(200) {
