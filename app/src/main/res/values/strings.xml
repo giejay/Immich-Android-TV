@@ -340,4 +340,7 @@
     <string name="phone_sign_in_no_network">No home network found. Connect the TV to Wi-Fi or Ethernet.</string>
     <string name="places">Places</string>
     <string name="tags">Tags</string>
+    <string name="favorites">Favorites</string>
+    <string name="screensaver_only_landscape">Landscape photos only</string>
+    <string name="screensaver_only_landscape_desc">Skip portrait photos in the screensaver.</string>
 </resources>

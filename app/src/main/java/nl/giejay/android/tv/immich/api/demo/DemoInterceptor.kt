@@ -91,11 +91,13 @@ class DemoInterceptor(private val openAsset: (String) -> InputStream) : Intercep
         val name = body.string("originalFileName")?.lowercase()
         val description = body.string("description")?.lowercase()
         val city = body.string("city")
+        val favoritesOnly = body.get("isFavorite")?.takeIf { !it.isJsonNull }?.asBoolean == true
         val tagIds = body.stringList("tagIds")
         val before = body.string("takenBefore")?.let(::parseDate)
         val after = body.string("takenAfter")?.let(::parseDate)
         return DemoCatalog.photos.filter { photo ->
             (albumIds.isEmpty() || albumIds.any { DemoCatalog.album(it)?.photos?.contains(photo) == true }) &&
+                (!favoritesOnly || photo.id in DemoCatalog.favorites) &&
                 (city == null || DemoCatalog.place(photo).city.equals(city, ignoreCase = true)) &&
                 (tagIds.isEmpty() || DemoCatalog.tags.any { it.id in tagIds && photo.theme in it.themes }) &&
                 (type == null || type == "IMAGE") &&

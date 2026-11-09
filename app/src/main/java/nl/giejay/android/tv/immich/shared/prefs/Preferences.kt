@@ -202,6 +202,10 @@ data object SCREENSAVER_INCLUDE_VIDEOS : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.include_videos),
     ImmichApplication.appContext!!.getString(R.string.include_videos_screensaver))
 
+data object SCREENSAVER_ONLY_LANDSCAPE : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.screensaver_only_landscape),
+    ImmichApplication.appContext!!.getString(R.string.screensaver_only_landscape_desc))
+
 data object SCREENSAVER_PLAY_SOUND : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.play_sound),
     ImmichApplication.appContext!!.getString(R.string.play_sound_screensaver))
@@ -655,6 +659,7 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_SHOW_DATE_TOP_LEFT,
                 SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,
+                SCREENSAVER_ONLY_LANDSCAPE,
                 SCREENSAVER_PLAY_SOUND,
                 SCREENSAVER_ANIMATE_ASSET_SLIDE)
         )

@@ -71,7 +71,8 @@ internal fun buildListAssetsSearchRequest(
     endDate: String?,
     fromDate: String?,
     city: String? = null,
-    tagIds: List<String> = emptyList()
+    tagIds: List<String> = emptyList(),
+    isFavorite: Boolean? = null
 ): SearchRequest = SearchRequest(
     page = page,
     size = pageCount,
@@ -83,6 +84,7 @@ internal fun buildListAssetsSearchRequest(
     takenAfter = fromDate,
     city = city,
     tagIds = tagIds.ifEmpty { null },
+    isFavorite = isFavorite,
     // "timeline" reproduces pre-v3 default for normal browsing; album-scoped search
     // omits it so archived-in-album assets keep showing (VIS-02)
     visibility = if (albumIds.isEmpty()) "timeline" else null
@@ -257,6 +259,11 @@ class ApiClient(private val config: ApiClientConfig) {
             .map { it.copy(assets = it.assets.shuffled()) }
     }
 
+    /** The favorites, newest first per page; the page is shuffled so the slideshow does not run in date order. */
+    suspend fun favoriteAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> =
+        listAssetsByFilter(page, pageCount, contentType, favorite = true)
+            .map { response -> response.copy(assets = response.assets.filter(excludeByTag()).shuffled()) }
+
     suspend fun similarAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
         val now = LocalDateTime.now()
         val map: List<Either<String, AssetResponse>> = (0 until PreferenceManager.get(SIMILAR_ASSETS_YEARS_BACK)).toList().map {
@@ -315,11 +322,11 @@ class ApiClient(private val config: ApiClientConfig) {
     }
 
     /** The photos of one place (city) or one tag, newest first (a separate function so [listAssets] keeps its signature). */
-    suspend fun listAssetsByFilter(page: Int, pageCount: Int, contentType: ContentType, city: String? = null, tagIds: List<String> = emptyList(), order: String = "desc"): Either<String, AssetResponse> {
+    suspend fun listAssetsByFilter(page: Int, pageCount: Int, contentType: ContentType, city: String? = null, tagIds: List<String> = emptyList(), order: String = "desc", favorite: Boolean? = null): Either<String, AssetResponse> {
         val request = buildListAssetsSearchRequest(
             page = page, pageCount = pageCount, albumIds = emptyList(), order = order,
             type = if (contentType == ContentType.ALL) null else contentType.toString(),
-            personIds = emptyList(), endDate = null, fromDate = null, city = city, tagIds = tagIds,
+            personIds = emptyList(), endDate = null, fromDate = null, city = city, tagIds = tagIds, isFavorite = favorite,
         )
         return search(request).map { it.toAssetResponse() }
     }

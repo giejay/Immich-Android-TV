@@ -25,27 +25,8 @@ fun List<Asset>.toSliderItems(keepOrder: Boolean, mergePortrait: Boolean): List<
 
         while (queue.isNotEmpty()) {
             val first = queue.removeAt(0)
-            val firstDate = first.fileModifiedAt?.time
-
-            // pick the second portrait image that is most furthest away in time to the first one
-            val second = if (first.people?.isNotEmpty() == true && firstDate != null) {
-                // Try strict match: same people size and city
-                queue.filter { candidate ->
-                    candidate.people?.size == first.people.size &&
-                            candidate.people.firstOrNull()?.id == first.people.first().id &&
-                            candidate.exifInfo?.city != null && first.exifInfo?.city != null &&
-                            candidate.exifInfo.city == first.exifInfo.city &&
-                            candidate.exifInfo.dateTimeOriginal != null
-                }.maxByOrNull { candidate ->
-                    kotlin.math.abs(candidate.exifInfo!!.dateTimeOriginal!!.time - firstDate)
-                } ?: // Fallback: only same people id
-                queue.filter { candidate ->
-                    candidate.people?.firstOrNull()?.id == first.people.first().id &&
-                            candidate.exifInfo?.dateTimeOriginal != null
-                }.maxByOrNull { candidate ->
-                    kotlin.math.abs(candidate.exifInfo!!.dateTimeOriginal!!.time - firstDate)
-                }
-            } else null // no people or date info, or simply no match with the first, just add a random one next to it
+            // the best matching portrait photo, or just the next one in the queue
+            val second = pickPortraitPartner(first, queue)
 
             if (second != null) {
                 portraitSliders.add(SliderItemViewHolder(first.toSliderItem(), second.toSliderItem()))
@@ -122,6 +103,20 @@ internal fun formatAssetTime(date: Date): String {
     val locale = Locale.getDefault(Locale.Category.FORMAT)
     val formatString = "H:mm:ss"
     return SimpleDateFormat(formatString, locale).format(date)
+}
+
+/**
+ * Whether the photo or video is taller than wide as it is displayed: the EXIF dimensions with the orientation
+ * (5 to 8 means rotated by 90 degrees) applied. Unlike [isPortraitImage], a pairing heuristic, this is exact for
+ * every aspect ratio; unknown dimensions count as not portrait unless the orientation says rotated.
+ */
+fun Asset.isPortraitOrientation(): Boolean {
+    val rotated = (exifInfo?.orientation ?: 1) in 5..8
+    val width = exifInfo?.exifImageWidth
+    val height = exifInfo?.exifImageHeight
+    if (width == null || height == null) return rotated
+    val (displayedWidth, displayedHeight) = if (rotated) height to width else width to height
+    return displayedHeight > displayedWidth
 }
 
 fun Asset.isPortraitImage(): Boolean {

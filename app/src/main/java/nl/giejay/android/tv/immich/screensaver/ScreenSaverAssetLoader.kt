@@ -35,7 +35,9 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_DPAD_SEEK_IN_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_FORCE_ORIGINAL_VIDEO
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ONLY_LANDSCAPE
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MERGE_PORTRAIT_PHOTOS
+import nl.giejay.android.tv.immich.shared.util.isPortraitOrientation
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ZOOM_EFFECT
@@ -52,6 +54,10 @@ import timber.log.Timber
 internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: T): T =
     this.onLeft { error -> Timber.w("Failed to load assets for %s: %s", logContext, error) }
         .getOrElse { default }
+
+/** The assets the screensaver may show: not excluded, and without portrait photos when only landscape is wanted. */
+internal fun filterScreenSaverAssets(assets: List<Asset>, excludedAssetIds: Set<String>, onlyLandscape: Boolean): List<Asset> =
+    filterExcludedAssets(assets, excludedAssetIds).let { kept -> if (onlyLandscape) kept.filterNot { it.isPortraitOrientation() } else kept }
 
 internal fun filterExcludedAssets(assets: List<Asset>, excludedAssetIds: Set<String>): List<Asset> =
     assets.filter { asset -> asset.tags?.none { it.name == "exclude_immich_tv" } ?: true }
@@ -139,7 +145,7 @@ class ScreenSaverAssetLoader(
     private var currentPage = 0
     private var excludedAssetIds: Set<String> = emptySet()
     private val filteredAssetLoader = FilteredAssetLoader(
-        filterAssets = { filterExcludedAssets(it, excludedAssetIds) }
+        filterAssets = { filterScreenSaverAssets(it, excludedAssetIds, PreferenceManager.get(SCREENSAVER_ONLY_LANDSCAPE)) }
     )
 
     fun start(): Job = scope.launch(Dispatchers.IO) {
@@ -179,6 +185,8 @@ class ScreenSaverAssetLoader(
         currentPage += 1
         return when (screenSaverType) {
             ScreenSaverType.RECENT -> apiClient.recentAssets(page, PAGE_COUNT, contentType = contentType)
+            // the metadata search pages are 1-based, the loader's counter starts at 0
+            ScreenSaverType.FAVORITES -> apiClient.favoriteAssets(page + 1, PAGE_COUNT, contentType)
             ScreenSaverType.SIMILAR_TIME_PERIOD -> apiClient.similarAssets(page, PAGE_COUNT, contentType = contentType)
             else -> apiClient.listAssets(page, PAGE_COUNT, true, contentType = contentType)
         }

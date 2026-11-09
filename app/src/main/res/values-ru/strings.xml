@@ -300,4 +300,7 @@
     <string name="phone_sign_in_no_network">Домашняя сеть не найдена. Подключите телевизор к Wi-Fi или Ethernet.</string>
     <string name="places">Места</string>
     <string name="tags">Теги</string>
+    <string name="favorites">Избранное</string>
+    <string name="screensaver_only_landscape">Только альбомная ориентация</string>
+    <string name="screensaver_only_landscape_desc">Пропускать портретные фото в заставке.</string>
 </resources>

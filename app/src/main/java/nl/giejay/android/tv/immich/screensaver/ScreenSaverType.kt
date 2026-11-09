@@ -20,6 +20,11 @@ enum class ScreenSaverType : EnumWithTitle {
             return ImmichApplication.appContext!!.getString(R.string.recent)
         }
     },
+    FAVORITES {
+        override fun getTitle(): String {
+            return ImmichApplication.appContext!!.getString(R.string.favorites)
+        }
+    },
     SIMILAR_TIME_PERIOD {
         override fun getTitle(): String {
             return ImmichApplication.appContext!!.getString(R.string.seasonal)

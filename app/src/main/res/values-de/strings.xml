@@ -285,4 +285,7 @@
     <string name="phone_sign_in_no_network">Kein Heimnetz gefunden. Verbinde den Fernseher mit WLAN oder Ethernet.</string>
     <string name="places">Orte</string>
     <string name="tags">Tags</string>
+    <string name="favorites">Favoriten</string>
+    <string name="screensaver_only_landscape">Nur Querformat</string>
+    <string name="screensaver_only_landscape_desc">Hochformatfotos im Bildschirmschoner überspringen.</string>
 </resources>

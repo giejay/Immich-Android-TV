@@ -29,7 +29,7 @@ All screenshots were taken in the offline demo mode with its bundled stock photo
 - Albums, all photos, random, recent, seasonal, people, folders, places and tags
 - Search across your library (smart search, with a metadata fallback)
 - Full-screen viewer with slideshow, video playback, favorites and a customizable photo overlay
-- Screensaver (Daydream) with albums, random, recent or similar-time-period photos and several transitions
+- Screensaver (Daydream) with albums, favorites, random, recent or similar-time-period photos, an option for landscape photos only, portrait photos paired by person, place and day, and several transitions
 - Home screen channels for quick access from the Android TV launcher
 - Sign in with an API key or by scanning a QR code with your phone (the TV serves the form in your home network, no third party)
 - Configurable home: show or hide the pages

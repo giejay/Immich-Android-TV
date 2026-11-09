@@ -298,4 +298,7 @@
     <string name="phone_sign_in_no_network">Aucun réseau domestique trouvé. Connectez le téléviseur au Wi-Fi ou à l\'Ethernet.</string>
     <string name="places">Lieux</string>
     <string name="tags">Étiquettes</string>
+    <string name="favorites">Favoris</string>
+    <string name="screensaver_only_landscape">Photos paysage uniquement</string>
+    <string name="screensaver_only_landscape_desc">Ignorer les photos en portrait dans l\'économiseur d\'écran.</string>
 </resources>

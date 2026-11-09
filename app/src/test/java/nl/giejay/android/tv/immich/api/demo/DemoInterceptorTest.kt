@@ -130,6 +130,18 @@ class DemoInterceptorTest {
     }
 
     @Test
+    fun `favorite filter returns only the favorites`() {
+        DemoCatalog.favorites.clear()
+        val none = parse<SearchResponse>(post("search/metadata", """{"isFavorite":true}""").body!!.string())
+        DemoCatalog.favorites.add(DemoCatalog.photos[2].id)
+        val one = parse<SearchResponse>(post("search/metadata", """{"isFavorite":true}""").body!!.string())
+        DemoCatalog.favorites.clear()
+
+        assertThat(none.assets.items).isEmpty()
+        assertThat(one.assets.items.map { it.id }).containsExactly(DemoCatalog.photos[2].id)
+    }
+
+    @Test
     fun `timeline buckets add up and each bucket parses into timeline assets`() {
         val buckets = gson.fromJson(get("timeline/buckets?order=desc").body!!.string(), Array<TimeBucketSummary>::class.java).toList()
 

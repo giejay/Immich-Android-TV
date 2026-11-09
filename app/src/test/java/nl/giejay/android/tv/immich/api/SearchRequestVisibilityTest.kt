@@ -91,4 +91,18 @@ class SearchRequestVisibilityTest {
         assertNull(plain.city)
         assertNull(plain.tagIds)
     }
+
+    @Test
+    fun `favorite filter is sent only when asked for`() {
+        val fav = buildListAssetsSearchRequest(
+            page = 1, pageCount = 10, albumIds = emptyList(), order = "desc", type = null, personIds = emptyList(),
+            endDate = null, fromDate = null, isFavorite = true,
+        )
+        val plain = buildListAssetsSearchRequest(
+            page = 1, pageCount = 10, albumIds = emptyList(), order = "desc", type = null, personIds = emptyList(),
+            endDate = null, fromDate = null,
+        )
+        assertEquals(true, fav.isFavorite)
+        assertNull(plain.isFavorite)
+    }
 }
