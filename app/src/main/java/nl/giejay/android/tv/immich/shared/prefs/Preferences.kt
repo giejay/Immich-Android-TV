@@ -469,13 +469,17 @@ data object IMAGE_CACHE_SIZE_MB : IntListPref(250,
     R.array.image_cache_titles,
     R.array.image_cache_values)
 
-// the pages that are off by default: tags and the archive (stored by their localized names)
+// the pages that are off by default: seasonal, tags and the archive (stored by their localized names)
 data object HIDDEN_HOME_ITEMS : StringSetPref(
-    setOf(ImmichApplication.appContext!!.getString(R.string.tags), ImmichApplication.appContext!!.getString(R.string.archive)), "", "")
+    setOf(
+        ImmichApplication.appContext!!.getString(R.string.seasonal),
+        ImmichApplication.appContext!!.getString(R.string.tags),
+        ImmichApplication.appContext!!.getString(R.string.archive),
+    ), "", "")
 
 /**
  * Whether a page of the home navigation is shown. Backed by [HIDDEN_HOME_ITEMS] (the same list the navigation's edit mode
- * uses), so both ways stay in sync. Tags and the archive are hidden until switched on.
+ * uses), so both ways stay in sync. Seasonal, tags and the archive are hidden until switched on.
  */
 sealed class HomePageVisiblePref(val pageTitleRes: Int) : BooleanPref(true, ImmichApplication.appContext!!.getString(pageTitleRes), "") {
     private val pageName: String get() = ImmichApplication.appContext!!.getString(pageTitleRes)

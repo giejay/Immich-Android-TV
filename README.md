@@ -32,7 +32,7 @@ All screenshots were taken in the offline demo mode with its bundled stock photo
 - Screensaver (Daydream) with albums, favorites, random, recent or similar-time-period photos, an option for landscape photos only, portrait photos paired by person, place and day, and several transitions
 - Home screen channels for quick access from the Android TV launcher
 - Sign in with an API key or by scanning a QR code with your phone (the TV serves the form in your home network, no third party)
-- Configurable home: show or hide the pages in the settings (tags and the archive are off by default)
+- Configurable home: show or hide the pages in the settings (seasonal, tags and the archive are off by default)
 - Offline demo mode with sample photos: try the app without an Immich server (photo credits in [app/src/main/assets/demo](app/src/main/assets/demo/CREDITS.md))
 - Complete D-pad navigation with a visible focus state; no touch screen needed
 
