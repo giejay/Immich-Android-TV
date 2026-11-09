@@ -7,4 +7,5 @@ data class Card(
     override val thumbnailUrl: String?,
     override val backgroundUrl: String?,
     override var selected: Boolean = false,
-    override val collageUrls: List<String> = emptyList()) : ICard
+    override val isFolder: Boolean = false,
+    override val peekUrls: List<String> = emptyList()) : ICard

@@ -48,15 +48,12 @@ data class Item(val item: Any) {
 }
 
 /**
- * The assets that stand for a folder: up to [max] of its photos (videos only when there are fewer photos), in the
- * order of the list (which is already without excluded assets).
+ * The assets that peek out of a folder card: up to [max] of its photos (videos only when there are fewer photos), in
+ * the order of the list (which is already without excluded assets).
  */
-internal fun folderCoverAssetIds(assets: List<Asset>, max: Int = 4): List<String> =
+internal fun folderCoverAssetIds(assets: List<Asset>, max: Int = 2): List<String> =
     (assets.filter { it.type.equals("IMAGE", ignoreCase = true) } + assets.filterNot { it.type.equals("IMAGE", ignoreCase = true) })
         .take(max).map { it.id }
-
-/** A folder with at least two pictures is shown as a collage, one picture stays a single cover. */
-internal fun List<String>.collageOrEmpty(): List<String> = if (size >= 2) this else emptyList()
 
 private const val MAX_COVER_FOLDERS = 40
 private const val MAX_PARALLEL_COVER_REQUESTS = 3
@@ -165,7 +162,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
     }
 
     /**
-     * Fetches up to four photos of each folder (a few at a time, for the first folders only) and swaps them in for the
+     * Fetches up to two photos of each folder (a few at a time, for the first folders only) and swaps them in for the
      * folder icon as soon as it arrives. Folders without photos, and failed requests, keep the icon.
      */
     private fun loadCovers() {
@@ -182,7 +179,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                         withContext(Dispatchers.Main) {
                             covers[folder.path] = urls
                             val index = cards.indexOfFirst { it.id == folder.path }
-                            if (index >= 0) cards[index] = cards[index].copy(thumbnailUrl = urls.first(), collageUrls = urls.collageOrEmpty())
+                            if (index >= 0) cards[index] = cards[index].copy(peekUrls = urls)
                         }
                     }
                 }
@@ -213,10 +210,11 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                 a.item.path,
                 "",
                 a.item.path,
-                if (a.item.path == "..") "folder_up" else covers[a.item.path]?.first() ?: "folder",
+                if (a.item.path == "..") "folder_up" else null,
                 null,
                 false,
-                covers[a.item.path].orEmpty().collageOrEmpty(),
+                isFolder = a.item.path != "..",
+                peekUrls = covers[a.item.path].orEmpty(),
             )
         } else {
             (a.item as Asset).toCard()

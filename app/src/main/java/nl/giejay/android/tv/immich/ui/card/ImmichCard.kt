@@ -6,6 +6,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -94,7 +98,7 @@ fun ImmichCard(card: ICard, focused: Boolean, modifier: Modifier = Modifier) {
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .animatedBorder(borderColor, ImmichFocus.BorderWidth, shape),
         ) {
-            if (card.collageUrls.size >= 2) CardCollage(card.collageUrls) else CardImage(card.thumbnailUrl)
+            if (card.isFolder) FolderArt(card.peekUrls) else CardImage(card.thumbnailUrl)
             if (card.selected) {
                 Icon(
                     imageVector = ImmichIcons.Selected,
@@ -150,31 +154,39 @@ private fun BoxScope.CardImage(thumbnailUrl: String?) {
     }
 }
 
-/** Two to four pictures as a small grid with thin gaps (two: side by side; three: one tall, two stacked; four: 2x2). */
+/**
+ * A folder: tab and back in a tone of the primary container, up to two photos peeking out at a slight angle,
+ * the front flap over them. Without photos it is the empty folder.
+ */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-private fun CardCollage(urls: List<String>) {
-    val gap = 2.dp
-    @Composable
-    fun Tile(url: String, modifier: Modifier) = GlideImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
-
-    val shown = urls.take(4)
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(gap)) {
-        when (shown.size) {
-            2 -> shown.forEach { Tile(it, Modifier.weight(1f).fillMaxHeight()) }
-            3 -> {
-                Tile(shown[0], Modifier.weight(1f).fillMaxHeight())
-                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(gap)) {
-                    Tile(shown[1], Modifier.weight(1f).fillMaxWidth())
-                    Tile(shown[2], Modifier.weight(1f).fillMaxWidth())
-                }
-            }
-            else -> shown.chunked(2).forEach { column ->
-                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(gap)) {
-                    column.forEach { Tile(it, Modifier.weight(1f).fillMaxWidth()) }
-                }
-            }
+private fun FolderArt(photoUrls: List<String>) {
+    val back = MaterialTheme.colorScheme.primaryContainer
+    val front = lerp(back, Color.White, 0.18f)
+    // laid out from the card's own width (it is a little narrower than its nominal size in a grid), so the folder
+    // always keeps an even margin on both sides
+    Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp)) {
+        Box(Modifier.size(64.dp, 24.dp).background(back, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)))
+        Box(
+            Modifier.offset(0.dp, 12.dp).fillMaxWidth().height(92.dp)
+                .background(back, RoundedCornerShape(topStart = 2.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 10.dp)),
+        )
+        photoUrls.take(2).forEachIndexed { index, url ->
+            GlideImage(
+                model = url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .offset((18 + index * 22).dp, (4 + index * 4).dp)
+                    .size(104.dp, 66.dp)
+                    .graphicsLayer { rotationZ = if (index == 0) -4f else 3f }
+                    .clip(RoundedCornerShape(4.dp)),
+            )
         }
+        Box(
+            Modifier.offset(0.dp, 46.dp).fillMaxWidth().height(58.dp)
+                .background(front, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 10.dp, bottomEnd = 10.dp)),
+        )
     }
 }
 
