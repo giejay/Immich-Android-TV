@@ -68,7 +68,11 @@ class SearchFragment : GenericAssetFragment() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             apiClient.listAlbums().fold({ }, { found ->
                 allAlbums = found
-                withContext(Dispatchers.Main) { if (submittedQuery.isBlank()) albums = found.sortedBy { it.albumName.lowercase() }.take(MAX_ALBUMS) }
+                withContext(Dispatchers.Main) {
+                    // also when a search was submitted while the catalog was still loading
+                    albums = if (submittedQuery.isBlank()) found.sortedBy { it.albumName.lowercase() }.take(MAX_ALBUMS)
+                    else filterAlbumsByName(found, submittedQuery).take(MAX_ALBUMS)
+                }
             })
         }
     }
