@@ -326,9 +326,20 @@ class ApiClient(private val config: ApiClientConfig) {
     /** One photo per place (city), sorted by city name; the photo serves as the card picture. */
     suspend fun listPlaces(): Either<String, List<Asset>> =
         executeAPICall(200) { service.listCities() }.map { assets ->
-            assets.filter { !it.exifInfo?.city.isNullOrBlank() }
+            val places = assets.filter { !it.exifInfo?.city.isNullOrBlank() }
                 .distinctBy { it.exifInfo?.city }
                 .sortedBy { it.exifInfo?.city?.lowercase() }
+            val allowed = excludeByTag()
+            places.pmap { representative ->
+                if (allowed(representative)) {
+                    representative
+                } else {
+                    // the server's pick is excluded from the TV app: another photo of the city is the cover,
+                    // and a city with nothing left to show is dropped (opening it would be empty anyway)
+                    listAssetsByFilter(1, TAG_COVER_CANDIDATES, ContentType.ALL, city = representative.exifInfo?.city)
+                        .getOrNull()?.assets?.firstOrNull(allowed)
+                }
+            }.filterNotNull()
         }
 
     /** The tags with a picture each (the newest photo carrying it, if any), sorted by name. */
