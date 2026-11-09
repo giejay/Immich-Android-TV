@@ -6,6 +6,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,7 +100,7 @@ fun ImmichCard(card: ICard, focused: Boolean, modifier: Modifier = Modifier) {
             Modifier
                 .size(ImmichCardDefaults.ImageWidth, ImmichCardDefaults.ImageHeight)
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(if (card.isFolder) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant)
                 .animatedBorder(borderColor, ImmichFocus.BorderWidth, shape),
         ) {
             if (card.isFolder) FolderCardArt(card.coverUrl, card.badge) else CardImage(card.thumbnailUrl)
@@ -154,42 +159,113 @@ private fun BoxScope.CardImage(thumbnailUrl: String?) {
     }
 }
 
+// Folder colours: a warm amber, the classic folder colour, toned for the dark theme (back, inside, front flap,
+// the flap's light edge, and the dark pill with the count).
+private val FolderBack = Color(0xFFC2861F)
+private val FolderInside = Color(0xFF9A6512)
+private val FolderFront = Color(0xFFE6AA3A)
+private val FolderEdge = Color(0xFFF4C466)
+private val FolderPill = Color(0xCC1B1D22)
+private val FolderPillText = Color(0xFFE4E6EC)
+private val SheetPaper = Color(0xFFECEFF6)
+private val SheetFold = Color(0xFFC9CEDB)
+
+// The folder is designed on a 156 x 108 grid and scaled to the card.
+private const val FOLDER_W = 156f
+private const val FOLDER_H = 108f
+
+private fun backPath(k: Float) = Path().apply {
+    moveTo(0f, 12f * k)
+    quadraticTo(0f, 4f * k, 7f * k, 4f * k)
+    lineTo(48f * k, 4f * k)
+    quadraticTo(54f * k, 4f * k, 57f * k, 9f * k)
+    lineTo(61f * k, 14f * k)
+    lineTo(149f * k, 14f * k)
+    quadraticTo(156f * k, 14f * k, 156f * k, 21f * k)
+    lineTo(156f * k, 100f * k)
+    quadraticTo(156f * k, 108f * k, 148f * k, 108f * k)
+    lineTo(8f * k, 108f * k)
+    quadraticTo(0f, 108f * k, 0f, 100f * k)
+    close()
+}
+
+private fun frontPath(k: Float) = Path().apply {
+    moveTo(0f, 66f * k)
+    lineTo(44f * k, 66f * k)
+    cubicTo(52f * k, 66f * k, 55f * k, 60f * k, 63f * k, 60f * k)
+    lineTo(149f * k, 60f * k)
+    quadraticTo(156f * k, 60f * k, 156f * k, 66f * k)
+    lineTo(156f * k, 100f * k)
+    quadraticTo(156f * k, 108f * k, 148f * k, 108f * k)
+    lineTo(8f * k, 108f * k)
+    quadraticTo(0f, 108f * k, 0f, 100f * k)
+    close()
+}
+
+private fun frontEdgePath(k: Float) = Path().apply {
+    moveTo(1f * k, 66f * k)
+    lineTo(44f * k, 66f * k)
+    cubicTo(52f * k, 66f * k, 55f * k, 60f * k, 63f * k, 60f * k)
+    lineTo(149f * k, 60f * k)
+    quadraticTo(155f * k, 60f * k, 155.5f * k, 66f * k)
+}
+
 /**
- * A folder card: its cover photo fills the card, a tab at the top left in the primary container tone marks the folder,
- * and a small pill at the bottom left holds the folder symbol and the number of assets. Without a photo the card is
- * a plain tonal folder surface.
+ * A folder card in the style of a desktop folder: the back with its tab, the cover photo standing upright inside it
+ * (a sheet of paper when the folder has no photo), and the front flap over it with the number of assets. It keeps
+ * the folder's proportions and sits centred in the card.
  */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun FolderCardArt(coverUrl: String?, badge: String?) {
-    val tone = MaterialTheme.colorScheme.primaryContainer
-    Box(Modifier.fillMaxSize()) {
-        Box(Modifier.size(56.dp, 18.dp).background(tone, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)))
-        Box(
-            Modifier.offset(0.dp, 14.dp).fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 12.dp))
-                .background(tone),
-        ) {
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val scale = minOf(maxWidth / FOLDER_W.dp, maxHeight / FOLDER_H.dp) * 0.94f
+        Box(Modifier.size(FOLDER_W.dp * scale, FOLDER_H.dp * scale)) {
+            Canvas(Modifier.fillMaxSize()) {
+                val k = size.width / FOLDER_W
+                drawPath(backPath(k), FolderBack)
+                drawRoundRect(FolderInside, Offset(7f * k, 20f * k), Size(142f * k, 76f * k), CornerRadius(4f * k))
+                if (coverUrl == null) {
+                    drawRoundRect(SheetPaper, Offset(40f * k, 18f * k), Size(76f * k, 76f * k), CornerRadius(3f * k))
+                    drawPath(
+                        Path().apply {
+                            moveTo(98f * k, 18f * k)
+                            lineTo(116f * k, 36f * k)
+                            lineTo(102f * k, 36f * k)
+                            quadraticTo(98f * k, 36f * k, 98f * k, 32f * k)
+                            close()
+                        },
+                        SheetFold,
+                    )
+                }
+            }
             if (coverUrl != null) {
-                GlideImage(model = coverUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            } else {
-                Icon(
-                    imageVector = ImmichIcons.Folders,
+                GlideImage(
+                    model = coverUrl,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.align(Alignment.Center).size(44.dp),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .offset(9.dp * scale, 22.dp * scale)
+                        .size(138.dp * scale, 72.dp * scale)
+                        .clip(RoundedCornerShape(3.dp * scale)),
                 )
             }
-        }
-        if (badge != null) {
-            Row(
-                Modifier.align(Alignment.BottomStart).padding(8.dp)
-                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(13.dp))
-                    .padding(start = 7.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(ImmichIcons.Folders, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
-                Text(badge, style = MaterialTheme.typography.labelMedium, color = Color.White, modifier = Modifier.padding(start = 5.dp))
+            Canvas(Modifier.fillMaxSize()) {
+                val k = size.width / FOLDER_W
+                drawPath(frontPath(k), FolderFront)
+                drawPath(frontEdgePath(k), FolderEdge, style = Stroke(width = 1.5f * k))
+            }
+            if (badge != null) {
+                // the count as a dark pill with the folder symbol, bottom left on the flap
+                Row(
+                    Modifier.align(Alignment.BottomStart).padding(start = 8.dp * scale, bottom = 8.dp * scale)
+                        .background(FolderPill, RoundedCornerShape(50))
+                        .padding(start = 8.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(ImmichIcons.Folders, contentDescription = null, tint = FolderPillText, modifier = Modifier.size(14.dp))
+                    Text(badge, style = MaterialTheme.typography.labelMedium, color = FolderPillText, modifier = Modifier.padding(start = 5.dp))
+                }
             }
         }
     }
