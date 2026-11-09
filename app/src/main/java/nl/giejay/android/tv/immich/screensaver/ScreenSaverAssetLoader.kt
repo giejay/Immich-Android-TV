@@ -47,6 +47,7 @@ import nl.giejay.mediaslider.util.LoadMore
 import nl.giejay.mediaslider.util.LoadMoreResult
 import timber.log.Timber
 import java.util.UUID
+import kotlin.math.max
 
 // internal so app/src/test can call it directly without instantiating ScreenSaverService
 internal fun <T> Either<String, T>.getOrElseLogged(logContext: String, default: T): T =
@@ -139,7 +140,7 @@ class ScreenSaverAssetLoader(
     private val filteredAssetLoader = FilteredAssetLoader(
         filterAssets = { filterExcludedAssets(it, excludedAssetIds) }
     )
-    private val loadedPeopleAssetIds = mutableSetOf<String>()
+    private val loadedAssetIds = mutableSetOf<String>()
 
     fun start(): Job = scope.launch(Dispatchers.IO) {
         val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
@@ -152,10 +153,10 @@ class ScreenSaverAssetLoader(
         }
 
         if (ScreenSaverType.ALBUMS == PreferenceManager.get(SCREENSAVER_TYPE)) {
-            loadImagesFromAlbums(PreferenceManager.get(SCREENSAVER_ALBUMS).toList())
+            loadImagesFrom(albums = PreferenceManager.get(SCREENSAVER_ALBUMS).toList())
         }
         else if (ScreenSaverType.PEOPLE == PreferenceManager.get(SCREENSAVER_TYPE)) {
-            loadImagesFromPeople(PreferenceManager.get(SCREENSAVER_PEOPLE).toList())
+            loadImagesFrom(people = PreferenceManager.get(SCREENSAVER_PEOPLE).toList())
         }
         else {
             val screenSaverType = PreferenceManager.get(SCREENSAVER_TYPE)
@@ -202,15 +203,25 @@ class ScreenSaverAssetLoader(
         )
     }
 
-    private suspend fun loadImagesFromAlbums(albums: List<String>) {
+    private suspend fun loadImagesFrom(albums: List<String>? = null, people: List<String>? = null) {
         try {
-            if (albums.isNotEmpty()) {
+            if(albums != null && albums.isEmpty()){
+                failAndExit(R.string.set_albums_screensaver_error)
+            }
+            else if(people != null &&  people.isEmpty()){
+                failAndExit(R.string.set_people_screensaver_error)
+            }
+
+            val albumsList = if (albums == null) emptyList() else albums
+            val peopleList = if (people == null) emptyList() else people
+
+            if (albumsList.isNotEmpty() || peopleList.isNotEmpty()) {
                 val response = filteredAssetLoader.load(fetch =
                     {
-                        loadNextAssetsFromAlbums(albums, random = true).fold(
+                        loadNextAssetsFrom(albumsList, peopleList, random = true).fold(
                             {
                                 Timber.w("Could not load random assets for albums $albums, falling back to all album assets")
-                                loadNextAssetsFromAlbums(albums, random = false)
+                                loadNextAssetsFrom(albumsList, peopleList, random = false)
                             },
                             {
                                 Either.Right(it)
@@ -220,17 +231,15 @@ class ScreenSaverAssetLoader(
                     // load assets not randomly. This can happen because the logged in User/API key does not have any own photo's, only shared access
                     // shared photos are not returned yet for the Random endpoint (ongoing feature request).
                     Timber.w("Random asset search for album was empty for albums $albums, now using the regular search assets in album endpoint")
-                    loadNextAssetsFromAlbums(albums, random = false)
+                    loadNextAssetsFrom(albumsList, peopleList, random = false)
                 }).getOrElse { AssetResponse(emptyList(), false) }
 
                 setInitialAssets(
                     response.assets.shuffled(),
                     if (response.canLoadMore) {
-                        createLoadMore { loadNextAssetsFromAlbums(albums, random = false) }
+                        createLoadMore { loadNextAssetsFrom(albumsList, peopleList, random = false) }
                     } else null
                 )
-            } else {
-                failAndExit(R.string.set_albums_screensaver_error)
             }
         } catch (e: Exception) {
             Timber.e(e, "Could not fetch assets from Immich for Screensaver")
@@ -238,93 +247,56 @@ class ScreenSaverAssetLoader(
         }
     }
 
-    private suspend fun loadNextAssetsFromAlbums(albums: List<String>, random: Boolean = false): Either<String, AssetResponse> {
-        val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
-        if (random) {
-            val pageCount = (50 / albums.size).coerceAtLeast(1)
-            val responses = albums.pmap { albumId ->
-                apiClient.listAssets(
-                    page = 1,
-                    pageCount = pageCount,
-                    random = true,
-                    contentType = contentType,
-                    albumIds = listOf(albumId)
-                )
-            }
-            responses.firstOrNull { it.isLeft() }?.let { return it }
-            return Either.Right(AssetResponse(
-                responses.flatMap { it.getOrElse { AssetResponse(emptyList(), true) }.assets }.shuffled(),
-                true
-            ))
-        } else {
-            return apiClient.listAssetsFromAlbum(albums, contentType, pageCount = MAX_SEARCH_PAGE_SIZE).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
-        }
-    }
-
-    private suspend fun loadImagesFromPeople(people: List<String>) {
-        try {
-            if (people.isNotEmpty()) {
-                val response = filteredAssetLoader.load(fetch =
-                    {
-                        loadNextAssetsFromPeople(people, random = true).fold(
-                            {
-                                Timber.w("Could not load random assets for people $people, falling back to all album assets")
-                                loadNextAssetsFromPeople(people, random = false)
-                            },
-                            {
-                                Either.Right(it)
-                            }
-                        )
-                    },
-                    retry = {
-                        Timber.w("Random asset search for album was empty for people $people, now using the regular search assets in album endpoint")
-                        loadNextAssetsFromPeople(people, random = false)
-                    }
-                ).getOrElse { AssetResponse(emptyList(), false) }
-
-                setInitialAssets(
-                    response.assets.shuffled(),
-                    if (response.canLoadMore) {
-                        createLoadMore { loadNextAssetsFromPeople(people, random = false) }
-                    } else null
-                )
-            } else {
-                failAndExit(R.string.set_people_screensaver_error)
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Could not fetch assets from Immich for Screensaver")
-            failAndExit(R.string.could_not_load_assets)
-        }
-    }
-
-    private suspend fun loadNextAssetsFromPeople(people: List<String>, random: Boolean = false): Either<String, AssetResponse> {
-        val contentType = if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
+    private suspend fun loadNextAssetsFrom(albums: List<String>, people: List<String>, random: Boolean = false): Either<String, AssetResponse> {
+        val contentType =
+            if (PreferenceManager.get(SCREENSAVER_INCLUDE_VIDEOS)) ContentType.ALL else ContentType.IMAGE
         val response = if (random) {
-            val pageCount = (50 / people.size).coerceAtLeast(1)
-            val responses = people.pmap { personId ->
-                apiClient.listAssets(
-                    page = 1,
-                    pageCount = pageCount,
-                    random = true,
-                    contentType = contentType,
-                    personIds = listOf(UUID.fromString(personId))
-                )
+            val pageCount = (50 / max(albums.size, people.size).coerceAtLeast(1))
+            val responses = if (albums.isNotEmpty()) {
+                albums.pmap { albumId ->
+                    apiClient.listAssets(
+                        page = 1,
+                        pageCount = pageCount,
+                        random = true,
+                        contentType = contentType,
+                        albumIds = listOf(albumId)
+                    )
+                }
+            } else {
+                people.pmap { personId ->
+                    apiClient.listAssets(
+                        page = 1,
+                        pageCount = pageCount,
+                        random = true,
+                        contentType = contentType,
+                        personIds = listOf(UUID.fromString(personId))
+                    )
+                }
             }
             responses.firstOrNull { it.isLeft() }?.let { return it }
-            Either.Right(AssetResponse(
-                responses.flatMap { it.getOrElse { AssetResponse(emptyList(), true) }.assets }.shuffled(),
-                true
-            ))
+            Either.Right(
+                AssetResponse(
+                    responses.flatMap { it.getOrElse { AssetResponse(emptyList(), true) }.assets }
+                        .shuffled(),
+                    true
+                )
+            )
         } else {
-            val personIds = people.map {UUID.fromString(it)}.toMutableList()
-            apiClient.listAssets(
-                page = 1,
-                pageCount = MAX_SEARCH_PAGE_SIZE,
-                random = false,
-                contentType = contentType,
-                personIds = personIds).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
+            if (albums.isNotEmpty()) {
+                apiClient.listAssetsFromAlbum(albums, contentType, pageCount = MAX_SEARCH_PAGE_SIZE)
+                    .map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
+            } else {
+                val personIds = people.map { UUID.fromString(it) }.toMutableList()
+                apiClient.listAssets(
+                    page = 1,
+                    pageCount = MAX_SEARCH_PAGE_SIZE,
+                    random = false,
+                    contentType = contentType,
+                    personIds = personIds
+                ).map { AssetResponse(it.assets.shuffled(), it.canLoadMore) }
+            }
         }
-        return response.map { it.copy(assets = it.assets.filter { asset -> loadedPeopleAssetIds.add(asset.id) }) }
+        return response.map { it.copy(assets = it.assets.filter { asset -> loadedAssetIds.add(asset.id) }) }
     }
 
     private suspend fun failAndExit(@StringRes messageRes: Int) = withContext(Dispatchers.Main) {
