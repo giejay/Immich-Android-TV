@@ -14,8 +14,8 @@ are not shared with it. It needs Android 7.0 (API 24) or newer and an Immich ser
 
 ## Screenshots
 
-All screenshots were taken against a local test server filled with stock photos
-(see [tools/test-server](tools/test-server)); no private photos are shown.
+All screenshots were taken in the offline demo mode with its bundled stock photos
+(see [credits](app/src/main/assets/demo/CREDITS.md)); no private photos are shown.
 
 |                                                       |                                                      |                                                    |
 |:-----------------------------------------------------:|:----------------------------------------------------:|:--------------------------------------------------:|
