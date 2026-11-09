@@ -7,15 +7,16 @@ Last updated / Stand: 2026-11-09
 
 **Immich TV Next** is an unofficial community client for the [Immich](https://immich.app) photo server on Android TV. It is not made, endorsed or operated by the Immich project.
 
-**Who is responsible.** The developer, daniii88 (contact: <https://github.com/daniii88/Immich-Android-TV-Next/issues>). The developer operates no server for this app.
+**Who is responsible.** The developer, daniii88 (contact: <https://github.com/daniii88/Immich-Android-TV-Next/issues>). The developer operates no server for this app (see the optional phone sign-in relay below).
 
 **What the app does with data.**
-- The app connects only to the Immich server that you enter (server URL and API key, or the login via the phone). Your photos, videos, albums, people and metadata are loaded from that server and shown on your TV. They go nowhere else.
+- The app connects to the Immich server that you enter. Your photos, videos, albums, people and metadata are loaded from that server and shown on your TV. They go nowhere else.
+- **Optional phone sign-in.** If you sign in with your phone instead of typing the API key, the TV app contacts a separate authentication relay service (open source project [giejay/Immich-Android-TV-Authentication](https://github.com/giejay/Immich-Android-TV-Authentication); its address is set when the app is built). The TV registers a one-time code there and polls it; you scan the QR code (or open the page) on your phone and submit your server URL and API key, which the relay hands to the TV once. The relay therefore briefly processes your server URL and API key. The developer of this app does not operate or have access to that relay's data. If you do not want this, sign in by entering the URL and API key on the TV; then no relay is contacted.
 - The server URL, your settings and the API key are stored on your device only. The API key is encrypted with a key held in the Android Keystore.
 - Images are cached on the device to speed up browsing. Clearing the app data removes the cache and all settings.
 - If you enable home screen channels, the app writes entries (titles and image links from your server) to the Android TV home screen on your device.
 
-**What the app does not do.** No analytics, no tracking, no advertising, no advertising id, no crash-reporting service, no third-party SDKs that collect data. The developer receives no data from your use of the app. The app is not sold or shared with third parties.
+**What the app does not do.** No analytics, no tracking, no advertising, no advertising id, no crash-reporting service, no third-party SDKs that collect data. The developer receives no data from your use of the app. Apart from the optional phone sign-in relay described above, nothing is sent to third parties.
 
 **Network security.** Your own server may be reachable through plain HTTP, a self-signed or private certificate, or with certificate checks turned off in the settings. These options exist for home servers; you are responsible for securing your network. HTTPS with a valid certificate is recommended.
 
@@ -29,15 +30,16 @@ Last updated / Stand: 2026-11-09
 
 **Immich TV Next** ist ein inoffizieller Community-Client für den [Immich](https://immich.app)-Fotoserver auf Android TV. Die App wird nicht vom Immich-Projekt entwickelt, empfohlen oder betrieben.
 
-**Verantwortlich.** Der Entwickler, daniii88 (Kontakt: <https://github.com/daniii88/Immich-Android-TV-Next/issues>). Der Entwickler betreibt keinen Server für diese App.
+**Verantwortlich.** Der Entwickler, daniii88 (Kontakt: <https://github.com/daniii88/Immich-Android-TV-Next/issues>). Der Entwickler betreibt keinen Server für diese App (siehe den optionalen Anmelde-Relay unten).
 
 **Was die App mit Daten macht.**
-- Die App verbindet sich ausschließlich mit dem Immich-Server, den du angibst (Server-URL und API-Key oder Anmeldung über das Smartphone). Fotos, Videos, Alben, Personen und Metadaten werden von diesem Server geladen und auf deinem Fernseher angezeigt. Sie gehen nirgendwo anders hin.
+- Die App verbindet sich mit dem Immich-Server, den du angibst. Fotos, Videos, Alben, Personen und Metadaten werden von diesem Server geladen und auf deinem Fernseher angezeigt. Sie gehen nirgendwo anders hin.
+- **Optionale Anmeldung per Smartphone.** Meldest du dich per Smartphone statt mit manueller Eingabe des API-Keys an, kontaktiert die TV-App einen separaten Authentifizierungs-Relay-Dienst (Open-Source-Projekt [giejay/Immich-Android-TV-Authentication](https://github.com/giejay/Immich-Android-TV-Authentication); die Adresse wird beim Bauen der App festgelegt). Der Fernseher registriert dort einen Einmal-Code und fragt ihn ab; du scannst den QR-Code (oder öffnest die Seite) auf dem Smartphone und übermittelst Server-URL und API-Key, die der Relay einmalig an den Fernseher übergibt. Der Relay verarbeitet daher kurzzeitig deine Server-URL und deinen API-Key. Der Entwickler dieser App betreibt diesen Relay nicht und hat keinen Zugriff auf dessen Daten. Möchtest du das nicht, gib URL und API-Key direkt am Fernseher ein; dann wird kein Relay kontaktiert.
 - Server-URL, Einstellungen und API-Key werden nur auf deinem Gerät gespeichert. Der API-Key wird mit einem Schlüssel aus dem Android Keystore verschlüsselt.
 - Bilder werden zur Beschleunigung auf dem Gerät zwischengespeichert. Das Löschen der App-Daten entfernt den Cache und alle Einstellungen.
 - Wenn du Startbildschirm-Kanäle aktivierst, schreibt die App Einträge (Titel und Bildlinks von deinem Server) auf den Android-TV-Startbildschirm deines Geräts.
 
-**Was die App nicht macht.** Keine Analyse, kein Tracking, keine Werbung, keine Werbe-ID, kein Absturzberichtsdienst und keine Drittanbieter-SDKs, die Daten sammeln. Der Entwickler erhält keine Daten aus deiner Nutzung. Es findet keine Weitergabe an Dritte statt.
+**Was die App nicht macht.** Keine Analyse, kein Tracking, keine Werbung, keine Werbe-ID, kein Absturzberichtsdienst und keine Drittanbieter-SDKs, die Daten sammeln. Der Entwickler erhält keine Daten aus deiner Nutzung. Abgesehen vom oben beschriebenen optionalen Relay bei der Anmeldung per Smartphone werden keine Daten an Dritte gesendet.
 
 **Netzwerksicherheit.** Dein Server kann über unverschlüsseltes HTTP, ein selbstsigniertes oder privates Zertifikat oder mit abgeschalteter Zertifikatsprüfung (Einstellung) erreichbar sein. Diese Optionen sind für Heimserver gedacht; für die Sicherheit deines Netzwerks bist du selbst verantwortlich. Empfohlen ist HTTPS mit gültigem Zertifikat.
 

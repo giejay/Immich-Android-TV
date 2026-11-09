@@ -18,7 +18,7 @@ Bring deine Fotosammlung auf den großen Bildschirm:
 • Seiten ein- und ausblenden und die Foto-Einblendungen anpassen
 • Komplett mit der Fernbedienung bedienbar, kein Touchscreen nötig
 
-So geht's los: Du brauchst einen laufenden Immich-Server (ab Version 3). Melde dich mit Server-URL und API-Key an oder scanne einen QR-Code mit dem Smartphone. Die App spricht nur mit deinem Server: keine Werbung, keine Analyse, kein Tracking.
+So geht's los: Du brauchst einen laufenden Immich-Server (ab Version 3). Melde dich mit Server-URL und API-Key an oder scanne einen QR-Code mit dem Smartphone. Die App spricht mit deinem Server (die Anmeldung per Smartphone nutzt einen kleinen Relay-Dienst, der nur deine Anmeldung an den Fernseher weiterreicht): keine Werbung, keine Analyse, kein Tracking.
 
 Open Source (GPL-3.0): https://github.com/daniii88/Immich-Android-TV-Next
 Immich ist eine Marke der jeweiligen Inhaber.

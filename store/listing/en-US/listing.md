@@ -18,7 +18,7 @@ Bring your photo library to the big screen:
 • Customize which pages are shown and what the photo overlay displays
 • Fully D-pad friendly, no touch screen needed
 
-Getting started: you need a running Immich server (v3 or newer). Sign in with your server URL and an API key, or scan a QR code with your phone. The app only talks to your server: no ads, no analytics, no tracking.
+Getting started: you need a running Immich server (v3 or newer). Sign in with your server URL and an API key, or scan a QR code with your phone. The app talks to your server (phone sign-in uses a small relay service only to pass your login to the TV): no ads, no analytics, no tracking.
 
 Open source (GPL-3.0): https://github.com/daniii88/Immich-Android-TV-Next
 Immich is a trademark of its respective owners.
@@ -27,7 +27,7 @@ Immich is a trademark of its respective owners.
 ## Console answers (draft, please review before submitting)
 
 **Data safety**
-- Data collected: none. Data shared: none. The app sends data only to the server the user configures; nothing goes to the developer or third parties.
+- The developer collects nothing. Photos and metadata go only to/from the server the user configures. Optional phone sign-in sends the user's server URL and API key through the authentication relay (separate service, address set at build time): declare this as data (credentials / app info) transmitted to a third party for app functionality, optional, not used for ads or tracking. Decide the exact boxes after confirming who operates the relay.
 - Data encrypted in transit: depends on the user's server (HTTP is possible by design for home servers).
 - Users can request data deletion: not applicable, no data is held by the developer. Privacy policy URL: link to `store/privacy-policy.md` (raw GitHub URL or Pages).
 
