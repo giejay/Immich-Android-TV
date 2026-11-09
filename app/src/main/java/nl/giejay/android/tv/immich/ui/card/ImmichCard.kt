@@ -256,16 +256,15 @@ private fun FolderCardArt(coverUrl: String?, badge: String?) {
                 drawPath(frontEdgePath(k), FolderEdge, style = Stroke(width = 1.5f * k))
             }
             if (badge != null) {
-                // the count as a dark pill with the folder symbol, bottom left on the flap
-                Row(
-                    Modifier.align(Alignment.BottomStart).padding(start = 8.dp * scale, bottom = 8.dp * scale)
+                // the count as a small dark pill, bottom left on the flap (the folder shape already says "folder")
+                Text(
+                    badge,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = FolderPillText,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(start = 8.dp * scale, bottom = 8.dp * scale)
                         .background(FolderPill, RoundedCornerShape(50))
-                        .padding(start = 8.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(ImmichIcons.Folders, contentDescription = null, tint = FolderPillText, modifier = Modifier.size(14.dp))
-                    Text(badge, style = MaterialTheme.typography.labelMedium, color = FolderPillText, modifier = Modifier.padding(start = 5.dp))
-                }
+                        .padding(horizontal = 9.dp, vertical = 3.dp),
+                )
             }
         }
     }
