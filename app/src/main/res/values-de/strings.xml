@@ -269,6 +269,7 @@
     <string name="search_placeholder">Fotos und Videos suchen</string>
     <string name="search_hint">Suche nach dem Bildinhalt (zum Beispiel „Strand“), nach Ort, Dateiname oder Person.</string>
     <string name="search_people">Personen</string>
+    <string name="search_albums">Alben</string>
     <string name="search_recent">Zuletzt gesucht</string>
     <string name="search_loading">Suche läuft…</string>
     <string name="search_error">Die Suche ist fehlgeschlagen. Prüfe die Verbindung zu deinem Server und versuche es erneut.</string>

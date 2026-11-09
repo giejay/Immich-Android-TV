@@ -58,31 +58,33 @@ fun SearchHeader(
     onPerson: (Int) -> Unit,
     onClearPerson: () -> Unit,
     onRecent: (String) -> Unit,
+    albums: List<String> = emptyList(),
+    selectedAlbum: String? = null,
+    onAlbum: (Int) -> Unit = {},
+    onClearAlbum: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxWidth().padding(horizontal = 40.dp).padding(top = 24.dp, bottom = 12.dp)) {
         SearchField(submittedQuery, onSubmit)
         Box(Modifier.height(10.dp))
-        val chips: List<Pair<String, () -> Unit>> = when {
+        // one labeled row each: matching people, albums (also the scope of the search), recent searches
+        val personChips: List<Pair<String, () -> Unit>> = when {
             selectedPerson != null -> listOf("$selectedPerson  ✕" to onClearPerson)
-            people.isNotEmpty() -> people.mapIndexed { index, name -> name to { onPerson(index) } }
-            status == SearchStatus.IDLE -> recents.map { it to { onRecent(it) } }
-            else -> emptyList()
+            else -> people.mapIndexed { index, name -> name to { onPerson(index) } }
         }
-        if (chips.isNotEmpty()) {
-            val label = when {
-                selectedPerson != null || people.isNotEmpty() -> stringResource(R.string.search_people)
-                else -> stringResource(R.string.search_recent)
-            }
-            Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
-                items(chips) { (text, onClick) -> Chip(text, onClick) }
-            }
+        val albumChips: List<Pair<String, () -> Unit>> = when {
+            selectedAlbum != null -> listOf("$selectedAlbum  ✕" to onClearAlbum)
+            else -> albums.mapIndexed { index, name -> name to { onAlbum(index) } }
         }
+        val recentChips: List<Pair<String, () -> Unit>> =
+            if (status == SearchStatus.IDLE && personChips.isEmpty()) recents.map { it to { onRecent(it) } } else emptyList()
+        ChipRow(stringResource(R.string.search_people), personChips)
+        ChipRow(stringResource(R.string.search_albums), albumChips)
+        ChipRow(stringResource(R.string.search_recent), recentChips)
         val statusText = when (status) {
             SearchStatus.IDLE -> if (recents.isEmpty()) stringResource(R.string.search_hint) else null
             SearchStatus.LOADING -> stringResource(R.string.search_loading)
-            SearchStatus.NO_RESULTS -> stringResource(R.string.search_no_results, selectedPerson ?: submittedQuery)
+            SearchStatus.NO_RESULTS -> stringResource(R.string.search_no_results, selectedPerson ?: submittedQuery.ifBlank { selectedAlbum.orEmpty() })
             SearchStatus.ERROR -> stringResource(R.string.search_error)
             SearchStatus.RESULTS -> null
         }
@@ -94,6 +96,15 @@ fun SearchHeader(
                 modifier = Modifier.padding(top = 10.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun ChipRow(label: String, chips: List<Pair<String, () -> Unit>>) {
+    if (chips.isEmpty()) return
+    Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+        items(chips) { (text, onClick) -> Chip(text, onClick) }
     }
 }
 

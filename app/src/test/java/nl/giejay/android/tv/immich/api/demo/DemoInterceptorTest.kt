@@ -95,6 +95,18 @@ class DemoInterceptorTest {
     }
 
     @Test
+    fun `smart search stays inside the requested album`() {
+        val food = DemoCatalog.albums.first { it.photos.size < DemoCatalog.photos.size }
+        val word = DemoCatalog.themeName(food.photos.first().theme).lowercase()
+        val scoped = parse<SearchResponse>(post("search/smart", """{"query":"$word","albumIds":["${food.id}"]}""").body!!.string())
+        val unscoped = parse<SearchResponse>(post("search/smart", """{"query":"$word"}""").body!!.string())
+
+        assertThat(scoped.assets.items.map { it.id }).isNotEmpty()
+        assertThat(food.photos.map { it.id }).containsAtLeastElementsIn(scoped.assets.items.map { it.id })
+        assertThat(scoped.assets.items.size).isAtMost(unscoped.assets.items.size)
+    }
+
+    @Test
     fun `timeline buckets add up and each bucket parses into timeline assets`() {
         val buckets = gson.fromJson(get("timeline/buckets?order=desc").body!!.string(), Array<TimeBucketSummary>::class.java).toList()
 

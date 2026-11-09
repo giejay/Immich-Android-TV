@@ -7,8 +7,8 @@ import nl.giejay.android.tv.immich.api.model.SearchRequest
  * Without machine learning the server cannot search by image content, so the same text is looked up in the
  * fields every library has: file name, description, city and country. One request per field.
  */
-internal fun buildMetadataSearchRequests(query: String, page: Int, size: Int, type: String?): List<SearchRequest> {
-    val base = SearchRequest(page = page, size = size, type = type, order = "desc", visibility = "timeline")
+internal fun buildMetadataSearchRequests(query: String, page: Int, size: Int, type: String?, albumIds: List<String> = emptyList()): List<SearchRequest> {
+    val base = SearchRequest(page = page, size = size, type = type, order = "desc", visibility = "timeline", albumIds = albumIds)
     return listOf(
         base.copy(originalFileName = query),
         base.copy(description = query),
@@ -30,4 +30,11 @@ internal fun sliceSearchPage(all: List<Asset>, page: Int, size: Int): SearchPage
     val from = ((page - 1).coerceAtLeast(0)) * size
     val end = (from + size).coerceAtMost(all.size)
     return SearchPage(if (from >= all.size) emptyList() else all.subList(from, end), end < all.size)
+}
+
+/** Albums whose name contains [query] (case-insensitive, trimmed), sorted by name; a blank query matches none. */
+internal fun filterAlbumsByName(albums: List<nl.giejay.android.tv.immich.api.model.Album>, query: String): List<nl.giejay.android.tv.immich.api.model.Album> {
+    val needle = query.trim()
+    if (needle.isEmpty()) return emptyList()
+    return albums.filter { it.albumName.contains(needle, ignoreCase = true) }.sortedBy { it.albumName.lowercase() }
 }
