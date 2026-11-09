@@ -43,7 +43,10 @@ object DemoCatalog {
 
     private val newest = OffsetDateTime.of(2026, 10, 21, 10, 0, 0, 0, ZoneOffset.UTC)
 
-    /** Newest first, one photo every 17 days so the timeline spans about a year. */
+    /** Days before [newest] per photo (in [files] order): several photos share a day so the timeline shows rows. */
+    private val dayOffsets = listOf(0, 0, 0, 0, 9, 9, 9, 21, 21, 34, 48, 48, 48, 63, 80, 80, 101, 101, 101, 130)
+
+    /** Newest first; the offsets span about four months. */
     val photos: List<DemoPhoto> = files.mapIndexed { index, (file, width, height) ->
         DemoPhoto(
             id = "00000000-0000-4000-8000-%012d".format(index + 1),
@@ -51,7 +54,7 @@ object DemoCatalog {
             theme = file.substringBefore('-'),
             width = width,
             height = height,
-            takenAt = newest.minusDays(index * 17L),
+            takenAt = newest.minusDays(dayOffsets[index].toLong()).minusMinutes((index % 4) * 25L),
         )
     }.sortedByDescending { it.takenAt }
 
