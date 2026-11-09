@@ -49,7 +49,7 @@ object DemoCatalog {
     /** Newest first; the offsets span about four months. */
     val photos: List<DemoPhoto> = files.mapIndexed { index, (file, width, height) ->
         DemoPhoto(
-            id = "00000000-0000-4000-8000-%012d".format(index + 1),
+            id = String.format(Locale.ROOT, "00000000-0000-4000-8000-%012d", index + 1),
             file = file,
             theme = file.substringBefore('-'),
             width = width,
@@ -59,7 +59,7 @@ object DemoCatalog {
     }.sortedByDescending { it.takenAt }
 
     val albums: List<DemoAlbum> = photos.groupBy { it.theme }.entries.mapIndexed { index, (theme, items) ->
-        DemoAlbum("10000000-0000-4000-8000-%012d".format(index + 1), themeName(theme), items)
+        DemoAlbum(String.format(Locale.ROOT, "10000000-0000-4000-8000-%012d", index + 1), themeName(theme), items)
     }.sortedByDescending { it.photos.first().takenAt }
 
     /** Favorites toggled in the demo live only in memory. */

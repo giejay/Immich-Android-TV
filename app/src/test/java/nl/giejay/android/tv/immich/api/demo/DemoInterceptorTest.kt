@@ -130,6 +130,42 @@ class DemoInterceptorTest {
     }
 
     @Test
+    fun `folder paths work with the leading slash the folder screen sends`() {
+        val inFolder = gson.fromJson(get("view/folder?path=%2FFood").body!!.string(), Array<Asset>::class.java).toList()
+
+        assertThat(inFolder).hasSize(4)
+    }
+
+    @Test
+    fun `random search applies the type and date filters`() {
+        val videos = gson.fromJson(post("search/random", """{"size":50,"type":"VIDEO"}""").body!!.string(), Array<Asset>::class.java).toList()
+        val recent = gson.fromJson(
+            post("search/random", """{"size":50,"takenAfter":"2026-10-01T00:00:00Z"}""").body!!.string(), Array<Asset>::class.java
+        ).toList()
+        val limit = java.time.OffsetDateTime.parse("2026-10-01T00:00:00Z").toInstant().toEpochMilli()
+
+        assertThat(videos).isEmpty()
+        assertThat(recent).isNotEmpty()
+        assertThat(recent.size).isLessThan(DemoCatalog.photos.size)
+        assertThat(recent.all { it.fileCreatedAt!!.time > limit }).isTrue()
+    }
+
+    @Test
+    fun `protocol keys stay ASCII with a locale that has its own digits`() {
+        val previous = java.util.Locale.getDefault()
+        java.util.Locale.setDefault(java.util.Locale.forLanguageTag("ar-EG"))
+        try {
+            val buckets = gson.fromJson(get("timeline/buckets").body!!.string(), Array<TimeBucketSummary>::class.java).toList()
+            val bucket = parse<TimeBucketAssetsResponse>(get("timeline/bucket?timeBucket=${buckets.first().timeBucket}").body!!.string())
+
+            assertThat(buckets.all { Regex("""\d{4}-\d{2}-\d{2}""").matches(it.timeBucket) }).isTrue()
+            assertThat(bucket.id).isNotEmpty()
+        } finally {
+            java.util.Locale.setDefault(previous)
+        }
+    }
+
+    @Test
     fun `unknown calls are 404 and other hosts are not touched`() {
         assertThat(get("server/about").code).isEqualTo(404)
         val other = OkHttpClient.Builder()
