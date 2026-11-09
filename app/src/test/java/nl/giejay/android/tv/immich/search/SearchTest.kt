@@ -80,6 +80,9 @@ class SearchTest {
     fun `metadata requests carry the album scope`() {
         val requests = buildMetadataSearchRequests("beach", 1, 50, null, albumIds = listOf("alb"))
         requests.forEach { assertThat(it.albumIds).containsExactly("alb") }
+        // like the blank-query album path: archived photos of the album stay findable
+        requests.forEach { assertThat(it.visibility).isNull() }
+        buildMetadataSearchRequests("beach", 1, 50, null).forEach { assertThat(it.visibility).isEqualTo("timeline") }
         buildMetadataSearchRequests("beach", 1, 50, null).forEach { assertThat(it.albumIds).isEmpty() }
     }
 

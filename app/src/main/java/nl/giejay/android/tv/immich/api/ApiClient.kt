@@ -147,7 +147,7 @@ class ApiClient(private val config: ApiClientConfig) {
         // only the first page of a search chooses; later pages stay with that choice (or fail, never mix)
         val smartAllowed = if (isFirstPage) System.currentTimeMillis() >= smartSearchUnavailableUntil else searchBackend == SearchBackend.SMART
         if (smartAllowed) {
-            val smart = executeAPICall(200) { service.smartSearch(SmartSearchRequest(query = query, page = page, size = size, type = type, albumIds = albumIds.ifEmpty { null })) }
+            val smart = executeAPICall(200) { service.smartSearch(SmartSearchRequest(query = query, page = page, size = size, type = type, albumIds = albumIds.ifEmpty { null }, visibility = if (albumIds.isEmpty()) "timeline" else null)) }
             if (smart.isRight()) {
                 searchBackend = SearchBackend.SMART
                 return smart.map { it.toAssetResponse() }.map { it.copy(assets = it.assets.filter(excludeByTag())) }

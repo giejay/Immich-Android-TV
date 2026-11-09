@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.lifecycleScope
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.filterAlbumsByName
 import nl.giejay.android.tv.immich.api.model.Album
@@ -63,7 +64,8 @@ class SearchFragment : GenericAssetFragment() {
                 onClearAlbum = ::clearAlbum,
             )
         }
-        ioScope.launch {
+        // own scope: a new search cancels the children of ioScope, which must not drop the album catalog
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             apiClient.listAlbums().fold({ }, { found ->
                 allAlbums = found
                 withContext(Dispatchers.Main) { if (submittedQuery.isBlank()) albums = found.sortedBy { it.albumName.lowercase() }.take(MAX_ALBUMS) }
@@ -166,8 +168,7 @@ class SearchFragment : GenericAssetFragment() {
     private fun clearAlbum() {
         selectedAlbum = null
         if (submittedQuery.isBlank() && selectedPerson == null) {
-            status = SearchStatus.IDLE
-            clearState()
+            goIdle()
         } else {
             startSearch()
         }
@@ -176,11 +177,18 @@ class SearchFragment : GenericAssetFragment() {
     private fun clearPerson() {
         selectedPerson = null
         if (submittedQuery.isBlank() && selectedAlbum == null) {
-            status = SearchStatus.IDLE
-            clearState()
+            goIdle()
         } else {
             startSearch()
         }
+    }
+
+    /** Back to the empty page: whatever is still loading for the old filter must not fill it again. */
+    private fun goIdle() {
+        generation++
+        ioScope.coroutineContext.cancelChildren()
+        status = SearchStatus.IDLE
+        clearState()
     }
 
     private fun startSearch() {

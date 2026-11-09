@@ -8,7 +8,7 @@ import nl.giejay.android.tv.immich.api.model.SearchRequest
  * fields every library has: file name, description, city and country. One request per field.
  */
 internal fun buildMetadataSearchRequests(query: String, page: Int, size: Int, type: String?, albumIds: List<String> = emptyList()): List<SearchRequest> {
-    val base = SearchRequest(page = page, size = size, type = type, order = "desc", visibility = "timeline", albumIds = albumIds)
+    val base = SearchRequest(page = page, size = size, type = type, order = "desc", visibility = if (albumIds.isEmpty()) "timeline" else null, albumIds = albumIds)
     return listOf(
         base.copy(originalFileName = query),
         base.copy(description = query),
