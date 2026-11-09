@@ -462,6 +462,13 @@ data object LOAD_BACKGROUND_IMAGE : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background),
     ImmichApplication.appContext!!.getString(R.string.load_selected_item_as_background_desc))
 
+/** Size limit of the on-disk image cache in MB (Glide's own default is 250). Applies after restarting the app. */
+data object IMAGE_CACHE_SIZE_MB : IntListPref(250,
+    ImmichApplication.appContext!!.getString(R.string.image_cache_size),
+    ImmichApplication.appContext!!.getString(R.string.image_cache_size_desc),
+    R.array.image_cache_titles,
+    R.array.image_cache_values)
+
 data object HIDDEN_HOME_ITEMS : StringSetPref(emptySet(), "", "")
 
 data object USER_ID : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.user_id),
@@ -578,7 +585,8 @@ data object ViewContentPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
 data object ViewGeneralPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.general), "view_general",
     listOf(
         PrefCategory("", listOf(
-            LOAD_BACKGROUND_IMAGE
+            LOAD_BACKGROUND_IMAGE,
+            IMAGE_CACHE_SIZE_MB
         ))
     )
 )

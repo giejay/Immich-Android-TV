@@ -303,4 +303,6 @@
     <string name="favorites">Избранное</string>
     <string name="screensaver_only_landscape">Только альбомная ориентация</string>
     <string name="screensaver_only_landscape_desc">Пропускать портретные фото в заставке.</string>
+    <string name="image_cache_size">Размер кэша изображений (нужен перезапуск)</string>
+    <string name="image_cache_size_desc">Лимит кэшированных фото на этом устройстве. Применяется после перезапуска приложения.</string>
 </resources>
