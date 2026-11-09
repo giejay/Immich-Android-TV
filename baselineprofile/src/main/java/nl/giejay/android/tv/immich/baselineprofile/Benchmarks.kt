@@ -7,6 +7,7 @@ import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.StartupTimingMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,6 +81,9 @@ class LegacyStartupBenchmarks {
     @get:Rule
     val rule = MacrobenchmarkRule()
 
+    @After
+    fun restoreComposeTimeline() = restoreDefaultTimeline()
+
     @Test
     fun startupWithoutProfile() = startup(CompilationMode.None())
 
@@ -110,6 +114,9 @@ class LegacyStartupBenchmarks {
 class LegacyTimelineScrollBenchmarks {
     @get:Rule
     val rule = MacrobenchmarkRule()
+
+    @After
+    fun restoreComposeTimeline() = restoreDefaultTimeline()
 
     @Test
     fun scrollWithoutProfile() = scroll(CompilationMode.None())

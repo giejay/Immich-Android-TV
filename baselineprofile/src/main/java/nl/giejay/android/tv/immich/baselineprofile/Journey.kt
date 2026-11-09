@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.baselineprofile
 
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
 
@@ -16,7 +17,7 @@ internal fun MacrobenchmarkScope.startApp() {
     startActivityAndWait { intent -> intent.setClassName(targetAppId, MAIN_ACTIVITY) }
 }
 
-private fun MacrobenchmarkScope.pause(ms: Long) = Thread.sleep(ms)
+private fun pause(ms: Long) = Thread.sleep(ms)
 
 /**
  * Signs in on a fresh install. Pass the server and key as instrumentation arguments:
@@ -64,21 +65,43 @@ private var classicTimelineEnabled = false
  */
 internal fun MacrobenchmarkScope.enableClassicTimeline() {
     if (classicTimelineEnabled) return
-    device.pressDPadLeft() // into the navigation rail
-    pause(1_000)
-    repeat(10) { device.pressDPadDown(); pause(400) } // Timeline -> ... -> Settings
-    pause(1_500)
-    device.pressDPadRight() // into the settings page: first tile (Server)
-    pause(1_000)
-    repeat(4) { device.pressDPadRight(); pause(300) } // ... -> Debug
-    device.pressDPadCenter()
-    pause(1_500)
-    device.pressDPadDown() // Debug mode -> Classic timeline
-    pause(500)
-    device.pressDPadCenter() // toggle
-    pause(1_000)
+    device.toggleClassicTimelineSwitch()
     classicTimelineEnabled = true
     device.executeShellCommand("am force-stop $targetAppId")
+    pause(1_000)
+}
+
+/**
+ * Switches the classic timeline off again if [enableClassicTimeline] turned it on, so benchmarks of the Compose
+ * timeline that run afterwards in the same suite do not silently measure the classic one. Call from an @After of
+ * every class that uses [enableClassicTimeline].
+ */
+internal fun restoreDefaultTimeline() {
+    if (!classicTimelineEnabled) return
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    device.executeShellCommand("am start -n $targetAppId/$MAIN_ACTIVITY")
+    device.wait(Until.hasObject(By.pkg(targetAppId)), 10_000)
+    pause(4_000)
+    device.toggleClassicTimelineSwitch()
+    classicTimelineEnabled = false
+    device.executeShellCommand("am force-stop $targetAppId")
+    pause(1_000)
+}
+
+/** The D-pad route Settings -> Debug -> Classic timeline, starting anywhere on the home screen. */
+private fun UiDevice.toggleClassicTimelineSwitch() {
+    pressDPadLeft() // into the navigation rail
+    pause(1_000)
+    repeat(10) { pressDPadDown(); pause(400) } // Timeline -> ... -> Settings
+    pause(1_500)
+    pressDPadRight() // into the settings page: first tile (Server)
+    pause(1_000)
+    repeat(4) { pressDPadRight(); pause(300) } // ... -> Debug
+    pressDPadCenter()
+    pause(1_500)
+    pressDPadDown() // Debug mode -> Classic timeline
+    pause(500)
+    pressDPadCenter() // toggle
     pause(1_000)
 }
 
