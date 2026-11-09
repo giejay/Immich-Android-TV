@@ -47,9 +47,16 @@ data class Item(val item: Any) {
     val id = if (item is Asset) item.id else (item as Folder).path
 }
 
-/** The asset that stands for a folder: its first photo, else its first video (the list is already without excluded assets). */
-internal fun folderCoverAssetId(assets: List<Asset>): String? =
-    (assets.firstOrNull { it.type.equals("IMAGE", ignoreCase = true) } ?: assets.firstOrNull())?.id
+/**
+ * The assets that stand for a folder: up to [max] of its photos (videos only when there are fewer photos), in the
+ * order of the list (which is already without excluded assets).
+ */
+internal fun folderCoverAssetIds(assets: List<Asset>, max: Int = 4): List<String> =
+    (assets.filter { it.type.equals("IMAGE", ignoreCase = true) } + assets.filterNot { it.type.equals("IMAGE", ignoreCase = true) })
+        .take(max).map { it.id }
+
+/** A folder with at least two pictures is shown as a collage, one picture stays a single cover. */
+internal fun List<String>.collageOrEmpty(): List<String> = if (size >= 2) this else emptyList()
 
 private const val MAX_COVER_FOLDERS = 40
 private const val MAX_PARALLEL_COVER_REQUESTS = 3
@@ -138,7 +145,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
     }
 
     /** Cover picture urls of the folders of the current level, filled in the background. */
-    private val covers = mutableMapOf<String, String>()
+    private val covers = mutableMapOf<String, List<String>>()
     private var coverJob: Job? = null
 
     override fun setData(assets: List<Item>) {
@@ -158,7 +165,7 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
     }
 
     /**
-     * Fetches the first photo of each folder (a few at a time, for the first folders only) and swaps it in for the
+     * Fetches up to four photos of each folder (a few at a time, for the first folders only) and swaps them in for the
      * folder icon as soon as it arrives. Folders without photos, and failed requests, keep the icon.
      */
     private fun loadCovers() {
@@ -169,13 +176,13 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
             folders.map { folder ->
                 launch {
                     gate.withPermit {
-                        val assetId = folderCoverAssetId(apiClient.listAssetsForFolder(folder.getFullPath()).getOrElse { emptyList() })
-                            ?: return@withPermit
-                        val url = ApiUtil.getThumbnailUrl(assetId, "thumbnail") ?: return@withPermit
+                        val urls = folderCoverAssetIds(apiClient.listAssetsForFolder(folder.getFullPath()).getOrElse { emptyList() })
+                            .mapNotNull { ApiUtil.getThumbnailUrl(it, "thumbnail") }
+                        if (urls.isEmpty()) return@withPermit
                         withContext(Dispatchers.Main) {
-                            covers[folder.path] = url
+                            covers[folder.path] = urls
                             val index = cards.indexOfFirst { it.id == folder.path }
-                            if (index >= 0) cards[index] = cards[index].copy(thumbnailUrl = url)
+                            if (index >= 0) cards[index] = cards[index].copy(thumbnailUrl = urls.first(), collageUrls = urls.collageOrEmpty())
                         }
                     }
                 }
@@ -206,9 +213,10 @@ class FolderFragment : VerticalCardGridFragment<Item>() {
                 a.item.path,
                 "",
                 a.item.path,
-                if (a.item.path == "..") "folder_up" else covers[a.item.path] ?: "folder",
+                if (a.item.path == "..") "folder_up" else covers[a.item.path]?.first() ?: "folder",
                 null,
-                false
+                false,
+                covers[a.item.path].orEmpty().collageOrEmpty(),
             )
         } else {
             (a.item as Asset).toCard()
