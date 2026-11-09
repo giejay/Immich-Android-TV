@@ -11,7 +11,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.lifecycleScope
 import nl.giejay.android.tv.immich.api.ApiClient
+import nl.giejay.android.tv.immich.api.filterAlbumsByName
+import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Person
@@ -31,6 +34,9 @@ class SearchFragment : GenericAssetFragment() {
     private var status by mutableStateOf(SearchStatus.IDLE)
     private var people by mutableStateOf<List<Person>>(emptyList())
     private var selectedPerson by mutableStateOf<Person?>(null)
+    private var allAlbums = emptyList<Album>()
+    private var albums by mutableStateOf<List<Album>>(emptyList())
+    private var selectedAlbum by mutableStateOf<Album?>(null)
     private var recents by mutableStateOf<List<String>>(emptyList())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +58,22 @@ class SearchFragment : GenericAssetFragment() {
                 onPerson = { index -> people.getOrNull(index)?.let(::selectPerson) },
                 onClearPerson = ::clearPerson,
                 onRecent = ::submit,
+                albums = albums.map { it.albumName },
+                selectedAlbum = selectedAlbum?.albumName,
+                onAlbum = { index -> albums.getOrNull(index)?.let(::selectAlbum) },
+                onClearAlbum = ::clearAlbum,
             )
+        }
+        // own scope: a new search cancels the children of ioScope, which must not drop the album catalog
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            apiClient.listAlbums().fold({ }, { found ->
+                allAlbums = found
+                withContext(Dispatchers.Main) {
+                    // also when a search was submitted while the catalog was still loading
+                    albums = if (submittedQuery.isBlank()) found.sortedBy { it.albumName.lowercase() }.take(MAX_ALBUMS)
+                    else filterAlbumsByName(found, submittedQuery).take(MAX_ALBUMS)
+                }
+            })
         }
     }
 
@@ -66,12 +87,14 @@ class SearchFragment : GenericAssetFragment() {
         val started = generation
         val person = selectedPerson
         val query = submittedQuery
+        val albumIds = listOfNotNull(selectedAlbum?.id)
         val response = when {
             person != null -> apiClient.listAssets(
-                page, pageCount, order = "desc", contentType = currentFilter, personIds = listOf(person.id),
+                page, pageCount, order = "desc", contentType = currentFilter, personIds = listOf(person.id), albumIds = albumIds,
             )
-            query.isBlank() -> Either.Right(AssetResponse(emptyList(), false))
-            else -> apiClient.searchAssets(query, page, pageCount, currentFilter)
+            query.isBlank() && albumIds.isEmpty() -> Either.Right(AssetResponse(emptyList(), false))
+            query.isBlank() -> apiClient.listAssets(page, pageCount, order = "desc", contentType = currentFilter, albumIds = albumIds)
+            else -> apiClient.searchAssets(query, page, pageCount, currentFilter, albumIds)
         }
         // a newer search began while this one was loading: nothing of it may reach the new page
         if (started != generation) throw CancellationException("outdated search")
@@ -107,7 +130,7 @@ class SearchFragment : GenericAssetFragment() {
      */
     private fun updateStatus() {
         status = when {
-            submittedQuery.isBlank() && selectedPerson == null -> SearchStatus.IDLE
+            submittedQuery.isBlank() && selectedPerson == null && selectedAlbum == null -> SearchStatus.IDLE
             assets.isNotEmpty() -> SearchStatus.RESULTS
             status == SearchStatus.ERROR -> SearchStatus.ERROR
             allPagesLoaded -> SearchStatus.NO_RESULTS
@@ -126,6 +149,7 @@ class SearchFragment : GenericAssetFragment() {
         selectedPerson = null
         people = emptyList()
         submittedQuery = query
+        albums = filterAlbumsByName(allAlbums, query).take(MAX_ALBUMS)
         startSearch()
         val started = generation
         ioScope.launch {
@@ -140,14 +164,35 @@ class SearchFragment : GenericAssetFragment() {
         startSearch()
     }
 
-    private fun clearPerson() {
-        selectedPerson = null
-        if (submittedQuery.isBlank()) {
-            status = SearchStatus.IDLE
-            clearState()
+    private fun selectAlbum(album: Album) {
+        selectedAlbum = album
+        startSearch()
+    }
+
+    private fun clearAlbum() {
+        selectedAlbum = null
+        if (submittedQuery.isBlank() && selectedPerson == null) {
+            goIdle()
         } else {
             startSearch()
         }
+    }
+
+    private fun clearPerson() {
+        selectedPerson = null
+        if (submittedQuery.isBlank() && selectedAlbum == null) {
+            goIdle()
+        } else {
+            startSearch()
+        }
+    }
+
+    /** Back to the empty page: whatever is still loading for the old filter must not fill it again. */
+    private fun goIdle() {
+        generation++
+        ioScope.coroutineContext.cancelChildren()
+        status = SearchStatus.IDLE
+        clearState()
     }
 
     private fun startSearch() {
@@ -162,5 +207,6 @@ class SearchFragment : GenericAssetFragment() {
 
     private companion object {
         const val MAX_PEOPLE = 6
+        const val MAX_ALBUMS = 20
     }
 }

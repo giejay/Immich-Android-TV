@@ -2,6 +2,8 @@ package nl.giejay.android.tv.immich.search
 
 import com.google.common.truth.Truth.assertThat
 import nl.giejay.android.tv.immich.api.buildMetadataSearchRequests
+import nl.giejay.android.tv.immich.api.filterAlbumsByName
+import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.mergeSearchResults
 import nl.giejay.android.tv.immich.api.sliceSearchPage
 import nl.giejay.android.tv.immich.api.model.Asset
@@ -72,5 +74,25 @@ class SearchTest {
         assertThat(last.assets.map { it.id }).containsExactly("a7")
         assertThat(last.hasMore).isFalse()
         assertThat(sliceSearchPage(all, page = 4, size = 3).assets).isEmpty()
+    }
+
+    @Test
+    fun `metadata requests carry the album scope`() {
+        val requests = buildMetadataSearchRequests("beach", 1, 50, null, albumIds = listOf("alb"))
+        requests.forEach { assertThat(it.albumIds).containsExactly("alb") }
+        // like the blank-query album path: archived photos of the album stay findable
+        requests.forEach { assertThat(it.visibility).isNull() }
+        buildMetadataSearchRequests("beach", 1, 50, null).forEach { assertThat(it.visibility).isEqualTo("timeline") }
+        buildMetadataSearchRequests("beach", 1, 50, null).forEach { assertThat(it.albumIds).isEmpty() }
+    }
+
+    private fun album(name: String) = Album(name, "", name, null, Date(0), null, 0)
+
+    @Test
+    fun `album names match by part and ignore case, blank matches none`() {
+        val all = listOf(album("Zoo 2024"), album("beach trip"), album("Beach party"), album("Food"))
+        assertThat(filterAlbumsByName(all, " BEACH ").map { it.albumName }).containsExactly("Beach party", "beach trip").inOrder()
+        assertThat(filterAlbumsByName(all, "  ")).isEmpty()
+        assertThat(filterAlbumsByName(all, "xyz")).isEmpty()
     }
 }

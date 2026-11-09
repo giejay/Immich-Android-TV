@@ -24,5 +24,7 @@ data class SmartSearchRequest(val query: String,
                               val page: Int? = 1,
                               val size: Int = 100,
                               val type: String? = null,
+                              /** null = not sent (all albums) */
+                              val albumIds: List<String>? = null,
                               val withExif: Boolean = true,
                               val visibility: String? = "timeline")

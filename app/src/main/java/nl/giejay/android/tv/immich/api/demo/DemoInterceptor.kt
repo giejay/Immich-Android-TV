@@ -100,7 +100,7 @@ class DemoInterceptor(private val openAsset: (String) -> InputStream) : Intercep
 
     private fun smartSearch(body: JsonObject): SearchResult {
         val query = body.string("query")?.lowercase().orEmpty().trim()
-        val items = DemoCatalog.photos.filter { query.isNotEmpty() && description(it).lowercase().contains(query) }
+        val items = filtered(body).filter { query.isNotEmpty() && description(it).lowercase().contains(query) }
         return page(items, body)
     }
 

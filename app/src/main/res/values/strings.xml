@@ -323,6 +323,7 @@
     <string name="search_placeholder">Search photos and videos</string>
     <string name="search_hint">Search by what is in the picture (for example "beach"), by place, file name or person.</string>
     <string name="search_people">People</string>
+    <string name="search_albums">Albums</string>
     <string name="search_recent">Recent searches</string>
     <string name="search_loading">Searching…</string>
     <string name="search_error">Search failed. Check the connection to your server and try again.</string>
