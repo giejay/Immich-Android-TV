@@ -4,6 +4,7 @@ import nl.giejay.android.tv.immich.api.ApiAuthHeaders
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -53,6 +55,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.util.ApiUtil
+import nl.giejay.android.tv.immich.shared.thumbhash.ThumbHashCache
 import nl.giejay.android.tv.immich.timeline.TimelineMosaicCell
 import nl.giejay.android.tv.immich.timeline.TimelineVideoDuration
 import nl.giejay.android.tv.immich.ui.theme.ImmichFocus
@@ -132,6 +135,16 @@ fun TimelineMosaicCell(
             }
         }
         if (thumbnailUrl != null && !(previewing && videoReady)) {
+            // the blurred ThumbHash stands in until the thumbnail is loaded, instead of an empty grey cell
+            val placeholder = remember(cell.asset.thumbhash) { ThumbHashCache.get(cell.asset.thumbhash)?.asImageBitmap() }
+            if (placeholder != null) {
+                Image(
+                    bitmap = placeholder,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
             GlideImage(
                 model = thumbnailUrl,
                 contentDescription = null,

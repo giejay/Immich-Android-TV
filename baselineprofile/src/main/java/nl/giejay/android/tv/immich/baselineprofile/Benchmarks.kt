@@ -75,6 +75,37 @@ class TimelineScrollBenchmarks {
     }
 }
 
+/** Frame timing while paging through the viewer (images and videos), with the profile. */
+@RunWith(AndroidJUnit4::class)
+class ViewerPagingBenchmarks {
+    @get:Rule
+    val rule = MacrobenchmarkRule()
+
+    @Test
+    fun viewerPaging() = rule.measureRepeated(
+        packageName = targetAppId,
+        metrics = listOf(FrameTimingMetric()),
+        iterations = 5,
+        startupMode = StartupMode.WARM,
+        compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+        setupBlock = {
+            pressHome()
+            startApp()
+            signInIfNeeded()
+            device.waitForIdle()
+            Thread.sleep(3_000) // timeline loads
+            device.pressDPadRight() // into the content
+            Thread.sleep(500)
+        },
+    ) {
+        device.pressDPadCenter() // open the focused asset
+        Thread.sleep(2_500)
+        repeat(15) { device.pressDPadRight(); Thread.sleep(1_200) }
+        device.pressBack()
+        Thread.sleep(1_000)
+    }
+}
+
 /** Cold start with the View based (classic) timeline, without and with the profile. Run on a fresh install. */
 @RunWith(AndroidJUnit4::class)
 class LegacyStartupBenchmarks {
