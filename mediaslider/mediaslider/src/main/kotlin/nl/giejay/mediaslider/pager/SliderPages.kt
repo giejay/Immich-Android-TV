@@ -1,6 +1,7 @@
 package nl.giejay.mediaslider.pager
 
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.view.LayoutInflater
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -27,6 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -124,26 +128,36 @@ internal fun photoFillsPage(aspect: Float, size: IntSize): Boolean {
 private const val BACKDROP_ASPECT_TOLERANCE = 0.03f
 
 /**
- * The thumbnail decoded at a tiny size and scaled up by the GPU: a cheap blur that works on every API
- * level (no RenderEffect), dimmed so it never competes with the photo.
+ * The thumbnail as a dimmed backdrop. From Android 12 on it is blurred by the GPU (RenderEffect); older
+ * versions get the same image decoded at a tiny size and scaled up, which is only a rough blur, so they
+ * are dimmed a bit more.
  */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun BlurredBackdrop(thumbnailUrl: String) {
-    Box(Modifier.fillMaxSize()) {
+    val gpuBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    Box(Modifier.fillMaxSize().clipToBounds()) {
         GlideImage(
             model = thumbnailUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-            requestBuilderTransform = { it.override(BACKDROP_DECODE_WIDTH, BACKDROP_DECODE_HEIGHT) },
+            // scaled up after blurring so the faded blur edge lies outside the clipped bounds
+            modifier = Modifier.fillMaxSize().then(
+                if (gpuBlur) Modifier.graphicsLayer { scaleX = BACKDROP_EDGE_SCALE; scaleY = BACKDROP_EDGE_SCALE }
+                    .blur(BACKDROP_BLUR_RADIUS, BlurredEdgeTreatment.Unbounded) else Modifier,
+            ),
+            requestBuilderTransform = {
+                if (gpuBlur) it.override(BACKDROP_DECODE_WIDTH, BACKDROP_DECODE_HEIGHT) else it.override(64, 36)
+            },
         )
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (gpuBlur) 0.5f else 0.65f)))
     }
 }
 
-private const val BACKDROP_DECODE_WIDTH = 64
-private const val BACKDROP_DECODE_HEIGHT = 36
+private val BACKDROP_BLUR_RADIUS = 28.dp
+private const val BACKDROP_EDGE_SCALE = 1.12f
+private const val BACKDROP_DECODE_WIDTH = 192
+private const val BACKDROP_DECODE_HEIGHT = 108
 
 /**
  * A video page. The shared player is bound to the page that came to rest; every other page, and the
