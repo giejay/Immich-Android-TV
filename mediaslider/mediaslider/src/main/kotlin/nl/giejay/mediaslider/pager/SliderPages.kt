@@ -11,6 +11,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -69,7 +70,12 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, ef
     val plan = remember(effectToken, aspect > 0f, size) {
         if (effectToken == null || aspect <= 0f || size == IntSize.Zero) null else slideshowEffectPlan(config, item, aspect, size)
     }
-    Box(modifier.onSizeChanged { size = it }.slideshowEffect(plan, hidden)) {
+    Box(modifier.onSizeChanged { size = it }) {
+        val backdropUrl = item.thumbnailUrl
+        if (config.blurredBackdrop && backdropUrl != null && !photoFillsPage(aspect, size)) {
+            BlurredBackdrop(backdropUrl)
+        }
+        Box(Modifier.fillMaxSize().slideshowEffect(plan, hidden)) {
         GlideImage(
             model = if (config.isOnlyUseThumbnails) item.thumbnailUrl else item.url,
             contentDescription = null,
@@ -104,8 +110,40 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, ef
             },
         )
         if (!loaded) SliderSpinner(Modifier.align(Alignment.Center))
+        }
     }
 }
+
+/** True while the photo (shown with ContentScale.Fit) covers the page, so no backdrop is needed. */
+internal fun photoFillsPage(aspect: Float, size: IntSize): Boolean {
+    if (aspect <= 0f || size.width <= 0 || size.height <= 0) return true
+    val pageAspect = size.width.toFloat() / size.height
+    return kotlin.math.abs(aspect - pageAspect) / pageAspect < BACKDROP_ASPECT_TOLERANCE
+}
+
+private const val BACKDROP_ASPECT_TOLERANCE = 0.03f
+
+/**
+ * The thumbnail decoded at a tiny size and scaled up by the GPU: a cheap blur that works on every API
+ * level (no RenderEffect), dimmed so it never competes with the photo.
+ */
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+private fun BlurredBackdrop(thumbnailUrl: String) {
+    Box(Modifier.fillMaxSize()) {
+        GlideImage(
+            model = thumbnailUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+            requestBuilderTransform = { it.override(BACKDROP_DECODE_WIDTH, BACKDROP_DECODE_HEIGHT) },
+        )
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
+    }
+}
+
+private const val BACKDROP_DECODE_WIDTH = 64
+private const val BACKDROP_DECODE_HEIGHT = 36
 
 /**
  * A video page. The shared player is bound to the page that came to rest; every other page, and the

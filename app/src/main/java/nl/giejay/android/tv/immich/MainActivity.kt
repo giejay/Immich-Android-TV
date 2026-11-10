@@ -30,6 +30,7 @@ import nl.giejay.android.tv.immich.shared.prefs.SLIDER_GLIDE_TRANSFORMATION
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_INTERVAL
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_HEIGHT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_MAX_CUT_OFF_WIDTH
+import nl.giejay.android.tv.immich.shared.prefs.SLIDER_BLURRED_BACKDROP
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_ONLY_USE_THUMBNAILS
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_PAN_EFFECT
 import nl.giejay.android.tv.immich.shared.prefs.SLIDER_SHOW_DATE_TOP_LEFT
@@ -158,7 +159,8 @@ class MainActivity : FragmentActivity() {
                 panEffectPercent = PreferenceManager.get(SLIDER_PAN_EFFECT),
                 useLargeVideoBuffer = PreferenceManager.get(SLIDER_FORCE_ORIGINAL_VIDEO),
                 dpadSeeksInVideo = PreferenceManager.get(SLIDER_DPAD_SEEK_IN_VIDEO),
-                showDateTopLeft = PreferenceManager.get(SLIDER_SHOW_DATE_TOP_LEFT)
+                showDateTopLeft = PreferenceManager.get(SLIDER_SHOW_DATE_TOP_LEFT),
+                blurredBackdrop = PreferenceManager.get(SLIDER_BLURRED_BACKDROP)
             )
             withContext(Dispatchers.Main) {
                 ViewModelProvider(this@MainActivity)[MediaSliderViewModel::class.java].configuration = config

@@ -34,6 +34,8 @@ class MediaSliderConfiguration(
     val showDateTopLeft: Boolean = false,
     /** Transition between assets; only used while [enableSlideAnimation] is on. */
     val transition: SliderTransition = SliderTransition.SLIDE,
+    /** Fills the space around a photo that does not cover the screen with a blurred, dimmed copy of it. */
+    val blurredBackdrop: Boolean = false,
     /** Duration of every transition except [SliderTransition.SLIDE], which uses [animationSpeedMillis]. */
     val transitionDurationMillis: Int = 1200,
     var controllerPlugins: List<SliderControllerPlugin> = emptyList(),

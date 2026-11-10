@@ -307,6 +307,14 @@ data object SLIDER_ONLY_USE_THUMBNAILS : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.use_hd_thumbnails),
     ImmichApplication.appContext!!.getString(R.string.use_hd_thumbnails_text))
 
+data object SLIDER_BLURRED_BACKDROP : BooleanPref(true,
+    ImmichApplication.appContext!!.getString(R.string.blurred_backdrop),
+    ImmichApplication.appContext!!.getString(R.string.blurred_backdrop_desc))
+
+data object SCREENSAVER_BLURRED_BACKDROP : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.blurred_backdrop),
+    ImmichApplication.appContext!!.getString(R.string.blurred_backdrop_desc))
+
 data object SLIDER_MERGE_PORTRAIT_PHOTOS : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.merge_portrait_photos),
     ImmichApplication.appContext!!.getString(R.string.merge_portrait_photos_desc))
@@ -618,6 +626,7 @@ data object ViewSlideshowDisplayPrefScreen : PrefScreen(ImmichApplication.appCon
             SLIDER_DPAD_SEEK_IN_VIDEO,
             SLIDER_LOAD_EDITED_PHOTO,
             SLIDER_MERGE_PORTRAIT_PHOTOS,
+            SLIDER_BLURRED_BACKDROP,
             SLIDER_GLIDE_TRANSFORMATION
         ))
     )
@@ -731,7 +740,8 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_INCLUDE_VIDEOS,
                 SCREENSAVER_ONLY_LANDSCAPE,
                 SCREENSAVER_PLAY_SOUND,
-                SCREENSAVER_ANIMATE_ASSET_SLIDE)
+                SCREENSAVER_ANIMATE_ASSET_SLIDE,
+                SCREENSAVER_BLURRED_BACKDROP)
         )
     )
 )
