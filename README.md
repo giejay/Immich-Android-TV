@@ -21,7 +21,7 @@ All screenshots were taken in the offline demo mode with its bundled stock photo
 |:-----------------------------------------------------:|:----------------------------------------------------:|:--------------------------------------------------:|
 |   ![Timeline](screenshots/timeline.png "Timeline")    |      ![Albums](screenshots/albums.png "Albums")      | ![Album](screenshots/album-detail.png "An album")  |
 |     ![Photos](screenshots/photos.png "All photos")    |     ![Search](screenshots/search.png "Search")       |    ![Viewer](screenshots/viewer.png "Viewer")      |
-| ![Navigation](screenshots/navigation.png "Navigation") |  ![Settings](screenshots/settings.png "Settings")   |                                                    |
+| ![Navigation](screenshots/navigation.png "Navigation") |  ![Settings](screenshots/settings.png "Settings")   |   ![About](screenshots/about.png "About")           |
 
 ## Features
 

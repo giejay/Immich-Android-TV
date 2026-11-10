@@ -13,6 +13,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import nl.giejay.mediaslider.transformations.BoxBlurTransformation
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +34,7 @@ import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.LOAD_BACKGROUND_IMAGE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.Debouncer
+import nl.giejay.android.tv.immich.shared.util.runOnMainThread
 import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -270,7 +273,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         if (PreferenceManager.get(LOAD_BACKGROUND_IMAGE)) {
             Debouncer.debounce(
                 BACKGROUND_DEBOUNCE_KEY,
-                { loadBackground(backgroundUrl, onLoadFailed) },
+                // the debounce runs on its own thread; Glide would hand a cached image back on that thread too
+                { runOnMainThread { loadBackground(backgroundUrl, onLoadFailed) } },
                 1,
                 TimeUnit.SECONDS
             )
@@ -288,9 +292,11 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         val width: Int = mMetrics.widthPixels
         val height: Int = mMetrics.heightPixels
         try {
+            // blurred like the viewer backdrop: decoded small, blurred once on the CPU, scaled up by the ImageView
             Glide.with(requireActivity())
                 .load(backgroundUrl)
-                .centerCrop()
+                .override(BACKGROUND_DECODE_WIDTH, BACKGROUND_DECODE_HEIGHT)
+                .transform(CenterCrop(), BoxBlurTransformation(BACKGROUND_BLUR_RADIUS))
                 .into(object : SimpleTarget<Drawable?>(width, height) {
                     override fun onResourceReady(
                         resource: Drawable,
@@ -337,5 +343,9 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         const val FETCH_PAGE_COUNT = FETCH_COUNT
         /** Debounce key for the hover background load. */
         const val BACKGROUND_DEBOUNCE_KEY = "background"
+
+        private const val BACKGROUND_DECODE_WIDTH = 160
+        private const val BACKGROUND_DECODE_HEIGHT = 90
+        private const val BACKGROUND_BLUR_RADIUS = 5
     }
 }

@@ -28,7 +28,7 @@ Immich is a trademark of its respective owners.
 **What's new** (release notes, max 500):
 First release: timeline with scrubber and memories, albums, people, folders, search, full-screen viewer with slideshow, screensaver and an offline demo mode.
 
-**Graphics:** in `store/assets/`: icon `icon-512.png` (512x512), feature graphic `feature-graphic-1024x500.png`, TV banner `tv-banner-1280x720.png`. Screenshots (1920x1080, 16:9) are in `screenshots/`; upload in this order: timeline, albums, album-detail, photos, search, viewer, navigation, settings.
+**Graphics:** in `store/assets/`: icon `icon-512.png` (512x512), feature graphic `feature-graphic-1024x500.png`, TV banner `tv-banner-1280x720.png`. Screenshots (1920x1080, 16:9) are in `screenshots/`; upload in this order: timeline, albums, album-detail, photos, search, viewer, navigation, settings. Play allows at most 8 per device type; `about.png` (Settings -> About) is a ninth, optional one: use it instead of `settings` if you like. All were retaken on 2026-11-10 in the offline demo mode (viewer shows the blurred backdrop).
 
 ---
 ## Console answers (draft, please review before submitting)
