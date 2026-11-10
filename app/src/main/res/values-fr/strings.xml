@@ -241,8 +241,6 @@
     <string name="order_alphabetically_za">Alphabétique (Z-A)</string>
     <string name="order_newest_oldest">Du plus récent au plus ancien</string>
     <string name="order_oldest_newest">Du plus ancien au plus récent</string>
-    <string name="order_last_updated">Dernière mise à jour</string>
-    <string name="order_least_updated">Moins récemment mis à jour</string>
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 seconde</string>

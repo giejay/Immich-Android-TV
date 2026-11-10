@@ -243,8 +243,6 @@
     <string name="order_alphabetically_za">По алфавиту (Я–А)</string>
     <string name="order_newest_oldest">Новые — Старые</string>
     <string name="order_oldest_newest">Старые — Новые</string>
-    <string name="order_last_updated">Сначала новые</string>
-    <string name="order_least_updated">Сначала старые</string>
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 секунда</string>

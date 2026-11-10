@@ -84,20 +84,6 @@
         <item>SAFE_CENTER_CROP</item>
     </array>
 
-    <string-array name="albums_order">
-        <item>@string/order_last_updated</item>
-        <item>@string/order_alphabetically_az</item>
-        <item>@string/order_alphabetically_za</item>
-        <item>@string/order_least_updated</item>
-    </string-array>
-
-    <string-array name="albums_order_keys">
-        <item>LAST_UPDATED</item>
-        <item>ALPHABETICALLY_A_Z</item>
-        <item>ALPHABETICALLY_Z_A</item>
-        <item>LEAST_UPDATED</item>
-    </string-array>
-
     <string-array name="photos_order">
         <item>@string/order_newest_oldest</item>
         <item>@string/order_oldest_newest</item>

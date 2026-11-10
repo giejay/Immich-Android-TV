@@ -250,8 +250,6 @@
     <string name="order_alphabetically_za">按字母顺序（Z-A）</string>
     <string name="order_newest_oldest">最新 — 最旧</string>
     <string name="order_oldest_newest">最旧 — 最新</string>
-    <string name="order_last_updated">最近更新</string>
-    <string name="order_least_updated">最久未更新</string>
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 秒</string>

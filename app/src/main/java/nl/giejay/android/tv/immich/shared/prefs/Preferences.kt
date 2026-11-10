@@ -367,7 +367,7 @@ data object SHOW_PARTNER_PHOTOS_IN_TIMELINE : BooleanPref(false,
     ImmichApplication.appContext!!.getString(R.string.show_partner_photos_in_timeline_desc))
 
 // other
-data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.LAST_UPDATED,
+data object ALBUMS_SORTING : EnumByTitlePref<AlbumsOrder>(AlbumsOrder.NEWEST_PHOTOS,
     ImmichApplication.appContext!!.getString(R.string.albums),
     ImmichApplication.appContext!!.getString(R.string.albums_sorting_text)) {
 

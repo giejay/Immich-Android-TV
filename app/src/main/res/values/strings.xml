@@ -248,16 +248,19 @@
     <string name="could_not_load_assets">Could not load assets from Immich</string>
 
     <!-- Albums ordering -->
-    <string name="albums_order_asset_count">Asset count</string>
+    <string name="albums_order_asset_count">Most items</string>
 
 
     <!-- Ordering -->
+    <string name="albums_order_newest_photos">Newest photos first</string>
+    <string name="albums_order_oldest_photos">Oldest photos first</string>
+    <string name="albums_order_recently_modified">Recently modified</string>
+    <string name="albums_order_recently_created">Recently created</string>
+    <string name="albums_order_fewest_items">Fewest items</string>
     <string name="order_alphabetically_az">Alphabetically (A-Z)</string>
     <string name="order_alphabetically_za">Alphabetically (Z-A)</string>
-    <string name="order_newest_oldest">Newest - Oldest</string>
-    <string name="order_oldest_newest">Oldest - Newest</string>
-    <string name="order_last_updated">Last updated</string>
-    <string name="order_least_updated">Least updated</string>
+    <string name="order_newest_oldest">Capture date: newest first</string>
+    <string name="order_oldest_newest">Capture date: oldest first</string>
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 second</string>

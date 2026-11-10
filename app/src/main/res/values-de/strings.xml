@@ -196,15 +196,18 @@
     <string name="could_not_load_assets">Medien konnten nicht aus Immich geladen werden</string>
 
     <!-- Albums ordering -->
-    <string name="albums_order_asset_count">Anzahl der Medien</string>
+    <string name="albums_order_asset_count">Meiste Medien</string>
 
     <!-- Ordering -->
+    <string name="albums_order_newest_photos">Neueste Fotos zuerst</string>
+    <string name="albums_order_oldest_photos">Älteste Fotos zuerst</string>
+    <string name="albums_order_recently_modified">Zuletzt geändert</string>
+    <string name="albums_order_recently_created">Zuletzt erstellt</string>
+    <string name="albums_order_fewest_items">Wenigste Medien</string>
     <string name="order_alphabetically_az">Alphabetisch (A–Z)</string>
     <string name="order_alphabetically_za">Alphabetisch (Z–A)</string>
-    <string name="order_newest_oldest">Neueste – Älteste</string>
-    <string name="order_oldest_newest">Älteste – Neueste</string>
-    <string name="order_last_updated">Zuletzt aktualisiert</string>
-    <string name="order_least_updated">Am längsten nicht aktualisiert</string>
+    <string name="order_newest_oldest">Aufnahmedatum: neueste zuerst</string>
+    <string name="order_oldest_newest">Aufnahmedatum: älteste zuerst</string>
 
     <!-- Interval titles -->
     <string name="interval_1_second">1 Sekunde</string>

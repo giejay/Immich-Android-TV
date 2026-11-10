@@ -179,6 +179,7 @@ class DemoInterceptor(private val openAsset: (String) -> InputStream) : Intercep
         "albumThumbnailAssetId" to album.photos.first().id,
         "updatedAt" to iso(album.photos.first().takenAt),
         "endDate" to iso(album.photos.first().takenAt),
+        "createdAt" to iso(album.photos.last().takenAt),
         "assetCount" to album.photos.size,
     )
 
