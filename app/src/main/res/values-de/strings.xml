@@ -32,6 +32,8 @@
     <string name="debug">Debug</string>
     <string name="use_hd_thumbnails">Hochauflösende Vorschaubilder verwenden</string>
     <string name="use_hd_thumbnails_text">Hochauflösende Vorschaubilder statt der Originalbilder verwenden. Beschleunigt das Laden erheblich.</string>
+    <string name="blurred_backdrop">Unscharfer Hintergrund</string>
+    <string name="blurred_backdrop_desc">Füllt den freien Platz um Fotos, die den Bildschirm nicht ausfüllen, mit einer unscharfen, abgedunkelten Kopie des Fotos.</string>
     <string name="show_partner_photos_in_timeline">Fotos des Partners in der Zeitleiste zeigen</string>
     <string name="show_partner_photos_in_timeline_desc">Fotos, die dein Partner mit dir teilt, auch in der Haupt-Zeitleiste anzeigen, zusätzlich zu den Foto- und Suchansichten.</string>
     <string name="albums_sorting_text">Reihenfolge der Alben festlegen</string>

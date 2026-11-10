@@ -10,7 +10,7 @@ What is ready in the repository and what only the developer can do. See `listing
 - Offline demo mode, so the reviewers can use the app without a server; phone sign-in runs locally in the home network (no relay, no third party)
 
 ## Only you can do
-1. **Ask the Immich team** whether name "Immich TV Next (Unofficial)" and the pinwheel icon are fine (open an issue/discussion on immich-app/immich or ask on their Discord).
+1. ~~Ask the Immich team~~ **Done (2026-11-10, FUTO support):** the name "Immich TV Next (Unofficial)", the pinwheel icon and showing the Immich name in the listing are fine. Their only condition is a clear disclaimer that the app is not affiliated with the Immich project; it is in the README, the store listings and the privacy policy (and in the app under Settings -> About).
 2. **Play Console developer account** (one-time fee). New personal accounts may have to run a closed test with a minimum number of testers for a number of days before production access: check the current rule in the Console.
 3. **Upload keystore:** create one and keep it safe (losing it blocks updates, unless you use Play App Signing with an upload key):
    `keytool -genkeypair -v -keystore release-keystore.jks -alias immichtvnext -keyalg RSA -keysize 4096 -validity 10000`
@@ -22,6 +22,6 @@ What is ready in the repository and what only the developer can do. See `listing
 9. **Upload** the assets, texts and the first AAB to the **internal testing** track, install it from Play on the TV, then promote.
 
 ## Before the first release build
-- Run `./gradlew bundleRelease` with the real keystore and test the release APK on the TV (R8 is on).
+- Run `./gradlew bundleRelease` with the real keystore and test the release APK (R8 is on). Checked on 2026-11-10 with the debug-signed build on the emulator (timeline, viewer; no crash); repeat it with the real keystore build on a real TV.
 - Optionally regenerate the baseline profile (`:app:generateBaselineProfile` on the TV, signed in).
 - Bump `versionCode` for every upload.
