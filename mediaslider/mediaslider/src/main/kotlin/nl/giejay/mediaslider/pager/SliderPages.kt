@@ -1,7 +1,6 @@
 package nl.giejay.mediaslider.pager
 
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.view.LayoutInflater
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -28,9 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -59,6 +55,7 @@ import nl.giejay.mediaslider.effects.EffectPlan
 import nl.giejay.mediaslider.effects.SlideshowEffects
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemViewHolder
+import nl.giejay.mediaslider.transformations.BoxBlurTransformation
 import timber.log.Timber
 
 /** One photo: the thumbnail shows at once and the full image replaces it; a spinner covers the wait. */
@@ -128,36 +125,30 @@ internal fun photoFillsPage(aspect: Float, size: IntSize): Boolean {
 private const val BACKDROP_ASPECT_TOLERANCE = 0.03f
 
 /**
- * The thumbnail as a dimmed backdrop. From Android 12 on it is blurred by the GPU (RenderEffect); older
- * versions get the same image decoded at a tiny size and scaled up, which is only a rough blur, so they
- * are dimmed a bit more.
+ * The thumbnail as a dimmed backdrop: decoded at a tiny size, blurred once on the CPU and scaled up by the GPU
+ * (bilinear scaling of a blurred image looks smooth). Being a plain bitmap it costs nothing while the page slides;
+ * a RenderEffect blur measured at roughly half the frames while paging on the Xiaomi Box S.
  */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun BlurredBackdrop(thumbnailUrl: String) {
-    val gpuBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    Box(Modifier.fillMaxSize().clipToBounds()) {
+    Box(Modifier.fillMaxSize()) {
         GlideImage(
             model = thumbnailUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            // scaled up after blurring so the faded blur edge lies outside the clipped bounds
-            modifier = Modifier.fillMaxSize().then(
-                if (gpuBlur) Modifier.graphicsLayer { scaleX = BACKDROP_EDGE_SCALE; scaleY = BACKDROP_EDGE_SCALE }
-                    .blur(BACKDROP_BLUR_RADIUS, BlurredEdgeTreatment.Unbounded) else Modifier,
-            ),
+            modifier = Modifier.fillMaxSize(),
             requestBuilderTransform = {
-                if (gpuBlur) it.override(BACKDROP_DECODE_WIDTH, BACKDROP_DECODE_HEIGHT) else it.override(64, 36)
+                it.override(BACKDROP_DECODE_WIDTH, BACKDROP_DECODE_HEIGHT).transform(BoxBlurTransformation(BACKDROP_BLUR_RADIUS))
             },
         )
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (gpuBlur) 0.5f else 0.65f)))
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
     }
 }
 
-private val BACKDROP_BLUR_RADIUS = 28.dp
-private const val BACKDROP_EDGE_SCALE = 1.12f
-private const val BACKDROP_DECODE_WIDTH = 192
-private const val BACKDROP_DECODE_HEIGHT = 108
+private const val BACKDROP_BLUR_RADIUS = 5
+private const val BACKDROP_DECODE_WIDTH = 160
+private const val BACKDROP_DECODE_HEIGHT = 90
 
 /**
  * A video page. The shared player is bound to the page that came to rest; every other page, and the
