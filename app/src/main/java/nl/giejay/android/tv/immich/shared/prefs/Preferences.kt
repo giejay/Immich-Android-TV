@@ -307,11 +307,11 @@ data object SLIDER_ONLY_USE_THUMBNAILS : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.use_hd_thumbnails),
     ImmichApplication.appContext!!.getString(R.string.use_hd_thumbnails_text))
 
-data object SLIDER_BLURRED_BACKDROP : BooleanPref(false,
+data object SLIDER_BLURRED_BACKDROP : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.blurred_backdrop),
     ImmichApplication.appContext!!.getString(R.string.blurred_backdrop_desc))
 
-data object SCREENSAVER_BLURRED_BACKDROP : BooleanPref(false,
+data object SCREENSAVER_BLURRED_BACKDROP : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.blurred_backdrop),
     ImmichApplication.appContext!!.getString(R.string.blurred_backdrop_desc))
 
