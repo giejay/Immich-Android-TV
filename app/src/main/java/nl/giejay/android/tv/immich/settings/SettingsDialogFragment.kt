@@ -38,6 +38,7 @@ class SettingsDialogFragment : DialogFragment() {
                 frag.arguments = requireArguments()
                 frag
             }
+            "about" -> AboutFragment()
             "meta_data_customizer" -> {
                 val frag = MetaDataCustomizerFragment()
                 frag.arguments = requireArguments()
