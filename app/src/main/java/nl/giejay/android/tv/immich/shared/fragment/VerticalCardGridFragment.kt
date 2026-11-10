@@ -13,6 +13,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import nl.giejay.mediaslider.transformations.BoxBlurTransformation
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import kotlinx.coroutines.CoroutineScope
@@ -288,9 +290,11 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         val width: Int = mMetrics.widthPixels
         val height: Int = mMetrics.heightPixels
         try {
+            // blurred like the viewer backdrop: decoded small, blurred once on the CPU, scaled up by the ImageView
             Glide.with(requireActivity())
                 .load(backgroundUrl)
-                .centerCrop()
+                .override(BACKGROUND_DECODE_WIDTH, BACKGROUND_DECODE_HEIGHT)
+                .transform(CenterCrop(), BoxBlurTransformation(BACKGROUND_BLUR_RADIUS))
                 .into(object : SimpleTarget<Drawable?>(width, height) {
                     override fun onResourceReady(
                         resource: Drawable,
@@ -337,5 +341,9 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         const val FETCH_PAGE_COUNT = FETCH_COUNT
         /** Debounce key for the hover background load. */
         const val BACKGROUND_DEBOUNCE_KEY = "background"
+
+        private const val BACKGROUND_DECODE_WIDTH = 160
+        private const val BACKGROUND_DECODE_HEIGHT = 90
+        private const val BACKGROUND_BLUR_RADIUS = 5
     }
 }
