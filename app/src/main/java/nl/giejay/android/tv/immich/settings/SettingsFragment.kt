@@ -24,6 +24,7 @@ class SettingsFragment : GridFragment(hideProgressBar = true) {
                     Card(getString(R.string.screensaver), null, "screensaver", "screensaver", null),
                     Card(getString(R.string.home_screen_channels), null, "home_screen_channels", "home_screen_channels", null),
                     Card(getString(R.string.debug), null, "debug", "debug", null),
+                    Card(getString(R.string.about), null, "about", "about", null),
                 )
             )
         }
@@ -36,6 +37,7 @@ class SettingsFragment : GridFragment(hideProgressBar = true) {
             "screensaver" -> HomeFragmentDirections.actionGlobalToSettingsDialog(ScreensaverPrefScreen.key)
             "home_screen_channels" -> HomeFragmentDirections.actionGlobalToSettingsDialog(HomeScreenChannelsPrefScreen.key)
             "debug" -> HomeFragmentDirections.actionGlobalToSettingsDialog(DebugPrefScreen.key)
+            "about" -> HomeFragmentDirections.actionGlobalToSettingsDialog("about")
             else -> return
         }
         findNavController().navigate(directions)

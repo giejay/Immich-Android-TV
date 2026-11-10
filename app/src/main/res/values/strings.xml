@@ -361,4 +361,13 @@
     <string name="proxy_user">Proxy user (optional)</string>
     <string name="proxy_password">Proxy password (optional)</string>
     <string name="proxy_auth_desc">For servers behind a reverse proxy that asks for HTTP basic authentication.</string>
+    <string name="about">About</string>
+    <string name="about_unofficial_title">Unofficial app</string>
+    <string name="about_unofficial_body">Immich TV Next is an unofficial community client for your own Immich server. It is not made by, affiliated with or endorsed by the Immich project or FUTO. Immich is a trademark of its owners.</string>
+    <string name="about_license_title">Open source</string>
+    <string name="about_license_body">A modernized fork of giejay/Immich-Android-TV, licensed under the GPL-3.0. Source code: https://github.com/daniii88/Immich-Android-TV-Next</string>
+    <string name="about_privacy_title">Privacy</string>
+    <string name="about_privacy_body">The app only talks to the Immich server you entered, using your API key. It sends no data to anyone else. Privacy policy: https://github.com/daniii88/Immich-Android-TV-Next/blob/main/store/privacy-policy.md</string>
+    <string name="about_feedback_title">Report a problem</string>
+    <string name="about_feedback_body">Bug reports and ideas are welcome: https://github.com/daniii88/Immich-Android-TV-Next/issues</string>
 </resources>

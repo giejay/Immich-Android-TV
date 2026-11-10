@@ -278,6 +278,7 @@ private fun iconForName(name: String) = when (name) {
     "screensaver" -> ImmichIcons.Screensaver
     "home_screen_channels" -> ImmichIcons.HomeChannels
     "debug" -> ImmichIcons.Debug
+    "about" -> ImmichIcons.About
     else -> ImmichIcons.Folders
 }
 

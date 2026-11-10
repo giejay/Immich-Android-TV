@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -62,6 +63,7 @@ object ImmichIcons {
     val Screensaver: ImageVector get() = Icons.Filled.Slideshow
     val HomeChannels: ImageVector get() = Icons.Filled.Tv
     val Debug: ImageVector get() = Icons.Filled.BugReport
+    val About: ImageVector get() = Icons.Filled.Info
 
     // Actions
     val Selected: ImageVector get() = Icons.Filled.CheckCircle
