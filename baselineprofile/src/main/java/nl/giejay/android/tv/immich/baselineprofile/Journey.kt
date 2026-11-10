@@ -47,7 +47,7 @@ internal fun MacrobenchmarkScope.signInIfNeeded() {
     device.executeShellCommand("input text $key")
     device.pressEnter()
     pause(500)
-    repeat(4) { device.pressDPadDown() }
+    repeat(6) { device.pressDPadDown() }
     device.pressDPadCenter()
     // right after signing in the navigation rail is expanded: its Timeline label proves the home screen was reached
     // (a rejected URL would leave us on the second login screen, whose step 1 label is gone as well)
