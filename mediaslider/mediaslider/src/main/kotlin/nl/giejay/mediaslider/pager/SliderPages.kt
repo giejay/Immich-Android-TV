@@ -1,6 +1,7 @@
 package nl.giejay.mediaslider.pager
 
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.view.LayoutInflater
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -11,6 +12,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -26,6 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -69,7 +74,12 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, ef
     val plan = remember(effectToken, aspect > 0f, size) {
         if (effectToken == null || aspect <= 0f || size == IntSize.Zero) null else slideshowEffectPlan(config, item, aspect, size)
     }
-    Box(modifier.onSizeChanged { size = it }.slideshowEffect(plan, hidden)) {
+    Box(modifier.onSizeChanged { size = it }) {
+        val backdropUrl = item.thumbnailUrl
+        if (config.blurredBackdrop && backdropUrl != null && !photoFillsPage(aspect, size)) {
+            BlurredBackdrop(backdropUrl)
+        }
+        Box(Modifier.fillMaxSize().slideshowEffect(plan, hidden)) {
         GlideImage(
             model = if (config.isOnlyUseThumbnails) item.thumbnailUrl else item.url,
             contentDescription = null,
@@ -104,8 +114,50 @@ internal fun SliderImagePage(item: SliderItem, modifier: Modifier = Modifier, ef
             },
         )
         if (!loaded) SliderSpinner(Modifier.align(Alignment.Center))
+        }
     }
 }
+
+/** True while the photo (shown with ContentScale.Fit) covers the page, so no backdrop is needed. */
+internal fun photoFillsPage(aspect: Float, size: IntSize): Boolean {
+    if (aspect <= 0f || size.width <= 0 || size.height <= 0) return true
+    val pageAspect = size.width.toFloat() / size.height
+    return kotlin.math.abs(aspect - pageAspect) / pageAspect < BACKDROP_ASPECT_TOLERANCE
+}
+
+private const val BACKDROP_ASPECT_TOLERANCE = 0.03f
+
+/**
+ * The thumbnail as a dimmed backdrop. From Android 12 on it is blurred by the GPU (RenderEffect); older
+ * versions get the same image decoded at a tiny size and scaled up, which is only a rough blur, so they
+ * are dimmed a bit more.
+ */
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+private fun BlurredBackdrop(thumbnailUrl: String) {
+    val gpuBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    Box(Modifier.fillMaxSize().clipToBounds()) {
+        GlideImage(
+            model = thumbnailUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            // scaled up after blurring so the faded blur edge lies outside the clipped bounds
+            modifier = Modifier.fillMaxSize().then(
+                if (gpuBlur) Modifier.graphicsLayer { scaleX = BACKDROP_EDGE_SCALE; scaleY = BACKDROP_EDGE_SCALE }
+                    .blur(BACKDROP_BLUR_RADIUS, BlurredEdgeTreatment.Unbounded) else Modifier,
+            ),
+            requestBuilderTransform = {
+                if (gpuBlur) it.override(BACKDROP_DECODE_WIDTH, BACKDROP_DECODE_HEIGHT) else it.override(64, 36)
+            },
+        )
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (gpuBlur) 0.5f else 0.65f)))
+    }
+}
+
+private val BACKDROP_BLUR_RADIUS = 28.dp
+private const val BACKDROP_EDGE_SCALE = 1.12f
+private const val BACKDROP_DECODE_WIDTH = 192
+private const val BACKDROP_DECODE_HEIGHT = 108
 
 /**
  * A video page. The shared player is bound to the page that came to rest; every other page, and the
