@@ -4,8 +4,8 @@ import nl.giejay.android.tv.immich.api.ApiAuthHeaders
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,6 +53,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.shared.thumbhash.ThumbHashCache
@@ -137,19 +138,14 @@ fun TimelineMosaicCell(
         if (thumbnailUrl != null && !(previewing && videoReady)) {
             // the blurred ThumbHash stands in until the thumbnail is loaded, instead of an empty grey cell
             val placeholder = remember(cell.asset.thumbhash) { ThumbHashCache.get(cell.asset.thumbhash)?.asImageBitmap() }
-            if (placeholder != null) {
-                Image(
-                    bitmap = placeholder,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize(),
-                )
-            }
             GlideImage(
                 model = thumbnailUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize(),
+                loading = placeholder?.let { bitmap ->
+                    placeholder { Image(bitmap = bitmap, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+                },
             )
         }
         if (!cell.asset.isImage) {
