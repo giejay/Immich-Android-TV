@@ -34,6 +34,7 @@ import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.LOAD_BACKGROUND_IMAGE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.util.Debouncer
+import nl.giejay.android.tv.immich.shared.util.runOnMainThread
 import nl.giejay.android.tv.immich.shared.viewmodel.KeyEventsViewModel
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -272,7 +273,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
         if (PreferenceManager.get(LOAD_BACKGROUND_IMAGE)) {
             Debouncer.debounce(
                 BACKGROUND_DEBOUNCE_KEY,
-                { loadBackground(backgroundUrl, onLoadFailed) },
+                // the debounce runs on its own thread; Glide would hand a cached image back on that thread too
+                { runOnMainThread { loadBackground(backgroundUrl, onLoadFailed) } },
                 1,
                 TimeUnit.SECONDS
             )
