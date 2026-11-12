@@ -42,6 +42,10 @@
         app:destination="@id/albumFragment" />
 
     <action
+        android:id="@+id/action_global_people_fragment"
+        app:destination="@id/peopleFragment" />
+
+    <action
         android:id="@+id/action_to_photo_slider"
         app:destination="@id/photoSlider" />
 
@@ -99,6 +103,19 @@
         android:id="@+id/peopleFragment"
         android:name="nl.giejay.android.tv.immich.people.PeopleFragment"
         android:label="PeopleFragment">
+
+        <argument
+            android:name="selectionMode"
+            app:argType="boolean" />
+
+        <argument
+            android:name="selectionType"
+            app:argType="string" />
+
+        <argument
+            android:name="returnTo"
+            android:defaultValue=""
+            app:argType="string" />
     </fragment>
 
     <fragment

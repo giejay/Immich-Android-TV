@@ -15,8 +15,9 @@ import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_PEOPLE
 import timber.log.Timber
-
+import kotlin.collections.emptySet
 
 
 class AuthFragmentStep1 : GuidedStepSupportFragment() {
@@ -80,6 +81,7 @@ class AuthFragmentStep1 : GuidedStepSupportFragment() {
             val navController = findNavController()
             if (SELECTED_OPTION == ACTION_DEMO) {
                 PreferenceManager.save(SCREENSAVER_ALBUMS, emptySet())
+                PreferenceManager.save(SCREENSAVER_PEOPLE, emptySet())
                 PreferenceManager.save(API_KEY, requireContext().resources.getString(R.string.api_key))
                 PreferenceManager.save(HOST_NAME, hostName)
                 navController.navigate(AuthFragmentStep1Directions.actionGlobalHomeFragment(), NavOptions.Builder().setPopUpTo(R.id.authFragment, true).build())

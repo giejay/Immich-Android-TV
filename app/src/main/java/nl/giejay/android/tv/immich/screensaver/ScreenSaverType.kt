@@ -24,5 +24,10 @@ enum class ScreenSaverType : EnumWithTitle {
         override fun getTitle(): String {
             return ImmichApplication.appContext!!.getString(R.string.seasonal)
         }
-    }
+    },
+    PEOPLE {
+        override fun getTitle(): String {
+            return ImmichApplication.appContext!!.getString(R.string.people)
+        }
+    },
 }

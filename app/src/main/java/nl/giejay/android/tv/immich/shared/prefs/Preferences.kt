@@ -20,9 +20,11 @@ import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
 import nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelManager
+import nl.giejay.android.tv.immich.people.PeopleFragmentDirections
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
 import nl.giejay.android.tv.immich.security.ApiKeyCipher
 import nl.giejay.mediaslider.transformations.GlideTransformations
+import java.util.Collections.emptySet
 
 // general
 data object DISABLE_SSL_VERIFICATION : BooleanPref(false,
@@ -164,6 +166,21 @@ data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(),
     override fun onClick(context: Context, controller: NavController): Boolean {
         controller.navigate(
             AlbumFragmentDirections.actionGlobalAlbumFragment(
+                true,
+                SelectionType.SET_SCREENSAVER.toString(),
+                "screensaver"
+            )
+        )
+        return true
+    }
+}
+
+data object SCREENSAVER_PEOPLE : StringSetPref(mutableSetOf(),
+    ImmichApplication.appContext!!.getString(R.string.set_people_screensaver),
+    ImmichApplication.appContext!!.getString(R.string.set_people_screensaver_desc)) {
+    override fun onClick(context: Context, controller: NavController): Boolean {
+        controller.navigate(
+            PeopleFragmentDirections.actionGlobalPeopleFragment(
                 true,
                 SelectionType.SET_SCREENSAVER.toString(),
                 "screensaver"
@@ -622,6 +639,7 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_INTERVAL,
                 SCREENSAVER_TYPE,
                 SCREENSAVER_ALBUMS,
+                SCREENSAVER_PEOPLE,
                 SCREENSAVER_SHOW_DATE_TOP_LEFT,
                 SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,

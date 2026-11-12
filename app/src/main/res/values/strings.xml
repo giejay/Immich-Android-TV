@@ -122,6 +122,9 @@
     <string name="set_albums_screensaver">Set albums to show in screensaver</string>
     <string name="set_albums_screensaver_desc">Set albums to show in screensaver</string>
     <string name="set_albums_screensaver_error">Set the Immich albums to show in the screensaver settings</string>
+    <string name="set_people_screensaver">Set people to show in screensaver</string>
+    <string name="set_people_screensaver_desc">Set people to show in screensaver</string>
+    <string name="set_people_screensaver_error">Set the Immich people to show in the screensaver settings</string>
     <string name="customize_metadata">Customize metadata</string>
     <string name="configure_metadata_screensaver">Configure what to show in screensaver</string>
     <string name="include_videos">Include videos</string>

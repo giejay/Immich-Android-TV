@@ -123,6 +123,9 @@
     <string name="set_albums_screensaver">Выбрать альбомы для заставки</string>
     <string name="set_albums_screensaver_desc">Выбрать альбомы для отображения в заставке</string>
     <string name="set_albums_screensaver_error">Выберите альбомы для отображения в заставке</string>
+    <string name="set_people_screensaver">Настройте людей на отображение в заставке</string>
+    <string name="set_people_screensaver_desc">Настройте людей на отображение в заставке</string>
+    <string name="set_people_screensaver_error">Настройте людей из Иммиха так, чтобы они отображались в настройках заставки</string>
     <string name="customize_metadata">Настроить метаданные</string>
     <string name="configure_metadata_screensaver">Настроить, что показывать в заставке</string>
     <string name="include_videos">Включать видео</string>

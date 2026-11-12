@@ -119,6 +119,9 @@
     <string name="set_albums_screensaver">选择屏保中显示的相册</string>
     <string name="set_albums_screensaver_desc">选择要在屏保中显示的相册</string>
     <string name="set_albums_screensaver_error">请在屏保设置中选择要显示的 Immich 相册</string>
+    <string name="set_people_screensaver">设置人用屏幕保护程序显示</string>
+    <string name="set_people_screensaver_desc">设置人用屏幕保护程序显示</string>
+    <string name="set_people_screensaver_error">在屏保设置中将 Immich 的人设置为显示</string>
     <string name="customize_metadata">自定义元数据</string>
     <string name="configure_metadata_screensaver">配置屏保中显示的内容</string>
     <string name="include_videos">包含视频</string>
