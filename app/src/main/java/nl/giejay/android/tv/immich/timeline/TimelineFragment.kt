@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.timeline
 
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import arrow.core.Either
 import android.os.Handler
 import android.os.Looper
 import android.util.TypedValue
@@ -1126,16 +1127,23 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
 }
 
+/**
+ * @param userId a partner's user id to show their timeline; null for the signed-in user's own.
+ * Memories are built from the signed-in user's library, so a partner timeline has none.
+ */
 class TimelineViewModelFactory(
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val userId: String? = null
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TimelineViewModel::class.java)) {
             return TimelineViewModel(
-                fetchBuckets = { apiClient.getTimeBuckets() },
-                fetchBucket = { apiClient.getTimeBucket(it) },
-                fetchMemories = { apiClient.getMemories() }
+                fetchBuckets = { apiClient.getTimeBuckets(userId) },
+                fetchBucket = { apiClient.getTimeBucket(it, userId) },
+                fetchMemories = {
+                    if (userId == null) apiClient.getMemories() else Either.Right(emptyList())
+                }
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
