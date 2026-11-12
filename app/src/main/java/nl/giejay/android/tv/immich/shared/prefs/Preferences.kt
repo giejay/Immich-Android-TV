@@ -427,11 +427,12 @@ data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST
     ImmichApplication.appContext!!.getString(R.string.assets_outside_albums),
     ImmichApplication.appContext!!.getString(R.string.assets_outside_albums_desc)) {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
-        return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+        // RANDOM is not offered here (the "Random" tab already covers it); ignore a stale stored value
+        return PhotosOrder.valueOfSafe(prefValue, defaultValue).takeIf { it != PhotosOrder.RANDOM } ?: defaultValue
     }
 
     override fun getEnumEntries(): Array<PhotosOrder> {
-        return PhotosOrder.entries.toTypedArray()
+        return PhotosOrder.entries.filter { it != PhotosOrder.RANDOM }.toTypedArray()
     }
 }
 

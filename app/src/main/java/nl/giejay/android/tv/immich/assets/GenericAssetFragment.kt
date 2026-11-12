@@ -78,6 +78,8 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
             .filterNot { excludedAssetIds.contains(it.id) }
     }
 
+    override fun itemKey(item: Asset): Any = item.id
+
     private fun excludeByTag() = { asset: Asset ->
         asset.tags?.none { t -> t.name == "exclude_immich_tv" } ?: true
     }

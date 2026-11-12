@@ -58,7 +58,8 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     private val assetsStillToRender: MutableList<ITEM> = mutableListOf()
     protected var currentPage: Int = startPage
     protected var allPagesLoaded: Boolean = false
-    private var currentLoadingJob: Job? = null
+    private var initialLoadingJob: Job? = null
+    protected var currentLoadingJob: Job? = null
     protected val selectionMode: Boolean
         get() = arguments?.getBoolean("selectionMode", false) ?: false
     private var currentSelectedIndex: Int = 0
@@ -150,7 +151,7 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     protected open fun fetchInitialItems() {
-        ioScope.launch {
+        initialLoadingJob = ioScope.launch {
             loadData().fold(
                 { itLeft -> showErrorMessage(itLeft) },
                 { itRight ->
@@ -185,7 +186,11 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     protected open fun clearState() {
+        // cancel in-flight loads of the previous sort/filter so they cannot append stale items
+        initialLoadingJob?.cancel()
+        currentLoadingJob?.cancel()
         currentPage = startPage
+        allPagesLoaded = false
         assets = emptyList()
         assetsStillToRender.clear()
         adapter.clear()
@@ -203,6 +208,9 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     protected open fun filterItems(items: List<ITEM>): List<ITEM> = items
+
+    /** Identity used to drop duplicates when new batches are added; defaults to equality of the item itself. */
+    protected open fun itemKey(item: ITEM): Any = item as Any
 
     protected open suspend fun loadMoreAssets(): List<ITEM> {
         if (allPagesLoaded) {
@@ -281,7 +289,9 @@ abstract class VerticalCardGridFragment<ITEM> : GridFragment() {
     }
 
     protected open fun setData(assets: List<ITEM>) {
-        val sortedItems = sortItems(assets.filter { !this@VerticalCardGridFragment.assets.contains(it) })
+        val knownKeys = this@VerticalCardGridFragment.assets.mapTo(HashSet()) { itemKey(it) }
+        // add() also drops duplicates inside the incoming batch itself
+        val sortedItems = sortItems(assets.filter { knownKeys.add(itemKey(it)) })
         this@VerticalCardGridFragment.assets += sortedItems
         assetsStillToRender.addAll(sortedItems)
         addAssetsPaginated()
