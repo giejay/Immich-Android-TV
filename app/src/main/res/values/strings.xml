@@ -67,6 +67,8 @@
     <string name="recent">Recent</string>
     <string name="albums">Albums</string>
     <string name="timeline">Timeline</string>
+    <string name="partners">Partners</string>
+    <string name="partners_empty">No one is sharing their library with you. Partner sharing is set up in Immich\'s web interface.</string>
     <string name="this_month">This month</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
