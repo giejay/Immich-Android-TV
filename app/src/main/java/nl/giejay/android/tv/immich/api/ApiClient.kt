@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Memory
+import nl.giejay.android.tv.immich.api.model.Partner
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
@@ -89,6 +90,12 @@ internal fun resolveWithPartners(showPartnerPhotosInTimeline: Boolean): Boolean?
     return if (showPartnerPhotosInTimeline) true else null
 }
 
+// A partner's own timeline (userId set) must never send withPartners: the server would add all of
+// the caller's partners to the userId filter. The preference only applies to the own timeline.
+internal fun resolveTimelineWithPartners(userId: String?, showPartnerPhotosInTimeline: Boolean): Boolean? {
+    return if (userId != null) null else resolveWithPartners(showPartnerPhotosInTimeline)
+}
+
 internal fun SearchResponse.toAssetResponse(): AssetResponse =
     AssetResponse(assets.items, assets.nextPage != null)
 
@@ -130,6 +137,11 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun listPeople(): Either<String, List<Person>> {
         return executeAPICall(200) { service.listPeople() }.map { response -> response.people.filter { !it.name.isNullOrBlank() } }
+    }
+
+    /** Users who share their library with the signed-in user, sorted by name. */
+    suspend fun listPartners(): Either<String, List<Partner>> {
+        return executeAPICall(200) { service.listPartners() }.map { partners -> partners.sortedBy { it.name.lowercase() } }
     }
 
     suspend fun listAssetsFromAlbum(albumIds: List<String>,
@@ -278,9 +290,13 @@ class ApiClient(private val config: ApiClientConfig) {
         }
     }
 
-    suspend fun getTimeBuckets(): Either<String, List<TimeBucketSummary>> =
+    /** @param userId another user's (partner's) timeline; null for the signed-in user's own. */
+    suspend fun getTimeBuckets(userId: String? = null): Either<String, List<TimeBucketSummary>> =
         executeAPICall(200) {
-            service.getTimeBuckets(withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)))
+            service.getTimeBuckets(
+                withPartners = resolveTimelineWithPartners(userId, PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)),
+                userId = userId
+            )
         }
 
     /**
@@ -289,9 +305,13 @@ class ApiClient(private val config: ApiClientConfig) {
      * V1 gap: [excludeByTag] / EXCLUDE_ASSETS_IN_ALBUM cannot apply here — bucket responses
      * omit tags and album membership. Filtering those requires a follow-up ID set cross-check.
      */
-    suspend fun getTimeBucket(timeBucket: String): Either<String, List<TimelineAsset>> =
+    suspend fun getTimeBucket(timeBucket: String, userId: String? = null): Either<String, List<TimelineAsset>> =
         executeAPICall(200) {
-            service.getTimeBucket(timeBucket, withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)))
+            service.getTimeBucket(
+                timeBucket,
+                withPartners = resolveTimelineWithPartners(userId, PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)),
+                userId = userId
+            )
         }.map { it.toTimelineAssets() }
 
     /** "On this day" style memories for the current moment (server filters by day-of-year). */
