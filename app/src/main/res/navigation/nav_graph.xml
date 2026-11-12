@@ -95,6 +95,19 @@
             app:destination="@id/peopleFragment" />
     </fragment>
 
+    <!-- A partner's timeline: the regular Timeline, standalone and filtered to that user -->
+    <fragment
+        android:id="@+id/partnerTimelineFragment"
+        android:name="nl.giejay.android.tv.immich.timeline.TimelineFragment"
+        android:label="PartnerTimelineFragment">
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <argument
+            android:name="userName"
+            app:argType="string" />
+    </fragment>
+
     <fragment
         android:id="@+id/peopleFragment"
         android:name="nl.giejay.android.tv.immich.people.PeopleFragment"
@@ -128,6 +141,11 @@
         <argument
             android:name="timelineView"
             android:defaultValue="false"
+            app:argType="boolean" />
+        <!-- false for another user's assets (a partner's timeline): they can't be favourited -->
+        <argument
+            android:name="allowFavorite"
+            android:defaultValue="true"
             app:argType="boolean" />
         <action
             android:id="@+id/photo_slider_to_album_details_fragment"
@@ -215,6 +233,9 @@
         <action
             android:id="@+id/action_homeFragment_to_personAssetsFragment"
             app:destination="@id/personAssetsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_partnerTimelineFragment"
+            app:destination="@id/partnerTimelineFragment" />
         <action
             android:id="@+id/action_homeFragment_to_view_settings"
             app:destination="@id/viewSettings" />
