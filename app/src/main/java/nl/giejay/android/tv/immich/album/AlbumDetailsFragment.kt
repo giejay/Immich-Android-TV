@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.album
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
 import nl.giejay.android.tv.immich.api.ApiClient
+import nl.giejay.android.tv.immich.api.MAX_SEARCH_PAGE_SIZE
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.assets.GenericAssetFragment
 import nl.giejay.android.tv.immich.card.Card
@@ -30,7 +31,13 @@ class AlbumDetailsFragment : GenericAssetFragment() {
         return PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId, albumName)
     }
 
+    // Only used while sorting on RANDOM; recreated whenever sort or filter changes (see clearState)
+    private var randomLoader: RandomAlbumAssetLoader? = null
+
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
+        if (currentSort == PhotosOrder.RANDOM) {
+            return loadRandomItems(apiClient, pageCount)
+        }
         return apiClient.listAssets(
             page = page,
             pageCount = pageCount,
@@ -38,6 +45,38 @@ class AlbumDetailsFragment : GenericAssetFragment() {
             contentType = currentFilter,
             albumIds = listOf(albumId)
         ).map { it.assets.map { a -> a.copy(albumName = albumName) } }
+    }
+
+    private suspend fun loadRandomItems(apiClient: ApiClient, pageCount: Int): Either<String, List<Asset>> {
+        val loader = randomLoader ?: RandomAlbumAssetLoader(
+            albumAssetCount = { apiClient.getAlbum(albumId).map { it.assetCount } },
+            randomFetch = { size ->
+                apiClient.listAssets(
+                    page = 1,
+                    pageCount = size,
+                    random = true,
+                    contentType = currentFilter,
+                    albumIds = listOf(albumId)
+                ).map { it.assets }
+            },
+            sweepFetch = {
+                apiClient.listAssetsFromAlbum(listOf(albumId), currentFilter, MAX_SEARCH_PAGE_SIZE).map { it.assets }
+            }
+        ).also { randomLoader = it }
+        return loader.next(pageCount).map { it.map { a -> a.copy(albumName = albumName) } }
+    }
+
+    override fun allPagesLoaded(items: List<Asset>): Boolean {
+        return if (currentSort == PhotosOrder.RANDOM) {
+            randomLoader?.exhausted ?: true
+        } else {
+            super.allPagesLoaded(items)
+        }
+    }
+
+    override fun clearState() {
+        super.clearState()
+        randomLoader = null
     }
 
     override fun onItemSelected(card: Card, indexOf: Int) {

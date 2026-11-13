@@ -28,6 +28,13 @@ enum class PhotosOrder(val sort: Comparator<Asset>): EnumWithTitle {
         override fun getTitle(): String {
             return ImmichApplication.appContext!!.getString(R.string.order_oldest_newest)
         }
+    },
+    // Keeps the order in which assets arrive (sortedWith is stable). Only meaningful for sources that
+    // deliver assets in random order themselves, e.g. album details via RandomAlbumAssetLoader.
+    RANDOM({ _, _ -> 0 }) {
+        override fun getTitle(): String {
+            return ImmichApplication.appContext!!.getString(R.string.random)
+        }
     };
 
     companion object {
