@@ -390,6 +390,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
     override fun onResume() {
         super.onResume()
+        if (!::viewModel.isInitialized) return
         clearBackground()
         // Leanback may restore focus to the opened mosaic cell before leave-off runs.
         if (TimelineLeaveOff.shouldForceLeaveOffRestore(viewModel.pendingResumeAssetId)) {
