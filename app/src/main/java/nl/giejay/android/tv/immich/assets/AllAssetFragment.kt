@@ -18,7 +18,8 @@ class AllAssetFragment : GenericAssetFragment() {
             pageCount,
             false,
             if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc",
-            contentType = currentFilter).map { it.assets }
+            contentType = currentFilter,
+            isFavorite = isFavoriteFilter).map { it.assets }
     }
 
     override fun showMediaCount(): Boolean {

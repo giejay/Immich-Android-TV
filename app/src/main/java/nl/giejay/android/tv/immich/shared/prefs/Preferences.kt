@@ -160,6 +160,10 @@ data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in),
     ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in_desc))
 
+data object SCREENSAVER_SHOW_FAVORITES_ONLY : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only),
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only_desc))
+
 data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(),
     ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver),
     ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver_desc)) {
@@ -439,7 +443,6 @@ object FILTER_CONTENT_TYPE : EnumByTitlePref<ContentType>(ContentType.ALL,
     }
 }
 
-
 data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST_OLDEST,
     ImmichApplication.appContext!!.getString(R.string.assets_outside_albums),
     ImmichApplication.appContext!!.getString(R.string.assets_outside_albums_desc)) {
@@ -452,6 +455,18 @@ data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST
         return PhotosOrder.entries.filter { it != PhotosOrder.RANDOM }.toTypedArray()
     }
 }
+
+data class FILTER_FAVORITES_ONLY_FOR_SPECIFIC_ALBUM(val albumId: String) : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only),
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only_desc)) {
+    override fun key(): String {
+        return "filter_favorites_only_${albumId}"
+    }
+}
+
+data object ALL_ASSETS_SHOW_FAVORITES_ONLY : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only),
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only_desc))
 
 // other
 data object DEBUG_MODE : BooleanPref(false,
@@ -582,7 +597,8 @@ data object ViewContentPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
             SIMILAR_ASSETS_PERIOD_DAYS,
             RECENT_ASSETS_MONTHS_BACK,
             EXCLUDE_ASSETS_IN_ALBUM,
-            SHOW_PARTNER_PHOTOS_IN_TIMELINE
+            SHOW_PARTNER_PHOTOS_IN_TIMELINE,
+            ALL_ASSETS_SHOW_FAVORITES_ONLY
         ))
     )
 )
@@ -644,6 +660,7 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_SHOW_DATE_TOP_LEFT,
                 SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,
+                SCREENSAVER_SHOW_FAVORITES_ONLY,
                 SCREENSAVER_PLAY_SOUND,
                 SCREENSAVER_ANIMATE_ASSET_SLIDE)
         )
@@ -671,7 +688,11 @@ data class AlbumDetailsSettingsScreen(val albumId: String,
     "album_settings_${albumId}",
     listOf(
         PrefCategory(ImmichApplication.appContext!!.getString(R.string.ordering), listOf(PHOTOS_SORTING_FOR_SPECIFIC_ALBUM(albumId, albumName))),
-        PrefCategory(ImmichApplication.appContext!!.getString(R.string.filtering), listOf(FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(albumId, albumName)))
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.filtering),
+            listOf(
+                FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM(albumId, albumName),
+                FILTER_FAVORITES_ONLY_FOR_SPECIFIC_ALBUM(albumId)
+            ))
     )
 )
 
@@ -679,6 +700,6 @@ data object GenericAssetsSettingsScreen : PrefScreen(ImmichApplication.appContex
     "generic_assets_settings",
     listOf(
         PrefCategory(ImmichApplication.appContext!!.getString(R.string.ordering), listOf(ALL_ASSETS_SORTING)),
-        PrefCategory(ImmichApplication.appContext!!.getString(R.string.filtering), listOf(FILTER_CONTENT_TYPE))
+        PrefCategory(ImmichApplication.appContext!!.getString(R.string.filtering), listOf(FILTER_CONTENT_TYPE, ALL_ASSETS_SHOW_FAVORITES_ONLY))
     )
 )

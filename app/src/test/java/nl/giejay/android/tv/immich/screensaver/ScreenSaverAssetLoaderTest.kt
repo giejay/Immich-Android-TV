@@ -23,6 +23,7 @@ import nl.giejay.android.tv.immich.shared.prefs.HOST_NAME
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.Pref
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
+import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_SHOW_FAVORITES_ONLY
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_TYPE
 import nl.giejay.android.tv.immich.slider.FavoriteService
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
@@ -118,7 +119,8 @@ class ScreenSaverAssetLoaderTest {
                     fromDate = anyOrNull(),
                     endDate = anyOrNull(),
                     contentType = eq(ContentType.IMAGE),
-                    albumIds = eq(listOf("shared-album"))
+                    albumIds = eq(listOf("shared-album")),
+                    isFavorite = eq(false)
                 )
             ).thenReturn(Either.Right(AssetResponse(emptyList(), true)))
 
@@ -126,7 +128,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.listAssetsFromAlbum(
                     albumIds = eq(listOf("shared-album")),
                     contentType = eq(ContentType.IMAGE),
-                    pageCount = eq(1000)
+                    pageCount = eq(1000),
+                    isFavorite = eq(false)
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("shared-asset")), false)))
         }
@@ -140,12 +143,14 @@ class ScreenSaverAssetLoaderTest {
             isNull(),
             isNull(),
             eq(ContentType.IMAGE),
-            eq(listOf("shared-album"))
+            eq(listOf("shared-album")),
+            eq(false)
         )
         verify(apiClient, times(1)).listAssetsFromAlbum(
             eq(listOf("shared-album")),
             eq(ContentType.IMAGE),
-            eq(1000)
+            eq(1000),
+            isFavorite = eq(false)
         )
         assertThat(actual.items.single().ids()).containsExactly("shared-asset")
     }
@@ -164,7 +169,8 @@ class ScreenSaverAssetLoaderTest {
                     fromDate = anyOrNull(),
                     endDate = anyOrNull(),
                     contentType = any(),
-                    albumIds = any()
+                    albumIds = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("random-asset")), true)))
         }
@@ -180,7 +186,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.recentAssets(
                     page = any(),
                     pageCount = any(),
-                    contentType = any()
+                    contentType = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("recent-asset")), true)))
         }
@@ -196,7 +203,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.similarAssets(
                     page = any(),
                     pageCount = any(),
-                    contentType = any()
+                    contentType = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("similar-asset")), true)))
         }
@@ -213,7 +221,8 @@ class ScreenSaverAssetLoaderTest {
                 apiClient.listAssetsFromAlbum(
                     albumIds = eq(listOf("excluded-album")),
                     contentType = any(),
-                    pageCount = any()
+                    pageCount = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("excluded-asset")), false)))
 
@@ -227,14 +236,15 @@ class ScreenSaverAssetLoaderTest {
                     fromDate = anyOrNull(),
                     endDate = anyOrNull(),
                     contentType = any(),
-                    albumIds = any()
+                    albumIds = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("random-asset"), asset("excluded-asset")), true)))
         }
     ) { actual, apiClient ->
         // Immich rejects search page sizes above 1000; a larger value silently disabled album exclusion
         val pageCountCaptor = argumentCaptor<Int>()
-        verify(apiClient).listAssetsFromAlbum(eq(listOf("excluded-album")), any(), pageCountCaptor.capture())
+        verify(apiClient).listAssetsFromAlbum(eq(listOf("excluded-album")), any(), pageCountCaptor.capture(), any())
         assertThat(pageCountCaptor.firstValue).isAtMost(MAX_SEARCH_PAGE_SIZE)
         assertThat(actual.items.single().ids()).containsExactly("random-asset")
     }
@@ -254,7 +264,8 @@ class ScreenSaverAssetLoaderTest {
                     fromDate = anyOrNull(),
                     endDate = anyOrNull(),
                     contentType = any(),
-                    albumIds = any()
+                    albumIds = any(),
+                    isFavorite = any()
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("normal-asset"), taggedAsset), true)))
         }
@@ -274,6 +285,7 @@ class ScreenSaverAssetLoaderTest {
         setPreference(SCREENSAVER_TYPE, type)
         setPreference(SCREENSAVER_ALBUMS, albums)
         setPreference(EXCLUDE_ASSETS_IN_ALBUM, excludedAlbums)
+        setPreference(SCREENSAVER_SHOW_FAVORITES_ONLY, false)
 
         val apiClient = mock<ApiClient>()
         setupMocks(apiClient)
@@ -318,6 +330,7 @@ class ScreenSaverAssetLoaderTest {
         people = null,
         tags = null,
         originalPath = null,
-        originalFileName = null
+        originalFileName = null,
+        isFavorite = false
     )
 }
