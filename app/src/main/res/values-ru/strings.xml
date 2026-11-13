@@ -119,7 +119,7 @@
     <string name="show_clock">Показывать часы</string>
     <string name="show_clock_screensaver">Показывать часы в заставке</string>
     <string name="show_favorites_only">Только избранное шоу</string>
-    <string name="show_favorites_only_desc">Показывать только любимые фотографии в заставке</string>
+    <string name="show_favorites_only_desc">Показать только любимые фотографии</string>
     <string name="slide_new_asset_in">Сдвигать новый элемент</string>
     <string name="slide_new_asset_in_desc">Сдвигать новый элемент при переходе</string>
     <string name="set_albums_screensaver">Выбрать альбомы для заставки</string>

@@ -118,7 +118,7 @@
     <string name="show_clock">Afficher l’horloge</string>
     <string name="show_clock_screensaver">Afficher l’horloge dans l’écran de veille</string>
     <string name="show_favorites_only">Uniquement les favoris de l’émission</string>
-    <string name="show_favorites_only_desc">Afficher uniquement ses photos préférées dans l’économiseur d’écran</string>
+    <string name="show_favorites_only_desc">Montrer seulement ses photos préférées</string>
     <string name="slide_new_asset_in">Faire glisser le nouvel élément</string>
     <string name="slide_new_asset_in_desc">Faire glisser le nouvel élément lors de la transition</string>
     <string name="set_albums_screensaver">Définir les albums à afficher dans l’écran de veille</string>

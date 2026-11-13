@@ -120,7 +120,7 @@
     <string name="show_clock">Show clock</string>
     <string name="show_clock_screensaver">Show clock in screensaver</string>
     <string name="show_favorites_only">Show favorites only</string>
-    <string name="show_favorites_only_desc">Show only favorite photos in screensaver</string>
+    <string name="show_favorites_only_desc">Show only favorite photos</string>
     <string name="slide_new_asset_in">Slide the new asset in</string>
     <string name="slide_new_asset_in_desc">Slide the new asset in when transitioning</string>
     <string name="set_albums_screensaver">Set albums to show in screensaver</string>

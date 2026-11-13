@@ -8,9 +8,11 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.assets.GenericAssetFragment
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+import nl.giejay.android.tv.immich.shared.prefs.BooleanPref
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
 import nl.giejay.android.tv.immich.shared.prefs.FILTER_CONTENT_TYPE_FOR_SPECIFIC_ALBUM
+import nl.giejay.android.tv.immich.shared.prefs.FILTER_FAVORITES_ONLY_FOR_SPECIFIC_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PHOTOS_SORTING_FOR_SPECIFIC_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PhotosOrder
 
@@ -34,6 +36,11 @@ class AlbumDetailsFragment : GenericAssetFragment() {
     // Only used while sorting on RANDOM; recreated whenever sort or filter changes (see clearState)
     private var randomLoader: RandomAlbumAssetLoader? = null
 
+    override fun getFavoritesKey(): BooleanPref {
+        albumId = AlbumDetailsFragmentArgs.fromBundle(requireArguments()).albumId
+        return FILTER_FAVORITES_ONLY_FOR_SPECIFIC_ALBUM(albumId)
+    }
+
     override suspend fun loadItems(apiClient: ApiClient, page: Int, pageCount: Int): Either<String, List<Asset>> {
         if (currentSort == PhotosOrder.RANDOM) {
             return loadRandomItems(apiClient, pageCount)
@@ -43,7 +50,8 @@ class AlbumDetailsFragment : GenericAssetFragment() {
             pageCount = pageCount,
             order = if (currentSort == PhotosOrder.NEWEST_OLDEST) "desc" else "asc",
             contentType = currentFilter,
-            albumIds = listOf(albumId)
+            albumIds = listOf(albumId),
+            isFavorite = isFavoriteFilter
         ).map { it.assets.map { a -> a.copy(albumName = albumName) } }
     }
 
