@@ -3,7 +3,6 @@ package nl.giejay.android.tv.immich.api
 import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
-import arrow.core.flatMap
 import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
@@ -24,7 +23,6 @@ import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
-import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.RECENT_ASSETS_MONTHS_BACK
 import nl.giejay.android.tv.immich.shared.prefs.SHOW_PARTNER_PHOTOS_IN_TIMELINE
@@ -68,7 +66,8 @@ internal fun buildListAssetsSearchRequest(
     type: String?,
     personIds: List<UUID>,
     endDate: String?,
-    fromDate: String?
+    fromDate: String?,
+    isFavorite: Boolean
 ): SearchRequest = SearchRequest(
     page = page,
     size = pageCount,
@@ -80,7 +79,8 @@ internal fun buildListAssetsSearchRequest(
     takenAfter = fromDate,
     // "timeline" reproduces pre-v3 default for normal browsing; album-scoped search
     // omits it so archived-in-album assets keep showing (VIS-02)
-    visibility = if (albumIds.isEmpty()) "timeline" else null
+    visibility = if (albumIds.isEmpty()) "timeline" else null,
+    isFavorite = isFavorite
 )
 
 // internal so app/src/test can call it directly without instantiating ApiClient/Retrofit.
@@ -116,7 +116,7 @@ class ApiClient(private val config: ApiClientConfig) {
         // but Immich v3's takenBefore/takenAfter schema requires a mandatory trailing Z/offset
         // (^...T...(?:Z|[+-]HH:mm)$) - v2 tolerated the offset-less form, v3's stricter validation
         // rejects it with a 400. Attach the device's zone before formatting so the offset is always present.
-        val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+        val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
     }
 
     private val retrofit = Retrofit.Builder()
@@ -150,7 +150,8 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun listAssetsFromAlbum(albumIds: List<String>,
                                     contentType: ContentType = ContentType.ALL,
-                                    pageCount: Int = 100): Either<String, AssetResponse> {
+                                    pageCount: Int = 100,
+                                    isFavorite: Boolean = false): Either<String, AssetResponse> {
         val results = albumIds.pmap { albumId ->
             val album = executeAPICall(200) { service.getAlbum(albumId) }
                 .getOrElse { return@pmap Either.Left(it) }
@@ -165,7 +166,8 @@ class ApiClient(private val config: ApiClientConfig) {
                     page = page,
                     size = size,
                     albumIds = listOf(albumId),
-                    type = if (contentType == ContentType.ALL) null else contentType.toString()
+                    type = if (contentType == ContentType.ALL) null else contentType.toString(),
+                    isFavorite = isFavorite
                 ))
             }
 
@@ -185,14 +187,14 @@ class ApiClient(private val config: ApiClientConfig) {
         return Either.Right(AssetResponse(allAssets.filter(excludeByTag()), false))
     }
 
-    suspend fun recentAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
+    suspend fun recentAssets(page: Int, pageCount: Int, contentType: ContentType, isFavorite: Boolean = false): Either<String, AssetResponse> {
         val now = LocalDateTime.now()
-        return listAssets(page, pageCount, true, "desc",
+        return listAssets(page, pageCount, true, "desc", isFavorite = isFavorite,
             contentType = contentType, fromDate = now.minusMonths(PreferenceManager.get(RECENT_ASSETS_MONTHS_BACK).toLong()), endDate = now)
             .map { it.copy(assets = it.assets.shuffled()) }
     }
 
-    suspend fun similarAssets(page: Int, pageCount: Int, contentType: ContentType): Either<String, AssetResponse> {
+    suspend fun similarAssets(page: Int, pageCount: Int, contentType: ContentType, isFavorite: Boolean = false): Either<String, AssetResponse> {
         val now = LocalDateTime.now()
         val map: List<Either<String, AssetResponse>> = (0 until PreferenceManager.get(SIMILAR_ASSETS_YEARS_BACK)).toList().map {
             listAssets(page,
@@ -201,7 +203,8 @@ class ApiClient(private val config: ApiClientConfig) {
                 "desc",
                 fromDate = now.minusDays((PreferenceManager.get(SIMILAR_ASSETS_PERIOD_DAYS) / 2).toLong()).minusYears(it.toLong()),
                 endDate = now.plusDays((PreferenceManager.get(SIMILAR_ASSETS_PERIOD_DAYS) / 2).toLong()).minusYears(it.toLong()),
-                contentType = contentType)
+                contentType = contentType,
+                isFavorite = isFavorite)
         }
         if (map.all { it.isLeft() }) {
             return map.first()
@@ -221,7 +224,8 @@ class ApiClient(private val config: ApiClientConfig) {
                            fromDate: LocalDateTime? = null,
                            endDate: LocalDateTime? = null,
                            contentType: ContentType,
-                           albumIds: List<String> = emptyList()): Either<String, AssetResponse> {
+                           albumIds: List<String> = emptyList(),
+                           isFavorite: Boolean = false): Either<String, AssetResponse> {
         val searchRequest = buildListAssetsSearchRequest(
             page = page,
             pageCount = pageCount,
@@ -230,7 +234,8 @@ class ApiClient(private val config: ApiClientConfig) {
             type = if (contentType == ContentType.ALL) null else contentType.toString(),
             personIds = personIds,
             endDate = endDate?.atZone(ZoneId.systemDefault())?.format(dateTimeFormatter),
-            fromDate = fromDate?.atZone(ZoneId.systemDefault())?.format(dateTimeFormatter)
+            fromDate = fromDate?.atZone(ZoneId.systemDefault())?.format(dateTimeFormatter),
+            isFavorite = isFavorite
         )
         val assetsResult = if (random) {
             // RandomSearchDto (POST /search/random) has no `page`/`order` properties at all -
