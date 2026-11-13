@@ -24,6 +24,7 @@ import nl.giejay.android.tv.immich.assets.FolderFragment
 import nl.giejay.android.tv.immich.assets.RandomAssetsFragment
 import nl.giejay.android.tv.immich.assets.RecentAssetsFragment
 import nl.giejay.android.tv.immich.assets.SimilarTimeAssetsFragment
+import nl.giejay.android.tv.immich.partners.PartnersFragment
 import nl.giejay.android.tv.immich.people.PeopleFragment
 import nl.giejay.android.tv.immich.settings.SettingsFragment
 import nl.giejay.android.tv.immich.shared.fragment.GridFragment
@@ -133,6 +134,7 @@ class HomeFragment : BrowseSupportFragment() {
     companion object {
         private val HEADERS: List<Header> = listOf(
             Header(ImmichApplication.appContext!!.getString(R.string.timeline)) { TimelineFragment() },
+            Header(ImmichApplication.appContext!!.getString(R.string.partners)) { PartnersFragment() },
             Header(ImmichApplication.appContext!!.getString(R.string.albums)) {
                 AlbumFragment().apply {
                     arguments = bundleOf("selectionMode" to false)

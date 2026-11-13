@@ -3,6 +3,7 @@ package nl.giejay.android.tv.immich.api.service
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.Memory
+import nl.giejay.android.tv.immich.api.model.Partner
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.SearchResponse
@@ -40,12 +41,17 @@ interface ApiService {
     @PUT("assets/{id}")
     suspend fun updateAsset(@Path("id") id: String, @Body request: UpdateAssetRequest): Response<Asset>
 
+    @GET("partners")
+    suspend fun listPartners(@Query("direction") direction: String = "shared-with"): Response<List<Partner>>
+
     // VIS-02: default visibility=timeline excludes hidden/archived assets, matching listAssets.
+    // userId selects another user's timeline (a partner); omitted means the signed-in user's own.
     @GET("timeline/buckets")
     suspend fun getTimeBuckets(
         @Query("order") order: String = "desc",
         @Query("visibility") visibility: String? = "timeline",
-        @Query("withPartners") withPartners: Boolean? = null
+        @Query("withPartners") withPartners: Boolean? = null,
+        @Query("userId") userId: String? = null
     ): Response<List<TimeBucketSummary>>
 
     @GET("timeline/bucket")
@@ -53,7 +59,8 @@ interface ApiService {
         @Query("timeBucket") timeBucket: String,
         @Query("order") order: String = "desc",
         @Query("visibility") visibility: String? = "timeline",
-        @Query("withPartners") withPartners: Boolean? = null
+        @Query("withPartners") withPartners: Boolean? = null,
+        @Query("userId") userId: String? = null
     ): Response<TimeBucketAssetsResponse>
 
     @GET("memories")
