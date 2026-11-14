@@ -215,6 +215,7 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
                 }
 
                 config.onAssetSelected(sliderItem)
+                controller.preloadUpcoming()
 
                 if (sliderItem.type == SliderItemType.VIDEO) {
                     val viewTag = mPager.findViewWithTag<ExoPlayerView>("view$sliderItemIndex") ?: return

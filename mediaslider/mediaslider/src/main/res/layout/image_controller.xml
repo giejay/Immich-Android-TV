@@ -52,6 +52,11 @@
             android:contentDescription="@string/slideshow"
             android:src="@drawable/slideshow" />
 
+        <ImageButton
+            android:id="@+id/image_slideshow_shuffle"
+            style="@style/TVMediaButton"
+            android:contentDescription="@string/slideshow_shuffle"
+            android:src="@drawable/ic_shuffle" />
 
         <ImageButton
             android:id="@+id/image_next"

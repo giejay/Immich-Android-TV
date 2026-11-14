@@ -19,6 +19,7 @@
     <string name="people">People</string>
     <string name="image_controller_previous">Previous</string>
     <string name="slideshow">Slideshow</string>
+    <string name="slideshow_shuffle">Shuffle slideshow</string>
 
     <string name="media_mute">Mute</string>
     <string name="media_play">Play</string>

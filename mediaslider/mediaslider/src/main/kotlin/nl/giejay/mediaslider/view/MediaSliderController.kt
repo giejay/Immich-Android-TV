@@ -17,6 +17,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.viewpager.widget.ViewPager
 import com.zeuskartik.mediaslider.R
+import nl.giejay.mediaslider.adapter.ScreenSlidePagerAdapter
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
@@ -25,9 +26,13 @@ import nl.giejay.mediaslider.plugin.ControllerPluginContext
 import nl.giejay.mediaslider.plugin.SliderKeyEventResult
 import nl.giejay.mediaslider.plugin.SliderKeyEventState
 import nl.giejay.mediaslider.util.MediaSliderListener
+import nl.giejay.mediaslider.util.ShuffleOrder
 import timber.log.Timber
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+
+enum class SlideshowMode { FORWARD, REVERSE, SHUFFLE }
 
 /**
  * Handles all control logic for the media slider:
@@ -61,9 +66,9 @@ class MediaSliderController(
     /** True while the user is actively dragging the seek bar. */
     private var isSeeking = false
 
-    private var reverseSlideShowDirection = false
-    private val goToNextAssetRunnable = Runnable { goToNextAsset() }
-    private val goToPreviousAssetRunnable = Runnable { goToPreviousAsset() }
+    private var slideshowMode = SlideshowMode.FORWARD
+    private val shuffleOrder = ShuffleOrder()
+    private val advanceSlideshowRunnable = Runnable { advanceSlideshow() }
 
     private val progressUpdateRunnable = object : Runnable {
         override fun run() {
@@ -92,12 +97,7 @@ class MediaSliderController(
 
     fun onPlaybackStateChanged(playbackState: Int) {
         if (playbackState == Player.STATE_ENDED && slideShowPlaying) {
-            if(reverseSlideShowDirection) {
-                goToPreviousAsset()
-            }
-            else{
-                goToNextAsset()
-            }
+            advanceSlideshow()
         }
     }
 
@@ -118,7 +118,7 @@ class MediaSliderController(
     fun onPlayerError(error: PlaybackException) {
         Timber.e(error, "Player error")
         if (slideShowPlaying) {
-            goToNextAsset()
+            advanceSlideshow()
         }
         clearKeepScreenOnFlags()
         stopProgressUpdates()
@@ -128,11 +128,30 @@ class MediaSliderController(
     // Slideshow
     // -------------------------------------------------------------------------
 
-    fun toggleSlideshow(showPlayIndicator: Boolean, reverseSlideShowDirection: Boolean = false) {
+    /**
+     * Starts or stops the slideshow. [mode] null resumes the last used mode; choosing a
+     * different mode while the slideshow runs switches to it instead of stopping.
+     */
+    fun toggleSlideshow(showPlayIndicator: Boolean, mode: SlideshowMode? = null) {
+        if (mode == SlideshowMode.SHUFFLE && slideshowMode != SlideshowMode.SHUFFLE) {
+            shuffleOrder.reset()
+        }
+        if (slideShowPlaying && mode != null && mode != slideshowMode) {
+            slideshowMode = mode
+            preloadUpcoming()
+            if (currentItemTypeOrNull() == SliderItemType.IMAGE) {
+                startTimerNextAsset()
+            }
+            if (showPlayIndicator) {
+                showTemporaryPlayIndicator()
+            }
+            return
+        }
         slideShowPlaying = !slideShowPlaying
-        this.reverseSlideShowDirection = reverseSlideShowDirection
+        mode?.let { slideshowMode = it }
         val itemType = currentItemTypeOrNull()
         if (slideShowPlaying) {
+            preloadUpcoming()
             if (itemType == SliderItemType.IMAGE) {
                 startTimerNextAsset()
             }
@@ -153,24 +172,21 @@ class MediaSliderController(
     fun startTimerNextAsset() {
         removeGoToAssetCallbackFromMainHandler()
         val intervalMs = (config.interval * 1000).toLong()
-        if(reverseSlideShowDirection) {
-            mainHandler.postDelayed(goToPreviousAssetRunnable, intervalMs)
-        }
-        else{
-            mainHandler.postDelayed(goToNextAssetRunnable, intervalMs)
-        }
+        mainHandler.postDelayed(advanceSlideshowRunnable, intervalMs)
         config.controllerPlugins.forEach {
             it.onAssetTimerStarted(intervalMs, this, config, context, mainHandler)
         }
     }
-    fun removeGoToAssetCallbackFromMainHandler(){
-        if(reverseSlideShowDirection) {
-            mainHandler.removeCallbacks(goToPreviousAssetRunnable)
-        }
-        else{
-            mainHandler.removeCallbacks(goToNextAssetRunnable)
-        }
+    fun removeGoToAssetCallbackFromMainHandler() {
+        mainHandler.removeCallbacks(advanceSlideshowRunnable)
     }
+
+    private fun advanceSlideshow() {
+        if (slideshowMode == SlideshowMode.REVERSE) goToPreviousAsset() else goToNextAsset()
+    }
+
+    /** Stays true while a shuffled slideshow is paused, so previous/next keep following the shuffle. */
+    private val isShuffling: Boolean get() = slideshowMode == SlideshowMode.SHUFFLE
 
     /** Cancels any pending auto-advance timer without starting a new one. */
     fun cancelNextAssetTimer() {
@@ -195,7 +211,9 @@ class MediaSliderController(
     // -------------------------------------------------------------------------
 
     fun goToNextAsset() {
-        if (pager.currentItem < pager.adapter!!.count - 1) {
+        if (isShuffling) {
+            shuffleOrder.next(pager.currentItem, pager.adapter!!.count)?.let { jumpTo(it) }
+        } else if (pager.currentItem < pager.adapter!!.count - 1) {
             pager.setCurrentItem(pager.currentItem + 1, config.enableSlideAnimation)
         } else {
             pager.setCurrentItem(0, config.enableSlideAnimation)
@@ -207,13 +225,30 @@ class MediaSliderController(
     }
 
     fun goToPreviousAsset() {
-        pager.setCurrentItem(
-            (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
-            config.enableSlideAnimation
-        )
+        val shuffledPrevious = if (isShuffling) shuffleOrder.previous(pager.currentItem, pager.adapter!!.count) else null
+        if (shuffledPrevious != null) {
+            jumpTo(shuffledPrevious)
+        } else {
+            pager.setCurrentItem(
+                (if (0 == pager.currentItem) pager.adapter!!.count else pager.currentItem) - 1,
+                config.enableSlideAnimation
+            )
+        }
         if (!isControllerVisible) {
             restorePagerFocus()
         }
+    }
+
+    /** Preloads the page a shuffle jumps to next; the pager only preloads direct neighbours. */
+    fun preloadUpcoming() {
+        if (!isShuffling) return
+        val adapter = pager.adapter as? ScreenSlidePagerAdapter ?: return
+        shuffleOrder.peek(pager.currentItem, adapter.count)?.let { adapter.preload(it, pager.width, pager.height) }
+    }
+
+    /** Slide animation only between neighbours; scrolling across many pages looks broken. */
+    private fun jumpTo(index: Int) {
+        pager.setCurrentItem(index, config.enableSlideAnimation && abs(index - pager.currentItem) == 1)
     }
 
     // -------------------------------------------------------------------------
@@ -269,6 +304,7 @@ class MediaSliderController(
         val previousButton = controllerRootView.findViewById<ImageButton>(R.id.image_previous) ?: return
         val slideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow) ?: return
         val reverseSlideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow_reverse) ?: return
+        val shuffleSlideshowButton = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow_shuffle) ?: return
         val nextButton = controllerRootView.findViewById<ImageButton>(R.id.image_next) ?: return
         val muteButton = controllerRootView.findViewById<ImageButton>(R.id.media_mute)
         val playPauseButton = controllerRootView.findViewById<ImageButton>(R.id.media_play_pause)
@@ -283,8 +319,9 @@ class MediaSliderController(
         val hasSecondaryItem = sliderItem.hasSecondaryItem()
 
         previousButton.setOnClickListener { goToPreviousAsset() }
-        slideshowButton.setOnClickListener { toggleSlideshow(true, false) }
-        reverseSlideshowButton.setOnClickListener { toggleSlideshow(true, true) }
+        slideshowButton.setOnClickListener { toggleSlideshow(true, SlideshowMode.FORWARD) }
+        reverseSlideshowButton.setOnClickListener { toggleSlideshow(true, SlideshowMode.REVERSE) }
+        shuffleSlideshowButton.setOnClickListener { toggleSlideshow(true, SlideshowMode.SHUFFLE) }
         nextButton.setOnClickListener { goToNextAsset() }
 
         muteButton?.visibility = if (isVideo) View.VISIBLE else View.GONE
@@ -539,14 +576,13 @@ class MediaSliderController(
             }
         }
         val slideshow = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow)
-        val reverseSlideshow = controllerRootView.findViewById<ImageButton>(R.id.image_slideshow_reverse)
         if (!isVideo && slideshow?.visibility == View.VISIBLE) {
-            if(reverseSlideShowDirection){
-                reverseSlideshow.requestFocus()
+            val modeButtonId = when (slideshowMode) {
+                SlideshowMode.FORWARD -> R.id.image_slideshow
+                SlideshowMode.REVERSE -> R.id.image_slideshow_reverse
+                SlideshowMode.SHUFFLE -> R.id.image_slideshow_shuffle
             }
-            else {
-                slideshow.requestFocus()
-            }
+            (controllerRootView.findViewById<ImageButton>(modeButtonId) ?: slideshow).requestFocus()
             return
         }
         for (i in 0 until row.childCount) {

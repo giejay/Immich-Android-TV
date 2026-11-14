@@ -105,9 +105,7 @@ class ScreenSlidePagerAdapter(private val context: Context,
         if (progressBar != null) {
             progressBars[position] = progressBar
         }
-        var glideLoader = Glide.with(context)
-            .load(if (config.isOnlyUseThumbnails) model.thumbnailUrl else model.url)
-            .transform(config.glideTransformation.transform(context, config))
+        var glideLoader = imageRequest(model)
             .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(e: GlideException?,
                                           model: Any?,
@@ -134,6 +132,25 @@ class ScreenSlidePagerAdapter(private val context: Context,
         }
         glideLoader.into(imageView!!)
     }
+
+    /**
+     * Fetches and decodes the image(s) at [position] into Glide's cache, so the page shows
+     * without loading when it is reached by a jump the pager could not preload.
+     */
+    fun preload(position: Int, width: Int, height: Int) {
+        val model = items.getOrNull(position) ?: return
+        if (model.type != SliderItemType.IMAGE || width <= 0 || height <= 0) return
+        if (model.hasSecondaryItem()) {
+            imageRequest(model.mainItem).preload(width / 2, height)
+            imageRequest(model.secondaryItem!!).preload(width / 2, height)
+        } else {
+            imageRequest(model.mainItem).preload(width, height)
+        }
+    }
+
+    private fun imageRequest(model: SliderItem) = Glide.with(context)
+        .load(if (config.isOnlyUseThumbnails) model.thumbnailUrl else model.url)
+        .transform(config.glideTransformation.transform(context, config))
 
     override fun getCount(): Int {
         return items.size
