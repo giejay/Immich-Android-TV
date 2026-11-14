@@ -8,6 +8,8 @@
     <string name="clock">Clock</string>
     <string name="country">Country</string>
     <string name="date">Date</string>
+    <string name="time">Time</string>
+    <string name="current_date">Current Date</string>
     <string name="description">Description</string>
     <string name="filename">Filename</string>
     <string name="filepath">Filepath</string>

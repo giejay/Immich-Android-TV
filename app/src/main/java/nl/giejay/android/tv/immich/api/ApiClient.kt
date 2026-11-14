@@ -10,6 +10,7 @@ import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Memory
+import nl.giejay.android.tv.immich.api.model.Partner
 import nl.giejay.android.tv.immich.api.model.Person
 import nl.giejay.android.tv.immich.api.model.SearchRequest
 import nl.giejay.android.tv.immich.api.model.UpdateAssetRequest
@@ -19,7 +20,10 @@ import nl.giejay.android.tv.immich.api.model.TimelineAsset
 import nl.giejay.android.tv.immich.api.model.toTimelineAssets
 import nl.giejay.android.tv.immich.api.service.ApiService
 import nl.giejay.android.tv.immich.api.util.ApiUtil.executeAPICall
+import nl.giejay.android.tv.immich.shared.prefs.API_KEY
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
+import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
+import nl.giejay.android.tv.immich.shared.prefs.DISABLE_SSL_VERIFICATION
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.RECENT_ASSETS_MONTHS_BACK
@@ -41,7 +45,19 @@ data class ApiClientConfig(
     val apiKey: String,
     val disableSslVerification: Boolean,
     val debugMode: Boolean
-)
+) {
+    companion object {
+        fun fromPrefs(): ApiClientConfig = ApiClientConfig(
+            PreferenceManager.hostName,
+            PreferenceManager.get(API_KEY),
+            PreferenceManager.get(DISABLE_SSL_VERIFICATION),
+            PreferenceManager.get(DEBUG_MODE)
+        )
+    }
+}
+
+// Immich rejects /search/metadata and /search/random requests with a size above 1000 (400 Bad Request)
+const val MAX_SEARCH_PAGE_SIZE = 1000
 
 // internal so app/src/test can call it directly without instantiating ApiClient/Retrofit
 internal fun buildListAssetsSearchRequest(
@@ -72,6 +88,12 @@ internal fun buildListAssetsSearchRequest(
 // issue #157: partner-shared photos never showed up in the Timeline because this was never wired up.
 internal fun resolveWithPartners(showPartnerPhotosInTimeline: Boolean): Boolean? {
     return if (showPartnerPhotosInTimeline) true else null
+}
+
+// A partner's own timeline (userId set) must never send withPartners: the server would add all of
+// the caller's partners to the userId filter. The preference only applies to the own timeline.
+internal fun resolveTimelineWithPartners(userId: String?, showPartnerPhotosInTimeline: Boolean): Boolean? {
+    return if (userId != null) null else resolveWithPartners(showPartnerPhotosInTimeline)
 }
 
 internal fun SearchResponse.toAssetResponse(): AssetResponse =
@@ -113,8 +135,17 @@ class ApiClient(private val config: ApiClientConfig) {
         return executeAPICall(200) { service.listAlbums(assetId.getOrNull()) }
     }
 
-    suspend fun listPeople(): Either<String, List<Person>> {
+    suspend fun getAlbum(albumId: String): Either<String, Album> {
+        return executeAPICall(200) { service.getAlbum(albumId) }
+    }
+
+    suspend fun listPeople():Either<String, List<Person>> {
         return executeAPICall(200) { service.listPeople() }.map { response -> response.people.filter { !it.name.isNullOrBlank() } }
+    }
+
+    /** Users who share their library with the signed-in user, sorted by name. */
+    suspend fun listPartners(): Either<String, List<Partner>> {
+        return executeAPICall(200) { service.listPartners() }.map { partners -> partners.sortedBy { it.name.lowercase() } }
     }
 
     suspend fun listAssetsFromAlbum(albumIds: List<String>,
@@ -125,13 +156,14 @@ class ApiClient(private val config: ApiClientConfig) {
                 .getOrElse { return@pmap Either.Left(it) }
 
             val total = album.assetCount
-            val numPages = (total + pageCount - 1) / pageCount
+            val size = pageCount.coerceAtMost(MAX_SEARCH_PAGE_SIZE)
+            val numPages = (total + size - 1) / size
             val pages = (1..numPages).toList()
 
             val assetsResults = pages.pmap { page ->
                 search(SearchRequest(
                     page = page,
-                    size = pageCount,
+                    size = size,
                     albumIds = listOf(albumId),
                     type = if (contentType == ContentType.ALL) null else contentType.toString()
                 ))
@@ -262,9 +294,13 @@ class ApiClient(private val config: ApiClientConfig) {
         }
     }
 
-    suspend fun getTimeBuckets(): Either<String, List<TimeBucketSummary>> =
+    /** @param userId another user's (partner's) timeline; null for the signed-in user's own. */
+    suspend fun getTimeBuckets(userId: String? = null): Either<String, List<TimeBucketSummary>> =
         executeAPICall(200) {
-            service.getTimeBuckets(withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)))
+            service.getTimeBuckets(
+                withPartners = resolveTimelineWithPartners(userId, PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)),
+                userId = userId
+            )
         }
 
     /**
@@ -273,9 +309,13 @@ class ApiClient(private val config: ApiClientConfig) {
      * V1 gap: [excludeByTag] / EXCLUDE_ASSETS_IN_ALBUM cannot apply here — bucket responses
      * omit tags and album membership. Filtering those requires a follow-up ID set cross-check.
      */
-    suspend fun getTimeBucket(timeBucket: String): Either<String, List<TimelineAsset>> =
+    suspend fun getTimeBucket(timeBucket: String, userId: String? = null): Either<String, List<TimelineAsset>> =
         executeAPICall(200) {
-            service.getTimeBucket(timeBucket, withPartners = resolveWithPartners(PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)))
+            service.getTimeBucket(
+                timeBucket,
+                withPartners = resolveTimelineWithPartners(userId, PreferenceManager.get(SHOW_PARTNER_PHOTOS_IN_TIMELINE)),
+                userId = userId
+            )
         }.map { it.toTimelineAssets() }
 
     /** "On this day" style memories for the current moment (server filters by day-of-year). */

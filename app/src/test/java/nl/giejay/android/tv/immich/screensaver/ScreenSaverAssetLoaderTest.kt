@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.api.ApiClient
+import nl.giejay.android.tv.immich.api.MAX_SEARCH_PAGE_SIZE
 import nl.giejay.android.tv.immich.api.model.Asset
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Tag
@@ -230,7 +231,11 @@ class ScreenSaverAssetLoaderTest {
                 )
             ).thenReturn(Either.Right(AssetResponse(listOf(asset("random-asset"), asset("excluded-asset")), true)))
         }
-    ) { actual, _ ->
+    ) { actual, apiClient ->
+        // Immich rejects search page sizes above 1000; a larger value silently disabled album exclusion
+        val pageCountCaptor = argumentCaptor<Int>()
+        verify(apiClient).listAssetsFromAlbum(eq(listOf("excluded-album")), any(), pageCountCaptor.capture())
+        assertThat(pageCountCaptor.firstValue).isAtMost(MAX_SEARCH_PAGE_SIZE)
         assertThat(actual.items.single().ids()).containsExactly("random-asset")
     }
 

@@ -15,8 +15,8 @@ android {
         applicationId "nl.giejay.android.tv.immich"
         minSdkVersion 24
         targetSdkVersion 37
-        versionCode 147
-        versionName "6.1.0"
+        versionCode 150
+        versionName "7.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testOptions.unitTests.includeAndroidResources = true
@@ -33,7 +33,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
@@ -107,7 +108,7 @@ dependencies {
 //    implementation "androidx.work:work-runtime:$work_version"
 
     // TV provider library used for updating home screen channels
-//    implementation 'androidx.tvprovider:tvprovider:1.0.0'
+    implementation libs.androidx.tvprovider
 
     implementation libs.rxandroid
     implementation libs.rxjava

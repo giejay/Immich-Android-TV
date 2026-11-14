@@ -122,6 +122,9 @@
     <string name="set_albums_screensaver">Définir les albums à afficher dans l’écran de veille</string>
     <string name="set_albums_screensaver_desc">Définir les albums à afficher dans l’écran de veille</string>
     <string name="set_albums_screensaver_error">Définissez les albums Immich à afficher dans les paramètres de l’écran de veille</string>
+    <string name="set_people_screensaver">Définir les personnages pour afficher dans l’économiseur d’écran</string>
+    <string name="set_people_screensaver_desc">Définir les personnages pour afficher dans l’économiseur d’écran</string>
+    <string name="set_people_screensaver_error">Réglez les personnes Immich pour qu’elles apparaissent dans les paramètres de l’économiseur d’écran</string>
     <string name="customize_metadata">Personnaliser les métadonnées</string>
     <string name="configure_metadata_screensaver">Configurer ce qui doit être affiché dans l’écran de veille</string>
     <string name="include_videos">Inclure les vidéos</string>
@@ -130,7 +133,8 @@
     <string name="play_sound_screensaver">Lire le son des vidéos pendant l’écran de veille</string>
     <string name="screensaver_type">Type d’écran de veille</string>
     <string name="screensaver_type_desc">Ce qui doit être affiché : albums, aléatoire, récent, etc.</string>
-    <string name="screensaver_preview">Aperçu</string>
+    <string name="screensaver_start_now">Démarrer maintenant</string>
+    <string name="screensaver_start_now_desc">Démarrer l\'économiseur d\'écran maintenant</string>
 
     <!-- Slider/viewer preferences -->
     <string name="interval_slideshow">Intervalle du diaporama</string>

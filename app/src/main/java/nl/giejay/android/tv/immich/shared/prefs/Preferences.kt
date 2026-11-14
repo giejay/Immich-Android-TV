@@ -19,8 +19,12 @@ import nl.giejay.android.tv.immich.ImmichApplication
 import nl.giejay.android.tv.immich.R
 import nl.giejay.android.tv.immich.album.AlbumFragmentDirections
 import nl.giejay.android.tv.immich.album.SelectionType
+import nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelManager
+import nl.giejay.android.tv.immich.people.PeopleFragmentDirections
 import nl.giejay.android.tv.immich.screensaver.ScreenSaverType
+import nl.giejay.android.tv.immich.security.ApiKeyCipher
 import nl.giejay.mediaslider.transformations.GlideTransformations
+import java.util.Collections.emptySet
 
 // general
 data object DISABLE_SSL_VERIFICATION : BooleanPref(false,
@@ -33,6 +37,21 @@ data object API_KEY : StringPref("",
     ImmichApplication.appContext!!.getString(R.string.api_key_text),
     ImmichApplication.appContext!!.getString(R.string.api_key_text)) {
     override fun key() = "apiKey"
+
+    // Encrypted at rest via ApiKeyCipher; fromPrefValue also needs the override since
+    // PreferenceManager's eager subscription reads raw values through it, bypassing getValue().
+    // Legacy-plaintext migration happens once in PreferenceManager.init(), not here - this stays
+    // a pure decrypt so it's safe to call from a reactive callback.
+    override fun getValue(sharedPreferences: SharedPreferences): String =
+        fromPrefValue(sharedPreferences.getString(key(), defaultValue) ?: defaultValue)
+
+    override fun fromPrefValue(prefValue: String): String = ApiKeyCipher.decryptOrAdoptLegacy(prefValue)
+
+    override fun save(sharedPreferences: SharedPreferences, value: String) {
+        super.save(sharedPreferences, toPrefValue(value))
+    }
+
+    override fun toPrefValue(value: String): String = ApiKeyCipher.encrypt(value)
 }
 
 data object HOST_NAME : StringPref("",
@@ -59,6 +78,21 @@ data object SCREENSAVER_SET : ActionPref(null, ImmichApplication.appContext!!.ge
             ).show()
         } else {
             startScreenSaverIntent(context)
+        }
+        true
+    })
+
+data object SCREENSAVER_START_NOW : ActionPref("screensaver_start_now", ImmichApplication.appContext!!.getString(R.string.screensaver_start_now),
+    ImmichApplication.appContext!!.getString(R.string.screensaver_start_now_desc),
+    { context, navController ->
+        if (PreferenceManager.get(SCREENSAVER_TYPE) == ScreenSaverType.ALBUMS && PreferenceManager.get(SCREENSAVER_ALBUMS).isEmpty()) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.screensaver_set_select_albums_first),
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            navController.navigate(R.id.action_global_screensaver_preview)
         }
         true
     })
@@ -141,6 +175,21 @@ data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(),
     }
 }
 
+data object SCREENSAVER_PEOPLE : StringSetPref(mutableSetOf(),
+    ImmichApplication.appContext!!.getString(R.string.set_people_screensaver),
+    ImmichApplication.appContext!!.getString(R.string.set_people_screensaver_desc)) {
+    override fun onClick(context: Context, controller: NavController): Boolean {
+        controller.navigate(
+            PeopleFragmentDirections.actionGlobalPeopleFragment(
+                true,
+                SelectionType.SET_SCREENSAVER.toString(),
+                "screensaver"
+            )
+        )
+        return true
+    }
+}
+
 data object SCREENSAVER_METADATA_CUSTOMIZER : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.customize_metadata),
     ImmichApplication.appContext!!.getString(R.string.configure_metadata_screensaver),
     { _, navController ->
@@ -170,6 +219,33 @@ data object SCREENSAVER_TYPE : EnumByTitlePref<ScreenSaverType>(ScreenSaverType.
         return ScreenSaverType.entries.toTypedArray()
     }
 }
+
+// home screen channels
+data object ENABLE_HOME_SCREEN_CHANNELS : BooleanPref(true,
+    ImmichApplication.appContext!!.getString(R.string.enable_home_screen_channels),
+    ImmichApplication.appContext!!.getString(R.string.enable_home_screen_channels_desc))
+
+data object CHANNEL_ALBUMS : StringSetPref(mutableSetOf(),
+    ImmichApplication.appContext!!.getString(R.string.set_albums_home_screen_channels),
+    ImmichApplication.appContext!!.getString(R.string.set_albums_home_screen_channels_desc)) {
+    override fun onClick(context: Context, controller: NavController): Boolean {
+        controller.navigate(
+            AlbumFragmentDirections.actionGlobalAlbumFragment(
+                true,
+                SelectionType.SET_CHANNEL_ALBUMS.toString(),
+                "home_screen_channels"
+            )
+        )
+        return true
+    }
+}
+
+data object CHANNEL_REFRESH_NOW : ActionPref(null, ImmichApplication.appContext!!.getString(R.string.home_screen_channels_refresh_now),
+    ImmichApplication.appContext!!.getString(R.string.home_screen_channels_refresh_now_desc),
+    { _, _ ->
+        HomeScreenChannelManager.scheduleRefresh("manual")
+        true
+    })
 
 // slider/viewer
 data object SLIDER_INTERVAL : IntListPref(6,
@@ -372,11 +448,12 @@ data object ALL_ASSETS_SORTING : EnumByTitlePref<PhotosOrder>(PhotosOrder.NEWEST
     ImmichApplication.appContext!!.getString(R.string.assets_outside_albums),
     ImmichApplication.appContext!!.getString(R.string.assets_outside_albums_desc)) {
     override fun fromPrefValue(prefValue: String): PhotosOrder {
-        return PhotosOrder.valueOfSafe(prefValue, defaultValue)
+        // RANDOM is not offered here (the "Random" tab already covers it); ignore a stale stored value
+        return PhotosOrder.valueOfSafe(prefValue, defaultValue).takeIf { it != PhotosOrder.RANDOM } ?: defaultValue
     }
 
     override fun getEnumEntries(): Array<PhotosOrder> {
-        return PhotosOrder.entries.toTypedArray()
+        return PhotosOrder.entries.filter { it != PhotosOrder.RANDOM }.toTypedArray()
     }
 }
 
@@ -563,15 +640,28 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
     listOf(
         PrefCategory("",
             listOf(
+                SCREENSAVER_START_NOW,
                 SCREENSAVER_SET,
                 SCREENSAVER_INTERVAL,
                 SCREENSAVER_TYPE,
                 SCREENSAVER_ALBUMS,
+                SCREENSAVER_PEOPLE,
                 SCREENSAVER_SHOW_DATE_TOP_LEFT,
                 SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,
                 SCREENSAVER_PLAY_SOUND,
                 SCREENSAVER_ANIMATE_ASSET_SLIDE)
+        )
+    )
+)
+
+data object HomeScreenChannelsPrefScreen : PrefScreen(ImmichApplication.appContext!!.getString(R.string.home_screen_channels_settings), "home_screen_channels",
+    listOf(
+        PrefCategory("",
+            listOf(
+                ENABLE_HOME_SCREEN_CHANNELS,
+                CHANNEL_ALBUMS,
+                CHANNEL_REFRESH_NOW)
         )
     )
 )

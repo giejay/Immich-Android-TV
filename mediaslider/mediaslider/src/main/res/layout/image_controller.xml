@@ -40,6 +40,13 @@
             android:visibility="gone" />
 
         <ImageButton
+            android:id="@+id/image_slideshow_reverse"
+            style="@style/TVMediaButton"
+            android:contentDescription="@string/slideshow"
+            android:src="@drawable/slideshow"
+            android:scaleX="-1"/>
+
+        <ImageButton
             android:id="@+id/image_slideshow"
             style="@style/TVMediaButton"
             android:contentDescription="@string/slideshow"

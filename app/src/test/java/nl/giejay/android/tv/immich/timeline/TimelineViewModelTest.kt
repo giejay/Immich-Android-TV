@@ -464,7 +464,9 @@ class TimelineViewModelTest {
         assertEquals(0, fetches.get())
 
         vm.prefetchAroundDay("2026-06-15")
-        assertTrue(fetchLatch.await(2, TimeUnit.SECONDS))
+        // 2s was tight enough to flake on loaded/shared CI runners (real Debouncer + Dispatchers.IO
+        // threads, not virtual time) even though the fetches themselves are effectively instant.
+        assertTrue(fetchLatch.await(10, TimeUnit.SECONDS))
         advanceUntilIdle()
 
         assertTrue(vm.bucketAssets.value.containsKey("2026-06-01"))

@@ -2,15 +2,19 @@ package nl.giejay.android.tv.immich.album
 
 import android.os.Bundle
 import android.view.View
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import arrow.core.Either
+import kotlinx.coroutines.launch
 import nl.giejay.android.tv.immich.api.ApiClient
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
+import nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelManager
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
 import nl.giejay.android.tv.immich.shared.prefs.ALBUMS_SORTING
+import nl.giejay.android.tv.immich.shared.prefs.CHANNEL_ALBUMS
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.SCREENSAVER_ALBUMS
@@ -21,6 +25,7 @@ import timber.log.Timber
 enum class SelectionType {
     SET_SCREENSAVER,
     EXCLUDED_ALBUMS,
+    SET_CHANNEL_ALBUMS,
 }
 
 class AlbumFragment : VerticalCardGridFragment<Album>() {
@@ -37,6 +42,10 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
 
             SelectionType.EXCLUDED_ALBUMS -> {
                 EXCLUDE_ASSETS_IN_ALBUM
+            }
+
+            SelectionType.SET_CHANNEL_ALBUMS -> {
+                CHANNEL_ALBUMS
             }
         }
         PreferenceManager.subscribe(ALBUMS_SORTING) {
@@ -76,8 +85,20 @@ class AlbumFragment : VerticalCardGridFragment<Album>() {
         val currentAlbums = PreferenceManager.get(selectionTypeKey)
         if (card.selected) {
             PreferenceManager.save(selectionTypeKey, currentAlbums + card.id)
+            if (selectionType == SelectionType.SET_CHANNEL_ALBUMS) {
+                // creating the channel + requesting approval needs the Activity and must happen
+                // while the app is foregrounded, so it can't wait for the debounced background sync
+                lifecycleScope.launch {
+                    HomeScreenChannelManager.createAlbumChannelAndRequestApproval(requireActivity(), card.id, card.title)
+                }
+            }
         } else {
             PreferenceManager.save(selectionTypeKey, currentAlbums - card.id)
+            if (selectionType == SelectionType.SET_CHANNEL_ALBUMS) {
+                lifecycleScope.launch {
+                    HomeScreenChannelManager.deleteAlbumChannel(requireContext().applicationContext, card.id)
+                }
+            }
         }
     }
 

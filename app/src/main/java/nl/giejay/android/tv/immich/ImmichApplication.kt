@@ -18,11 +18,11 @@ package nl.giejay.android.tv.immich
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import nl.giejay.android.tv.immich.homescreenchannels.HomeScreenChannelManager
 import nl.giejay.android.tv.immich.shared.prefs.DEBUG_MODE
 import nl.giejay.android.tv.immich.shared.prefs.PreferenceManager
 import nl.giejay.android.tv.immich.shared.prefs.USER_ID
@@ -38,6 +38,8 @@ class ImmichApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // AppContextInitializer (initOrder set higher than Firebase's) sets this first;
+        // kept as a cheap no-op for direct Application construction.
         appContext = this
         PreferenceManager.init(this)
 
@@ -53,6 +55,13 @@ class ImmichApplication : Application() {
             PreferenceManager.save(USER_ID, userId)
         }
         FirebaseCrashlytics.getInstance().setUserId(userId)
+
+        HomeScreenChannelManager.initSubscriptions()
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                HomeScreenChannelManager.scheduleRefresh("app_foreground")
+            }
+        })
     }
 
     companion object {

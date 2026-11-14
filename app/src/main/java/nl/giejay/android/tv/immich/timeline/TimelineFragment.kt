@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.timeline
 
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import arrow.core.Either
 import android.os.Handler
 import android.os.Looper
 import android.util.TypedValue
@@ -11,6 +12,8 @@ import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
+import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.leanback.app.BackgroundManager
@@ -109,6 +112,14 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     /** True after Up/Down on the scrubber while focused — Left should commit a jump. */
     private var scrubberPreviewMoved = false
 
+    /**
+     * Set when opened from Partners: a standalone page showing that user's timeline, with their
+     * name as title. Null for the signed-in user's own Timeline inside the home menu.
+     */
+    private val partner: TimelineFragmentArgs? by lazy {
+        arguments?.let { TimelineFragmentArgs.fromBundle(it) }
+    }
+
     private val mainFragmentAdapter: BrowseSupportFragment.MainFragmentAdapter<Fragment> =
         object : BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {}
 
@@ -137,9 +148,12 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
             return
         }
 
+        // A partner timeline gets its own view model, scoped to this page, so it never shares
+        // loaded months or leave-off state with the own Timeline (activity-scoped, survives
+        // switching menu pages).
         viewModel = ViewModelProvider(
-            requireActivity(),
-            TimelineViewModelFactory(apiClient)
+            if (partner != null) this else requireActivity(),
+            TimelineViewModelFactory(apiClient, partner?.userId)
         )[TimelineViewModel::class.java]
     }
 
@@ -159,6 +173,7 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
         progressBar = view.findViewById(R.id.browse_progressbar)
         recyclerView = view.findViewById(R.id.timeline_recycler)
         scrubberView = view.findViewById(R.id.timeline_scrubber)
+        partner?.let { installPartnerTitle(view as ViewGroup, it.userName, savedInstanceState) }
 
         gapPx = dp(6)
         rowHeightPx = dp(180)
@@ -881,8 +896,21 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
     private fun isBrowseShowingHeaders(): Boolean =
         (parentFragment as? BrowseSupportFragment)?.isShowingHeaders == true
 
+    /**
+     * A partner timeline is not inside the home menu, so it shows whose timeline it is. The title
+     * sits above the mosaic and scrubber, which are pushed down below it.
+     */
+    private fun installPartnerTitle(root: ViewGroup, userName: String, savedInstanceState: Bundle?) {
+        installTitleView(LayoutInflater.from(requireContext()), root, savedInstanceState)
+        title = userName
+        showTitle(true)
+        val frame = root.findViewById<View>(R.id.timeline_frame)
+        titleView?.doOnLayout { frame.updatePadding(top = it.bottom) }
+    }
+
     /** Timeline has no page title — hide immediately so Leanback cannot flash/animate one. */
     private fun hideBrowseTitle() {
+        if (partner != null) return
         showTitle(false)
         mainFragmentAdapter.fragmentHost?.showTitleView(false)
         (parentFragment as? BrowseSupportFragment)?.showTitle(false)
@@ -1070,7 +1098,9 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
                 )
                 sliderViewModel.configuration = config
                 findNavController().navigate(
-                    AlbumDetailsFragmentDirections.actionToPhotoSlider()
+                    AlbumDetailsFragmentDirections.actionToPhotoSlider(
+                        allowFavorite = partner == null
+                    )
                 )
             }
         }
@@ -1129,16 +1159,23 @@ class TimelineFragment : BrandedSupportFragment(), BrowseSupportFragment.MainFra
 
 }
 
+/**
+ * @param userId a partner's user id to show their timeline; null for the signed-in user's own.
+ * Memories are built from the signed-in user's library, so a partner timeline has none.
+ */
 class TimelineViewModelFactory(
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val userId: String? = null
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TimelineViewModel::class.java)) {
             return TimelineViewModel(
-                fetchBuckets = { apiClient.getTimeBuckets() },
-                fetchBucket = { apiClient.getTimeBucket(it) },
-                fetchMemories = { apiClient.getMemories() }
+                fetchBuckets = { apiClient.getTimeBuckets(userId) },
+                fetchBucket = { apiClient.getTimeBucket(it, userId) },
+                fetchMemories = {
+                    if (userId == null) apiClient.getMemories() else Either.Right(emptyList())
+                }
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

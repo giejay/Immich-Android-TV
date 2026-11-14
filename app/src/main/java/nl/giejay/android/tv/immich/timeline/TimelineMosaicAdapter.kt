@@ -218,6 +218,7 @@ class TimelineMosaicAdapter(
                         .setDuration(120)
                         .start()
                     v.elevation = if (hasFocus) 24f else 0f
+                    if (hasFocus) v.setBackgroundResource(R.drawable.border_timeline_cell) else v.setBackgroundResource(0)
                     if (!cell.asset.isImage) {
                         videoPlayPause.setImageResource(
                             if (hasFocus) R.drawable.ic_video_badge_pause else R.drawable.ic_video_badge_play

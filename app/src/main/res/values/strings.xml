@@ -67,6 +67,8 @@
     <string name="recent">Recent</string>
     <string name="albums">Albums</string>
     <string name="timeline">Timeline</string>
+    <string name="partners">Partners</string>
+    <string name="partners_empty">No one is sharing their library with you. Partner sharing is set up in Immich\'s web interface.</string>
     <string name="this_month">This month</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
@@ -122,6 +124,9 @@
     <string name="set_albums_screensaver">Set albums to show in screensaver</string>
     <string name="set_albums_screensaver_desc">Set albums to show in screensaver</string>
     <string name="set_albums_screensaver_error">Set the Immich albums to show in the screensaver settings</string>
+    <string name="set_people_screensaver">Set people to show in screensaver</string>
+    <string name="set_people_screensaver_desc">Set people to show in screensaver</string>
+    <string name="set_people_screensaver_error">Set the Immich people to show in the screensaver settings</string>
     <string name="customize_metadata">Customize metadata</string>
     <string name="configure_metadata_screensaver">Configure what to show in screensaver</string>
     <string name="include_videos">Include videos</string>
@@ -130,7 +135,8 @@
     <string name="play_sound_screensaver">Play sound of videos during screensaver</string>
     <string name="screensaver_type">Screensaver type</string>
     <string name="screensaver_type_desc">What to show: albums, random, recent etc.</string>
-    <string name="screensaver_preview">Preview</string>
+    <string name="screensaver_start_now">Start now</string>
+    <string name="screensaver_start_now_desc">Start the screensaver now</string>
 
     <!-- Slider/viewer preferences -->
     <string name="interval_slideshow">Slideshow interval</string>
@@ -210,6 +216,18 @@
     <string name="debug_settings">Debug Settings</string>
     <string name="settings_for">Settings for %1$s</string>
     <string name="filtering">Filtering</string>
+
+    <!-- Home screen channels -->
+    <string name="home_screen_channels">Home screen channels</string>
+    <string name="home_screen_channels_settings">Home screen channel settings</string>
+    <string name="channel_recent_photos">Recent photos</string>
+    <string name="enable_home_screen_channels">Show channels on home screen</string>
+    <string name="enable_home_screen_channels_desc">Publish your recent photos, and any albums you pick below, as channels on the Android TV home screen</string>
+    <string name="set_albums_home_screen_channels">Set albums to publish as channels</string>
+    <string name="set_albums_home_screen_channels_desc">Each selected album shows up as its own row on the Android TV home screen</string>
+    <string name="home_screen_channels_refresh_now">Refresh now</string>
+    <string name="home_screen_channels_refresh_now_desc">Immediately sync the home screen channels instead of waiting for the next automatic refresh</string>
+    <string name="home_screen_channel_error">Could not set up the home screen channel for this album</string>
 
     <!-- Auth step 1 -->
     <string name="auth_sign_in_by_api_key">Sign in by API key</string>
