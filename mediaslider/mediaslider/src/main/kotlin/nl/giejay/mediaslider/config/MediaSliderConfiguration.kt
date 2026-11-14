@@ -31,6 +31,11 @@ class MediaSliderConfiguration(
     val dpadSeeksInVideo: Boolean = false,
     /** When true, [nl.giejay.mediaslider.plugin.DateOverlayViewPlugin] shows DATE at the top. */
     val showDateTopLeft: Boolean = false,
+    /**
+     * When true in the viewer, bottom metadata stays always visible (no Enter/Back toggle).
+     * Screensaver ignores this and always shows metadata.
+     */
+    val detailsAlwaysOn: Boolean = false,
     var controllerPlugins: List<SliderControllerPlugin> = emptyList(),
     var viewPlugins: List<SliderViewPlugin<*>> = emptyList(),
     var keyEventPlugins: List<SliderKeyEventPlugin> = emptyList()
