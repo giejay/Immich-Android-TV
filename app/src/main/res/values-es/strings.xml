@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2020 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<resources>
+    <!-- Strings for the "No Firebase" screen -->
+    <string name="no_firebase_title">Firebase no está configurado</string>
+    <string name="no_firebase_body">Firebase no se ha configurado en esta aplicación. Por eso no hay funciones vinculadas a una cuenta y el progreso de reproducción se guarda en el dispositivo. Para activar las funciones de Firebase, consulta el archivo README.</string>
+    <string name="continue_text">Continuar</string>
+
+    <!-- Menus -->
+    <string name="menu_identity">Identidad</string>
+
+    <!-- Authentication and identity -->
+    <string name="email">Correo electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="sign_in">Iniciar sesión</string>
+    <string name="sign_out">Cerrar sesión</string>
+    <string name="not_signed_in">No has iniciado sesión</string>
+    <string name="sign_in_error">Error al iniciar sesión: %1$s</string>
+    <string name="empty_username_or_password">Debes introducir el usuario y la contraseña</string>
+    <string name="invalid_credentials">Credenciales no válidas</string>
+    <string name="onetap_error">One Tap ha devuelto un error</string>
+    <string name="server_error">Error del servidor</string>
+    <string name="unknown_error">Error desconocido</string>
+    <string name="sign_in_intro">Si no se cambia nada, esta aplicación usa la autorización local (MockAuthClient). Puedes iniciar sesión con «%1$s» como correo electrónico y cualquier texto no vacío como contraseña. Para que la aplicación use la autenticación remota, consulta la clase RemoteAuthClient.</string>
+
+    <!-- Channel strings -->
+    <string name="default_home_screen_channel_name">Canal de ejemplo</string>
+    <string name="default_home_screen_channel_description">Ejemplo de canal predeterminado de la pantalla de inicio</string>
+
+    <!-- Content types -->
+    <string name="content_type_season_episode">Temporada %s, episodio %s</string>
+    <string name="content_type_movie">Película</string>
+    <string name="content_type_clip">Clip</string>
+
+    <!-- Playback error actions -->
+    <string name="retry">Reintentar</string>
+    <string name="go_back">Volver a explorar</string>
+    <string name="error_title_with_video">Ha ocurrido un error grave con %s</string>
+
+    <!-- Watch Next -->
+    <string name="season">%1$s, temporada %2$s</string>
+
+    <!-- Home Menu -->
+    <string name="seasonal">De temporada</string>
+    <string name="folders">Carpetas</string>
+    <string name="settings">Ajustes</string>
+    <string name="edit">Editar</string>
+    <string name="photos">Fotos</string>
+    <string name="random">Aleatorio</string>
+    <string name="people">Personas</string>
+    <string name="recent">Recientes</string>
+    <string name="albums">Álbumes</string>
+    <string name="timeline">Cronología</string>
+    <string name="partners">Compañeros</string>
+    <string name="partners_empty">Nadie comparte su biblioteca contigo. Compartir con compañeros se configura en la interfaz web de Immich.</string>
+    <string name="this_month">Este mes</string>
+    <string name="today">Hoy</string>
+    <string name="yesterday">Ayer</string>
+    <plurals name="years_ago">
+        <item quantity="one">Hace %d año</item>
+        <item quantity="other">Hace %d años</item>
+    </plurals>
+    <string name="server">Servidor</string>
+    <string name="screensaver">Salvapantallas</string>
+    <string name="debug">Depuración</string>
+    <string name="donate">Donar</string>
+    <string name="use_hd_thumbnails">Usar miniaturas de alta resolución</string>
+    <string name="use_hd_thumbnails_text">Usa miniaturas de alta resolución en lugar de las imágenes nativas o completas. La carga será mucho más rápida.</string>
+    <string name="show_partner_photos_in_timeline">Mostrar fotos de compañeros en la cronología</string>
+    <string name="show_partner_photos_in_timeline_desc">Incluye las fotos que comparten tus compañeros en la cronología principal, además de en las vistas de fotos y de búsqueda.</string>
+    <string name="albums_sorting_text">Elige el orden en que aparecen los álbumes</string>
+    <string name="order">Orden</string>
+    <string name="photos_sorting_text">Elige el orden en que aparecen las fotos</string>
+    <string name="disable_ssl">Desactivar verificación SSL</string>
+    <string name="disable_ssl_text">¡Usa esto solo si tienes problemas con certificados autofirmados!</string>
+    <string name="api_key_text">Clave de API</string>
+    <string name="server_url_text">URL del servidor</string>
+    <string name="done">Hecho</string>
+
+
+    <!-- Auth by phone -->
+    <string name="scan_qr_below">Escanea el código QR de abajo</string>
+    <string name="or_enter_code_on_site">O introduce el código en https://immich.giejay.nl</string>
+
+    <!-- Metadata -->
+    <string name="metadata">Metadatos</string>
+
+    <!-- Screensaver  -->
+    <string name="screensaver_set">Establecer Immich como salvapantallas</string>
+    <string name="screensaver_set_select_albums_first">¡Primero elige los álbumes que quieres mostrar!</string>
+    <string name="screensaver_not_possible_title">No se puede establecer el salvapantallas</string>
+    <string name="screensaver_not_possible">No se ha podido iniciar el salvapantallas de Immich porque el nombre de host o la clave de API no son válidos</string>
+    <string name="close">Cerrar</string>
+    <string name="interval">Intervalo</string>
+    <string name="screensaver_interval_desc">Intervalo del salvapantallas</string>
+    <string name="show_media_count">Mostrar contador de elementos</string>
+    <string name="show_media_count_desc_screensaver">Muestra el número total de elementos y el elemento seleccionado</string>
+    <string name="show_description">Mostrar descripción</string>
+    <string name="show_description_screensaver">Muestra la descripción del elemento en el salvapantallas</string>
+    <string name="show_album_name">Mostrar nombre del álbum</string>
+    <string name="show_album_name_desc">Muestra el nombre del álbum del elemento en el salvapantallas</string>
+    <string name="show_date">Mostrar fecha</string>
+    <string name="show_date_screensaver">Muestra la fecha del elemento en el salvapantallas</string>
+    <string name="show_clock">Mostrar reloj</string>
+    <string name="show_clock_screensaver">Muestra el reloj en el salvapantallas</string>
+    <string name="slide_new_asset_in">Deslizar el nuevo elemento</string>
+    <string name="slide_new_asset_in_desc">Hace entrar el nuevo elemento deslizándolo durante la transición</string>
+    <string name="set_albums_screensaver">Elegir álbumes del salvapantallas</string>
+    <string name="set_albums_screensaver_desc">Elige los álbumes que se muestran en el salvapantallas</string>
+    <string name="set_albums_screensaver_error">Elige en los ajustes del salvapantallas los álbumes de Immich que quieres mostrar</string>
+    <string name="set_people_screensaver">Elegir personas del salvapantallas</string>
+    <string name="set_people_screensaver_desc">Elige las personas que se muestran en el salvapantallas</string>
+    <string name="set_people_screensaver_error">Elige en los ajustes del salvapantallas las personas de Immich que quieres mostrar</string>
+    <string name="customize_metadata">Personalizar metadatos</string>
+    <string name="configure_metadata_screensaver">Configura qué se muestra en el salvapantallas</string>
+    <string name="include_videos">Incluir vídeos</string>
+    <string name="include_videos_screensaver">Incluye vídeos en el salvapantallas</string>
+    <string name="play_sound">Reproducir sonido</string>
+    <string name="play_sound_screensaver">Reproduce el sonido de los vídeos en el salvapantallas</string>
+    <string name="screensaver_type">Tipo de salvapantallas</string>
+    <string name="screensaver_type_desc">Qué mostrar: álbumes, aleatorio, recientes, etc.</string>
+    <string name="screensaver_start_now">Iniciar ahora</string>
+    <string name="screensaver_start_now_desc">Inicia el salvapantallas ahora</string>
+
+    <!-- Slider/viewer preferences -->
+    <string name="interval_slideshow">Intervalo de la presentación</string>
+    <string name="interval_slideshow_desc">Segundos por foto durante la presentación. Los vídeos se reproducen enteros y después se pasa al siguiente elemento.</string>
+    <string name="slide_animation_speed_ms">Velocidad de la animación de deslizamiento (ms)</string>
+    <string name="slide_animation_speed_desc">Velocidad de la animación de deslizamiento en milisegundos</string>
+    <string name="show_description_slideshow">Mostrar descripción</string>
+    <string name="show_description_slideshow_desc">Muestra la descripción del elemento en la presentación</string>
+    <string name="show_media_count_slideshow">Mostrar contador de elementos</string>
+    <string name="show_media_count_slideshow_desc">Muestra el número total de elementos y el elemento seleccionado</string>
+    <string name="show_date_slideshow">Mostrar fecha</string>
+    <string name="show_date_slideshow_desc">Muestra la fecha del elemento en la presentación</string>
+    <string name="show_date_top_left">Mostrar fecha arriba a la izquierda</string>
+    <string name="show_date_top_left_viewer_desc">Muestra la fecha del elemento superpuesta arriba a la izquierda en el visor de fotos y vídeos. Es independiente de los metadatos de la parte inferior.</string>
+    <string name="show_date_top_left_screensaver_desc">Muestra la fecha del elemento superpuesta arriba a la izquierda en el salvapantallas. Es independiente de los metadatos de la parte inferior.</string>
+    <string name="show_city">Mostrar ciudad</string>
+    <string name="show_city_desc">Muestra la ciudad del elemento en la presentación</string>
+    <string name="customize_metadata_viewer">Personalizar metadatos</string>
+    <string name="configure_metadata_viewer">Configura qué se muestra en el visor</string>
+    <string name="merge_portrait_photos">Juntar fotos verticales</string>
+    <string name="merge_portrait_photos_desc">Muestra dos fotos verticales una al lado de la otra</string>
+    <string name="safe_center_crop_max_cutoff_height">Recorte máximo de altura con Recorte centrado seguro %</string>
+    <string name="safe_center_crop_max_cutoff_height_desc">Porcentaje máximo de la altura de la imagen que se recorta al usar Recorte centrado seguro</string>
+    <string name="safe_center_crop_max_cutoff_width">Recorte máximo de anchura con Recorte centrado seguro %</string>
+    <string name="safe_center_crop_max_cutoff_width_desc">Porcentaje máximo de la anchura de la imagen que se recorta al usar Recorte centrado seguro</string>
+    <string name="photo_transformation">Transformación de fotos</string>
+    <string name="photo_transformation_desc">Transformación de fotos</string>
+    <string name="force_original_video">Forzar vídeo original</string>
+    <string name="force_original_video_desc">Reproduce el vídeo original aunque haya una versión transcodificada</string>
+    <string name="dpad_seek_in_video">Moverse por el vídeo con la cruceta</string>
+    <string name="dpad_seek_in_video_desc">Izquierda/derecha avanza o retrocede unos 10 s en el vídeo en lugar de cambiar de elemento. Los botones de avance y retroceso rápido del mando siempre se mueven por el vídeo. Desactivado de forma predeterminada.</string>
+    <string name="load_edited_photo">Cargar fotos editadas</string>
+    <string name="load_edited_photo_desc">Carga la versión editada de las fotos en lugar de la original</string>
+    <string name="zoom_scroll_panoramas">Efecto de zoom y desplazamiento</string>
+    <string name="zoom_scroll_panoramas_desc">En las presentaciones, aplica efectos de zoom y desplazamiento a las páginas con una sola foto. Las fotos panorámicas se amplían automáticamente para llenar la pantalla y se desplazan de abajo arriba o de izquierda a derecha.</string>
+    <string name="zoom_effect_percent">Intensidad del efecto de zoom %</string>
+    <string name="zoom_effect_percent_desc">Ajusta la intensidad del efecto de zoom.</string>
+    <string name="pan_effect_percent">Intensidad del efecto de desplazamiento %</string>
+    <string name="pan_effect_percent_desc">Ajusta la intensidad del efecto de desplazamiento.</string>
+
+    <!-- Other preferences -->
+    <string name="photos_in_albums">Fotos en álbumes</string>
+    <string name="photos_in_albums_desc_inside">Elige el orden en que aparecen las fotos dentro de los álbumes</string>
+    <string name="content_type">Tipo de contenido</string>
+    <string name="filter_by_content_type">Filtrar por tipo de contenido</string>
+    <string name="assets_outside_albums">Elementos fuera de álbumes</string>
+    <string name="assets_outside_albums_desc">Elige el orden en que aparecen los elementos fuera de los álbumes</string>
+    <string name="enable_debug_mode">Activar modo de depuración</string>
+    <string name="enable_debug_mode_desc">Actívalo si tienes problemas.</string>
+    <string name="load_selected_item_as_background">Usar el elemento seleccionado como fondo</string>
+    <string name="load_selected_item_as_background_desc">Carga como fondo la imagen o el álbum seleccionado</string>
+    <string name="user_id">ID de usuario</string>
+    <string name="user_id_desc">Tu ID de usuario, necesario para la depuración</string>
+    <string name="seasonal_photos_years_back">Años atrás de las fotos de temporada</string>
+    <string name="seasonal_photos_years_back_desc">Cuántos años hacia atrás se buscan al elegir las fotos de temporada</string>
+    <string name="seasonal_photos_period_days">Periodo de las fotos de temporada en días</string>
+    <string name="recent_photos_months_back">Meses atrás de las fotos recientes</string>
+    <string name="excluded_albums">Álbumes excluidos</string>
+    <string name="excluded_albums_desc">Excluye los elementos de ciertos álbumes en las vistas aleatoria y de temporada</string>
+
+    <!-- Preference screens and categories -->
+    <string name="view_settings">Ajustes de visualización</string>
+    <string name="display">Visualización</string>
+    <string name="display_desc">Cambia cómo se muestran los elementos</string>
+    <string name="effects">Efectos</string>
+    <string name="effects_desc">Efectos de zoom, desplazamiento y recorte</string>
+    <string name="content">Contenido</string>
+    <string name="content_desc">Configura qué contenido se muestra</string>
+    <string name="general">General</string>
+    <string name="general_desc">Ajustes generales</string>
+    <string name="ordering">Orden</string>
+    <string name="slideshow">Presentación</string>
+    <string name="other">Otros</string>
+    <string name="screensaver_settings">Ajustes del salvapantallas</string>
+    <string name="debug_settings">Ajustes de depuración</string>
+    <string name="settings_for">Ajustes de %1$s</string>
+    <string name="filtering">Filtros</string>
+
+    <!-- Home screen channels -->
+    <string name="home_screen_channels">Canales de la pantalla de inicio</string>
+    <string name="home_screen_channels_settings">Ajustes de los canales de la pantalla de inicio</string>
+    <string name="channel_recent_photos">Fotos recientes</string>
+    <string name="enable_home_screen_channels">Mostrar canales en la pantalla de inicio</string>
+    <string name="enable_home_screen_channels_desc">Publica tus fotos recientes y los álbumes que elijas abajo como canales en la pantalla de inicio de Android TV</string>
+    <string name="set_albums_home_screen_channels">Elegir álbumes para publicar como canales</string>
+    <string name="set_albums_home_screen_channels_desc">Cada álbum seleccionado aparece como una fila propia en la pantalla de inicio de Android TV</string>
+    <string name="home_screen_channels_refresh_now">Actualizar ahora</string>
+    <string name="home_screen_channels_refresh_now_desc">Sincroniza ya los canales de la pantalla de inicio en lugar de esperar a la siguiente actualización automática</string>
+    <string name="home_screen_channel_error">No se ha podido configurar el canal de la pantalla de inicio de este álbum</string>
+
+    <!-- Auth step 1 -->
+    <string name="auth_sign_in_by_api_key">Iniciar sesión con clave de API</string>
+    <string name="auth_sign_in_by_api_key_desc">Inicia sesión en tu instancia de Immich introduciendo tu clave de API.</string>
+    <string name="auth_sign_in_by_phone">Iniciar sesión con el teléfono</string>
+    <string name="auth_sign_in_by_phone_desc">Inicia sesión en tu instancia de Immich escaneando un código QR con el teléfono. Nota: solo funciona si tu servidor de Immich es accesible desde Internet (no con direcciones IP locales o privadas).</string>
+    <string name="auth_demo_mode">Modo de demostración</string>
+    <string name="auth_demo_mode_desc">Inicia sesión en una instancia de demostración de Immich.</string>
+
+    <!-- Auth step 2 (GuidedStep) -->
+    <string name="login_immich_description">Inicia sesión en tu servidor de Immich o prueba la demostración.</string>
+    <string name="server_url_hint">URL del servidor (http[s]://…)</string>
+    <string name="disable_ssl_verification">Desactivar verificación SSL</string>
+    <string name="disable_ssl_verification_desc">¡Usa esto solo si tienes problemas con certificados autofirmados!</string>
+    <string name="debug_mode">Modo de depuración</string>
+    <string name="debug_mode_desc">Actívalo si tienes problemas para obtener los datos de Immich.</string>
+    <string name="submit">Enviar</string>
+    <string name="enter_server_url">Introduce la URL del servidor (https://…)</string>
+    <string name="enter_api_key">Introduce una clave de API. Si ya la has introducido, vuelve a seleccionarla y pulsa Intro/OK, no Atrás (lo sentimos).</string>
+    <string name="enter_valid_server_url">Introduce una URL de servidor válida (https://…)</string>
+
+    <!-- Auth by phone -->
+    <string name="or_enter_code_on_auth_url">O introduce el código %1$s en %2$s</string>
+    <string name="auth_timeout_recreating_qr">No se ha completado la autenticación a tiempo; se está generando un nuevo código QR.</string>
+    <string name="invalid_server_url_or_api_key">La URL del servidor o la clave de API no son válidas. ¡Vuelve a escanear el código!</string>
+    <string name="could_not_fetch_qr">No se ha podido obtener el código QR: %1$s</string>
+    <string name="could_not_fetch_qr_short">No se ha podido obtener el código QR</string>
+    <string name="could_not_load_assets">No se han podido cargar los elementos de Immich</string>
+
+    <!-- Albums ordering -->
+    <string name="albums_order_asset_count">Número de elementos</string>
+
+    <!-- Donate -->
+    <string name="donation_title">Donación</string>
+    <string name="donation_subtitle">Desarrollar esta aplicación cuesta mucho esfuerzo. Si quieres mostrar tu agradecimiento, puedes donar con las siguientes opciones.</string>
+    <string name="donation_exhausted">Ya has usado todas las opciones de donación. ¡Gracias!</string>
+    <string name="donation_init_failed">No se ha podido iniciar el servicio de donaciones. ¡Lo sentimos!</string>
+
+    <!-- Ordering -->
+    <string name="order_alphabetically_az">Alfabético (A-Z)</string>
+    <string name="order_alphabetically_za">Alfabético (Z-A)</string>
+    <string name="order_newest_oldest">Más recientes - Más antiguos</string>
+    <string name="order_oldest_newest">Más antiguos - Más recientes</string>
+    <string name="order_last_updated">Actualizados más recientemente</string>
+    <string name="order_least_updated">Actualizados hace más tiempo</string>
+
+    <!-- Interval titles -->
+    <string name="interval_1_second">1 segundo</string>
+    <string name="interval_2_seconds">2 segundos</string>
+    <string name="interval_3_seconds">3 segundos</string>
+    <string name="interval_4_seconds">4 segundos</string>
+    <string name="interval_5_seconds">5 segundos</string>
+    <string name="interval_6_seconds">6 segundos</string>
+    <string name="interval_7_seconds">7 segundos</string>
+    <string name="interval_8_seconds">8 segundos</string>
+    <string name="interval_9_seconds">9 segundos</string>
+    <string name="interval_10_seconds">10 segundos</string>
+    <string name="interval_20_seconds">20 segundos</string>
+    <string name="interval_30_seconds">30 segundos</string>
+    <string name="interval_1_minute">1 minuto</string>
+    <string name="interval_3_minutes">3 minutos</string>
+    <string name="interval_5_minutes">5 minutos</string>
+    <string name="interval_10_minutes">10 minutos</string>
+
+    <!-- Content type filter -->
+    <string name="content_type_all">Todo</string>
+    <string name="content_type_image">Imagen</string>
+    <string name="content_type_video">Vídeo</string>
+
+    <!-- Metadata alignment -->
+    <string name="left">Izquierda</string>
+    <string name="right">Derecha</string>
+
+
+    <string name="already_added_metadata">Ya has añadido todos los metadatos posibles</string>
+    <string name="no_items_to_play">No hay elementos que reproducir</string>
+    <string name="no_assets_for_screensaver">No hay elementos que mostrar en el salvapantallas. Configura otro tipo de salvapantallas en los ajustes</string>
+    <string name="edit_metadata_title">Editar metadatos</string>
+    <string name="meta_data_type_dialog_title">Tipo</string>
+    <string name="meta_data_type_desc">Tipo de metadato</string>
+    <string name="meta_data_type_title">Tipo de metadato</string>
+    <string name="meta_data_order_dialog_title">Orden</string>
+    <string name="meta_data_order_desc">Orden de los metadatos</string>
+    <string name="meta_data_order_title">Orden de los metadatos</string>
+    <string name="meta_data_font_size_title">Tamaño de fuente</string>
+    <string name="meta_data_font_size_dialog_title">Tamaño de fuente</string>
+    <string name="meta_data_padding_title">Margen</string>
+    <string name="meta_data_padding_dialog_title">Margen por encima y por debajo del elemento</string>
+    <string name="meta_data_delete_desc">Eliminar elemento</string>
+    <string name="meta_data_save_desc">Guardar elemento</string>
+    <string name="favorite_added">Añadido a favoritos</string>
+    <string name="favorite_removed">Quitado de favoritos</string>
+    <string name="favorite_add_failed">No se ha podido añadir a favoritos</string>
+    <string name="favorite_remove_failed">No se ha podido quitar de favoritos</string>
+</resources>

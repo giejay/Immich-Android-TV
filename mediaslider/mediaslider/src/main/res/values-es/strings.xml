@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="album_name">Nombre del álbum</string>
+    <string name="camera">Modelo de cámara</string>
+    <string name="city">Ciudad</string>
+    <string name="clock">Reloj</string>
+    <string name="country">País</string>
+    <string name="date">Fecha</string>
+    <string name="time">Hora</string>
+    <string name="current_date">Fecha actual</string>
+    <string name="description">Descripción</string>
+    <string name="filename">Nombre de archivo</string>
+    <string name="filepath">Ruta del archivo</string>
+    <string name="favorite">Favorito</string>
+    <string name="media_count">Contador de elementos</string>
+    <string name="image_controller_next">Siguiente</string>
+    <string name="people">Personas</string>
+    <string name="image_controller_previous">Anterior</string>
+    <string name="slideshow">Presentación</string>
+
+    <string name="media_mute">Silenciar</string>
+    <string name="media_play">Reproducir</string>
+    <string name="media_pause">Pausar</string>
+    <string name="open_in_external_player">Abrir en un reproductor externo</string>
+    <string name="no_external_player_found">No se ha encontrado ningún reproductor externo</string>
+    <string name="story_progress_count">%1$d/%2$d</string>
+</resources>
