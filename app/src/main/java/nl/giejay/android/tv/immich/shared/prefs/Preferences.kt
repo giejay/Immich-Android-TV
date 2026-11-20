@@ -160,6 +160,10 @@ data object SCREENSAVER_ANIMATE_ASSET_SLIDE : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in),
     ImmichApplication.appContext!!.getString(R.string.slide_new_asset_in_desc))
 
+data object SCREENSAVER_SHOW_FAVORITES_ONLY : BooleanPref(false,
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only),
+    ImmichApplication.appContext!!.getString(R.string.show_favorites_only_desc))
+
 data object SCREENSAVER_ALBUMS : StringSetPref(mutableSetOf(),
     ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver),
     ImmichApplication.appContext!!.getString(R.string.set_albums_screensaver_desc)) {
@@ -644,6 +648,7 @@ data object ScreensaverPrefScreen : PrefScreen(ImmichApplication.appContext!!.ge
                 SCREENSAVER_SHOW_DATE_TOP_LEFT,
                 SCREENSAVER_METADATA_CUSTOMIZER,
                 SCREENSAVER_INCLUDE_VIDEOS,
+                SCREENSAVER_SHOW_FAVORITES_ONLY,
                 SCREENSAVER_PLAY_SOUND,
                 SCREENSAVER_ANIMATE_ASSET_SLIDE)
         )

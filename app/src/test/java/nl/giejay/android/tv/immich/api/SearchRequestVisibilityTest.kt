@@ -14,7 +14,7 @@ class SearchRequestVisibilityTest {
     fun `listAssets search request sends timeline visibility when no albumIds are set`() {
         val request = buildListAssetsSearchRequest(
             page = 0, pageCount = 30, albumIds = emptyList(), order = "desc",
-            type = null, personIds = emptyList(), endDate = null, fromDate = null
+            type = null, personIds = emptyList(), endDate = null, fromDate = null, isFavorite = false
         )
 
         assertEquals("timeline", request.visibility)
@@ -24,7 +24,7 @@ class SearchRequestVisibilityTest {
     fun `listAssets search request omits visibility when albumIds is non-empty`() {
         val request = buildListAssetsSearchRequest(
             page = 0, pageCount = 30, albumIds = listOf("album-1"), order = "desc",
-            type = null, personIds = emptyList(), endDate = null, fromDate = null
+            type = null, personIds = emptyList(), endDate = null, fromDate = null, isFavorite = false
         )
 
         assertNull(request.visibility)
@@ -49,7 +49,7 @@ class SearchRequestVisibilityTest {
         // strip both via .copy(page = null, order = null) before calling service.randomAssets.
         val request = buildListAssetsSearchRequest(
             page = 2, pageCount = 30, albumIds = emptyList(), order = "desc",
-            type = null, personIds = emptyList(), endDate = null, fromDate = null
+            type = null, personIds = emptyList(), endDate = null, fromDate = null, isFavorite = false
         )
         val strippedForRandom = request.copy(page = null, order = null)
 
