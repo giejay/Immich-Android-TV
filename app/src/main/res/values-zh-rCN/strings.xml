@@ -115,7 +115,7 @@
     <string name="show_clock">显示时钟</string>
     <string name="show_clock_screensaver">在屏保中显示时钟</string>
     <string name="show_favorites_only">仅限节目最爱</string>
-    <string name="show_favorites_only_desc">屏保中只显示喜欢的照片</string>
+    <string name="show_favorites_only_desc">只显示喜欢的照片</string>
     <string name="slide_new_asset_in">新项目滑入</string>
     <string name="slide_new_asset_in_desc">切换时以滑入方式显示新项目</string>
     <string name="set_albums_screensaver">选择屏保中显示的相册</string>

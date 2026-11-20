@@ -18,7 +18,9 @@ import nl.giejay.android.tv.immich.api.util.ApiUtil
 import nl.giejay.android.tv.immich.card.Card
 import nl.giejay.android.tv.immich.home.HomeFragmentDirections
 import nl.giejay.android.tv.immich.shared.fragment.VerticalCardGridFragment
+import nl.giejay.android.tv.immich.shared.prefs.ALL_ASSETS_SHOW_FAVORITES_ONLY
 import nl.giejay.android.tv.immich.shared.prefs.ALL_ASSETS_SORTING
+import nl.giejay.android.tv.immich.shared.prefs.BooleanPref
 import nl.giejay.android.tv.immich.shared.prefs.ContentType
 import nl.giejay.android.tv.immich.shared.prefs.EXCLUDE_ASSETS_IN_ALBUM
 import nl.giejay.android.tv.immich.shared.prefs.EnumByTitlePref
@@ -51,6 +53,7 @@ import nl.giejay.mediaslider.viewmodel.MediaSliderViewModel
 abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     protected lateinit var currentFilter: ContentType
     protected lateinit var currentSort: PhotosOrder
+    protected var isFavoriteFilter: Boolean = false
     private var excludedAssetsLoaded = false
     protected var excludedAssetIds: Set<String> = emptySet()
 
@@ -59,8 +62,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val sortingKey = getSortingKey()
         val filterKey = getFilterKey()
+        val favoritesKey = getFavoritesKey()
         currentSort = PreferenceManager.get(sortingKey)
         currentFilter = PreferenceManager.get(filterKey)
+        isFavoriteFilter = PreferenceManager.get(favoritesKey)
         super.onCreate(savedInstanceState)
         PreferenceManager.subscribeMultiple(listOf(sortingKey, filterKey)) { state ->
             if(state[sortingKey.key()] != currentSort || state[filterKey.key()] != currentFilter){
@@ -89,7 +94,7 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
             val excludedAlbums = PreferenceManager.get(EXCLUDE_ASSETS_IN_ALBUM)
             if (excludedAlbums.isNotEmpty()) {
                 excludedAssetIds = excludedAlbums.toList().pmap {
-                    apiClient.listAssetsFromAlbum(listOf(it), pageCount = MAX_SEARCH_PAGE_SIZE)
+                    apiClient.listAssetsFromAlbum(listOf(it), pageCount = MAX_SEARCH_PAGE_SIZE, isFavorite = isFavoriteFilter)
                         .getOrElse { AssetResponse(emptyList(), false) }
                         .assets
                         .map { it -> it.id }
@@ -106,6 +111,10 @@ abstract class GenericAssetFragment : VerticalCardGridFragment<Asset>() {
 
     open fun getFilterKey(): EnumByTitlePref<ContentType>{
         return FILTER_CONTENT_TYPE
+    }
+
+    open fun getFavoritesKey(): BooleanPref {
+        return ALL_ASSETS_SHOW_FAVORITES_ONLY
     }
 
     override fun sortItems(items: List<Asset>): List<Asset> {

@@ -14,6 +14,7 @@ class RandomAssetsFragment : GenericAssetFragment() {
         return apiClient.listAssets(page,
             pageCount,
             random = true,
-            contentType = currentFilter).map { it.assets }
+            contentType = currentFilter,
+            isFavorite = isFavoriteFilter).map { it.assets }
     }
 }
