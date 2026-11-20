@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only arrays whose items are hardcoded text need a localized copy;
+         all other arrays are made of @string references or values and inherit from the default file. -->
+    <string-array name="glide_transformation_labels">
+        <item>Centrar dentro (mantiene la anchura y la altura de la imagen)</item>
+        <item>Recorte centrado (llena la pantalla)</item>
+        <item>Recorte centrado seguro (porcentaje máximo de recorte)</item>
+    </string-array>
+</resources>
